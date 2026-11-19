@@ -6268,14 +6268,15 @@ function openStorageGuide(kind) {
     $('guideTitle').textContent = 'Aktifkan Cloudflare R2';
     $('guideBody').innerHTML = `
       <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:#F38020"><i class="fas fa-cloud"></i></span><div><div class="t-headline">Status: ${st.r2 ? '<span class="c-green">Aktif ✓</span>' : '<span class="c-orange">Belum aktif</span>'}</div><div class="t-foot muted">Gratis 10 GB/bulan · upload otomatis berhenti di 9 GB</div></div></div></div>
-      ${guideSteps([
+      ${st.r2 ? `<div class="list"><div class="row" style="padding:16px"><span class="icon-tile bg-green"><i class="fas fa-check"></i></span><div class="flex-1 t-sub" style="line-height:1.45"><b>R2 sudah aktif — tidak perlu langkah apa pun lagi.</b><br>Semua upload baru (lagu, Galeri, Bukti Kas, Gudang File) otomatis masuk R2. Kamu akan dapat notifikasi di 7 GB & 8,5 GB, dan upload berhenti otomatis di 9 GB supaya tetap gratis.</div></div></div>` : guideSteps([
         'Buka <b>dash.cloudflare.com</b> → menu kiri <b>Storage & Databases → R2 Object Storage</b>.',
         'Tap <b>Purchase R2 Plan</b> / <b>Add payment method</b> → masukkan kartu debit/kredit atau PayPal → pilih paket <b>Free</b>. Tidak ada tagihan selama di bawah 10 GB.',
         'Buka GitHub repo <b>Hadzmi-Website</b> → file <b>wrangler.jsonc</b> → tap ✏️ (Edit).',
         'Di bagian <b>CLOUDFLARE R2</b>, hapus <code>// </code> di depan 3 baris <code>"r2_buckets"</code>, <code>{ "binding": "FILES" … }</code>, dan <code>],</code> → <b>Commit changes</b>. (Atau cukup bilang ke Claude: "R2 sudah aktif".)',
         'Cloudflare otomatis deploy ulang & membuat bucket <b>hadzmi-hub-files</b> (±2 menit).',
         'Kembali ke sini → muat ulang halaman. Status R2 berubah jadi <b>● Aktif</b> dan semua upload baru otomatis masuk R2.'
-      ])}`;
+      ])}
+      ${st.r2 ? '' : '<div class="t-cap muted center">Langkah 3–4 sudah dikerjakan Claude (R2 sudah dinyalakan di konfigurasi). Jika status belum Aktif, cek tab Deployments di Cloudflare lalu muat ulang.</div>'}`;
   } else {
     $('guideTitle').textContent = 'Sambungkan Google Drive';
     $('guideBody').innerHTML = `
