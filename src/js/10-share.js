@@ -79,9 +79,9 @@ function shareDailyDigest() {
   ].join('\n');
   openShareSheet(`[Hadzmi Hub] Ringkasan ${prettyDate(today)}`, body);
 }
-function shareNote(id) {
-  const n = appState.notes.find(x => x.id === id); if (!n) return;
-  openShareSheet(`[Catatan] ${n.title || n.content.slice(0, 40)}`, `${n.title ? n.title + '\n\n' : ''}${n.content}${n.tag ? `\n\n#${n.tag}` : ''}`);
+function shareNote(id, coll) {
+  const n = (appState[coll || 'notes'] || []).find(x => x.id === id); if (!n) return;
+  openShareSheet(`[${coll === 'workNotes' ? 'Catatan Kerja' : 'Catatan'}] ${n.title || n.content.slice(0, 40)}`, `${n.title ? n.title + '\n\n' : ''}${n.content}${n.tag ? `\n\n#${n.tag}` : ''}`);
 }
 function shareCountdown(id) {
   const c = appState.countdowns.find(x => x.id === id); if (!c) return;
@@ -101,7 +101,7 @@ function shareKasReport() {
   const body = [`LAPORAN SELISIH KAS`, `Periode: ${period}`, '',
     `Total Lebih  : ${rupiah(lebih)}`, `Total Kurang : ${rupiah(kurang)}`, `Net Balance  : ${rupiah(lebih - kurang)}`, '',
     `RINCIAN (${list.length} entri):`,
-    ...list.map(k => `${k.tanggal}  ${k.jenis === 'Lebih' ? '+' : '−'}${rupiah(k.jumlah).padEnd(14)} ${k.keterangan || ''}`)].join('\n');
+    ...list.map(k => `${k.tanggal}${k.jam ? ' ' + k.jam : ''}  ${k.jenis === 'Lebih' ? '+' : '−'}${rupiah(k.jumlah).padEnd(14)} ${k.keterangan || ''}`)].join('\n');
   openShareSheet(`[Kas] Laporan Selisih — ${period}`, body);
 }
 function shareFocusReport() {

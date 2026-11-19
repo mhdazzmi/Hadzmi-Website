@@ -45,6 +45,7 @@ let pinBuffer = '';
 let pinBusy = false;
 function renderPinDots() {
   const dots = $('pinDots'); if (!dots) return;
+  if (dots.children.length !== APP_AUTH.pinLength) dots.innerHTML = '<span></span>'.repeat(APP_AUTH.pinLength);
   dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('on', i < pinBuffer.length));
 }
 function pinInput(digit) {
@@ -183,6 +184,12 @@ function updateSessionUI() {
   if ($('changeCredLabel')) $('changeCredLabel').textContent = isPinMode() ? 'Ganti PIN' : 'Ganti Sandi';
   const chip = $('heroSessionChip');
   if (chip) chip.innerHTML = APP_AUTH.enabled && exp ? `<i class="fas fa-lock-open"></i> Sesi s/d ${formatExpiry(exp).split(' (')[0]}` : '<i class="fas fa-lock-open"></i> Sesi aktif';
+}
+
+function quickLock() {
+  if (!APP_AUTH.enabled) return showToast('Kunci login sedang dinonaktifkan di konfigurasi.', false);
+  haptic(15);
+  performLock('');
 }
 
 async function lockAppNow(auto) {

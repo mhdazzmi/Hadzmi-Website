@@ -2,14 +2,22 @@
    06 · HUB — Mind Dump (Notes), Bookmarks, Countdown
    ========================================================= */
 
-// ---------------- MIND DUMP ----------------
-function openNoteSheet(id) {
-  const note = id ? appState.notes.find(n => n.id === id) : null;
+// ---------------- MIND DUMP & CATATAN KERJA ----------------
+// coll: 'notes' (Mind Dump) atau 'workNotes' (Catatan Kerja) — struktur data sama.
+let noteColl = 'notes';
+function noteList(coll) { return appState[coll || 'notes'] || (appState[coll] = []); }
+function noteArg(coll) { return coll && coll !== 'notes' ? `, '${coll}'` : ''; }
+function rerenderNotes(coll) { if (coll === 'workNotes') renderWorkNotes(); else renderNotesList(); renderDashboardStats(); }
+
+function openNoteSheet(id, coll) {
+  noteColl = coll || 'notes';
+  const note = id ? noteList(noteColl).find(n => n.id === id) : null;
   $('noteEditId').value = note ? note.id : '';
   $('noteTitle').value = note ? (note.title || '') : '';
   $('noteContent').value = note ? note.content : '';
   $('noteTag').value = note ? (note.tag || '') : '';
-  $('noteSheetTitle').textContent = note ? 'Edit Catatan' : 'Catatan Baru';
+  const kind = noteColl === 'workNotes' ? 'Catatan Kerja' : 'Catatan';
+  $('noteSheetTitle').textContent = note ? `Edit ${kind}` : `${kind} Baru`;
   closeSheet('sheetNoteView');
   openSheet('sheetNote');
   setTimeout(() => $(note ? 'noteContent' : 'noteTitle').focus(), 350);
@@ -17,86 +25,97 @@ function openNoteSheet(id) {
 function saveNoteRecord() {
   const content = $('noteContent').value.trim();
   if (!content) return showToast('Content required!', false);
+  const list = noteList(noteColl);
   const editId = $('noteEditId').value;
   const title = $('noteTitle').value.trim() || '', tag = $('noteTag').value.trim();
-  if (editId && appState.notes.some(n => n.id === editId)) {
-    const n = appState.notes.find(x => x.id === editId);
+  if (editId && list.some(n => n.id === editId)) {
+    const n = list.find(x => x.id === editId);
     n.title = title; n.content = content; n.tag = tag;
     showToast('Note updated & synced!');
   } else {
-    appState.notes.unshift({ id: 'note_' + Date.now(), title, content, tag, isPinned: false, date: new Date().toLocaleDateString('en-US') });
+    list.unshift({ id: 'note_' + Date.now(), title, content, tag, isPinned: false, date: new Date().toLocaleDateString('en-US') });
     showToast('Note saved & synced!');
   }
   saveStateToLocal();
   $('noteEditId').value = ''; $('noteTitle').value = ''; $('noteContent').value = ''; $('noteTag').value = '';
-  renderNotesList(); renderDashboardStats();
+  rerenderNotes(noteColl);
   closeSheet('sheetNote');
 }
-function copyNoteText(id) {
-  const note = appState.notes.find(n => n.id === id);
+function copyNoteText(id, coll) {
+  const note = noteList(coll).find(n => n.id === id);
   if (note) { copyText((note.title ? note.title + '\n\n' : '') + note.content); showToast('Note copied to clipboard!'); }
 }
-function editNoteRecord(id) { openNoteSheet(id); }
-function togglePinNote(id) {
-  const note = appState.notes.find(n => n.id === id);
-  if (note) { note.isPinned = !note.isPinned; saveStateToLocal(); renderNotesList(); showToast(note.isPinned ? 'Note pinned!' : 'Note unpinned.'); if ($('sheetNoteView').classList.contains('open')) viewNote(id); }
+function editNoteRecord(id, coll) { openNoteSheet(id, coll); }
+function togglePinNote(id, coll) {
+  const note = noteList(coll).find(n => n.id === id);
+  if (note) { note.isPinned = !note.isPinned; saveStateToLocal(); rerenderNotes(coll); showToast(note.isPinned ? 'Note pinned!' : 'Note unpinned.'); if ($('sheetNoteView').classList.contains('open')) viewNote(id, coll); }
 }
-function renderNotesList() {
-  const container = $('notesGridContainer'); if (!container) return;
-  const search = ($('searchNoteInput').value || '').toLowerCase();
-  $('noteCountBadge').textContent = 'Total: ' + appState.notes.length;
-  const filtered = appState.notes.filter(n => ((n.title || '') + ' ' + n.content + ' ' + (n.tag || '')).toLowerCase().includes(search));
+function renderNoteCards(coll, container, search, emptyIcon) {
+  const filtered = noteList(coll).filter(n => ((n.title || '') + ' ' + n.content + ' ' + (n.tag || '')).toLowerCase().includes(search));
   filtered.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="card" style="grid-column:1/-1"><div class="empty"><i class="fas fa-note-sticky"></i><div class="e-title">Belum ada catatan</div><div class="e-sub">Tap <i class="fas fa-pen-to-square"></i> untuk menulis.</div></div></div>`;
+    container.innerHTML = `<div class="card" style="grid-column:1/-1"><div class="empty"><i class="fas ${emptyIcon}"></i><div class="e-title">Belum ada catatan</div><div class="e-sub">Tap <i class="fas fa-pen-to-square"></i> untuk menulis.</div></div></div>`;
     return;
   }
+  const c = noteArg(coll);
   container.innerHTML = filtered.map(note => {
-    const isLong = note.content.length > 180;
+    const isLong = note.content.length > 180; const id = esc(note.id);
     return `
-      <div class="note-card ${note.isPinned ? 'pinned' : ''}" onclick="viewNote('${esc(note.id)}')">
+      <div class="note-card ${note.isPinned ? 'pinned' : ''}" onclick="viewNote('${id}'${c})">
         <div class="flex justify-between items-center gap-8">
-          <div class="flex items-center gap-6">${note.isPinned ? '<i class="fas fa-thumbtack" style="color:#E0A800"></i>' : ''}${note.tag ? `<span class="badge tint-yellow">${esc(note.tag)}</span>` : ''}</div>
+          <div class="flex items-center gap-6">${note.isPinned ? '<i class="fas fa-thumbtack" style="color:#E0A800"></i>' : ''}${note.tag ? `<span class="badge ${coll === 'workNotes' ? 'tint-blue' : 'tint-yellow'}">${esc(note.tag)}</span>` : ''}</div>
           <span class="t-cap muted">${esc(note.date || '')}</span>
         </div>
         ${note.title ? `<div class="n-title">${esc(note.title)}</div>` : ''}
         <div class="n-body">${esc(isLong ? note.content.slice(0, 180) + '…' : note.content)}</div>
         <div class="n-foot" onclick="event.stopPropagation()">
-          <button onclick="togglePinNote('${esc(note.id)}')" class="icon-btn sm ${note.isPinned ? '' : 'clear'}" style="${note.isPinned ? 'color:#C08A00; background:rgba(255,204,0,.2)' : 'color:var(--label2)'}" title="Pin"><i class="fas fa-thumbtack"></i></button>
+          <button onclick="togglePinNote('${id}'${c})" class="icon-btn sm ${note.isPinned ? '' : 'clear'}" style="${note.isPinned ? 'color:#C08A00; background:rgba(255,204,0,.2)' : 'color:var(--label2)'}" title="Pin"><i class="fas fa-thumbtack"></i></button>
           <div class="flex gap-4">
-            <button onclick="copyNoteText('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--label2)" title="Salin"><i class="far fa-copy"></i></button>
-            <button onclick="shareNote('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--label2)" title="Gmail"><i class="far fa-envelope"></i></button>
-            <button onclick="editNoteRecord('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--label2)" title="Edit"><i class="fas fa-pen"></i></button>
-            <button onclick="deleteNoteRecord('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--red)" title="Hapus"><i class="far fa-trash-can"></i></button>
+            <button onclick="copyNoteText('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Salin"><i class="far fa-copy"></i></button>
+            <button onclick="shareNote('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Gmail"><i class="far fa-envelope"></i></button>
+            <button onclick="editNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Edit"><i class="fas fa-pen"></i></button>
+            <button onclick="deleteNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--red)" title="Hapus"><i class="far fa-trash-can"></i></button>
           </div>
         </div>
       </div>`;
   }).join('');
 }
-function viewNote(id) {
-  const note = appState.notes.find(n => n.id === id); if (!note) return;
+function renderNotesList() {
+  const container = $('notesGridContainer'); if (!container) return;
+  $('noteCountBadge').textContent = 'Total: ' + appState.notes.length;
+  renderNoteCards('notes', container, ($('searchNoteInput').value || '').toLowerCase(), 'fa-note-sticky');
+}
+function renderWorkNotes() {
+  const container = $('workNotesGrid'); if (!container) return;
+  $('workNoteCountBadge').textContent = 'Total: ' + noteList('workNotes').length;
+  renderNoteCards('workNotes', container, ($('searchWorkNoteInput').value || '').toLowerCase(), 'fa-clipboard');
+}
+function viewNote(id, coll) {
+  const note = noteList(coll).find(n => n.id === id); if (!note) return;
+  const c = noteArg(coll), sid = esc(note.id);
   $('noteViewBody').innerHTML = `
     <div class="flex items-center gap-8 wrap" style="margin-bottom:10px">${note.isPinned ? '<span class="badge tint-yellow"><i class="fas fa-thumbtack"></i> Pinned</span>' : ''}${note.tag ? `<span class="badge tint-yellow">${esc(note.tag)}</span>` : ''}<span class="t-cap muted">${esc(note.date || '')}</span></div>
     ${note.title ? `<h2 class="t-title2" style="margin-bottom:10px">${esc(note.title)}</h2>` : ''}
     <div class="t-callout pre" style="line-height:1.55">${esc(note.content)}</div>
     <div class="grid-2 mt-28">
-      <button class="btn btn-gray btn-sm" onclick="editNoteRecord('${esc(note.id)}')"><i class="fas fa-pen"></i> Edit</button>
-      <button class="btn btn-tinted btn-sm" onclick="shareNote('${esc(note.id)}')"><i class="fas fa-envelope"></i> Gmail</button>
+      <button class="btn btn-gray btn-sm" onclick="editNoteRecord('${sid}'${c})"><i class="fas fa-pen"></i> Edit</button>
+      <button class="btn btn-tinted btn-sm" onclick="shareNote('${sid}'${c})"><i class="fas fa-envelope"></i> Gmail</button>
     </div>`;
   $('noteViewMore').onclick = () => openActionSheet({
     title: note.title || 'Catatan', actions: [
-      { text: note.isPinned ? 'Lepas Pin' : 'Pin Catatan', icon: 'fas fa-thumbtack', onClick: () => togglePinNote(id) },
-      { text: 'Salin Teks', icon: 'far fa-copy', onClick: () => copyNoteText(id) },
-      { text: 'Hapus', icon: 'far fa-trash-can', destructive: true, onClick: () => deleteNoteRecord(id) }
+      { text: note.isPinned ? 'Lepas Pin' : 'Pin Catatan', icon: 'fas fa-thumbtack', onClick: () => togglePinNote(id, coll) },
+      { text: 'Salin Teks', icon: 'far fa-copy', onClick: () => copyNoteText(id, coll) },
+      { text: 'Hapus', icon: 'far fa-trash-can', destructive: true, onClick: () => deleteNoteRecord(id, coll) }
     ]
   });
   openSheet('sheetNoteView');
 }
-async function deleteNoteRecord(id) {
-  const note = appState.notes.find(n => n.id === id); if (!note) return;
+async function deleteNoteRecord(id, coll) {
+  const list = noteList(coll);
+  const note = list.find(n => n.id === id); if (!note) return;
   if (!(await iosConfirm('Hapus catatan?', note.title || note.content.slice(0, 60), 'Hapus', true))) return;
-  appState.notes = appState.notes.filter(n => n.id !== id);
-  saveStateToLocal(); renderNotesList(); renderDashboardStats();
+  appState[coll || 'notes'] = list.filter(n => n.id !== id);
+  saveStateToLocal(); rerenderNotes(coll);
   closeSheet('sheetNoteView');
   showToast('Note deleted.');
 }

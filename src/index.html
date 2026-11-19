@@ -29,9 +29,6 @@
 <body>
   <!-- =================== LOCK SCREEN =================== -->
   <div id="lockScreen">
-    <div class="lock-date" id="lockDate">—</div>
-    <div class="lock-time" id="lockTime">--:--</div>
-    <div class="lock-hint" style="margin-top:10px"><i class="fas fa-lock"></i> Hadzmi Hub terkunci</div>
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
       <div class="lock-avatar"><i class="fab fa-apple"></i></div>
@@ -75,7 +72,7 @@
         <button class="nav-btn-glass" onclick="openNotificationCenter()" aria-label="Notifikasi">
           <i class="far fa-bell"></i><span class="nav-badge hidden" id="notifBadge">0</span>
         </button>
-        <button class="nav-btn-glass" onclick="openAccountMenu()" aria-label="Akun"><i class="fas fa-user-lock"></i></button>
+        <button class="nav-btn-glass" onclick="quickLock()" aria-label="Kunci sekarang" title="Kunci sekarang"><i class="fas fa-lock"></i></button>
       </div>
     </header>
 
@@ -116,21 +113,24 @@
         <div>
           <div class="flex justify-between items-center" style="padding:0 4px 12px">
             <h2 class="section-title" style="padding:0">Menu Cepat</h2>
-            <span class="t-foot muted" id="quickNavCurrentLabel">11 shortcut</span>
+            <span class="t-foot muted" id="quickNavCurrentLabel">14 shortcut</span>
           </div>
           <div class="card card-pad">
             <div class="app-grid">
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span>Home</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span>Music</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span>To-Do</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span>Mind Dump</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span>Bookmarks</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span>Countdown</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span>Kontak WA</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload')"><span class="icon-tile bg-cyan"><i class="fas fa-cloud-arrow-up"></i></span><span>Upload</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Kas')"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><span>Kas</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span>Focus</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span>Settings</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span class="app-label">Home</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="app-label">Music</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span class="app-label">To-Do</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span class="app-label">Mind Dump</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label">Bookmarks</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label">Countdown</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label">Focus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label">Selisih Kas</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Foto')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label">Bukti Foto</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label">Catatan Kerja</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-docs', 'Gudang File')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5E5CE6,#30B0C7)"><i class="fas fa-box-archive"></i></span><span class="app-label">Gudang File</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload Drive')"><span class="icon-tile bg-green" style="background:linear-gradient(135deg,#34A853,#4285F4)"><i class="fab fa-google-drive"></i></span><span class="app-label">Upload Drive</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span class="app-label">Kontak WA</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span class="app-label">Settings</span></button>
             </div>
           </div>
         </div>
@@ -140,7 +140,7 @@
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do')" style="text-align:left"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div><div class="num" id="dashStatTasks">0</div><div class="lbl">Tugas Pending</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do'); taSetFilter('today')" style="text-align:left"><span class="icon-tile bg-purple"><i class="fas fa-calendar-day"></i></span><div><div class="num" id="dashStatAgendaToday">0</div><div class="lbl">Agenda Hari Ini</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-notes','Mind Dump')" style="text-align:left"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><div><div class="num" id="dashStatNotes">0</div><div class="lbl">Catatan</div></div></button>
-          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Kas')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Ledger</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Kas')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Selisih Kas</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-focus','Focus')" style="text-align:left"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div><div class="num sm" id="dashStatFocusTime">0 mins</div><div class="lbl">Total Fokus</div></div></button>
         </div>
 
@@ -325,11 +325,12 @@
       <section id="tab-hub" class="tab-content hidden" data-title="Hub">
         <div class="page-head"><div><div class="page-eyebrow">Productivity</div><h1 class="t-large" id="hubTitle">To-Do</h1></div></div>
         <div class="subnav">
-          <div class="seg lg">
+          <div class="seg lg scroll no-scrollbar">
             <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" class="active">To-Do</button>
             <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes">Notes</button>
             <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links">Bookmarks</button>
             <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown">Countdown</button>
+            <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus">Focus</button>
           </div>
         </div>
 
@@ -381,92 +382,9 @@
           </div>
           <div id="cd-list-container" class="grid-auto" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
         </div>
-      </section>
 
-      <!-- ================= 4. WORK & FINANCE ================= -->
-      <section id="tab-workfin" class="tab-content hidden" data-title="Work & Fin">
-        <div class="page-head"><div><div class="page-eyebrow">Work & Finance</div><h1 class="t-large" id="workTitle">Kontak WA</h1></div></div>
-        <div class="subnav">
-          <div class="seg lg">
-            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts" class="active">Kontak</button>
-            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload">Upload</button>
-            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas">Kas</button>
-            <button onclick="switchWorkFinSubTab('sub-focus')" id="btn-sub-focus">Focus</button>
-          </div>
-        </div>
-
-        <!-- Contacts -->
-        <div id="sub-contacts" class="workfin-sub-content stack-16">
-          <div class="flex gap-8 items-center">
-            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchContactInput" oninput="renderContactsList()" class="field" placeholder="Cari kontak…"></div>
-            <button class="btn btn-green btn-sm" onclick="openContactSheet()"><i class="fas fa-user-plus"></i> Baru</button>
-          </div>
-          <div id="contactsGridContainer" class="list"></div>
-        </div>
-
-        <!-- Upload -->
-        <div id="sub-upload" class="workfin-sub-content hidden">
-          <div class="split">
-            <div class="card card-pad stack">
-              <div class="dropzone" id="uploadDropzone" onclick="document.getElementById('fileUploadInput').click()">
-                <input type="file" id="fileUploadInput" class="hidden" onchange="handleFileUpload(event)">
-                <span class="icon-tile xl bg-cyan" style="margin:0 auto 12px"><i class="fas fa-cloud-arrow-up"></i></span>
-                <div class="t-headline">Pilih atau seret file</div>
-                <div class="t-foot muted mt-4">File dicatat ke riwayat (nama, ukuran, tanggal)</div>
-              </div>
-              <div id="uploadSuccessBanner" class="hidden badge tint-green" style="padding:10px 14px; font-size:13px; width:100%; justify-content:center"><i class="fas fa-check-circle"></i> <span id="uploadSuccessText">File successfully uploaded!</span></div>
-            </div>
-            <div>
-              <div class="flex justify-between items-center" style="padding:0 4px 10px">
-                <h2 class="t-title3">Riwayat Upload</h2>
-                <button onclick="clearUploadHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
-              </div>
-              <div id="uploadHistoryList" class="list inset-icon"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cash Ledger -->
-        <div id="sub-kas" class="workfin-sub-content hidden stack-16">
-          <div class="sum-tiles">
-            <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
-            <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
-            <div class="sum-tile tint-blue"><div class="s-l">Net Balance</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
-          </div>
-          <div class="split">
-            <div class="stack-16">
-              <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
-                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span> Catat Selisih Kas</h3></div>
-                <div class="seg lg" id="kasJenisSeg">
-                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Kurang (−)</button>
-                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Lebih (+)</button>
-                </div>
-                <input type="hidden" id="kasJenis" value="Kurang">
-                <div class="grid-2">
-                  <div><label class="field-label">Tanggal *</label><input type="date" id="kasTanggal" class="field" required></div>
-                  <div><label class="field-label">Jumlah (IDR) *</label><input type="number" inputmode="numeric" id="kasJumlah" class="field" placeholder="50000" required></div>
-                </div>
-                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Detail transaksi…"></div>
-                <button type="submit" class="btn btn-filled btn-block"><i class="fas fa-check"></i> Simpan Entri</button>
-              </form>
-              <div class="card card-pad stack">
-                <div class="card-head" style="margin:0"><h3><i class="fas fa-filter c-blue"></i> Filter Periode</h3><button type="button" onclick="resetKasFilter()" class="link-btn t-foot">Reset</button></div>
-                <div class="grid-2">
-                  <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
-                  <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
-                </div>
-                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Kas</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
-              <div id="kasTableBody" class="list inset-icon"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Focus & Sleep -->
-        <div id="sub-focus" class="workfin-sub-content hidden">
+        <!-- Focus & Sleep (pindah ke Hub) -->
+        <div id="sub-focus" class="hub-sub-content hidden">
           <div class="split">
             <div class="sticky-col">
               <div id="focusRoomCard" class="card card-pad focus-card center stack-16">
@@ -520,6 +438,148 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- ================= 4. KERJA (Meja Teller) ================= -->
+      <section id="tab-workfin" class="tab-content hidden" data-title="Kerja">
+        <div class="page-head"><div><div class="page-eyebrow">Meja Teller</div><h1 class="t-large" id="workTitle">Selisih Kas</h1></div></div>
+        <div class="subnav">
+          <div class="seg lg scroll no-scrollbar">
+            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" class="active">Selisih Kas</button>
+            <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos">Bukti Foto</button>
+            <button onclick="switchWorkFinSubTab('sub-worknotes')" id="btn-sub-worknotes">Catatan</button>
+            <button onclick="switchWorkFinSubTab('sub-docs')" id="btn-sub-docs">Gudang File</button>
+            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload">Upload Drive</button>
+            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts">Kontak</button>
+          </div>
+        </div>
+
+        <!-- Selisih Kas -->
+        <div id="sub-kas" class="workfin-sub-content stack-16">
+          <div class="sum-tiles">
+            <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
+            <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
+            <div class="sum-tile tint-blue"><div class="s-l">Net Selisih</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
+          </div>
+          <div class="split">
+            <div class="stack-16">
+              <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
+                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span> Catat Selisih Kas</h3></div>
+                <div class="seg lg" id="kasJenisSeg">
+                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Kurang (−)</button>
+                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Lebih (+)</button>
+                </div>
+                <input type="hidden" id="kasJenis" value="Kurang">
+                <div><label class="field-label">Nominal (Rp) *</label><input type="text" inputmode="numeric" id="kasJumlah" class="field" placeholder="50.000" oninput="formatRupiahInput(this)" required style="font-size:22px; font-weight:700"></div>
+                <div class="grid-2">
+                  <div><label class="field-label">Tanggal *</label><input type="date" id="kasTanggal" class="field" required></div>
+                  <div><label class="field-label">Jam (opsional)</label><input type="time" id="kasJam" class="field"></div>
+                </div>
+                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Mis. selisih setoran nasabah…"></div>
+                <button type="submit" class="btn btn-filled btn-block"><i class="fas fa-check"></i> Simpan Selisih</button>
+              </form>
+              <div class="card card-pad stack">
+                <div class="card-head" style="margin:0"><h3><i class="fas fa-filter c-blue"></i> Filter Periode</h3><button type="button" onclick="resetKasFilter()" class="link-btn t-foot">Reset</button></div>
+                <div class="grid-2">
+                  <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
+                  <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
+                </div>
+                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Selisih</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
+              <div id="kasTableBody" class="list inset-icon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bukti Foto -->
+        <div id="sub-photos" class="workfin-sub-content hidden stack-16">
+          <input type="file" id="photoCameraInput" accept="image/*" capture="environment" class="hidden" onchange="onPhotosPicked(event)">
+          <input type="file" id="photoGalleryInput" accept="image/*" multiple class="hidden" onchange="onPhotosPicked(event)">
+          <div class="grid-2">
+            <button class="btn btn-filled btn-lg" onclick="document.getElementById('photoCameraInput').click()"><i class="fas fa-camera"></i> Ambil Foto</button>
+            <button class="btn btn-tinted btn-lg" onclick="document.getElementById('photoGalleryInput').click()"><i class="fas fa-images"></i> Dari Galeri</button>
+          </div>
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="photoSearch" class="field" placeholder="Cari nama nasabah / keterangan…" oninput="renderPhotoGallery()"></div>
+            <button class="btn btn-gray btn-sm" id="photoSelectBtn" onclick="togglePhotoSelect()">Pilih</button>
+          </div>
+          <div class="chips no-scrollbar" id="photoTypeChips"></div>
+          <div id="photoGallery"></div>
+          <div class="select-bar hidden" id="photoSelectBar">
+            <span class="t-sub semibold" id="photoSelCount">0 dipilih</span>
+            <div class="flex gap-8">
+              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-envelope"></i> Kirim</button>
+              <button class="btn btn-gray btn-sm" onclick="downloadPhotos(selectedPhotoIds())"><i class="fas fa-download"></i></button>
+              <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(selectedPhotoIds())"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catatan Kerja -->
+        <div id="sub-worknotes" class="workfin-sub-content hidden stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchWorkNoteInput" oninput="renderWorkNotes()" class="field" placeholder="Cari catatan kerja…"></div>
+            <span class="badge tint-blue" id="workNoteCountBadge">Total: 0</span>
+            <button class="icon-btn blue" onclick="openNoteSheet(null, 'workNotes')" title="Catatan baru"><i class="fas fa-pen-to-square"></i></button>
+          </div>
+          <div id="workNotesGrid" class="grid-auto"></div>
+        </div>
+
+        <!-- Gudang File -->
+        <div id="sub-docs" class="workfin-sub-content hidden stack-16">
+          <input type="file" id="docFileInput" multiple class="hidden" onchange="onDocsPicked(event)">
+          <div class="dropzone" id="docDropzone" onclick="document.getElementById('docFileInput').click()">
+            <span class="icon-tile xl bg-indigo" style="margin:0 auto 12px"><i class="fas fa-box-archive"></i></span>
+            <div class="t-headline">Tambah file ke Gudang</div>
+            <div class="t-foot muted mt-4">PDF, gambar, dokumen, teks — bisa banyak sekaligus (maks 25 MB/file)</div>
+          </div>
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="docSearch" class="field" placeholder="Cari file…" oninput="renderDocs()"></div>
+            <span class="badge tint-indigo" id="docCountBadge">0 file</span>
+          </div>
+          <div class="chips no-scrollbar" id="docFolderChips"></div>
+          <div id="docList" class="list inset-icon"></div>
+        </div>
+
+        <!-- Upload Drive -->
+        <div id="sub-upload" class="workfin-sub-content hidden">
+          <div class="split">
+            <div class="card card-pad stack">
+              <div class="center"><span class="icon-tile xl" style="margin:0 auto 10px; background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span>
+                <div class="t-title3">Upload ke Google Drive</div><div class="t-foot muted mt-4">File langsung masuk ke folder Drive-mu</div></div>
+              <input id="fileInput" type="file" multiple class="hidden" onchange="renderDriveSelection()">
+              <div class="dropzone" id="uploadDropzone" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-arrow-up c-blue" style="font-size:28px"></i>
+                <div class="t-headline mt-8" id="driveDropTitle">Pilih file</div>
+                <div class="t-foot muted mt-4" id="driveDropSub">Bisa pilih banyak file sekaligus</div>
+              </div>
+              <div id="driveFileList" class="list hidden" style="box-shadow:none; background:var(--fill3)"></div>
+              <div><label class="field-label">Nama file (opsional)</label><input id="customName" type="text" class="field" placeholder="Nama file (opsional)"></div>
+              <button id="uploadBtn" class="btn btn-filled btn-block btn-lg" onclick="startDriveUpload()"><i class="fas fa-arrow-up-from-bracket"></i> Upload</button>
+              <p id="statusText" class="center semibold t-sub" style="min-height:20px"></p>
+            </div>
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px">
+                <h2 class="t-title3">Riwayat Upload</h2>
+                <button onclick="clearUploadHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
+              </div>
+              <div id="uploadHistoryList" class="list inset-icon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacts -->
+        <div id="sub-contacts" class="workfin-sub-content hidden stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchContactInput" oninput="renderContactsList()" class="field" placeholder="Cari kontak…"></div>
+            <button class="btn btn-green btn-sm" onclick="openContactSheet()"><i class="fas fa-user-plus"></i> Baru</button>
+          </div>
+          <div id="contactsGridContainer" class="list"></div>
+        </div>
+
       </section>
 
       <!-- ================= 5. SETTINGS ================= -->
@@ -583,6 +643,23 @@
           </div>
 
           <div class="stack-24">
+            <!-- Storage -->
+            <div>
+              <div class="section-label">Penyimpanan</div>
+              <div class="card card-pad stack" id="storagePanel"></div>
+              <div class="section-foot">Data aplikasi (teks) tersimpan di Firebase Realtime Database (server Google, Singapura). Foto & file Kerja tersimpan di Cloudflare. Kuota gratis masing-masing 1 GB.</div>
+            </div>
+
+            <div>
+              <div class="section-label">Privasi Bukti Foto</div>
+              <div class="list inset-icon">
+                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-clock-rotate-left"></i></span><div class="flex-1"><div class="row-title">Hapus otomatis foto lama</div><div class="row-sub">Foto nasabah dihapus setelah umur tertentu</div></div>
+                  <select class="select" id="photoRetentionSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setPhotoRetention(this.value)">
+                    <option value="0">Tidak</option><option value="7">7 hari</option><option value="30">30 hari</option><option value="60">60 hari</option><option value="90">90 hari</option>
+                  </select></div>
+              </div>
+            </div>
+
             <!-- Data -->
             <div>
               <div class="section-label">Data & Backup</div>
@@ -651,7 +728,7 @@
       <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span>Home</span></div>
       <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-music"></i><span>Music</span></div>
       <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span>Hub</span></div>
-      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-briefcase"></i><span>Work</span></div>
+      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span>Kerja</span></div>
       <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span>Settings</span></div>
     </nav>
   </div>
@@ -871,6 +948,45 @@
         <button class="btn-plain sh-right" style="font-weight:600" onclick="closeSheet('sheetNotif')">Selesai</button>
       </div>
       <div class="sheet-body stack" id="notifInboxList"></div>
+    </div>
+  </div>
+
+  <!-- Simpan bukti foto -->
+  <div class="backdrop center-md" id="sheetPhotoSave" onclick="if(event.target===this) cancelPhotoSave()">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="cancelPhotoSave()">Batal</button>
+        <div class="sh-title">Simpan Bukti</div>
+        <button class="btn-plain sh-right" id="photoSaveBtn" style="font-weight:600" onclick="savePickedPhotos()">Simpan</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <div class="photo-strip no-scrollbar" id="photoPickPreview"></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Nasabah</span><input type="text" id="photoLabel" placeholder="Nama nasabah / keterangan"></div>
+          <div class="fl-row"><span class="fl-label">Tanggal</span><input type="date" id="photoDate"></div>
+          <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="photoNote" placeholder="Opsional"></div>
+        </div>
+        <div><div class="section-label" style="padding:0 4px 8px">Jenis Dokumen</div><div class="chips wrap" id="photoTypePick" style="overflow:visible"></div></div>
+        <div class="t-foot muted center" id="photoSaveStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Viewer foto / file -->
+  <div class="backdrop center-md" id="sheetViewer" onclick="if(event.target===this) closeViewer()">
+    <div class="sheet white" style="height:94%">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeViewer()">Tutup</button>
+        <div class="sh-title truncate" id="viewerTitle">—</div>
+        <button class="btn-plain sh-right" id="viewerMore"><i class="fas fa-ellipsis"></i></button>
+      </div>
+      <div class="sheet-body col" style="flex:1; min-height:0">
+        <div id="viewerBody" class="viewer-body"></div>
+        <div id="viewerMeta" class="t-foot muted center mt-12"></div>
+        <div class="grid-3 mt-12" id="viewerActions"></div>
+      </div>
     </div>
   </div>
 

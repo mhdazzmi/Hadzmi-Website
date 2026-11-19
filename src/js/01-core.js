@@ -17,7 +17,7 @@ const firebaseConfig = {
 const APP_AUTH = {
   enabled: true,          // false = matikan kunci login (tidak disarankan)
   loginMode: 'pin',       // 'pin' = keypad PIN 6 angka | 'password' = email + sandi
-  pinLength: 6,
+  pinLength: 8,
   ownerEmail: 'hadzmi-hub@example.com', // akun Firebase KHUSUS login PIN (bukan email pribadi); PIN = sandi akun ini
   sessionMode: 'midnight' // 'midnight' = berlaku sampai 00:00 WIB | 'rolling24h' = 24 jam sejak login
 };
@@ -51,6 +51,9 @@ let appState = {
     { id: "song_1", title: "Lofi Rain & Focus", artist: "Chill Beats", url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3", category: "Working", cover: "", lyrics: "" },
     { id: "song_2", title: "Deep Ocean Sleep", artist: "Nature Ambience", url: "https://cdn.pixabay.com/download/audio/2021/09/06/audio-14534.mp3?filename=relaxing-ocean-waves-14534.mp3", category: "Sleep", cover: "", lyrics: "" }
   ]),
+  workPhotos: readLS('app_work_photos', []),
+  workDocs: readLS('app_work_docs', []),
+  workNotes: readLS('app_work_notes', []),
   showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
 };
 
@@ -278,6 +281,9 @@ function syncToLocalStorageOnly() {
   writeLS('app_focus_history', appState.focusHistory);
   writeLS('app_music_categories', appState.musicCategories);
   writeLS('app_music_library', appState.musicLibrary);
+  writeLS('app_work_photos', appState.workPhotos);
+  writeLS('app_work_docs', appState.workDocs);
+  writeLS('app_work_notes', appState.workNotes);
   writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
 }
 
@@ -304,6 +310,9 @@ function applyRemoteSnapshot(val) {
   appState.focusHistory = val.focusHistory || [];
   appState.musicCategories = val.musicCategories || DEFAULT_CATEGORIES.slice();
   appState.musicLibrary = val.musicLibrary || [];
+  appState.workPhotos = val.workPhotos || [];
+  appState.workDocs = val.workDocs || [];
+  appState.workNotes = val.workNotes || [];
   if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
 }
 
@@ -349,8 +358,8 @@ function setConnectionStatus(state) {
 
 // ---------- NAVIGATION ----------
 let currentTabId = 'tab-dashboard';
-const HUB_TITLES = { 'sub-todo': 'To-Do', 'sub-notes': 'Mind Dump', 'sub-links': 'Bookmarks', 'sub-countdown': 'Countdown' };
-const WORK_TITLES = { 'sub-contacts': 'Kontak WA', 'sub-upload': 'Upload File', 'sub-kas': 'Cash Ledger', 'sub-focus': 'Focus Room' };
+const HUB_TITLES = { 'sub-todo': 'To-Do', 'sub-notes': 'Mind Dump', 'sub-links': 'Bookmarks', 'sub-countdown': 'Countdown', 'sub-focus': 'Focus Room' };
+const WORK_TITLES = { 'sub-kas': 'Selisih Kas', 'sub-photos': 'Bukti Foto', 'sub-worknotes': 'Catatan Kerja', 'sub-docs': 'Gudang File', 'sub-upload': 'Upload Drive', 'sub-contacts': 'Kontak WA' };
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -375,18 +384,21 @@ function setSegActive(ids, activeId) {
 function switchHubSubTab(subId) {
   document.querySelectorAll('.hub-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
-  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown'], subId);
+  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus'], subId);
   if ($('hubTitle')) $('hubTitle').textContent = HUB_TITLES[subId] || 'Hub';
   updateNavSmallTitle();
+  if (subId === 'sub-focus') renderSleepLineChart();
 }
 
 function switchWorkFinSubTab(subId) {
   document.querySelectorAll('.workfin-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
-  setSegActive(['sub-contacts', 'sub-upload', 'sub-kas', 'sub-focus'], subId);
-  if ($('workTitle')) $('workTitle').textContent = WORK_TITLES[subId] || 'Work';
+  setSegActive(['sub-kas', 'sub-photos', 'sub-worknotes', 'sub-docs', 'sub-upload', 'sub-contacts'], subId);
+  if ($('workTitle')) $('workTitle').textContent = WORK_TITLES[subId] || 'Kerja';
   updateNavSmallTitle();
-  if (subId === 'sub-focus') renderSleepLineChart();
+  if (subId === 'sub-photos') renderPhotoGallery();
+  if (subId === 'sub-docs') renderDocs();
+  if (subId !== 'sub-photos' && typeof exitPhotoSelect === 'function') exitPhotoSelect();
 }
 
 function updateNavSmallTitle() {
@@ -415,10 +427,13 @@ const SEARCH_MAP = [
   { label: 'Mind Dump', icon: 'fa-note-sticky', color: 'bg-yellow', keys: ['note', 'mind', 'catatan'], action: () => navigateFromQuickMenu('tab-hub', 'sub-notes') },
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
+  { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
+  { label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
+  { label: 'Bukti Foto', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
+  { label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
+  { label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
+  { label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
   { label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
-  { label: 'Upload File', icon: 'fa-cloud-arrow-up', color: 'bg-cyan', keys: ['upload', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
-  { label: 'Cash Ledger', icon: 'fa-wallet', color: 'bg-mint', keys: ['kas', 'cash', 'ledger', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
-  { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-focus') },
   { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'gmail'], action: () => switchTab('tab-backup') }
 ];
 function searchMatches(query) {
@@ -443,7 +458,7 @@ function renderSearchSuggestions(query) {
 function renderAllModules() {
   const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
     renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
-    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList];
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel];
   fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
 }
 

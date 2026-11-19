@@ -18,6 +18,7 @@ const MAX_EVENTS = 400;
 const OUTBOX_MAX = 60;
 const SUBS_MAX = 12;
 const SENT_TTL_MS = 40 * 86400000;
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // batas nilai KV
 
 export default {
   async fetch(request, env, ctx) {
@@ -66,6 +67,45 @@ async function handleApi(request, env, url) {
   // ---- Semua route di bawah ini wajib login (Firebase ID token milik OWNER_UID) ----
   const user = await requireAuth(request, env);
   requireKV(env);
+
+  // ---- Penyimpanan file pribadi (Bukti Foto & Gudang File) di KV ----
+  if (path === '/api/files' && method === 'POST') {
+    const len = Number(request.headers.get('Content-Length') || 0);
+    if (len > MAX_FILE_BYTES) throw httpError(413, 'File terlalu besar (maks 25 MB)');
+    const buf = await request.arrayBuffer();
+    if (!buf.byteLength) throw httpError(400, 'File kosong');
+    if (buf.byteLength > MAX_FILE_BYTES) throw httpError(413, 'File terlalu besar (maks 25 MB)');
+    let name = 'file';
+    try { name = decodeURIComponent(request.headers.get('X-File-Name') || 'file').slice(0, 200); } catch (e) {}
+    const type = (request.headers.get('Content-Type') || 'application/octet-stream').slice(0, 100);
+    const id = crypto.randomUUID();
+    await env.HUB_KV.put('file:' + id, buf, { metadata: { name, type, size: buf.byteLength, createdAt: Date.now() } });
+    return json({ id, size: buf.byteLength });
+  }
+  const fm = /^\/api\/files\/([0-9a-f-]{36})$/.exec(path);
+  if (fm && method === 'GET') {
+    const { value, metadata } = await env.HUB_KV.getWithMetadata('file:' + fm[1], 'arrayBuffer');
+    if (!value) throw httpError(404, 'File tidak ditemukan');
+    const meta = metadata || {};
+    return new Response(value, { headers: {
+      'Content-Type': meta.type || 'application/octet-stream',
+      'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(meta.name || 'file')}`,
+      'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'
+    } });
+  }
+  if (fm && method === 'DELETE') {
+    await env.HUB_KV.delete('file:' + fm[1]);
+    return json({ ok: true });
+  }
+  if (path === '/api/files-usage' && method === 'GET') {
+    let cursor, count = 0, bytes = 0;
+    do {
+      const page = await env.HUB_KV.list({ prefix: 'file:', cursor });
+      page.keys.forEach(k => { count++; bytes += (k.metadata && k.metadata.size) || 0; });
+      cursor = page.list_complete ? null : page.cursor;
+    } while (cursor);
+    return json({ count, bytes });
+  }
 
   if (path === '/api/setup-vapid' && method === 'POST') {
     const v = await getVapid(env, true);

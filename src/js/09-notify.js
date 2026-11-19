@@ -214,6 +214,7 @@ function checkReminders() {
   if (changed) writeLS(NOTIF_FIRED_KEY, fired);
 
   if (typeof syncPushSchedule === 'function') syncPushSchedule(false);
+  if (typeof applyPhotoRetention === 'function') applyPhotoRetention();
 }
 
 function initNotifications() {

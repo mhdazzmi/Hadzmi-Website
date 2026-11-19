@@ -80,19 +80,88 @@ async function deleteContactRecord(id) {
   }
 }
 
-// ---------------- UPLOAD FILE ----------------
+// ---------------- UPLOAD KE GOOGLE DRIVE (logika sama dengan uploader lama "ulad") ----------------
+const DRIVE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxtVei4HVuq0WWAO54IVthwl1AJIbSqXstWOogjobEqQkZBs_-VcNxMiZ9iDodzJ5X9bg/exec";
+function formatBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+  return (n / 1073741824).toFixed(2) + ' GB';
+}
 function logUploadedFile(file) {
   const fileSize = (file.size / 1024).toFixed(1) + ' KB'; const fileDate = new Date().toLocaleDateString('en-US');
-  appState.uploads.unshift({ id: 'up_' + Date.now(), name: file.name, size: fileSize, type: file.type || 'Document', date: fileDate });
-  saveStateToLocal(); renderUploadHistory();
-  const banner = $('uploadSuccessBanner'), bannerText = $('uploadSuccessText');
-  if (banner && bannerText) { bannerText.textContent = `Berhasil! "${file.name}" dicatat (${fileSize}).`; banner.classList.remove('hidden'); setTimeout(() => banner.classList.add('hidden'), 4000); }
-  showToast(`File "${file.name}" logged & synced!`);
+  appState.uploads.unshift({ id: 'up_' + Date.now() + Math.random().toString(36).slice(2, 5), name: file.name, size: fileSize, type: file.type || 'Document', date: fileDate });
 }
-function handleFileUpload(e) {
-  const file = e.target.files[0]; if (!file) return;
-  logUploadedFile(file);
-  e.target.value = '';
+function renderDriveSelection() {
+  const input = $('fileInput'), list = $('driveFileList');
+  const files = Array.from(input.files || []);
+  $('driveDropTitle').textContent = files.length ? `${files.length} file dipilih` : 'Pilih file';
+  $('driveDropSub').textContent = files.length ? formatBytes(files.reduce((n, f) => n + f.size, 0)) + ' total · tap untuk ganti' : 'Bisa pilih banyak file sekaligus';
+  list.classList.toggle('hidden', !files.length);
+  list.innerHTML = files.map((f, i) => {
+    const [ic, bg] = fileIconFor(f.type, f.name);
+    return `<div class="row" style="background:transparent" id="driveRow${i}"><span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span><div class="flex-1"><div class="row-title truncate">${esc(f.name)}</div><div class="row-sub">${formatBytes(f.size)}</div></div><span class="t-cap muted" id="driveRowState${i}"></span></div>`;
+  }).join('');
+  if ($('statusText')) $('statusText').textContent = '';
+}
+function setDriveStatus(text, color) { const el = $('statusText'); el.textContent = text; el.style.color = color || ''; }
+function startDriveUpload() {
+  const uploadBtn = $('uploadBtn'), fileInput = $('fileInput'), customNameInput = $('customName');
+  if (!fileInput.files.length) { iosAlert({ title: 'Pilih minimal 1 file!' }); return; }
+  const files = Array.from(fileInput.files);
+  let index = 0;
+  uploadBtn.disabled = true;
+  uploadBtn.innerHTML = '<span class="spinner"></span> Uploading...';
+  setDriveStatus('', 'var(--blue)');
+
+  function uploadNext() {
+    if (index >= files.length) {
+      setDriveStatus('YEAYYY! File berhasil di-upload!', 'var(--green)');
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = '<i class="fas fa-arrow-up-from-bracket"></i> Upload';
+      saveStateToLocal(); renderUploadHistory();
+      fileInput.value = ""; customNameInput.value = '';
+      setTimeout(renderDriveSelection, 2500);
+      showToast(`${files.length} file berhasil di-upload ke Drive!`);
+      return;
+    }
+    const file = files[index];
+    const reader = new FileReader();
+    setDriveStatus(files.length > 1 ? `Mohon menunggu yaaa... (${index + 1}/${files.length})` : 'Mohon menunggu yaaa...', 'var(--blue)');
+    const st = $('driveRowState' + index); if (st) st.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
+
+    reader.onload = function () {
+      const base64Data = reader.result.split(",")[1];
+      const ext = file.name.split(".").pop();
+      let finalCustomName = "";
+      if (customNameInput.value.trim() !== "") {
+        if (files.length > 1) finalCustomName = `${customNameInput.value}-${index + 1}.${ext}`;
+        else finalCustomName = `${customNameInput.value}.${ext}`;
+      }
+      fetch(DRIVE_UPLOAD_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ filename: file.name, customName: finalCustomName, mimeType: file.type, fileData: base64Data })
+      })
+        .then(() => {
+          const st2 = $('driveRowState' + index); if (st2) st2.innerHTML = '<i class="fas fa-circle-check c-green"></i>';
+          logUploadedFile({ name: finalCustomName || file.name, size: file.size, type: file.type });
+          index++;
+          uploadNext();
+        })
+        .catch(err => {
+          console.error(err);
+          const st3 = $('driveRowState' + index); if (st3) st3.innerHTML = '<i class="fas fa-circle-xmark c-red"></i>';
+          setDriveStatus('Waduh, file gagal diupload!', 'var(--red)');
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '<i class="fas fa-arrow-up-from-bracket"></i> Upload';
+          if (index > 0) { saveStateToLocal(); renderUploadHistory(); }
+        });
+    };
+    reader.readAsDataURL(file);
+  }
+  uploadNext();
 }
 function fileIconFor(type, name) {
   const t = (type || '') + ' ' + (name || '');
@@ -118,14 +187,23 @@ async function clearUploadHistory() {
   if (!(await iosConfirm('Hapus riwayat upload?', `${appState.uploads.length} catatan file akan dihapus.`, 'Hapus', true))) return;
   appState.uploads = []; saveStateToLocal(); renderUploadHistory(); showToast('Upload history cleared.');
 }
-function initDropzone() {
-  const dz = $('uploadDropzone'); if (!dz) return;
+function bindDrop(id, onFiles) {
+  const dz = $(id); if (!dz) return;
   ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
-  dz.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) logUploadedFile(f); });
+  dz.addEventListener('drop', e => { const fl = e.dataTransfer && e.dataTransfer.files; if (fl && fl.length) onFiles(fl); });
+}
+function initDropzone() {
+  bindDrop('uploadDropzone', fl => { $('fileInput').files = fl; renderDriveSelection(); });
+  bindDrop('docDropzone', fl => uploadDocFiles(Array.from(fl)));
 }
 
-// ---------------- CASH LEDGER ----------------
+// ---------------- SELISIH KAS ----------------
+function parseRupiahInput(v) { return parseFloat(String(v || '').replace(/[^0-9]/g, '')); }
+function formatRupiahInput(el) {
+  const n = parseRupiahInput(el.value);
+  el.value = isNaN(n) ? '' : n.toLocaleString('id-ID');
+}
 function setKasJenis(v) {
   $('kasJenis').value = v;
   $('kasJenisSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
@@ -134,12 +212,13 @@ function resetKasFilter() { $('kasFilterAwal').value = ''; $('kasFilterAkhir').v
 function saveKasRecord(e) {
   e.preventDefault();
   const tgl = $('kasTanggal').value, jenis = $('kasJenis').value;
-  const jumlah = parseFloat($('kasJumlah').value), ket = $('kasKeterangan').value.trim();
-  if (!tgl || isNaN(jumlah)) return showToast('Date and valid amount required!', false);
-  appState.kas.unshift({ id: 'kas_' + Date.now(), tanggal: tgl, jenis, jumlah, keterangan: ket });
+  const jumlah = parseRupiahInput($('kasJumlah').value), ket = $('kasKeterangan').value.trim();
+  const jam = $('kasJam') ? $('kasJam').value : '';
+  if (!tgl || isNaN(jumlah) || jumlah <= 0) return showToast('Tanggal dan nominal wajib diisi!', false);
+  appState.kas.unshift({ id: 'kas_' + Date.now(), tanggal: tgl, jam: jam || '', jenis, jumlah, keterangan: ket });
   saveStateToLocal(); renderKasData(); renderDashboardStats();
   $('tellerKasForm').reset(); setKasJenis('Kurang'); $('kasTanggal').value = wibDateStr();
-  showToast('Ledger saved & synced!');
+  showToast(`Selisih ${jenis.toLowerCase()} ${rupiah(jumlah)} tersimpan & tersinkron!`);
 }
 function getFilteredKas() {
   const a = $('kasFilterAwal') ? $('kasFilterAwal').value : '', b = $('kasFilterAkhir') ? $('kasFilterAkhir').value : '';
@@ -151,12 +230,12 @@ function renderKasData() {
   const filtered = getFilteredKas();
   filtered.forEach(k => { if (k.jenis === 'Lebih') totalLebih += k.jumlah; else totalKurang += k.jumlah; });
   list.innerHTML = filtered.length === 0
-    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada entri kas${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
+    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan selisih${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
     : filtered.map(k => {
       const plus = k.jenis === 'Lebih';
       return `<div class="row">
         <span class="icon-tile ${plus ? 'bg-green' : 'bg-red'}"><i class="fas ${plus ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i></span>
-        <div class="flex-1"><div class="row-title truncate">${esc(k.keterangan || (plus ? 'Kelebihan kas' : 'Kekurangan kas'))}</div><div class="row-sub">${esc(prettyDate(k.tanggal, true))} · ${esc(k.jenis)}</div></div>
+        <div class="flex-1"><div class="row-title truncate">${esc(k.keterangan || (plus ? 'Kelebihan kas' : 'Kekurangan kas'))}</div><div class="row-sub">${esc(prettyDate(k.tanggal, true))}${k.jam ? ' · ' + esc(k.jam) : ''} · ${esc(k.jenis)}</div></div>
         <span class="money ${plus ? 'c-green' : 'c-red'}">${plus ? '+' : '−'}${esc(rupiah(k.jumlah))}</span>
         <button onclick="deleteKasRecord('${esc(k.id)}')" class="icon-btn sm clear" style="color:var(--label3)" title="Hapus"><i class="fas fa-xmark"></i></button>
       </div>`;
@@ -305,7 +384,7 @@ function completeFocusSession(statusStr) {
     }
     if (focusMode === 'timer' && statusStr === 'Completed') {
       playChime();
-      if (typeof pushNotification === 'function') pushNotification({ key: 'focus_' + Date.now(), title: 'Sesi fokus selesai 🎉', body: `${Math.round(actualDuration / 60)} menit fokus tercatat. Waktunya istirahat sejenak.`, icon: 'fa-stopwatch', color: 'bg-indigo', pref: 'focus', action: { tab: 'tab-workfin', sub: 'sub-focus' } });
+      if (typeof pushNotification === 'function') pushNotification({ key: 'focus_' + Date.now(), title: 'Sesi fokus selesai 🎉', body: `${Math.round(actualDuration / 60)} menit fokus tercatat. Waktunya istirahat sejenak.`, icon: 'fa-stopwatch', color: 'bg-indigo', pref: 'focus', action: { tab: 'tab-hub', sub: 'sub-focus' } });
       focusStartTimeStr = ''; focusTimeSeconds = focusInitialSeconds; setFocusButtonsRunning(false); updateFocusDisplay();
     }
   }

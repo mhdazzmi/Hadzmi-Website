@@ -9,6 +9,8 @@ function renderSettingsPanel() {
   updateNotifPermissionUI();
   if ($('gmailDefaultTo')) $('gmailDefaultTo').value = getGmailDefault();
   if (typeof updatePushUI === 'function') updatePushUI();
+  if ($('photoRetentionSelect')) $('photoRetentionSelect').value = String(readLS('app_photo_retention', 0));
+  renderStoragePanel();
 }
 
 function exportDataJSON() {
@@ -55,7 +57,7 @@ async function resetAllAppData() {
   try {
     Object.keys(localStorage).filter(k => k.startsWith('app_')).forEach(k => localStorage.removeItem(k));
   } catch (err) {}
-  appState = { todos: [], countdowns: [], notes: [], kas: [], links: [], contacts: [], uploads: [], customWebLinks: [], focusHistory: [], musicCategories: DEFAULT_CATEGORIES.slice(), musicLibrary: [], showFloatingMusicDock: false };
+  appState = { todos: [], countdowns: [], notes: [], kas: [], links: [], contacts: [], uploads: [], customWebLinks: [], focusHistory: [], musicCategories: DEFAULT_CATEGORIES.slice(), musicLibrary: [], workPhotos: [], workDocs: [], workNotes: [], showFloatingMusicDock: false };
   audioEngine.pause(); audioEngine.removeAttribute('src'); currentSongIndex = -1; currentSongRefId = null; musicQueue = [];
   saveStateToLocal(); applyFloatingMusicDockVisibility(); renderAllModules(); updateMusicPlayerUI();
   showToast('All application data has been reset.');

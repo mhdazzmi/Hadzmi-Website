@@ -10,7 +10,7 @@ function updateHeaderDate() {
 function updateRealtimeClock() {
   const w = getWIBDate();
   const clock = $('heroClock');
-  if (clock) clock.textContent = `${pad2(w.getHours())}:${pad2(w.getMinutes())}`;
+  if (clock) clock.innerHTML = `${pad2(w.getHours())}:${pad2(w.getMinutes())}<span class="sec">:${pad2(w.getSeconds())}</span>`;
   if (w.getSeconds() === 0) { updateDashboardGreeting(); updateHeaderDate(); }
 }
 

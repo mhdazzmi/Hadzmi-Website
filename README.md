@@ -31,14 +31,14 @@ Sistem login sekarang memakai **Firebase Authentication**, jadi kuncinya benar-b
 2. **Buat akun khusus login PIN**
    Authentication → *Users* → **Add user**:
    - Email: `hadzmi-hub@example.com` (akun khusus, bukan email pribadi; sudah tertanam di `APP_AUTH.ownerEmail`)
-   - Password: **PIN 6 angka**-mu
+   - Password: **PIN 8 angka**-mu (panjang PIN diatur di `APP_AUTH.pinLength`)
    Salin **User UID**-nya.
 3. **Matikan pendaftaran orang lain**
    Authentication → *Settings* → *User actions* → hilangkan centang **Enable create (sign-up)**.
 4. **Kunci database** (paling penting!)
    Realtime Database → *Rules* → tempel isi `database.rules.json`, ganti `GANTI_DENGAN_UID_KAMU` dengan UID dari langkah 2 → **Publish**.
    Setelah ini hanya akunmu yang bisa membaca/menulis data. Orang lain yang tahu `apiKey` akan ditolak.
-5. Layar kunci memakai **keypad PIN 6 angka** (langsung terbuka di angka ke-6). PIN bisa diganti dari aplikasi: **Settings → Keamanan → Ganti PIN**, dan berlaku di semua perangkat. Kalau mau kembali ke email + sandi: `APP_AUTH.loginMode = 'password'`.
+5. Layar kunci memakai **keypad PIN 8 angka** (langsung terbuka di angka ke-6). PIN bisa diganti dari aplikasi: **Settings → Keamanan → Ganti PIN**, dan berlaku di semua perangkat. Kalau mau kembali ke email + sandi: `APP_AUTH.loginMode = 'password'`.
    Keamanan: Firebase otomatis memblokir sementara jika PIN salah berkali-kali (*too many requests*).
 
 Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disarankan).
@@ -53,6 +53,21 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 ---
 
 ## Fitur yang ditambahkan
+
+### 🏦 Menu Kerja (Meja Teller)
+| Sub-menu | Isi |
+|---|---|
+| **Selisih Kas** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan ke Gmail. Data lama Cash Ledger tetap ada. |
+| **Bukti Foto** | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Galeri per tanggal, filter jenis, cari nama nasabah, pilih banyak → **Kirim** (menu Bagikan iOS → Gmail, foto jadi lampiran) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
+| **Catatan** | Catatan khusus pekerjaan (terpisah dari Mind Dump). |
+| **Gudang File** | Upload banyak file sekaligus (PDF, gambar, dokumen, teks; maks 25 MB/file) ke folder (mis. "Materi BRI"); pratinjau PDF/gambar/teks, buka, unduh, kirim, ganti nama, pindah folder. |
+| **Upload Drive** | Uploader Google Drive dengan logika yang sama seperti uploader lama (Apps Script, multi-file, nama kustom `nama-1.ext`). |
+| **Kontak** | Direktori WhatsApp. |
+
+Semua file Kerja hanya bisa diakses setelah login PIN (server memeriksa token Firebase + `OWNER_UID`). Foto dimuat hanya di memori dan hilang dari perangkat saat aplikasi dikunci.
+
+### 💾 Penyimpanan (Settings → Penyimpanan)
+Menampilkan pemakaian Firebase (data aplikasi, per kategori) dan Cloudflare (foto & file), masing-masing dari kuota gratis 1 GB, plus cache perangkat.
 
 ### 🔔 Notifikasi
 Pusat notifikasi in-app (ikon lonceng) + banner gaya iOS + notifikasi sistem (setelah diizinkan):

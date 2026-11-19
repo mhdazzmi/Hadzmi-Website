@@ -404,11 +404,12 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 /* App shortcut grid */
 .app-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px 8px; }
 @media (min-width: 700px) { .app-grid { grid-template-columns: repeat(6, minmax(0,1fr)); } }
-@media (min-width: 1000px) { .app-grid { grid-template-columns: repeat(11, minmax(0,1fr)); } }
+@media (min-width: 1000px) { .app-grid { grid-template-columns: repeat(7, minmax(0,1fr)); } }
 .app-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .app-icon .icon-tile { width: 58px; height: 58px; border-radius: 15px; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); transition: transform .15s ease; }
 .app-icon:active .icon-tile { transform: scale(0.9); }
-.app-icon span { font-size: 11.5px; font-weight: 500; color: var(--label); line-height: 1.15; }
+.app-icon .app-label { font-size: 11.5px; font-weight: 500; color: var(--label); line-height: 1.15; }
+.app-icon .icon-tile, .app-icon .icon-tile i { color: #fff !important; }
 
 /* Widgets */
 .widgets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
@@ -725,7 +726,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 /* ---------- Lock Screen ---------- */
 #lockScreen {
   position: fixed; inset: 0; z-index: 2147483600; display: flex; flex-direction: column; align-items: center;
-  padding: calc(var(--safe-t) + 40px) 24px calc(var(--safe-b) + 28px); overflow-y: auto;
+  justify-content: center; padding: calc(var(--safe-t) + 24px) 24px calc(var(--safe-b) + 24px); overflow-y: auto;
   background:
     radial-gradient(90% 60% at 15% 10%, rgba(255,255,255,0.9), transparent 60%),
     radial-gradient(80% 60% at 90% 30%, rgba(175,82,222,0.28), transparent 60%),
@@ -739,7 +740,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .lock-time { font-size: 92px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; margin-top: 2px;
   background: linear-gradient(180deg, #1C1C1E, #3A3A5C); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lock-card {
-  margin-top: auto; width: 100%; max-width: 380px; padding: 22px; border-radius: 30px; text-align: center;
+  margin: auto 0; width: 100%; max-width: 380px; padding: 22px; border-radius: 30px; text-align: center;
   background: rgba(255,255,255,0.55); backdrop-filter: saturate(180%) blur(30px); -webkit-backdrop-filter: saturate(180%) blur(30px);
   border: 0.5px solid rgba(255,255,255,0.9); box-shadow: 0 20px 60px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
 }
@@ -793,14 +794,47 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .lock-card.pin-mode { padding-bottom: 18px; }
 @media (max-height: 760px) { .pin-pad { grid-template-columns: repeat(3, 66px); gap: 10px 20px; } .pin-pad button { width: 66px; height: 66px; font-size: 28px; } .lock-time { font-size: 72px; } }
 
+/* ---- v3.2 additions ---- */
+.hero-clock .sec { font-size: .55em; opacity: .75; margin-left: 2px; letter-spacing: -0.02em; }
+.seg.scroll { overflow-x: auto; flex-wrap: nowrap; }
+.seg.scroll button { flex: 1 0 auto; padding: 0 14px; }
+/* PIN-only lock: no card, centered */
+.lock-card.pin-mode { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 8px 0; }
+.lock-card.pin-mode .lock-avatar { margin: 0 auto 14px; width: 64px; height: 64px; font-size: 26px; }
+/* Photo gallery */
+.photo-day { font-size: 15px; font-weight: 700; padding: 14px 4px 8px; display: flex; justify-content: space-between; }
+.photo-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 3px; border-radius: 16px; overflow: hidden; }
+@media (min-width: 700px) { .photo-grid { grid-template-columns: repeat(5, minmax(0,1fr)); } }
+@media (min-width: 1100px) { .photo-grid { grid-template-columns: repeat(7, minmax(0,1fr)); } }
+.photo-cell { position: relative; aspect-ratio: 1; background: var(--fill); overflow: hidden; cursor: pointer; border: 0; padding: 0; }
+.photo-cell img { position: absolute; inset: 0; width: 100% !important; height: 100% !important; object-fit: cover; }
+.photo-cell .ph-tag { position: absolute; left: 5px; bottom: 5px; font-size: 10px; font-weight: 700; color: #fff; background: rgba(0,0,0,.45); padding: 2px 6px; border-radius: 6px; backdrop-filter: blur(6px); max-width: calc(100% - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.photo-cell .ph-check { position: absolute; right: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 99px; border: 2px solid #fff; background: rgba(0,0,0,.2); display: none; color: #fff; font-size: 11px; align-items: center; justify-content: center; }
+.selecting .photo-cell .ph-check { display: flex; }
+.photo-cell.sel .ph-check { background: var(--blue); }
+.photo-cell.sel img { opacity: .75; }
+.photo-cell .ph-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--label3); }
+.select-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + var(--tabbar-h) + 22px); z-index: 99997; width: calc(100% - 28px); max-width: 560px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 18px; border-radius: 999px; background: rgba(255,255,255,0.8); backdrop-filter: saturate(190%) blur(26px); -webkit-backdrop-filter: saturate(190%) blur(26px); box-shadow: 0 8px 30px rgba(0,0,0,0.14); }
+.photo-strip { display: flex; gap: 8px; overflow-x: auto; }
+.photo-strip img { width: 92px !important; height: 92px !important; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+.viewer-body { flex: 1; min-height: 240px; display: flex; align-items: center; justify-content: center; background: var(--fill3); border-radius: 18px; overflow: auto; }
+.viewer-body img { max-width: 100% !important; max-height: 70vh !important; object-fit: contain; border-radius: 12px; }
+.viewer-body iframe { width: 100%; height: 70vh; border: 0; border-radius: 12px; background: #fff; }
+.viewer-body pre { white-space: pre-wrap; word-break: break-word; font-size: 14px; padding: 16px; margin: 0; align-self: stretch; width: 100%; }
+.progress { height: 6px; border-radius: 99px; background: var(--fill); overflow: hidden; }
+.progress > div { height: 100%; background: var(--blue); border-radius: 99px; transition: width .3s; }
+/* Storage panel (iPhone Storage style) */
+.store-bar { display: flex; height: 14px; border-radius: 6px; overflow: hidden; background: var(--fill); }
+.store-bar > span { height: 100%; min-width: 2px; }
+.store-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--label2); }
+.store-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+.store-big { font-size: 20px; font-weight: 700; }
+
   </style>
 </head>
 <body>
   <!-- =================== LOCK SCREEN =================== -->
   <div id="lockScreen">
-    <div class="lock-date" id="lockDate">—</div>
-    <div class="lock-time" id="lockTime">--:--</div>
-    <div class="lock-hint" style="margin-top:10px"><i class="fas fa-lock"></i> Hadzmi Hub terkunci</div>
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
       <div class="lock-avatar"><i class="fab fa-apple"></i></div>
@@ -844,7 +878,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
         <button class="nav-btn-glass" onclick="openNotificationCenter()" aria-label="Notifikasi">
           <i class="far fa-bell"></i><span class="nav-badge hidden" id="notifBadge">0</span>
         </button>
-        <button class="nav-btn-glass" onclick="openAccountMenu()" aria-label="Akun"><i class="fas fa-user-lock"></i></button>
+        <button class="nav-btn-glass" onclick="quickLock()" aria-label="Kunci sekarang" title="Kunci sekarang"><i class="fas fa-lock"></i></button>
       </div>
     </header>
 
@@ -885,21 +919,24 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
         <div>
           <div class="flex justify-between items-center" style="padding:0 4px 12px">
             <h2 class="section-title" style="padding:0">Menu Cepat</h2>
-            <span class="t-foot muted" id="quickNavCurrentLabel">11 shortcut</span>
+            <span class="t-foot muted" id="quickNavCurrentLabel">14 shortcut</span>
           </div>
           <div class="card card-pad">
             <div class="app-grid">
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span>Home</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span>Music</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span>To-Do</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span>Mind Dump</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span>Bookmarks</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span>Countdown</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span>Kontak WA</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload')"><span class="icon-tile bg-cyan"><i class="fas fa-cloud-arrow-up"></i></span><span>Upload</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Kas')"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><span>Kas</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span>Focus</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span>Settings</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span class="app-label">Home</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="app-label">Music</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span class="app-label">To-Do</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span class="app-label">Mind Dump</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label">Bookmarks</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label">Countdown</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label">Focus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label">Selisih Kas</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Foto')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label">Bukti Foto</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label">Catatan Kerja</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-docs', 'Gudang File')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5E5CE6,#30B0C7)"><i class="fas fa-box-archive"></i></span><span class="app-label">Gudang File</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload Drive')"><span class="icon-tile bg-green" style="background:linear-gradient(135deg,#34A853,#4285F4)"><i class="fab fa-google-drive"></i></span><span class="app-label">Upload Drive</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span class="app-label">Kontak WA</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span class="app-label">Settings</span></button>
             </div>
           </div>
         </div>
@@ -909,7 +946,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do')" style="text-align:left"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div><div class="num" id="dashStatTasks">0</div><div class="lbl">Tugas Pending</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do'); taSetFilter('today')" style="text-align:left"><span class="icon-tile bg-purple"><i class="fas fa-calendar-day"></i></span><div><div class="num" id="dashStatAgendaToday">0</div><div class="lbl">Agenda Hari Ini</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-notes','Mind Dump')" style="text-align:left"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><div><div class="num" id="dashStatNotes">0</div><div class="lbl">Catatan</div></div></button>
-          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Kas')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Ledger</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Kas')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Selisih Kas</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-focus','Focus')" style="text-align:left"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div><div class="num sm" id="dashStatFocusTime">0 mins</div><div class="lbl">Total Fokus</div></div></button>
         </div>
 
@@ -1094,11 +1131,12 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
       <section id="tab-hub" class="tab-content hidden" data-title="Hub">
         <div class="page-head"><div><div class="page-eyebrow">Productivity</div><h1 class="t-large" id="hubTitle">To-Do</h1></div></div>
         <div class="subnav">
-          <div class="seg lg">
+          <div class="seg lg scroll no-scrollbar">
             <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" class="active">To-Do</button>
             <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes">Notes</button>
             <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links">Bookmarks</button>
             <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown">Countdown</button>
+            <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus">Focus</button>
           </div>
         </div>
 
@@ -1150,92 +1188,9 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
           <div id="cd-list-container" class="grid-auto" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
         </div>
-      </section>
 
-      <!-- ================= 4. WORK & FINANCE ================= -->
-      <section id="tab-workfin" class="tab-content hidden" data-title="Work & Fin">
-        <div class="page-head"><div><div class="page-eyebrow">Work & Finance</div><h1 class="t-large" id="workTitle">Kontak WA</h1></div></div>
-        <div class="subnav">
-          <div class="seg lg">
-            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts" class="active">Kontak</button>
-            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload">Upload</button>
-            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas">Kas</button>
-            <button onclick="switchWorkFinSubTab('sub-focus')" id="btn-sub-focus">Focus</button>
-          </div>
-        </div>
-
-        <!-- Contacts -->
-        <div id="sub-contacts" class="workfin-sub-content stack-16">
-          <div class="flex gap-8 items-center">
-            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchContactInput" oninput="renderContactsList()" class="field" placeholder="Cari kontak…"></div>
-            <button class="btn btn-green btn-sm" onclick="openContactSheet()"><i class="fas fa-user-plus"></i> Baru</button>
-          </div>
-          <div id="contactsGridContainer" class="list"></div>
-        </div>
-
-        <!-- Upload -->
-        <div id="sub-upload" class="workfin-sub-content hidden">
-          <div class="split">
-            <div class="card card-pad stack">
-              <div class="dropzone" id="uploadDropzone" onclick="document.getElementById('fileUploadInput').click()">
-                <input type="file" id="fileUploadInput" class="hidden" onchange="handleFileUpload(event)">
-                <span class="icon-tile xl bg-cyan" style="margin:0 auto 12px"><i class="fas fa-cloud-arrow-up"></i></span>
-                <div class="t-headline">Pilih atau seret file</div>
-                <div class="t-foot muted mt-4">File dicatat ke riwayat (nama, ukuran, tanggal)</div>
-              </div>
-              <div id="uploadSuccessBanner" class="hidden badge tint-green" style="padding:10px 14px; font-size:13px; width:100%; justify-content:center"><i class="fas fa-check-circle"></i> <span id="uploadSuccessText">File successfully uploaded!</span></div>
-            </div>
-            <div>
-              <div class="flex justify-between items-center" style="padding:0 4px 10px">
-                <h2 class="t-title3">Riwayat Upload</h2>
-                <button onclick="clearUploadHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
-              </div>
-              <div id="uploadHistoryList" class="list inset-icon"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cash Ledger -->
-        <div id="sub-kas" class="workfin-sub-content hidden stack-16">
-          <div class="sum-tiles">
-            <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
-            <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
-            <div class="sum-tile tint-blue"><div class="s-l">Net Balance</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
-          </div>
-          <div class="split">
-            <div class="stack-16">
-              <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
-                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span> Catat Selisih Kas</h3></div>
-                <div class="seg lg" id="kasJenisSeg">
-                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Kurang (−)</button>
-                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Lebih (+)</button>
-                </div>
-                <input type="hidden" id="kasJenis" value="Kurang">
-                <div class="grid-2">
-                  <div><label class="field-label">Tanggal *</label><input type="date" id="kasTanggal" class="field" required></div>
-                  <div><label class="field-label">Jumlah (IDR) *</label><input type="number" inputmode="numeric" id="kasJumlah" class="field" placeholder="50000" required></div>
-                </div>
-                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Detail transaksi…"></div>
-                <button type="submit" class="btn btn-filled btn-block"><i class="fas fa-check"></i> Simpan Entri</button>
-              </form>
-              <div class="card card-pad stack">
-                <div class="card-head" style="margin:0"><h3><i class="fas fa-filter c-blue"></i> Filter Periode</h3><button type="button" onclick="resetKasFilter()" class="link-btn t-foot">Reset</button></div>
-                <div class="grid-2">
-                  <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
-                  <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
-                </div>
-                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Kas</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
-              <div id="kasTableBody" class="list inset-icon"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Focus & Sleep -->
-        <div id="sub-focus" class="workfin-sub-content hidden">
+        <!-- Focus & Sleep (pindah ke Hub) -->
+        <div id="sub-focus" class="hub-sub-content hidden">
           <div class="split">
             <div class="sticky-col">
               <div id="focusRoomCard" class="card card-pad focus-card center stack-16">
@@ -1289,6 +1244,148 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- ================= 4. KERJA (Meja Teller) ================= -->
+      <section id="tab-workfin" class="tab-content hidden" data-title="Kerja">
+        <div class="page-head"><div><div class="page-eyebrow">Meja Teller</div><h1 class="t-large" id="workTitle">Selisih Kas</h1></div></div>
+        <div class="subnav">
+          <div class="seg lg scroll no-scrollbar">
+            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" class="active">Selisih Kas</button>
+            <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos">Bukti Foto</button>
+            <button onclick="switchWorkFinSubTab('sub-worknotes')" id="btn-sub-worknotes">Catatan</button>
+            <button onclick="switchWorkFinSubTab('sub-docs')" id="btn-sub-docs">Gudang File</button>
+            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload">Upload Drive</button>
+            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts">Kontak</button>
+          </div>
+        </div>
+
+        <!-- Selisih Kas -->
+        <div id="sub-kas" class="workfin-sub-content stack-16">
+          <div class="sum-tiles">
+            <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
+            <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
+            <div class="sum-tile tint-blue"><div class="s-l">Net Selisih</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
+          </div>
+          <div class="split">
+            <div class="stack-16">
+              <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
+                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span> Catat Selisih Kas</h3></div>
+                <div class="seg lg" id="kasJenisSeg">
+                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Kurang (−)</button>
+                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Lebih (+)</button>
+                </div>
+                <input type="hidden" id="kasJenis" value="Kurang">
+                <div><label class="field-label">Nominal (Rp) *</label><input type="text" inputmode="numeric" id="kasJumlah" class="field" placeholder="50.000" oninput="formatRupiahInput(this)" required style="font-size:22px; font-weight:700"></div>
+                <div class="grid-2">
+                  <div><label class="field-label">Tanggal *</label><input type="date" id="kasTanggal" class="field" required></div>
+                  <div><label class="field-label">Jam (opsional)</label><input type="time" id="kasJam" class="field"></div>
+                </div>
+                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Mis. selisih setoran nasabah…"></div>
+                <button type="submit" class="btn btn-filled btn-block"><i class="fas fa-check"></i> Simpan Selisih</button>
+              </form>
+              <div class="card card-pad stack">
+                <div class="card-head" style="margin:0"><h3><i class="fas fa-filter c-blue"></i> Filter Periode</h3><button type="button" onclick="resetKasFilter()" class="link-btn t-foot">Reset</button></div>
+                <div class="grid-2">
+                  <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
+                  <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
+                </div>
+                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Selisih</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
+              <div id="kasTableBody" class="list inset-icon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bukti Foto -->
+        <div id="sub-photos" class="workfin-sub-content hidden stack-16">
+          <input type="file" id="photoCameraInput" accept="image/*" capture="environment" class="hidden" onchange="onPhotosPicked(event)">
+          <input type="file" id="photoGalleryInput" accept="image/*" multiple class="hidden" onchange="onPhotosPicked(event)">
+          <div class="grid-2">
+            <button class="btn btn-filled btn-lg" onclick="document.getElementById('photoCameraInput').click()"><i class="fas fa-camera"></i> Ambil Foto</button>
+            <button class="btn btn-tinted btn-lg" onclick="document.getElementById('photoGalleryInput').click()"><i class="fas fa-images"></i> Dari Galeri</button>
+          </div>
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="photoSearch" class="field" placeholder="Cari nama nasabah / keterangan…" oninput="renderPhotoGallery()"></div>
+            <button class="btn btn-gray btn-sm" id="photoSelectBtn" onclick="togglePhotoSelect()">Pilih</button>
+          </div>
+          <div class="chips no-scrollbar" id="photoTypeChips"></div>
+          <div id="photoGallery"></div>
+          <div class="select-bar hidden" id="photoSelectBar">
+            <span class="t-sub semibold" id="photoSelCount">0 dipilih</span>
+            <div class="flex gap-8">
+              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-envelope"></i> Kirim</button>
+              <button class="btn btn-gray btn-sm" onclick="downloadPhotos(selectedPhotoIds())"><i class="fas fa-download"></i></button>
+              <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(selectedPhotoIds())"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catatan Kerja -->
+        <div id="sub-worknotes" class="workfin-sub-content hidden stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchWorkNoteInput" oninput="renderWorkNotes()" class="field" placeholder="Cari catatan kerja…"></div>
+            <span class="badge tint-blue" id="workNoteCountBadge">Total: 0</span>
+            <button class="icon-btn blue" onclick="openNoteSheet(null, 'workNotes')" title="Catatan baru"><i class="fas fa-pen-to-square"></i></button>
+          </div>
+          <div id="workNotesGrid" class="grid-auto"></div>
+        </div>
+
+        <!-- Gudang File -->
+        <div id="sub-docs" class="workfin-sub-content hidden stack-16">
+          <input type="file" id="docFileInput" multiple class="hidden" onchange="onDocsPicked(event)">
+          <div class="dropzone" id="docDropzone" onclick="document.getElementById('docFileInput').click()">
+            <span class="icon-tile xl bg-indigo" style="margin:0 auto 12px"><i class="fas fa-box-archive"></i></span>
+            <div class="t-headline">Tambah file ke Gudang</div>
+            <div class="t-foot muted mt-4">PDF, gambar, dokumen, teks — bisa banyak sekaligus (maks 25 MB/file)</div>
+          </div>
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="docSearch" class="field" placeholder="Cari file…" oninput="renderDocs()"></div>
+            <span class="badge tint-indigo" id="docCountBadge">0 file</span>
+          </div>
+          <div class="chips no-scrollbar" id="docFolderChips"></div>
+          <div id="docList" class="list inset-icon"></div>
+        </div>
+
+        <!-- Upload Drive -->
+        <div id="sub-upload" class="workfin-sub-content hidden">
+          <div class="split">
+            <div class="card card-pad stack">
+              <div class="center"><span class="icon-tile xl" style="margin:0 auto 10px; background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span>
+                <div class="t-title3">Upload ke Google Drive</div><div class="t-foot muted mt-4">File langsung masuk ke folder Drive-mu</div></div>
+              <input id="fileInput" type="file" multiple class="hidden" onchange="renderDriveSelection()">
+              <div class="dropzone" id="uploadDropzone" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-arrow-up c-blue" style="font-size:28px"></i>
+                <div class="t-headline mt-8" id="driveDropTitle">Pilih file</div>
+                <div class="t-foot muted mt-4" id="driveDropSub">Bisa pilih banyak file sekaligus</div>
+              </div>
+              <div id="driveFileList" class="list hidden" style="box-shadow:none; background:var(--fill3)"></div>
+              <div><label class="field-label">Nama file (opsional)</label><input id="customName" type="text" class="field" placeholder="Nama file (opsional)"></div>
+              <button id="uploadBtn" class="btn btn-filled btn-block btn-lg" onclick="startDriveUpload()"><i class="fas fa-arrow-up-from-bracket"></i> Upload</button>
+              <p id="statusText" class="center semibold t-sub" style="min-height:20px"></p>
+            </div>
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px">
+                <h2 class="t-title3">Riwayat Upload</h2>
+                <button onclick="clearUploadHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
+              </div>
+              <div id="uploadHistoryList" class="list inset-icon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacts -->
+        <div id="sub-contacts" class="workfin-sub-content hidden stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchContactInput" oninput="renderContactsList()" class="field" placeholder="Cari kontak…"></div>
+            <button class="btn btn-green btn-sm" onclick="openContactSheet()"><i class="fas fa-user-plus"></i> Baru</button>
+          </div>
+          <div id="contactsGridContainer" class="list"></div>
+        </div>
+
       </section>
 
       <!-- ================= 5. SETTINGS ================= -->
@@ -1352,6 +1449,23 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
 
           <div class="stack-24">
+            <!-- Storage -->
+            <div>
+              <div class="section-label">Penyimpanan</div>
+              <div class="card card-pad stack" id="storagePanel"></div>
+              <div class="section-foot">Data aplikasi (teks) tersimpan di Firebase Realtime Database (server Google, Singapura). Foto & file Kerja tersimpan di Cloudflare. Kuota gratis masing-masing 1 GB.</div>
+            </div>
+
+            <div>
+              <div class="section-label">Privasi Bukti Foto</div>
+              <div class="list inset-icon">
+                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-clock-rotate-left"></i></span><div class="flex-1"><div class="row-title">Hapus otomatis foto lama</div><div class="row-sub">Foto nasabah dihapus setelah umur tertentu</div></div>
+                  <select class="select" id="photoRetentionSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setPhotoRetention(this.value)">
+                    <option value="0">Tidak</option><option value="7">7 hari</option><option value="30">30 hari</option><option value="60">60 hari</option><option value="90">90 hari</option>
+                  </select></div>
+              </div>
+            </div>
+
             <!-- Data -->
             <div>
               <div class="section-label">Data & Backup</div>
@@ -1420,7 +1534,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
       <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span>Home</span></div>
       <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-music"></i><span>Music</span></div>
       <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span>Hub</span></div>
-      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-briefcase"></i><span>Work</span></div>
+      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span>Kerja</span></div>
       <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span>Settings</span></div>
     </nav>
   </div>
@@ -1643,6 +1757,45 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
     </div>
   </div>
 
+  <!-- Simpan bukti foto -->
+  <div class="backdrop center-md" id="sheetPhotoSave" onclick="if(event.target===this) cancelPhotoSave()">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="cancelPhotoSave()">Batal</button>
+        <div class="sh-title">Simpan Bukti</div>
+        <button class="btn-plain sh-right" id="photoSaveBtn" style="font-weight:600" onclick="savePickedPhotos()">Simpan</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <div class="photo-strip no-scrollbar" id="photoPickPreview"></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Nasabah</span><input type="text" id="photoLabel" placeholder="Nama nasabah / keterangan"></div>
+          <div class="fl-row"><span class="fl-label">Tanggal</span><input type="date" id="photoDate"></div>
+          <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="photoNote" placeholder="Opsional"></div>
+        </div>
+        <div><div class="section-label" style="padding:0 4px 8px">Jenis Dokumen</div><div class="chips wrap" id="photoTypePick" style="overflow:visible"></div></div>
+        <div class="t-foot muted center" id="photoSaveStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Viewer foto / file -->
+  <div class="backdrop center-md" id="sheetViewer" onclick="if(event.target===this) closeViewer()">
+    <div class="sheet white" style="height:94%">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeViewer()">Tutup</button>
+        <div class="sh-title truncate" id="viewerTitle">—</div>
+        <button class="btn-plain sh-right" id="viewerMore"><i class="fas fa-ellipsis"></i></button>
+      </div>
+      <div class="sheet-body col" style="flex:1; min-height:0">
+        <div id="viewerBody" class="viewer-body"></div>
+        <div id="viewerMeta" class="t-foot muted center mt-12"></div>
+        <div class="grid-3 mt-12" id="viewerActions"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Full Screen Player -->
   <div class="fullplayer" id="fullPlayer">
     <div class="fp-bg fallback" id="fpBg"></div>
@@ -1707,7 +1860,7 @@ const firebaseConfig = {
 const APP_AUTH = {
   enabled: true,          // false = matikan kunci login (tidak disarankan)
   loginMode: 'pin',       // 'pin' = keypad PIN 6 angka | 'password' = email + sandi
-  pinLength: 6,
+  pinLength: 8,
   ownerEmail: 'hadzmi-hub@example.com', // akun Firebase KHUSUS login PIN (bukan email pribadi); PIN = sandi akun ini
   sessionMode: 'midnight' // 'midnight' = berlaku sampai 00:00 WIB | 'rolling24h' = 24 jam sejak login
 };
@@ -1741,6 +1894,9 @@ let appState = {
     { id: "song_1", title: "Lofi Rain & Focus", artist: "Chill Beats", url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3", category: "Working", cover: "", lyrics: "" },
     { id: "song_2", title: "Deep Ocean Sleep", artist: "Nature Ambience", url: "https://cdn.pixabay.com/download/audio/2021/09/06/audio-14534.mp3?filename=relaxing-ocean-waves-14534.mp3", category: "Sleep", cover: "", lyrics: "" }
   ]),
+  workPhotos: readLS('app_work_photos', []),
+  workDocs: readLS('app_work_docs', []),
+  workNotes: readLS('app_work_notes', []),
   showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
 };
 
@@ -1968,6 +2124,9 @@ function syncToLocalStorageOnly() {
   writeLS('app_focus_history', appState.focusHistory);
   writeLS('app_music_categories', appState.musicCategories);
   writeLS('app_music_library', appState.musicLibrary);
+  writeLS('app_work_photos', appState.workPhotos);
+  writeLS('app_work_docs', appState.workDocs);
+  writeLS('app_work_notes', appState.workNotes);
   writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
 }
 
@@ -1994,6 +2153,9 @@ function applyRemoteSnapshot(val) {
   appState.focusHistory = val.focusHistory || [];
   appState.musicCategories = val.musicCategories || DEFAULT_CATEGORIES.slice();
   appState.musicLibrary = val.musicLibrary || [];
+  appState.workPhotos = val.workPhotos || [];
+  appState.workDocs = val.workDocs || [];
+  appState.workNotes = val.workNotes || [];
   if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
 }
 
@@ -2039,8 +2201,8 @@ function setConnectionStatus(state) {
 
 // ---------- NAVIGATION ----------
 let currentTabId = 'tab-dashboard';
-const HUB_TITLES = { 'sub-todo': 'To-Do', 'sub-notes': 'Mind Dump', 'sub-links': 'Bookmarks', 'sub-countdown': 'Countdown' };
-const WORK_TITLES = { 'sub-contacts': 'Kontak WA', 'sub-upload': 'Upload File', 'sub-kas': 'Cash Ledger', 'sub-focus': 'Focus Room' };
+const HUB_TITLES = { 'sub-todo': 'To-Do', 'sub-notes': 'Mind Dump', 'sub-links': 'Bookmarks', 'sub-countdown': 'Countdown', 'sub-focus': 'Focus Room' };
+const WORK_TITLES = { 'sub-kas': 'Selisih Kas', 'sub-photos': 'Bukti Foto', 'sub-worknotes': 'Catatan Kerja', 'sub-docs': 'Gudang File', 'sub-upload': 'Upload Drive', 'sub-contacts': 'Kontak WA' };
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -2065,18 +2227,21 @@ function setSegActive(ids, activeId) {
 function switchHubSubTab(subId) {
   document.querySelectorAll('.hub-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
-  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown'], subId);
+  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus'], subId);
   if ($('hubTitle')) $('hubTitle').textContent = HUB_TITLES[subId] || 'Hub';
   updateNavSmallTitle();
+  if (subId === 'sub-focus') renderSleepLineChart();
 }
 
 function switchWorkFinSubTab(subId) {
   document.querySelectorAll('.workfin-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
-  setSegActive(['sub-contacts', 'sub-upload', 'sub-kas', 'sub-focus'], subId);
-  if ($('workTitle')) $('workTitle').textContent = WORK_TITLES[subId] || 'Work';
+  setSegActive(['sub-kas', 'sub-photos', 'sub-worknotes', 'sub-docs', 'sub-upload', 'sub-contacts'], subId);
+  if ($('workTitle')) $('workTitle').textContent = WORK_TITLES[subId] || 'Kerja';
   updateNavSmallTitle();
-  if (subId === 'sub-focus') renderSleepLineChart();
+  if (subId === 'sub-photos') renderPhotoGallery();
+  if (subId === 'sub-docs') renderDocs();
+  if (subId !== 'sub-photos' && typeof exitPhotoSelect === 'function') exitPhotoSelect();
 }
 
 function updateNavSmallTitle() {
@@ -2105,10 +2270,13 @@ const SEARCH_MAP = [
   { label: 'Mind Dump', icon: 'fa-note-sticky', color: 'bg-yellow', keys: ['note', 'mind', 'catatan'], action: () => navigateFromQuickMenu('tab-hub', 'sub-notes') },
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
+  { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
+  { label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
+  { label: 'Bukti Foto', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
+  { label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
+  { label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
+  { label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
   { label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
-  { label: 'Upload File', icon: 'fa-cloud-arrow-up', color: 'bg-cyan', keys: ['upload', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
-  { label: 'Cash Ledger', icon: 'fa-wallet', color: 'bg-mint', keys: ['kas', 'cash', 'ledger', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
-  { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-focus') },
   { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'gmail'], action: () => switchTab('tab-backup') }
 ];
 function searchMatches(query) {
@@ -2133,7 +2301,7 @@ function renderSearchSuggestions(query) {
 function renderAllModules() {
   const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
     renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
-    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList];
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel];
   fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
 }
 
@@ -2192,6 +2360,7 @@ let pinBuffer = '';
 let pinBusy = false;
 function renderPinDots() {
   const dots = $('pinDots'); if (!dots) return;
+  if (dots.children.length !== APP_AUTH.pinLength) dots.innerHTML = '<span></span>'.repeat(APP_AUTH.pinLength);
   dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('on', i < pinBuffer.length));
 }
 function pinInput(digit) {
@@ -2332,6 +2501,12 @@ function updateSessionUI() {
   if (chip) chip.innerHTML = APP_AUTH.enabled && exp ? `<i class="fas fa-lock-open"></i> Sesi s/d ${formatExpiry(exp).split(' (')[0]}` : '<i class="fas fa-lock-open"></i> Sesi aktif';
 }
 
+function quickLock() {
+  if (!APP_AUTH.enabled) return showToast('Kunci login sedang dinonaktifkan di konfigurasi.', false);
+  haptic(15);
+  performLock('');
+}
+
 async function lockAppNow(auto) {
   if (!APP_AUTH.enabled) return showToast('Kunci login sedang dinonaktifkan di konfigurasi.', false);
   if (auto !== true) {
@@ -2459,7 +2634,7 @@ function updateHeaderDate() {
 function updateRealtimeClock() {
   const w = getWIBDate();
   const clock = $('heroClock');
-  if (clock) clock.textContent = `${pad2(w.getHours())}:${pad2(w.getMinutes())}`;
+  if (clock) clock.innerHTML = `${pad2(w.getHours())}:${pad2(w.getMinutes())}<span class="sec">:${pad2(w.getSeconds())}</span>`;
   if (w.getSeconds() === 0) { updateDashboardGreeting(); updateHeaderDate(); }
 }
 
@@ -3704,14 +3879,22 @@ async function taDeleteFromSheet() {
    06 · HUB — Mind Dump (Notes), Bookmarks, Countdown
    ========================================================= */
 
-// ---------------- MIND DUMP ----------------
-function openNoteSheet(id) {
-  const note = id ? appState.notes.find(n => n.id === id) : null;
+// ---------------- MIND DUMP & CATATAN KERJA ----------------
+// coll: 'notes' (Mind Dump) atau 'workNotes' (Catatan Kerja) — struktur data sama.
+let noteColl = 'notes';
+function noteList(coll) { return appState[coll || 'notes'] || (appState[coll] = []); }
+function noteArg(coll) { return coll && coll !== 'notes' ? `, '${coll}'` : ''; }
+function rerenderNotes(coll) { if (coll === 'workNotes') renderWorkNotes(); else renderNotesList(); renderDashboardStats(); }
+
+function openNoteSheet(id, coll) {
+  noteColl = coll || 'notes';
+  const note = id ? noteList(noteColl).find(n => n.id === id) : null;
   $('noteEditId').value = note ? note.id : '';
   $('noteTitle').value = note ? (note.title || '') : '';
   $('noteContent').value = note ? note.content : '';
   $('noteTag').value = note ? (note.tag || '') : '';
-  $('noteSheetTitle').textContent = note ? 'Edit Catatan' : 'Catatan Baru';
+  const kind = noteColl === 'workNotes' ? 'Catatan Kerja' : 'Catatan';
+  $('noteSheetTitle').textContent = note ? `Edit ${kind}` : `${kind} Baru`;
   closeSheet('sheetNoteView');
   openSheet('sheetNote');
   setTimeout(() => $(note ? 'noteContent' : 'noteTitle').focus(), 350);
@@ -3719,86 +3902,97 @@ function openNoteSheet(id) {
 function saveNoteRecord() {
   const content = $('noteContent').value.trim();
   if (!content) return showToast('Content required!', false);
+  const list = noteList(noteColl);
   const editId = $('noteEditId').value;
   const title = $('noteTitle').value.trim() || '', tag = $('noteTag').value.trim();
-  if (editId && appState.notes.some(n => n.id === editId)) {
-    const n = appState.notes.find(x => x.id === editId);
+  if (editId && list.some(n => n.id === editId)) {
+    const n = list.find(x => x.id === editId);
     n.title = title; n.content = content; n.tag = tag;
     showToast('Note updated & synced!');
   } else {
-    appState.notes.unshift({ id: 'note_' + Date.now(), title, content, tag, isPinned: false, date: new Date().toLocaleDateString('en-US') });
+    list.unshift({ id: 'note_' + Date.now(), title, content, tag, isPinned: false, date: new Date().toLocaleDateString('en-US') });
     showToast('Note saved & synced!');
   }
   saveStateToLocal();
   $('noteEditId').value = ''; $('noteTitle').value = ''; $('noteContent').value = ''; $('noteTag').value = '';
-  renderNotesList(); renderDashboardStats();
+  rerenderNotes(noteColl);
   closeSheet('sheetNote');
 }
-function copyNoteText(id) {
-  const note = appState.notes.find(n => n.id === id);
+function copyNoteText(id, coll) {
+  const note = noteList(coll).find(n => n.id === id);
   if (note) { copyText((note.title ? note.title + '\n\n' : '') + note.content); showToast('Note copied to clipboard!'); }
 }
-function editNoteRecord(id) { openNoteSheet(id); }
-function togglePinNote(id) {
-  const note = appState.notes.find(n => n.id === id);
-  if (note) { note.isPinned = !note.isPinned; saveStateToLocal(); renderNotesList(); showToast(note.isPinned ? 'Note pinned!' : 'Note unpinned.'); if ($('sheetNoteView').classList.contains('open')) viewNote(id); }
+function editNoteRecord(id, coll) { openNoteSheet(id, coll); }
+function togglePinNote(id, coll) {
+  const note = noteList(coll).find(n => n.id === id);
+  if (note) { note.isPinned = !note.isPinned; saveStateToLocal(); rerenderNotes(coll); showToast(note.isPinned ? 'Note pinned!' : 'Note unpinned.'); if ($('sheetNoteView').classList.contains('open')) viewNote(id, coll); }
 }
-function renderNotesList() {
-  const container = $('notesGridContainer'); if (!container) return;
-  const search = ($('searchNoteInput').value || '').toLowerCase();
-  $('noteCountBadge').textContent = 'Total: ' + appState.notes.length;
-  const filtered = appState.notes.filter(n => ((n.title || '') + ' ' + n.content + ' ' + (n.tag || '')).toLowerCase().includes(search));
+function renderNoteCards(coll, container, search, emptyIcon) {
+  const filtered = noteList(coll).filter(n => ((n.title || '') + ' ' + n.content + ' ' + (n.tag || '')).toLowerCase().includes(search));
   filtered.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="card" style="grid-column:1/-1"><div class="empty"><i class="fas fa-note-sticky"></i><div class="e-title">Belum ada catatan</div><div class="e-sub">Tap <i class="fas fa-pen-to-square"></i> untuk menulis.</div></div></div>`;
+    container.innerHTML = `<div class="card" style="grid-column:1/-1"><div class="empty"><i class="fas ${emptyIcon}"></i><div class="e-title">Belum ada catatan</div><div class="e-sub">Tap <i class="fas fa-pen-to-square"></i> untuk menulis.</div></div></div>`;
     return;
   }
+  const c = noteArg(coll);
   container.innerHTML = filtered.map(note => {
-    const isLong = note.content.length > 180;
+    const isLong = note.content.length > 180; const id = esc(note.id);
     return `
-      <div class="note-card ${note.isPinned ? 'pinned' : ''}" onclick="viewNote('${esc(note.id)}')">
+      <div class="note-card ${note.isPinned ? 'pinned' : ''}" onclick="viewNote('${id}'${c})">
         <div class="flex justify-between items-center gap-8">
-          <div class="flex items-center gap-6">${note.isPinned ? '<i class="fas fa-thumbtack" style="color:#E0A800"></i>' : ''}${note.tag ? `<span class="badge tint-yellow">${esc(note.tag)}</span>` : ''}</div>
+          <div class="flex items-center gap-6">${note.isPinned ? '<i class="fas fa-thumbtack" style="color:#E0A800"></i>' : ''}${note.tag ? `<span class="badge ${coll === 'workNotes' ? 'tint-blue' : 'tint-yellow'}">${esc(note.tag)}</span>` : ''}</div>
           <span class="t-cap muted">${esc(note.date || '')}</span>
         </div>
         ${note.title ? `<div class="n-title">${esc(note.title)}</div>` : ''}
         <div class="n-body">${esc(isLong ? note.content.slice(0, 180) + '…' : note.content)}</div>
         <div class="n-foot" onclick="event.stopPropagation()">
-          <button onclick="togglePinNote('${esc(note.id)}')" class="icon-btn sm ${note.isPinned ? '' : 'clear'}" style="${note.isPinned ? 'color:#C08A00; background:rgba(255,204,0,.2)' : 'color:var(--label2)'}" title="Pin"><i class="fas fa-thumbtack"></i></button>
+          <button onclick="togglePinNote('${id}'${c})" class="icon-btn sm ${note.isPinned ? '' : 'clear'}" style="${note.isPinned ? 'color:#C08A00; background:rgba(255,204,0,.2)' : 'color:var(--label2)'}" title="Pin"><i class="fas fa-thumbtack"></i></button>
           <div class="flex gap-4">
-            <button onclick="copyNoteText('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--label2)" title="Salin"><i class="far fa-copy"></i></button>
-            <button onclick="shareNote('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--label2)" title="Gmail"><i class="far fa-envelope"></i></button>
-            <button onclick="editNoteRecord('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--label2)" title="Edit"><i class="fas fa-pen"></i></button>
-            <button onclick="deleteNoteRecord('${esc(note.id)}')" class="icon-btn sm clear" style="color:var(--red)" title="Hapus"><i class="far fa-trash-can"></i></button>
+            <button onclick="copyNoteText('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Salin"><i class="far fa-copy"></i></button>
+            <button onclick="shareNote('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Gmail"><i class="far fa-envelope"></i></button>
+            <button onclick="editNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Edit"><i class="fas fa-pen"></i></button>
+            <button onclick="deleteNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--red)" title="Hapus"><i class="far fa-trash-can"></i></button>
           </div>
         </div>
       </div>`;
   }).join('');
 }
-function viewNote(id) {
-  const note = appState.notes.find(n => n.id === id); if (!note) return;
+function renderNotesList() {
+  const container = $('notesGridContainer'); if (!container) return;
+  $('noteCountBadge').textContent = 'Total: ' + appState.notes.length;
+  renderNoteCards('notes', container, ($('searchNoteInput').value || '').toLowerCase(), 'fa-note-sticky');
+}
+function renderWorkNotes() {
+  const container = $('workNotesGrid'); if (!container) return;
+  $('workNoteCountBadge').textContent = 'Total: ' + noteList('workNotes').length;
+  renderNoteCards('workNotes', container, ($('searchWorkNoteInput').value || '').toLowerCase(), 'fa-clipboard');
+}
+function viewNote(id, coll) {
+  const note = noteList(coll).find(n => n.id === id); if (!note) return;
+  const c = noteArg(coll), sid = esc(note.id);
   $('noteViewBody').innerHTML = `
     <div class="flex items-center gap-8 wrap" style="margin-bottom:10px">${note.isPinned ? '<span class="badge tint-yellow"><i class="fas fa-thumbtack"></i> Pinned</span>' : ''}${note.tag ? `<span class="badge tint-yellow">${esc(note.tag)}</span>` : ''}<span class="t-cap muted">${esc(note.date || '')}</span></div>
     ${note.title ? `<h2 class="t-title2" style="margin-bottom:10px">${esc(note.title)}</h2>` : ''}
     <div class="t-callout pre" style="line-height:1.55">${esc(note.content)}</div>
     <div class="grid-2 mt-28">
-      <button class="btn btn-gray btn-sm" onclick="editNoteRecord('${esc(note.id)}')"><i class="fas fa-pen"></i> Edit</button>
-      <button class="btn btn-tinted btn-sm" onclick="shareNote('${esc(note.id)}')"><i class="fas fa-envelope"></i> Gmail</button>
+      <button class="btn btn-gray btn-sm" onclick="editNoteRecord('${sid}'${c})"><i class="fas fa-pen"></i> Edit</button>
+      <button class="btn btn-tinted btn-sm" onclick="shareNote('${sid}'${c})"><i class="fas fa-envelope"></i> Gmail</button>
     </div>`;
   $('noteViewMore').onclick = () => openActionSheet({
     title: note.title || 'Catatan', actions: [
-      { text: note.isPinned ? 'Lepas Pin' : 'Pin Catatan', icon: 'fas fa-thumbtack', onClick: () => togglePinNote(id) },
-      { text: 'Salin Teks', icon: 'far fa-copy', onClick: () => copyNoteText(id) },
-      { text: 'Hapus', icon: 'far fa-trash-can', destructive: true, onClick: () => deleteNoteRecord(id) }
+      { text: note.isPinned ? 'Lepas Pin' : 'Pin Catatan', icon: 'fas fa-thumbtack', onClick: () => togglePinNote(id, coll) },
+      { text: 'Salin Teks', icon: 'far fa-copy', onClick: () => copyNoteText(id, coll) },
+      { text: 'Hapus', icon: 'far fa-trash-can', destructive: true, onClick: () => deleteNoteRecord(id, coll) }
     ]
   });
   openSheet('sheetNoteView');
 }
-async function deleteNoteRecord(id) {
-  const note = appState.notes.find(n => n.id === id); if (!note) return;
+async function deleteNoteRecord(id, coll) {
+  const list = noteList(coll);
+  const note = list.find(n => n.id === id); if (!note) return;
   if (!(await iosConfirm('Hapus catatan?', note.title || note.content.slice(0, 60), 'Hapus', true))) return;
-  appState.notes = appState.notes.filter(n => n.id !== id);
-  saveStateToLocal(); renderNotesList(); renderDashboardStats();
+  appState[coll || 'notes'] = list.filter(n => n.id !== id);
+  saveStateToLocal(); rerenderNotes(coll);
   closeSheet('sheetNoteView');
   showToast('Note deleted.');
 }
@@ -4078,19 +4272,88 @@ async function deleteContactRecord(id) {
   }
 }
 
-// ---------------- UPLOAD FILE ----------------
+// ---------------- UPLOAD KE GOOGLE DRIVE (logika sama dengan uploader lama "ulad") ----------------
+const DRIVE_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbxtVei4HVuq0WWAO54IVthwl1AJIbSqXstWOogjobEqQkZBs_-VcNxMiZ9iDodzJ5X9bg/exec";
+function formatBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+  return (n / 1073741824).toFixed(2) + ' GB';
+}
 function logUploadedFile(file) {
   const fileSize = (file.size / 1024).toFixed(1) + ' KB'; const fileDate = new Date().toLocaleDateString('en-US');
-  appState.uploads.unshift({ id: 'up_' + Date.now(), name: file.name, size: fileSize, type: file.type || 'Document', date: fileDate });
-  saveStateToLocal(); renderUploadHistory();
-  const banner = $('uploadSuccessBanner'), bannerText = $('uploadSuccessText');
-  if (banner && bannerText) { bannerText.textContent = `Berhasil! "${file.name}" dicatat (${fileSize}).`; banner.classList.remove('hidden'); setTimeout(() => banner.classList.add('hidden'), 4000); }
-  showToast(`File "${file.name}" logged & synced!`);
+  appState.uploads.unshift({ id: 'up_' + Date.now() + Math.random().toString(36).slice(2, 5), name: file.name, size: fileSize, type: file.type || 'Document', date: fileDate });
 }
-function handleFileUpload(e) {
-  const file = e.target.files[0]; if (!file) return;
-  logUploadedFile(file);
-  e.target.value = '';
+function renderDriveSelection() {
+  const input = $('fileInput'), list = $('driveFileList');
+  const files = Array.from(input.files || []);
+  $('driveDropTitle').textContent = files.length ? `${files.length} file dipilih` : 'Pilih file';
+  $('driveDropSub').textContent = files.length ? formatBytes(files.reduce((n, f) => n + f.size, 0)) + ' total · tap untuk ganti' : 'Bisa pilih banyak file sekaligus';
+  list.classList.toggle('hidden', !files.length);
+  list.innerHTML = files.map((f, i) => {
+    const [ic, bg] = fileIconFor(f.type, f.name);
+    return `<div class="row" style="background:transparent" id="driveRow${i}"><span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span><div class="flex-1"><div class="row-title truncate">${esc(f.name)}</div><div class="row-sub">${formatBytes(f.size)}</div></div><span class="t-cap muted" id="driveRowState${i}"></span></div>`;
+  }).join('');
+  if ($('statusText')) $('statusText').textContent = '';
+}
+function setDriveStatus(text, color) { const el = $('statusText'); el.textContent = text; el.style.color = color || ''; }
+function startDriveUpload() {
+  const uploadBtn = $('uploadBtn'), fileInput = $('fileInput'), customNameInput = $('customName');
+  if (!fileInput.files.length) { iosAlert({ title: 'Pilih minimal 1 file!' }); return; }
+  const files = Array.from(fileInput.files);
+  let index = 0;
+  uploadBtn.disabled = true;
+  uploadBtn.innerHTML = '<span class="spinner"></span> Uploading...';
+  setDriveStatus('', 'var(--blue)');
+
+  function uploadNext() {
+    if (index >= files.length) {
+      setDriveStatus('YEAYYY! File berhasil di-upload!', 'var(--green)');
+      uploadBtn.disabled = false;
+      uploadBtn.innerHTML = '<i class="fas fa-arrow-up-from-bracket"></i> Upload';
+      saveStateToLocal(); renderUploadHistory();
+      fileInput.value = ""; customNameInput.value = '';
+      setTimeout(renderDriveSelection, 2500);
+      showToast(`${files.length} file berhasil di-upload ke Drive!`);
+      return;
+    }
+    const file = files[index];
+    const reader = new FileReader();
+    setDriveStatus(files.length > 1 ? `Mohon menunggu yaaa... (${index + 1}/${files.length})` : 'Mohon menunggu yaaa...', 'var(--blue)');
+    const st = $('driveRowState' + index); if (st) st.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
+
+    reader.onload = function () {
+      const base64Data = reader.result.split(",")[1];
+      const ext = file.name.split(".").pop();
+      let finalCustomName = "";
+      if (customNameInput.value.trim() !== "") {
+        if (files.length > 1) finalCustomName = `${customNameInput.value}-${index + 1}.${ext}`;
+        else finalCustomName = `${customNameInput.value}.${ext}`;
+      }
+      fetch(DRIVE_UPLOAD_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ filename: file.name, customName: finalCustomName, mimeType: file.type, fileData: base64Data })
+      })
+        .then(() => {
+          const st2 = $('driveRowState' + index); if (st2) st2.innerHTML = '<i class="fas fa-circle-check c-green"></i>';
+          logUploadedFile({ name: finalCustomName || file.name, size: file.size, type: file.type });
+          index++;
+          uploadNext();
+        })
+        .catch(err => {
+          console.error(err);
+          const st3 = $('driveRowState' + index); if (st3) st3.innerHTML = '<i class="fas fa-circle-xmark c-red"></i>';
+          setDriveStatus('Waduh, file gagal diupload!', 'var(--red)');
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '<i class="fas fa-arrow-up-from-bracket"></i> Upload';
+          if (index > 0) { saveStateToLocal(); renderUploadHistory(); }
+        });
+    };
+    reader.readAsDataURL(file);
+  }
+  uploadNext();
 }
 function fileIconFor(type, name) {
   const t = (type || '') + ' ' + (name || '');
@@ -4116,14 +4379,23 @@ async function clearUploadHistory() {
   if (!(await iosConfirm('Hapus riwayat upload?', `${appState.uploads.length} catatan file akan dihapus.`, 'Hapus', true))) return;
   appState.uploads = []; saveStateToLocal(); renderUploadHistory(); showToast('Upload history cleared.');
 }
-function initDropzone() {
-  const dz = $('uploadDropzone'); if (!dz) return;
+function bindDrop(id, onFiles) {
+  const dz = $(id); if (!dz) return;
   ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
   ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
-  dz.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) logUploadedFile(f); });
+  dz.addEventListener('drop', e => { const fl = e.dataTransfer && e.dataTransfer.files; if (fl && fl.length) onFiles(fl); });
+}
+function initDropzone() {
+  bindDrop('uploadDropzone', fl => { $('fileInput').files = fl; renderDriveSelection(); });
+  bindDrop('docDropzone', fl => uploadDocFiles(Array.from(fl)));
 }
 
-// ---------------- CASH LEDGER ----------------
+// ---------------- SELISIH KAS ----------------
+function parseRupiahInput(v) { return parseFloat(String(v || '').replace(/[^0-9]/g, '')); }
+function formatRupiahInput(el) {
+  const n = parseRupiahInput(el.value);
+  el.value = isNaN(n) ? '' : n.toLocaleString('id-ID');
+}
 function setKasJenis(v) {
   $('kasJenis').value = v;
   $('kasJenisSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
@@ -4132,12 +4404,13 @@ function resetKasFilter() { $('kasFilterAwal').value = ''; $('kasFilterAkhir').v
 function saveKasRecord(e) {
   e.preventDefault();
   const tgl = $('kasTanggal').value, jenis = $('kasJenis').value;
-  const jumlah = parseFloat($('kasJumlah').value), ket = $('kasKeterangan').value.trim();
-  if (!tgl || isNaN(jumlah)) return showToast('Date and valid amount required!', false);
-  appState.kas.unshift({ id: 'kas_' + Date.now(), tanggal: tgl, jenis, jumlah, keterangan: ket });
+  const jumlah = parseRupiahInput($('kasJumlah').value), ket = $('kasKeterangan').value.trim();
+  const jam = $('kasJam') ? $('kasJam').value : '';
+  if (!tgl || isNaN(jumlah) || jumlah <= 0) return showToast('Tanggal dan nominal wajib diisi!', false);
+  appState.kas.unshift({ id: 'kas_' + Date.now(), tanggal: tgl, jam: jam || '', jenis, jumlah, keterangan: ket });
   saveStateToLocal(); renderKasData(); renderDashboardStats();
   $('tellerKasForm').reset(); setKasJenis('Kurang'); $('kasTanggal').value = wibDateStr();
-  showToast('Ledger saved & synced!');
+  showToast(`Selisih ${jenis.toLowerCase()} ${rupiah(jumlah)} tersimpan & tersinkron!`);
 }
 function getFilteredKas() {
   const a = $('kasFilterAwal') ? $('kasFilterAwal').value : '', b = $('kasFilterAkhir') ? $('kasFilterAkhir').value : '';
@@ -4149,12 +4422,12 @@ function renderKasData() {
   const filtered = getFilteredKas();
   filtered.forEach(k => { if (k.jenis === 'Lebih') totalLebih += k.jumlah; else totalKurang += k.jumlah; });
   list.innerHTML = filtered.length === 0
-    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada entri kas${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
+    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan selisih${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
     : filtered.map(k => {
       const plus = k.jenis === 'Lebih';
       return `<div class="row">
         <span class="icon-tile ${plus ? 'bg-green' : 'bg-red'}"><i class="fas ${plus ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i></span>
-        <div class="flex-1"><div class="row-title truncate">${esc(k.keterangan || (plus ? 'Kelebihan kas' : 'Kekurangan kas'))}</div><div class="row-sub">${esc(prettyDate(k.tanggal, true))} · ${esc(k.jenis)}</div></div>
+        <div class="flex-1"><div class="row-title truncate">${esc(k.keterangan || (plus ? 'Kelebihan kas' : 'Kekurangan kas'))}</div><div class="row-sub">${esc(prettyDate(k.tanggal, true))}${k.jam ? ' · ' + esc(k.jam) : ''} · ${esc(k.jenis)}</div></div>
         <span class="money ${plus ? 'c-green' : 'c-red'}">${plus ? '+' : '−'}${esc(rupiah(k.jumlah))}</span>
         <button onclick="deleteKasRecord('${esc(k.id)}')" class="icon-btn sm clear" style="color:var(--label3)" title="Hapus"><i class="fas fa-xmark"></i></button>
       </div>`;
@@ -4303,7 +4576,7 @@ function completeFocusSession(statusStr) {
     }
     if (focusMode === 'timer' && statusStr === 'Completed') {
       playChime();
-      if (typeof pushNotification === 'function') pushNotification({ key: 'focus_' + Date.now(), title: 'Sesi fokus selesai 🎉', body: `${Math.round(actualDuration / 60)} menit fokus tercatat. Waktunya istirahat sejenak.`, icon: 'fa-stopwatch', color: 'bg-indigo', pref: 'focus', action: { tab: 'tab-workfin', sub: 'sub-focus' } });
+      if (typeof pushNotification === 'function') pushNotification({ key: 'focus_' + Date.now(), title: 'Sesi fokus selesai 🎉', body: `${Math.round(actualDuration / 60)} menit fokus tercatat. Waktunya istirahat sejenak.`, icon: 'fa-stopwatch', color: 'bg-indigo', pref: 'focus', action: { tab: 'tab-hub', sub: 'sub-focus' } });
       focusStartTimeStr = ''; focusTimeSeconds = focusInitialSeconds; setFocusButtonsRunning(false); updateFocusDisplay();
     }
   }
@@ -4400,6 +4673,8 @@ function renderSettingsPanel() {
   updateNotifPermissionUI();
   if ($('gmailDefaultTo')) $('gmailDefaultTo').value = getGmailDefault();
   if (typeof updatePushUI === 'function') updatePushUI();
+  if ($('photoRetentionSelect')) $('photoRetentionSelect').value = String(readLS('app_photo_retention', 0));
+  renderStoragePanel();
 }
 
 function exportDataJSON() {
@@ -4446,7 +4721,7 @@ async function resetAllAppData() {
   try {
     Object.keys(localStorage).filter(k => k.startsWith('app_')).forEach(k => localStorage.removeItem(k));
   } catch (err) {}
-  appState = { todos: [], countdowns: [], notes: [], kas: [], links: [], contacts: [], uploads: [], customWebLinks: [], focusHistory: [], musicCategories: DEFAULT_CATEGORIES.slice(), musicLibrary: [], showFloatingMusicDock: false };
+  appState = { todos: [], countdowns: [], notes: [], kas: [], links: [], contacts: [], uploads: [], customWebLinks: [], focusHistory: [], musicCategories: DEFAULT_CATEGORIES.slice(), musicLibrary: [], workPhotos: [], workDocs: [], workNotes: [], showFloatingMusicDock: false };
   audioEngine.pause(); audioEngine.removeAttribute('src'); currentSongIndex = -1; currentSongRefId = null; musicQueue = [];
   saveStateToLocal(); applyFloatingMusicDockVisibility(); renderAllModules(); updateMusicPlayerUI();
   showToast('All application data has been reset.');
@@ -4669,6 +4944,7 @@ function checkReminders() {
   if (changed) writeLS(NOTIF_FIRED_KEY, fired);
 
   if (typeof syncPushSchedule === 'function') syncPushSchedule(false);
+  if (typeof applyPhotoRetention === 'function') applyPhotoRetention();
 }
 
 function initNotifications() {
@@ -4767,9 +5043,9 @@ function shareDailyDigest() {
   ].join('\n');
   openShareSheet(`[Hadzmi Hub] Ringkasan ${prettyDate(today)}`, body);
 }
-function shareNote(id) {
-  const n = appState.notes.find(x => x.id === id); if (!n) return;
-  openShareSheet(`[Catatan] ${n.title || n.content.slice(0, 40)}`, `${n.title ? n.title + '\n\n' : ''}${n.content}${n.tag ? `\n\n#${n.tag}` : ''}`);
+function shareNote(id, coll) {
+  const n = (appState[coll || 'notes'] || []).find(x => x.id === id); if (!n) return;
+  openShareSheet(`[${coll === 'workNotes' ? 'Catatan Kerja' : 'Catatan'}] ${n.title || n.content.slice(0, 40)}`, `${n.title ? n.title + '\n\n' : ''}${n.content}${n.tag ? `\n\n#${n.tag}` : ''}`);
 }
 function shareCountdown(id) {
   const c = appState.countdowns.find(x => x.id === id); if (!c) return;
@@ -4789,7 +5065,7 @@ function shareKasReport() {
   const body = [`LAPORAN SELISIH KAS`, `Periode: ${period}`, '',
     `Total Lebih  : ${rupiah(lebih)}`, `Total Kurang : ${rupiah(kurang)}`, `Net Balance  : ${rupiah(lebih - kurang)}`, '',
     `RINCIAN (${list.length} entri):`,
-    ...list.map(k => `${k.tanggal}  ${k.jenis === 'Lebih' ? '+' : '−'}${rupiah(k.jumlah).padEnd(14)} ${k.keterangan || ''}`)].join('\n');
+    ...list.map(k => `${k.tanggal}${k.jam ? ' ' + k.jam : ''}  ${k.jenis === 'Lebih' ? '+' : '−'}${rupiah(k.jumlah).padEnd(14)} ${k.keterangan || ''}`)].join('\n');
   openShareSheet(`[Kas] Laporan Selisih — ${period}`, body);
 }
 function shareFocusReport() {
@@ -4991,6 +5267,474 @@ function handleDeepLink() {
     history.replaceState(null, '', location.pathname);
     if (tab && $(tab)) runNotifAction({ tab, sub: sub || null, filter: filter || null });
   } catch (e) {}
+}
+
+/* ---- 12-work.js ---- */
+/* =========================================================
+   12 · KERJA — Bukti Foto, Gudang File, penyimpanan file pribadi, panel Penyimpanan
+   File disimpan di Cloudflare (Worker /api/files, wajib login). Metadata disinkronkan via Firebase.
+   ========================================================= */
+const FILE_MAX_BYTES = 25 * 1024 * 1024;
+const PHOTO_TYPES = ['KTP', 'Buku Tabungan', 'Bukti Kas', 'Slip / Formulir', 'Lainnya'];
+const fileBlobCache = new Map();   // fileId -> Blob (hanya di memori, hilang saat dikunci/reload)
+const fileUrlCache = new Map();    // fileId -> objectURL
+
+// ---------------- File API ----------------
+async function getIdTokenOrThrow() {
+  const u = firebaseAuth && firebaseAuth.currentUser;
+  if (!u) throw new Error('Tidak terhubung. Periksa internet lalu coba lagi.');
+  return u.getIdToken();
+}
+function apiUploadFile(blob, name, onProgress) {
+  return getIdTokenOrThrow().then(token => new Promise((resolve, reject) => {
+    if (blob.size > FILE_MAX_BYTES) return reject(new Error(`"${name}" lebih dari 25 MB`));
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/files');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    xhr.setRequestHeader('X-File-Name', encodeURIComponent(name));
+    xhr.setRequestHeader('Content-Type', blob.type || 'application/octet-stream');
+    xhr.upload.onprogress = e => { if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      let data = {}; try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
+      if (xhr.status >= 200 && xhr.status < 300 && data.id) { fileBlobCache.set(data.id, blob); resolve(data); }
+      else reject(new Error(data.error || ('Upload gagal (' + xhr.status + ')')));
+    };
+    xhr.onerror = () => reject(new Error('Koneksi terputus saat upload'));
+    xhr.send(blob);
+  }));
+}
+async function apiFetchBlob(id) {
+  if (!id) throw new Error('File tidak ada');
+  if (fileBlobCache.has(id)) return fileBlobCache.get(id);
+  const token = await getIdTokenOrThrow();
+  const res = await fetch('/api/files/' + id, { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' });
+  if (!res.ok) throw new Error(res.status === 404 ? 'File sudah tidak ada di server' : 'Gagal memuat file (' + res.status + ')');
+  const blob = await res.blob();
+  fileBlobCache.set(id, blob);
+  return blob;
+}
+async function fileObjectUrl(id) {
+  if (fileUrlCache.has(id)) return fileUrlCache.get(id);
+  const url = URL.createObjectURL(await apiFetchBlob(id));
+  fileUrlCache.set(id, url);
+  return url;
+}
+async function apiDeleteFile(id) {
+  if (!id) return;
+  const token = await getIdTokenOrThrow();
+  await fetch('/api/files/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+  fileBlobCache.delete(id);
+  if (fileUrlCache.has(id)) { URL.revokeObjectURL(fileUrlCache.get(id)); fileUrlCache.delete(id); }
+}
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function safeFileName(s) { return String(s || 'file').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'file'; }
+
+// Antrean muat thumbnail (maks 4 bersamaan)
+const thumbQueue = []; let thumbActive = 0;
+function queueThumb(img) {
+  thumbQueue.push(img); pumpThumbs();
+}
+function pumpThumbs() {
+  while (thumbActive < 4 && thumbQueue.length) {
+    const img = thumbQueue.shift(); if (!img.isConnected) continue;
+    thumbActive++;
+    fileObjectUrl(img.dataset.file).then(url => { img.src = url; const l = img.parentElement && img.parentElement.querySelector('.ph-load'); if (l) l.remove(); })
+      .catch(() => { const l = img.parentElement && img.parentElement.querySelector('.ph-load'); if (l) l.innerHTML = '<i class="fas fa-triangle-exclamation"></i>'; })
+      .finally(() => { thumbActive--; pumpThumbs(); });
+  }
+}
+
+// ---------------- Gambar: kompres ----------------
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => { resolve(img); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Format gambar tidak didukung')); };
+    img.src = url;
+  });
+}
+function imageToJpeg(img, maxEdge, quality) {
+  const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+  return new Promise(res => c.toBlob(b => res({ blob: b, w, h }), 'image/jpeg', quality));
+}
+
+// ---------------- BUKTI FOTO ----------------
+let pickedPhotos = [];
+let photoPickType = 'KTP';
+let photoTypeFilter = 'Semua';
+let photoSelecting = false;
+const selectedPhotos = new Set();
+
+function onPhotosPicked(e) {
+  const files = Array.from(e.target.files || []).filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|heic|heif|webp)$/i.test(f.name));
+  e.target.value = '';
+  if (!files.length) return;
+  pickedPhotos.forEach(p => URL.revokeObjectURL(p.preview));
+  pickedPhotos = files.map(f => ({ file: f, preview: URL.createObjectURL(f) }));
+  $('photoPickPreview').innerHTML = pickedPhotos.map(p => `<img src="${p.preview}" alt="">`).join('');
+  $('photoLabel').value = ''; $('photoNote').value = ''; $('photoDate').value = wibDateStr();
+  $('photoSaveStatus').textContent = `${files.length} foto akan dikompres & disimpan aman`;
+  renderPhotoTypePick();
+  openSheet('sheetPhotoSave');
+  setTimeout(() => $('photoLabel').focus(), 350);
+}
+function renderPhotoTypePick() {
+  $('photoTypePick').innerHTML = PHOTO_TYPES.map(t => `<button type="button" class="chip ${photoPickType === t ? 'active blue' : ''}" data-t="${esc(t)}">${esc(t)}</button>`).join('');
+  $('photoTypePick').querySelectorAll('button').forEach(b => b.onclick = () => { photoPickType = b.dataset.t; renderPhotoTypePick(); });
+}
+function cancelPhotoSave() {
+  if ($('photoSaveBtn').disabled) return;
+  pickedPhotos.forEach(p => URL.revokeObjectURL(p.preview)); pickedPhotos = [];
+  closeSheet('sheetPhotoSave');
+}
+async function savePickedPhotos() {
+  if (!pickedPhotos.length) return;
+  const btn = $('photoSaveBtn'), status = $('photoSaveStatus');
+  const label = $('photoLabel').value.trim(), note = $('photoNote').value.trim(), date = $('photoDate').value || wibDateStr();
+  const w = getWIBDate(); const time = `${pad2(w.getHours())}:${pad2(w.getMinutes())}`;
+  btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
+  let ok = 0; const errors = [];
+  for (let i = 0; i < pickedPhotos.length; i++) {
+    const src = pickedPhotos[i].file;
+    try {
+      status.textContent = `Mengompres foto ${i + 1}/${pickedPhotos.length}…`;
+      const img = await loadImage(src);
+      const full = await imageToJpeg(img, 2200, 0.86);
+      const thumb = await imageToJpeg(img, 420, 0.72);
+      const base = safeFileName(`${label || photoPickType}_${date}${pickedPhotos.length > 1 ? '_' + (i + 1) : ''}`);
+      const up = await apiUploadFile(full.blob, base + '.jpg', p => { status.textContent = `Mengunggah foto ${i + 1}/${pickedPhotos.length}… ${Math.round(p * 100)}%`; });
+      const upThumb = await apiUploadFile(thumb.blob, base + '_thumb.jpg');
+      appState.workPhotos = appState.workPhotos || [];
+      appState.workPhotos.unshift({
+        id: 'ph_' + Date.now() + '_' + i, fileId: up.id, thumbId: upThumb.id, name: base + '.jpg',
+        label, type: photoPickType, note, date, time, w: full.w, h: full.h,
+        size: full.blob.size + thumb.blob.size, createdAt: Date.now()
+      });
+      ok++;
+    } catch (err) { errors.push(err.message || String(err)); }
+  }
+  btn.disabled = false; btn.textContent = 'Simpan';
+  if (ok) { saveStateToLocal(); renderPhotoGallery(); renderStoragePanel(); }
+  if (errors.length) {
+    status.textContent = errors[0];
+    showToast(ok ? `${ok} foto tersimpan, ${errors.length} gagal: ${errors[0]}` : `Gagal: ${errors[0]}`, false);
+    if (!ok) return;
+  } else showToast(`${ok} foto bukti tersimpan & tersinkron!`);
+  pickedPhotos.forEach(p => URL.revokeObjectURL(p.preview)); pickedPhotos = [];
+  closeSheet('sheetPhotoSave');
+}
+
+function filteredPhotos() {
+  const q = ($('photoSearch') ? $('photoSearch').value : '').toLowerCase();
+  return (appState.workPhotos || []).filter(p => (photoTypeFilter === 'Semua' || p.type === photoTypeFilter) &&
+    ((p.label || '') + ' ' + (p.note || '') + ' ' + p.type + ' ' + p.date).toLowerCase().includes(q));
+}
+function renderPhotoGallery() {
+  const box = $('photoGallery'); if (!box) return;
+  const all = appState.workPhotos || [];
+  const chips = $('photoTypeChips');
+  if (chips) {
+    chips.innerHTML = ['Semua', ...PHOTO_TYPES].map(t => {
+      const n = t === 'Semua' ? all.length : all.filter(p => p.type === t).length;
+      return `<button class="chip ${photoTypeFilter === t ? 'active blue' : ''}" data-t="${esc(t)}">${esc(t)} <span class="muted" style="${photoTypeFilter === t ? 'color:rgba(255,255,255,.8)' : ''}">${n}</span></button>`;
+    }).join('');
+    chips.querySelectorAll('button').forEach(b => b.onclick = () => { photoTypeFilter = b.dataset.t; renderPhotoGallery(); });
+  }
+  const list = filteredPhotos();
+  if (!list.length) {
+    box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada bukti foto'}</div><div class="e-sub">Foto KTP, buku tabungan, atau bukti kas nasabah dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
+    return;
+  }
+  const groups = {};
+  list.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt)
+    .forEach(p => (groups[p.date] = groups[p.date] || []).push(p));
+  box.className = photoSelecting ? 'selecting' : '';
+  box.innerHTML = Object.keys(groups).sort().reverse().map(d => `
+    <div class="photo-day"><span>${esc(relativeDayLabel(d))}</span><span class="t-foot muted" style="font-weight:500">${groups[d].length} foto</span></div>
+    <div class="photo-grid">${groups[d].map(p => `
+      <button class="photo-cell ${selectedPhotos.has(p.id) ? 'sel' : ''}" data-id="${esc(p.id)}" title="${esc((p.label || p.type) + ' · ' + p.type)}">
+        <span class="ph-load"><span class="spinner dark"></span></span>
+        <img alt="" data-file="${esc(p.thumbId || p.fileId)}">
+        <span class="ph-tag">${esc(p.label || p.type)}</span>
+        <span class="ph-check"><i class="fas fa-check"></i></span>
+      </button>`).join('')}</div>`).join('');
+  box.querySelectorAll('.photo-cell').forEach(cell => {
+    cell.onclick = () => photoSelecting ? togglePhotoPick(cell.dataset.id, cell) : openPhotoViewer(cell.dataset.id);
+    queueThumb(cell.querySelector('img'));
+  });
+}
+function togglePhotoSelect() {
+  photoSelecting = !photoSelecting;
+  if (!photoSelecting) selectedPhotos.clear();
+  $('photoSelectBtn').textContent = photoSelecting ? 'Batal' : 'Pilih';
+  $('photoSelectBar').classList.toggle('hidden', !photoSelecting);
+  updatePhotoSelCount(); renderPhotoGallery();
+}
+function exitPhotoSelect() { if (photoSelecting) togglePhotoSelect(); }
+function togglePhotoPick(id, cell) {
+  if (selectedPhotos.has(id)) selectedPhotos.delete(id); else {
+    selectedPhotos.add(id);
+    const p = (appState.workPhotos || []).find(x => x.id === id); if (p) apiFetchBlob(p.fileId).catch(() => {}); // siapkan untuk dibagikan
+  }
+  if (cell) cell.classList.toggle('sel', selectedPhotos.has(id));
+  updatePhotoSelCount();
+}
+function updatePhotoSelCount() { if ($('photoSelCount')) $('photoSelCount').textContent = `${selectedPhotos.size} dipilih`; }
+function selectedPhotoIds() { return Array.from(selectedPhotos); }
+function photoById(id) { return (appState.workPhotos || []).find(p => p.id === id); }
+
+async function openPhotoViewer(id) {
+  const p = photoById(id); if (!p) return;
+  $('viewerTitle').textContent = p.label || p.type;
+  $('viewerBody').innerHTML = '<span class="spinner dark"></span>';
+  $('viewerMeta').innerHTML = `${esc(p.type)} · ${esc(prettyDate(p.date, true))}${p.time ? ' · ' + esc(p.time) : ''} · ${formatBytes(p.size)}${p.note ? `<br>${esc(p.note)}` : ''}`;
+  $('viewerActions').innerHTML = `
+    <button class="btn btn-tinted btn-sm" onclick="sharePhotos(['${esc(p.id)}'])"><i class="fas fa-envelope"></i> Kirim</button>
+    <button class="btn btn-gray btn-sm" onclick="downloadPhotos(['${esc(p.id)}'])"><i class="fas fa-download"></i> Unduh</button>
+    <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(['${esc(p.id)}'])"><i class="fas fa-trash"></i> Hapus</button>`;
+  $('viewerMore').onclick = () => openActionSheet({ title: p.label || p.type, actions: [
+    { text: 'Ubah Keterangan', icon: 'fas fa-pen', onClick: () => editPhotoMeta(p.id) },
+    { text: 'Kirim / Bagikan', icon: 'fas fa-envelope', onClick: () => sharePhotos([p.id]) },
+    { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deletePhotos([p.id]) }
+  ] });
+  openSheet('sheetViewer');
+  try { const url = await fileObjectUrl(p.fileId); $('viewerBody').innerHTML = `<img src="${url}" alt="">`; }
+  catch (err) { $('viewerBody').innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i><div class="e-sub">${esc(err.message)}</div></div>`; }
+}
+function closeViewer() { closeSheet('sheetViewer'); }
+async function editPhotoMeta(id) {
+  const p = photoById(id); if (!p) return;
+  const v = await iosAlert({ title: 'Ubah keterangan', message: 'Nama nasabah / keterangan', input: { value: p.label || '' }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });
+  if (v === null) return;
+  p.label = v.trim(); saveStateToLocal(); renderPhotoGallery();
+  if ($('sheetViewer').classList.contains('open')) $('viewerTitle').textContent = p.label || p.type;
+}
+
+/** Bagikan foto sebagai lampiran (pilih Gmail di menu Bagikan). */
+async function sharePhotos(ids) {
+  const items = ids.map(photoById).filter(Boolean);
+  if (!items.length) return showToast('Pilih foto dulu.', false);
+  const missing = items.filter(p => !fileBlobCache.has(p.fileId));
+  if (missing.length) {
+    showToast('Menyiapkan foto… tap Kirim sekali lagi.');
+    await Promise.all(missing.map(p => apiFetchBlob(p.fileId).catch(() => {})));
+    return;
+  }
+  const files = items.map(p => new File([fileBlobCache.get(p.fileId)], p.name || (safeFileName(p.label || p.type) + '.jpg'), { type: 'image/jpeg' }));
+  const text = items.map(p => `• ${p.type}${p.label ? ' — ' + p.label : ''} (${prettyDate(p.date)}${p.time ? ' ' + p.time : ''})`).join('\n');
+  const subject = `Bukti ${items.length > 1 ? items.length + ' foto' : items[0].type}${items[0].label ? ' — ' + items[0].label : ''}`;
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try { await navigator.share({ files, title: subject, text }); return; }
+    catch (err) { if (err && err.name === 'AbortError') return; }
+  }
+  // Cadangan: unduh lalu buka Gmail (lampirkan file yang terunduh secara manual)
+  files.forEach((f, i) => setTimeout(() => downloadBlob(f, f.name), i * 400));
+  setTimeout(() => openShareSheet(subject, text + '\n\n(Lampirkan foto yang baru saja terunduh)'), files.length * 400 + 300);
+}
+async function downloadPhotos(ids) {
+  const items = ids.map(photoById).filter(Boolean); if (!items.length) return showToast('Pilih foto dulu.', false);
+  showToast(`Mengunduh ${items.length} foto…`);
+  for (let i = 0; i < items.length; i++) {
+    try { downloadBlob(await apiFetchBlob(items[i].fileId), items[i].name || 'bukti.jpg'); await new Promise(r => setTimeout(r, 450)); }
+    catch (err) { showToast(err.message, false); }
+  }
+}
+async function deletePhotos(ids, silent) {
+  const items = ids.map(photoById).filter(Boolean); if (!items.length) return;
+  if (!silent && !(await iosConfirm(`Hapus ${items.length} foto?`, 'Foto akan dihapus permanen dari semua perangkat.', 'Hapus', true))) return;
+  for (const p of items) { try { await apiDeleteFile(p.fileId); await apiDeleteFile(p.thumbId); } catch (e) {} }
+  const del = new Set(items.map(p => p.id));
+  appState.workPhotos = (appState.workPhotos || []).filter(p => !del.has(p.id));
+  del.forEach(id => selectedPhotos.delete(id));
+  saveStateToLocal(); updatePhotoSelCount(); renderPhotoGallery(); renderStoragePanel();
+  if (!silent) { closeViewer(); showToast(`${items.length} foto dihapus.`); }
+}
+function setPhotoRetention(v) { writeLS('app_photo_retention', parseInt(v) || 0); showToast(+v ? `Foto lebih dari ${v} hari akan dihapus otomatis.` : 'Hapus otomatis dimatikan.'); applyPhotoRetention(); }
+let retentionRunning = false;
+async function applyPhotoRetention() {
+  const days = readLS('app_photo_retention', 0);
+  if (!days || retentionRunning || !firebaseAuth || !firebaseAuth.currentUser) return;
+  const cutoff = Date.now() - days * 86400000;
+  const old = (appState.workPhotos || []).filter(p => (p.createdAt || 0) < cutoff).map(p => p.id);
+  if (!old.length) return;
+  retentionRunning = true;
+  try { await deletePhotos(old, true); showToast(`${old.length} bukti foto lama dihapus otomatis.`); } finally { retentionRunning = false; }
+}
+
+// ---------------- GUDANG FILE ----------------
+let docFolderFilter = 'Semua';
+function onDocsPicked(e) { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) uploadDocFiles(files); }
+async function uploadDocFiles(files) {
+  const big = files.filter(f => f.size > FILE_MAX_BYTES);
+  if (big.length) showToast(`${big.length} file > 25 MB dilewati (${big[0].name})`, false);
+  files = files.filter(f => f.size <= FILE_MAX_BYTES);
+  if (!files.length) return;
+  const folders = Array.from(new Set((appState.workDocs || []).map(d => d.folder).filter(Boolean)));
+  const folder = await iosAlert({
+    title: `Simpan ${files.length} file`, message: 'Masukkan ke folder apa?' + (folders.length ? `\nFolder yang ada: ${folders.slice(0, 6).join(', ')}` : ''),
+    input: { placeholder: 'Mis. Materi BRI, SOP, Formulir', value: docFolderFilter !== 'Semua' ? docFolderFilter : (readLS('app_last_doc_folder', '') || '') },
+    actions: [{ text: 'Batal', value: false }, { text: 'Upload', value: true, bold: true }]
+  });
+  if (folder === null) return;
+  const fname = (folder || '').trim() || 'Umum';
+  writeLS('app_last_doc_folder', fname);
+  let ok = 0;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    try {
+      const up = await apiUploadFile(f, f.name, p => showToast(`Upload ${i + 1}/${files.length}: ${f.name} — ${Math.round(p * 100)}%`));
+      appState.workDocs = appState.workDocs || [];
+      appState.workDocs.unshift({ id: 'doc_' + Date.now() + '_' + i, fileId: up.id, name: f.name, type: f.type || '', size: f.size, folder: fname, createdAt: Date.now() });
+      ok++;
+    } catch (err) { showToast(`Gagal: ${err.message}`, false); }
+  }
+  if (ok) { saveStateToLocal(); renderDocs(); renderStoragePanel(); showToast(`${ok} file tersimpan di Gudang "${fname}"`); }
+}
+function docById(id) { return (appState.workDocs || []).find(d => d.id === id); }
+function renderDocs() {
+  const list = $('docList'); if (!list) return;
+  const all = appState.workDocs || [];
+  const folders = Array.from(new Set(all.map(d => d.folder || 'Umum'))).sort();
+  if (docFolderFilter !== 'Semua' && !folders.includes(docFolderFilter)) docFolderFilter = 'Semua';
+  const chips = $('docFolderChips');
+  if (chips) {
+    chips.innerHTML = ['Semua', ...folders].map(f => `<button class="chip ${docFolderFilter === f ? 'active blue' : ''}" data-f="${esc(f)}"><i class="fas ${f === 'Semua' ? 'fa-layer-group' : 'fa-folder'}"></i> ${esc(f)}</button>`).join('');
+    chips.querySelectorAll('button').forEach(b => b.onclick = () => { docFolderFilter = b.dataset.f; renderDocs(); });
+  }
+  const q = ($('docSearch') ? $('docSearch').value : '').toLowerCase();
+  const rows = all.filter(d => (docFolderFilter === 'Semua' || (d.folder || 'Umum') === docFolderFilter) && (d.name + ' ' + (d.folder || '')).toLowerCase().includes(q));
+  if ($('docCountBadge')) $('docCountBadge').textContent = `${all.length} file · ${formatBytes(all.reduce((n, d) => n + (d.size || 0), 0))}`;
+  if (!rows.length) { list.innerHTML = `<div class="empty"><i class="fas fa-box-open"></i><div class="e-title">${all.length ? 'Tidak ada file yang cocok' : 'Gudang masih kosong'}</div><div class="e-sub">Upload materi, SOP, PDF, gambar, atau dokumen kerja.</div></div>`; return; }
+  list.innerHTML = rows.map(d => {
+    const [ic, bg] = fileIconFor(d.type, d.name);
+    return `<div class="row tappable" onclick="openDocViewer('${esc(d.id)}')">
+      <span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span>
+      <div class="flex-1"><div class="row-title truncate">${esc(d.name)}</div><div class="row-sub truncate"><i class="fas fa-folder" style="font-size:10px"></i> ${esc(d.folder || 'Umum')} · ${formatBytes(d.size)} · ${esc(new Date(d.createdAt).toLocaleDateString('id-ID'))}</div></div>
+      <button class="icon-btn sm clear" style="color:var(--label2)" onclick="event.stopPropagation(); openDocActions('${esc(d.id)}')"><i class="fas fa-ellipsis"></i></button>
+    </div>`;
+  }).join('');
+}
+function isTextDoc(d) { return /^text\/|json|csv|xml/.test(d.type || '') || /\.(txt|md|csv|json|log)$/i.test(d.name); }
+async function openDocViewer(id) {
+  const d = docById(id); if (!d) return;
+  $('viewerTitle').textContent = d.name;
+  $('viewerMeta').textContent = `${d.folder || 'Umum'} · ${formatBytes(d.size)} · ${new Date(d.createdAt).toLocaleString('id-ID')}`;
+  $('viewerBody').innerHTML = '<span class="spinner dark"></span>';
+  $('viewerActions').innerHTML = `
+    <button class="btn btn-tinted btn-sm" onclick="openDocInTab('${esc(d.id)}')"><i class="fas fa-up-right-from-square"></i> Buka</button>
+    <button class="btn btn-gray btn-sm" onclick="downloadDoc('${esc(d.id)}')"><i class="fas fa-download"></i> Unduh</button>
+    <button class="btn btn-gray btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fas fa-envelope"></i> Kirim</button>`;
+  $('viewerMore').onclick = () => openDocActions(d.id);
+  openSheet('sheetViewer');
+  try {
+    const blob = await apiFetchBlob(d.fileId);
+    const url = await fileObjectUrl(d.fileId);
+    if (/^image\//.test(d.type)) $('viewerBody').innerHTML = `<img src="${url}" alt="">`;
+    else if (/pdf/.test(d.type) || /\.pdf$/i.test(d.name)) $('viewerBody').innerHTML = `<iframe src="${url}" title="${esc(d.name)}"></iframe>`;
+    else if (isTextDoc(d)) { const t = await blob.text(); $('viewerBody').innerHTML = `<pre>${esc(t.slice(0, 200000))}</pre>`; }
+    else $('viewerBody').innerHTML = `<div class="empty"><i class="fas ${fileIconFor(d.type, d.name)[0]}"></i><div class="e-sub">Pratinjau tidak tersedia untuk jenis file ini.<br>Tap <b>Buka</b> atau <b>Unduh</b>.</div></div>`;
+  } catch (err) { $('viewerBody').innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i><div class="e-sub">${esc(err.message)}</div></div>`; }
+}
+async function openDocInTab(id) {
+  const d = docById(id); if (!d) return;
+  const w = window.open('', '_blank');
+  try { const url = await fileObjectUrl(d.fileId); if (w) w.location.href = url; else location.assign(url); }
+  catch (err) { if (w) w.close(); showToast(err.message, false); }
+}
+async function downloadDoc(id) { const d = docById(id); if (!d) return; try { downloadBlob(await apiFetchBlob(d.fileId), d.name); } catch (err) { showToast(err.message, false); } }
+async function shareDoc(id) {
+  const d = docById(id); if (!d) return;
+  if (!fileBlobCache.has(d.fileId)) { showToast('Menyiapkan file… tap Kirim sekali lagi.'); apiFetchBlob(d.fileId).catch(() => {}); return; }
+  const file = new File([fileBlobCache.get(d.fileId)], d.name, { type: d.type || 'application/octet-stream' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: d.name }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
+  }
+  downloadBlob(file, d.name);
+  setTimeout(() => openShareSheet(`[File] ${d.name}`, `File: ${d.name}\nFolder: ${d.folder || 'Umum'}\n\n(Lampirkan file yang baru saja terunduh)`), 500);
+}
+function openDocActions(id) {
+  const d = docById(id); if (!d) return;
+  openActionSheet({ title: d.name, message: `${d.folder || 'Umum'} · ${formatBytes(d.size)}`, actions: [
+    { text: 'Buka', icon: 'fas fa-up-right-from-square', onClick: () => openDocInTab(id) },
+    { text: 'Unduh', icon: 'fas fa-download', onClick: () => downloadDoc(id) },
+    { text: 'Kirim / Bagikan', icon: 'fas fa-envelope', onClick: () => shareDoc(id) },
+    { text: 'Ganti Nama', icon: 'fas fa-pen', onClick: () => renameDoc(id) },
+    { text: 'Pindah Folder', icon: 'fas fa-folder', onClick: () => moveDoc(id) },
+    { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deleteDoc(id) }
+  ] });
+}
+async function renameDoc(id) {
+  const d = docById(id); if (!d) return;
+  const v = await iosAlert({ title: 'Ganti nama', input: { value: d.name }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });
+  if (v === null || !v.trim()) return;
+  d.name = v.trim(); saveStateToLocal(); renderDocs(); if ($('sheetViewer').classList.contains('open')) $('viewerTitle').textContent = d.name;
+}
+async function moveDoc(id) {
+  const d = docById(id); if (!d) return;
+  const v = await iosAlert({ title: 'Pindah ke folder', input: { value: d.folder || '' , placeholder: 'Nama folder' }, actions: [{ text: 'Batal', value: false }, { text: 'Pindah', value: true, bold: true }] });
+  if (v === null) return;
+  d.folder = v.trim() || 'Umum'; saveStateToLocal(); renderDocs(); showToast(`Dipindah ke "${d.folder}"`);
+}
+async function deleteDoc(id) {
+  const d = docById(id); if (!d) return;
+  if (!(await iosConfirm('Hapus file?', d.name, 'Hapus', true))) return;
+  try { await apiDeleteFile(d.fileId); } catch (e) {}
+  appState.workDocs = (appState.workDocs || []).filter(x => x.id !== id);
+  saveStateToLocal(); renderDocs(); renderStoragePanel(); closeViewer(); showToast('File dihapus.');
+}
+
+// ---------------- PANEL PENYIMPANAN ----------------
+const GB = 1024 * 1024 * 1024;
+function jsonBytes(v) { try { return new Blob([JSON.stringify(v == null ? null : v)]).size; } catch (e) { return 0; } }
+function storageBar(parts, total) {
+  return `<div class="store-bar">${parts.filter(p => p.bytes > 0).map(p => `<span title="${esc(p.label)}" style="background:${p.color}; width:${Math.max(0.6, (p.bytes / total) * 100)}%"></span>`).join('')}</div>
+    <div class="store-legend">${parts.filter(p => p.bytes > 0).map(p => `<span><i style="background:${p.color}"></i>${esc(p.label)} ${formatBytes(p.bytes)}</span>`).join('')}</div>`;
+}
+let deviceEstimate = null;
+function renderStoragePanel() {
+  const box = $('storagePanel'); if (!box) return;
+  const s = appState;
+  const fb = [
+    { label: 'Musik', bytes: jsonBytes(s.musicLibrary) + jsonBytes(s.musicCategories), color: '#FF2D55' },
+    { label: 'To-Do', bytes: jsonBytes(s.todos), color: '#007AFF' },
+    { label: 'Catatan', bytes: jsonBytes(s.notes) + jsonBytes(s.workNotes), color: '#FFCC00' },
+    { label: 'Selisih Kas', bytes: jsonBytes(s.kas), color: '#00C7BE' },
+    { label: 'Focus', bytes: jsonBytes(s.focusHistory), color: '#5856D6' },
+    { label: 'Lainnya', bytes: jsonBytes(s.countdowns) + jsonBytes(s.links) + jsonBytes(s.contacts) + jsonBytes(s.uploads) + jsonBytes(s.customWebLinks) + jsonBytes(s.workPhotos) + jsonBytes(s.workDocs), color: '#8E8E93' }
+  ];
+  const fbTotal = fb.reduce((n, p) => n + p.bytes, 0);
+  const photos = s.workPhotos || [], docs = s.workDocs || [];
+  const cf = [
+    { label: `Bukti Foto (${photos.length})`, bytes: photos.reduce((n, p) => n + (p.size || 0), 0), color: '#FF9500' },
+    { label: `Gudang File (${docs.length})`, bytes: docs.reduce((n, d) => n + (d.size || 0), 0), color: '#5E5CE6' }
+  ];
+  const cfTotal = cf.reduce((n, p) => n + p.bytes, 0);
+  const pct = b => ((b / GB) * 100).toFixed(b / GB < 0.01 ? 3 : 1);
+  box.innerHTML = `
+    <div>
+      <div class="flex justify-between items-end"><div><div class="t-foot muted semibold">FIREBASE · DATA APLIKASI</div><div class="store-big">${formatBytes(fbTotal)} <span class="t-foot muted" style="font-weight:500">dari 1 GB</span></div></div><span class="badge tint-green">sisa ${formatBytes(GB - fbTotal)}</span></div>
+      <div class="mt-8">${storageBar(fb, Math.max(fbTotal, 1))}</div>
+      <div class="t-cap muted mt-4">Terpakai ${pct(fbTotal)}% · batas unduhan 10 GB/bulan</div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <div class="flex justify-between items-end"><div><div class="t-foot muted semibold">CLOUDFLARE · FOTO & FILE KERJA</div><div class="store-big">${formatBytes(cfTotal)} <span class="t-foot muted" style="font-weight:500">dari 1 GB</span></div></div><span class="badge tint-green">sisa ${formatBytes(GB - cfTotal)}</span></div>
+      <div class="mt-8">${cfTotal ? storageBar(cf, cfTotal) : '<div class="store-bar"></div>'}</div>
+      <div class="t-cap muted mt-4">Terpakai ${pct(cfTotal)}% · maks 25 MB per file</div>
+    </div>
+    <div class="divider"></div>
+    <div class="flex justify-between items-center"><div><div class="t-foot muted semibold">PERANGKAT INI (CACHE)</div><div class="t-sub" id="deviceStorageText">${deviceEstimate ? `${formatBytes(deviceEstimate.usage)} dipakai` : 'Menghitung…'}</div></div>
+      <a class="btn btn-gray btn-xs" href="https://console.firebase.google.com/project/web-hadzmi-new/database" target="_blank" rel="noopener">Firebase Console</a></div>`;
+  if (!deviceEstimate && navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(e => { deviceEstimate = e; const t = $('deviceStorageText'); if (t) t.textContent = `${formatBytes(e.usage)} dipakai`; }).catch(() => {});
+  }
 }
 
 /* ---- 99-boot.js ---- */
