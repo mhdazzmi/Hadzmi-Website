@@ -11,5 +11,5 @@ const js = readdirSync(join(src, 'js')).filter(f => f.endsWith('.js')).sort()
 if (/<\/script/i.test(js)) throw new Error('JS must not contain a closing script tag');
 let html = readFileSync(join(src, 'index.html'), 'utf8');
 html = html.split('/*__INLINE_CSS__*/').join(css).split('//__INLINE_JS__').join(js);
-writeFileSync(join(root, 'index.html'), html);
-console.log(`index.html built: ${(html.length / 1024).toFixed(1)} KB`);
+writeFileSync(join(root, 'public', 'index.html'), html);
+console.log(`public/index.html built: ${(html.length / 1024).toFixed(1)} KB`);

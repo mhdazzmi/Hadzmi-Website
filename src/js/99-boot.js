@@ -23,11 +23,12 @@ function startApp() {
   let lastTab = null;
   try { lastTab = sessionStorage.getItem('hz_last_tab'); } catch (e) {}
   if (lastTab && $(lastTab)) switchTab(lastTab);
+  handleDeepLink();
 
   initNotifications();
   sessionWatchTimer = setInterval(checkSessionExpiry, 20000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); updateDashboardGreeting(); renderDashboardTodayAgenda(); }
+    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); pullServerInbox(); updateDashboardGreeting(); renderDashboardTodayAgenda(); }
   });
 }
 

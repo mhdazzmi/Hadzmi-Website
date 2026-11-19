@@ -8,6 +8,7 @@ function renderSettingsPanel() {
   if ($('notifLeadSelect')) $('notifLeadSelect').value = String(prefs.lead || 30);
   updateNotifPermissionUI();
   if ($('gmailDefaultTo')) $('gmailDefaultTo').value = getGmailDefault();
+  if (typeof updatePushUI === 'function') updatePushUI();
 }
 
 function exportDataJSON() {

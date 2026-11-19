@@ -1,0 +1,24 @@
+// Cloudflare Worker + Static Assets: satu project untuk website (folder public/), API (/api/*), dan cron push.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hadzmi-hub",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // Cek pengingat tiap menit lalu kirim push
+  "triggers": { "crons": ["* * * * *"] },
+  // KV dibuat otomatis oleh wrangler saat deploy pertama
+  "kv_namespaces": [{ "binding": "HUB_KV" }],
+  "vars": {
+    "FIREBASE_PROJECT_ID": "web-hadzmi-new"
+  },
+  // Variabel yang diisi di Dashboard (Settings → Variables and Secrets) tidak dihapus saat deploy:
+  //   OWNER_UID      = UID akun Firebase-mu
+  //   VAPID_SUBJECT  = mailto:emailkamu@gmail.com
+  "keep_vars": true,
+  "observability": { "enabled": true }
+}

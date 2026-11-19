@@ -10,6 +10,8 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Hadzmi Hub</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -542,6 +544,8 @@
               <div class="section-label">Notifikasi</div>
               <div class="list inset-icon">
                 <div class="row"><span class="icon-tile bg-red"><i class="fas fa-bell"></i></span><div class="flex-1"><div class="row-title">Notifikasi Sistem</div><div class="row-sub" id="notifPermissionLabel">—</div></div><button class="btn btn-tinted btn-xs" id="notifPermissionBtn" onclick="requestNotifPermission()">Izinkan</button></div>
+                <div class="row hidden" id="pushRow"><span class="icon-tile bg-pink"><i class="fas fa-tower-broadcast"></i></span><div class="flex-1"><div class="row-title">Push saat website tertutup</div><div class="row-sub" id="pushStatusLabel">Memeriksa…</div></div><button class="btn btn-tinted btn-xs hidden" id="pushToggleBtn" onclick="togglePush()">Aktifkan</button></div>
+                <button class="row hidden" id="pushTestRow" onclick="sendTestPush()"><span class="icon-tile bg-teal"><i class="fas fa-satellite-dish"></i></span><div class="flex-1 row-title">Tes Push dari Server</div><i class="fas fa-chevron-right chev"></i></button>
                 <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div class="flex-1 row-title">Deadline To-Do</div><label class="switch"><input type="checkbox" data-notif="tasks" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><div class="flex-1 row-title">Event Countdown</div><label class="switch"><input type="checkbox" data-notif="countdowns" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div class="flex-1 row-title">Focus & Sleep Timer</div><label class="switch"><input type="checkbox" data-notif="focus" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
@@ -554,7 +558,7 @@
                 </div>
                 <button class="row" onclick="sendTestNotification()"><span class="icon-tile bg-green"><i class="fas fa-paper-plane"></i></span><div class="flex-1 row-title">Kirim Notifikasi Tes</div><i class="fas fa-chevron-right chev"></i></button>
               </div>
-              <div class="section-foot">Notifikasi berjalan saat Hadzmi Hub terbuka (tab boleh di background). Di iPhone, tambahkan ke Layar Utama agar notifikasi sistem aktif.</div>
+              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Hub terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
             </div>
 
             <!-- Gmail -->

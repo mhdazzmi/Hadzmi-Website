@@ -7,20 +7,18 @@ Personal assistant hub (To-Do, Mind Dump, Bookmarks, Countdown, Music, Kontak WA
 ## Struktur folder
 
 ```
-index.html            ← FILE FINAL (tempel ke Blogspot / deploy ke hosting)
-src/index.html        ← template markup
-src/styles.css        ← design system iOS (light)
-src/js/01-core.js     ← konfigurasi, state, sinkron Firebase, alert/sheet, navigasi
-src/js/02-auth.js     ← lock screen + Firebase Auth + sesi harian
-src/js/03..08         ← modul per menu (dashboard, music, todo, hub, workfin, settings)
-src/js/09-notify.js   ← mesin notifikasi
-src/js/10-share.js    ← Kirim ke Gmail
-build.mjs             ← menggabungkan src/ → index.html  (jalankan: node build.mjs)
-database.rules.json   ← aturan keamanan Firebase (WAJIB)
-sw.js, manifest.webmanifest ← PWA (hanya aktif di hosting selain Blogspot)
+public/                 ← isi website yang di-deploy
+  index.html            ← FILE FINAL (hasil build; juga bisa ditempel ke Blogspot)
+  sw.js                 ← service worker (Web Push + klik notifikasi)
+  manifest.webmanifest, icons/  ← PWA (bisa "Tambah ke Layar Utama")
+worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
+wrangler.jsonc          ← konfigurasi Cloudflare
+src/                    ← kode sumber UI (styles.css, index.html, js/01..11)
+build.mjs               ← gabungkan src/ → public/index.html   (npm run build)
+database.rules.json     ← aturan keamanan Firebase (WAJIB)
 ```
 
-Setelah mengedit file di `src/`, jalankan `node build.mjs` supaya `index.html` dibuat ulang.
+Setelah mengedit file di `src/`, jalankan `npm run build` (atau `node build.mjs`) lalu commit `public/index.html`.
 
 ---
 
@@ -67,7 +65,7 @@ Pusat notifikasi in-app (ikon lonceng) + banner gaya iOS + notifikasi sistem (se
 | Ringkasan pagi | 07:00–12:00, jumlah agenda hari ini |
 | Sesi hampir habis | < 10 menit sebelum 00:00 |
 
-Semua bisa dinyalakan/dimatikan di **Settings → Notifikasi**. Notifikasi berjalan selama website terbuka (termasuk di tab background). Di iPhone, notifikasi sistem baru aktif setelah **Tambah ke Layar Utama** dan website di-host di luar Blogspot (lihat rekomendasi di bawah).
+Semua bisa dinyalakan/dimatikan di **Settings → Notifikasi**. Dengan hosting Cloudflare + **Push** aktif, notifikasi tetap masuk walau website ditutup (lihat bagian Deploy ke Cloudflare). Di Blogspot, notifikasi hanya berjalan selama website terbuka.
 
 ### ✉️ Kirim ke Gmail
 Tombol ✉️ membuka sheet iOS: **Gmail (web)**, **Aplikasi Gmail** (iPhone), **Aplikasi Email (mailto)**, **Bagikan…**, **Salin**.
@@ -106,21 +104,50 @@ Smart list (To Do, Hari Ini, In Progress, Terlambat, Selesai, Semua), pengelompo
 |---|---|---|
 | Database realtime + sinkron semua device | **Firebase Realtime DB (Spark, gratis)** ✅ tetap | Sudah dipakai, benar-benar realtime, bisa offline, gratis tanpa batas waktu (1 GB simpanan, 10 GB/bulan unduhan) |
 | Login | **Firebase Auth** ✅ (sudah ditambahkan) | Gratis, langsung terhubung dengan rules database |
-| Hosting website | **Cloudflare Pages** atau **Firebase Hosting** | Gratis, HTTPS, custom domain, mendukung *service worker* → PWA + push notification sungguhan. Blogspot tidak bisa. |
+| Hosting website | **Cloudflare Workers + Static Assets** ✅ (sudah disiapkan) | Gratis, HTTPS, custom domain, auto-deploy dari GitHub, mendukung *service worker* → PWA + push sungguhan. Blogspot tidak bisa. |
 | API sendiri (proxy, kunci disembunyikan dari browser, cron) | **Cloudflare Workers** | Gratis 100rb request/hari, ada *cron trigger* (mis. email ringkasan jam 07:00 walau website tertutup), penyimpanan D1 (SQLite) & KV |
 | Email otomatis (tanpa tap tombol) | **Google Apps Script** (gratis, kirim dari Gmail-mu) atau **Resend** | Bisa dipanggil dari Worker atau terjadwal |
-| Push notification saat app tertutup | **Firebase Cloud Messaging** + cron Cloudflare Worker sebagai pengirim | FCM gratis; Worker yang mengecek deadline lalu mengirim push |
+| Push notification saat app tertutup | **Web Push (VAPID) + cron Cloudflare Worker** ✅ (sudah dibuat) | Gratis, standar web, tanpa FCM |
 | Upload file sungguhan (bukan cuma log) | **Cloudflare R2** (10 GB gratis) atau Cloudinary | Firebase Storage baru sekarang butuh paket Blaze (bayar sesuai pemakaian) |
 
 Catatan:
 - **Supabase** juga bagus (Postgres + realtime + auth), tapi project gratis akan *di-pause* jika tidak aktif 1 minggu, jadi kurang cocok untuk "pasang lalu lupa".
 - Cloud Functions Firebase butuh paket Blaze. Karena itu Cloudflare Workers lebih cocok untuk lapisan API-mu.
 
-### Deploy ke Cloudflare Pages (paling mudah)
-1. Push repo ini ke GitHub (sudah).
-2. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git → pilih repo ini.
-3. Build command: *(kosongkan)* · Output directory: `/`
-4. Tambahkan domain Pages (`xxx.pages.dev`) di Firebase → Authentication → Settings → **Authorized domains**.
+---
 
-### Tetap di Blogspot
-Tempel **seluruh** isi `index.html` ke postingan (mode HTML), sama seperti sebelumnya.
+## ☁️ Deploy ke Cloudflare (website + push server, gratis)
+
+Website, API, dan cron push berjalan dalam **satu project Cloudflare Workers** (Workers + Static Assets). Cloudflare Pages tidak mendukung cron, padahal cron dibutuhkan untuk push saat website tertutup. Paket gratisnya sama.
+
+### Sekali setup (±10 menit)
+1. Selesaikan dulu **Setup WAJIB Firebase** di atas (catat **UID**-mu).
+2. Daftar/login di **dash.cloudflare.com** (gratis).
+3. **Workers & Pages → Create → Import a repository** → hubungkan GitHub → pilih repo `Hadzmi-Website`.
+   - Production branch: `main` (setelah Pull Request di-merge)
+   - Build command: `npm run build` · Deploy command: `npx wrangler deploy` (default)
+   - Klik **Deploy**. KV namespace dibuat otomatis.
+4. Buka Worker **hadzmi-hub** → **Settings → Variables and Secrets** → tambah 2 variabel (tipe *Text*):
+   - `OWNER_UID` = UID Firebase-mu
+   - `VAPID_SUBJECT` = `mailto:emailkamu@gmail.com`
+   Lalu **Deploy** ulang (atau push commit apa saja).
+5. Firebase Console → Authentication → Settings → **Authorized domains** → tambahkan `hadzmi-hub.<akunmu>.workers.dev` (atau custom domain-mu).
+6. Buka website di domain baru → login → **Settings → Notifikasi → Push saat website tertutup → Aktifkan**. Lakukan di **setiap perangkat**.
+   - **iPhone/iPad** (iOS 16.4+): buka di Safari → Share → **Tambah ke Layar Utama** → buka dari ikon → baru aktifkan Push.
+   - Tekan **Tes Push dari Server**, lalu tutup website. Notifikasi harus tetap masuk.
+
+Setelah itu setiap `git push` ke `main` otomatis ter-deploy.
+
+### Cara kerja push
+1. Saat website terbuka, daftar pengingat 35 hari ke depan dikirim ke server. Pengirimannya hanya terjadi jika ada perubahan (aman untuk kuota KV gratis).
+2. **Cron tiap menit** di Cloudflare mengecek pengingat yang jatuh tempo, lalu mengirim **Web Push** (standar VAPID, tanpa Firebase Cloud Messaging) ke semua perangkat yang aktif.
+3. Service worker mengambil isi notifikasi dari server lalu menampilkannya. Klik notifikasi akan membuka menu yang tepat.
+4. Semua API diamankan dengan token login Firebase, dan hanya `OWNER_UID` yang diterima.
+
+Batasan: pengingat yang dibuat/diubah baru masuk ke server setelah website dibuka minimal sekali sesudah perubahan itu (otomatis di perangkat mana pun). Ringkasan "tugas terlambat" dan "sesi hampir habis" hanya muncul in-app.
+
+### Biaya
+Paket gratis: 100.000 request/hari, cron, KV 1.000 tulis & 100.000 baca/hari. Pemakaian Hadzmi Hub hanya sekitar 1.500 baca dan puluhan tulis per hari, jadi tetap **Rp 0**.
+
+### Tetap di Blogspot (tanpa push)
+Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama seperti sebelumnya. Semua fitur jalan kecuali Push saat website tertutup.

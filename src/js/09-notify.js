@@ -17,7 +17,7 @@ function setNotifPref(input) {
   showToast(`Notifikasi ${input.closest('.row').querySelector('.row-title').textContent} ${input.checked ? 'aktif' : 'nonaktif'}`);
   scheduleReminderCheck();
 }
-function setNotifLead(v) { const p = getNotifPrefs(); p.lead = parseInt(v) || 30; writeLS(NOTIF_PREFS_KEY, p); showToast(`Pengingat ${v} menit sebelum deadline`); }
+function setNotifLead(v) { const p = getNotifPrefs(); p.lead = parseInt(v) || 30; writeLS(NOTIF_PREFS_KEY, p); showToast(`Pengingat ${v} menit sebelum deadline`); scheduleReminderCheck(); }
 
 function getInbox() { return readLS(NOTIF_INBOX_KEY, []); }
 function setInbox(list) { writeLS(NOTIF_INBOX_KEY, list.slice(0, 60)); updateNotifBadge(); }
@@ -52,7 +52,7 @@ function requestNotifPermission() {
 
 function showSystemNotification(title, body, tag) {
   if (!notifSupported() || Notification.permission !== 'granted') return;
-  const opts = { body, tag: tag || undefined, icon: 'https://placehold.co/192x192/007AFF/FFFFFF?text=H', badge: 'https://placehold.co/96x96/007AFF/FFFFFF?text=H', renotify: false };
+  const opts = { body, tag: tag || undefined, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: false };
   if (swRegistration && swRegistration.showNotification) { swRegistration.showNotification(title, opts).catch(() => {}); return; }
   try { const n = new Notification(title, opts); n.onclick = () => { window.focus(); n.close(); }; } catch (e) {}
 }
@@ -122,60 +122,89 @@ function sendTestNotification() {
 }
 
 // ---------- Reminder engine ----------
+// Satu sumber kebenaran: daftar event pengingat dengan waktu mulai (at) & batas (until).
+// Dipakai untuk notifikasi in-app (saat website terbuka) DAN dikirim ke server untuk Web Push (saat tertutup).
 function scheduleReminderCheck() {
   clearTimeout(reminderDebounce);
   reminderDebounce = setTimeout(checkReminders, 1500);
 }
-function checkReminders() {
-  if (!appStarted) return;
+function addDaysToDateStr(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+function endOfWibDay(dateStr) { return wibToEpoch(dateStr, '23:59') + 60000; }
+
+function buildReminderEvents(now, horizonDays) {
+  now = now || Date.now();
+  const horizon = now + (horizonDays || 35) * 86400000;
   const prefs = getNotifPrefs();
-  const now = Date.now();
   const lead = (prefs.lead || 30) * 60000;
-  const today = wibDateStr(), tomorrow = wibAddDays(1);
-  const hour = getWIBDate().getHours();
+  const today = wibDateStr();
+  const out = [];
+  const add = (e) => { if (e.until > now && e.at < horizon) out.push(e); };
   const todoAction = (filter) => ({ tab: 'tab-hub', sub: 'sub-todo', filter });
 
   if (prefs.tasks) {
-    let overdueCount = 0;
     appState.todos.forEach(t => {
       if (t.status === 'Done' || !t.deadline) return;
-      const due = taDueEpoch(t);
       const sig = `${t.id}_${t.deadline}_${t.time || ''}`;
       if (t.time) {
-        if (now >= due - lead && now < due) pushNotification({ key: 'task_lead_' + sig, title: '⏰ Deadline sebentar lagi', body: `${t.title} · pukul ${t.time} WIB`, icon: 'fa-list-check', color: 'bg-blue', pref: 'tasks', action: todoAction('today') });
-        else if (now >= due && now < due + 2 * 3600000) pushNotification({ key: 'task_due_' + sig, title: '🔔 Waktunya sekarang', body: t.title, icon: 'fa-bell', color: 'bg-red', pref: 'tasks', action: todoAction('today') });
-      } else if (t.deadline === today && hour >= 7) {
-        pushNotification({ key: 'task_today_' + sig, title: '📅 Deadline hari ini', body: t.title, icon: 'fa-calendar-day', color: 'bg-indigo', pref: 'tasks', action: todoAction('today') });
+        const due = wibToEpoch(t.deadline, t.time);
+        add({ key: 'task_lead_' + sig, at: due - lead, until: due, title: '⏰ Deadline sebentar lagi', body: `${t.title} · pukul ${t.time} WIB`, icon: 'fa-list-check', color: 'bg-blue', pref: 'tasks', action: todoAction('today') });
+        add({ key: 'task_due_' + sig, at: due, until: due + 2 * 3600000, title: '🔔 Waktunya sekarang', body: t.title, icon: 'fa-bell', color: 'bg-red', pref: 'tasks', action: todoAction('today') });
+      } else {
+        add({ key: 'task_today_' + sig, at: wibToEpoch(t.deadline, '07:00'), until: endOfWibDay(t.deadline), title: '📅 Deadline hari ini', body: t.title, icon: 'fa-calendar-day', color: 'bg-indigo', pref: 'tasks', action: todoAction('today') });
       }
-      if (t.deadline === tomorrow && hour >= 19) pushNotification({ key: 'task_h1_' + sig, title: 'Deadline besok', body: `${t.title}${t.time ? ' · ' + t.time : ''}`, icon: 'fa-calendar', color: 'bg-orange', pref: 'tasks', action: todoAction('active') });
-      if (now > due + (t.time ? 2 * 3600000 : 0)) overdueCount++;
+      const prev = addDaysToDateStr(t.deadline, -1);
+      add({ key: 'task_h1_' + sig, at: wibToEpoch(prev, '19:00'), until: endOfWibDay(prev), title: 'Deadline besok', body: `${t.title}${t.time ? ' · ' + t.time : ''}`, icon: 'fa-calendar', color: 'bg-orange', pref: 'tasks', action: todoAction('active') });
     });
-    if (overdueCount > 0 && hour >= 8) pushNotification({ key: 'task_overdue_' + today, title: '⚠️ Tugas terlambat', body: `Kamu punya ${overdueCount} tugas yang melewati deadline.`, icon: 'fa-triangle-exclamation', color: 'bg-red', pref: 'tasks', action: todoAction('overdue') });
   }
 
   if (prefs.countdowns) {
     appState.countdowns.forEach(c => {
       if (c.isArchived || !c.tanggal) return;
-      const days = daysUntil(c.tanggal);
       const sig = `${c.id}_${c.tanggal}`;
       const action = { tab: 'tab-hub', sub: 'sub-countdown' };
-      if ((days === 3 || days === 1) && hour >= 8) pushNotification({ key: `cd_h${days}_${sig}`, title: days === 1 ? '⏳ Besok!' : '⏳ 3 hari lagi', body: `${c.nama} · ${prettyDate(c.tanggal, true)}`, icon: 'fa-hourglass-half', color: 'bg-purple', pref: 'countdowns', action });
-      if (days === 0 && hour >= 7) pushNotification({ key: `cd_today_${sig}`, title: '🎉 Hari ini!', body: `${c.nama}${c.jam ? ' · pukul ' + c.jam : ''}`, icon: 'fa-champagne-glasses', color: 'bg-pink', pref: 'countdowns', action });
-      if (days === 0 && c.jam) {
+      [3, 1].forEach(n => {
+        const d = addDaysToDateStr(c.tanggal, -n);
+        add({ key: `cd_h${n}_${sig}`, at: wibToEpoch(d, '08:00'), until: endOfWibDay(d), title: n === 1 ? '⏳ Besok!' : '⏳ 3 hari lagi', body: `${c.nama} · ${prettyDate(c.tanggal, true)}`, icon: 'fa-hourglass-half', color: 'bg-purple', pref: 'countdowns', action });
+      });
+      add({ key: `cd_today_${sig}`, at: wibToEpoch(c.tanggal, '07:00'), until: endOfWibDay(c.tanggal), title: '🎉 Hari ini!', body: `${c.nama}${c.jam ? ' · pukul ' + c.jam : ''}`, icon: 'fa-champagne-glasses', color: 'bg-pink', pref: 'countdowns', action });
+      if (c.jam) {
         const due = wibToEpoch(c.tanggal, c.jam);
-        if (now >= due - lead && now < due) pushNotification({ key: `cd_lead_${sig}_${c.jam}`, title: '⏰ Event segera dimulai', body: `${c.nama} · pukul ${c.jam}`, icon: 'fa-hourglass-end', color: 'bg-purple', pref: 'countdowns', action });
+        add({ key: `cd_lead_${sig}_${c.jam}`, at: due - lead, until: due, title: '⏰ Event segera dimulai', body: `${c.nama} · pukul ${c.jam}`, icon: 'fa-hourglass-end', color: 'bg-purple', pref: 'countdowns', action });
       }
     });
   }
 
-  if (prefs.kas && hour >= 20 && !appState.kas.some(k => k.tanggal === today)) {
-    pushNotification({ key: 'kas_' + today, title: '💰 Catat kas hari ini', body: 'Belum ada entri Cash Ledger untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
+  if (prefs.kas && !appState.kas.some(k => k.tanggal === today)) {
+    add({ key: 'kas_' + today, at: wibToEpoch(today, '20:00'), until: endOfWibDay(today), title: '💰 Catat kas hari ini', body: 'Belum ada entri Cash Ledger untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
   }
 
-  if (prefs.digest && hour >= 7 && hour < 12) {
-    const agenda = appState.todos.filter(t => t.deadline === today && t.status !== 'Done').length;
-    const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal === today).length;
-    if (agenda + events > 0) pushNotification({ key: 'digest_' + today, title: '☀️ Ringkasan pagi', body: `Hari ini: ${agenda} agenda${events ? ` & ${events} event` : ''}. Semangat, Hadzmi!`, icon: 'fa-sun', color: 'bg-orange', pref: 'digest', action: todoAction('today') });
+  if (prefs.digest) {
+    const days = new Set();
+    appState.todos.forEach(t => { if (t.deadline && t.status !== 'Done' && t.deadline >= today) days.add(t.deadline); });
+    appState.countdowns.forEach(c => { if (!c.isArchived && c.tanggal >= today) days.add(c.tanggal); });
+    days.forEach(d => {
+      const agenda = appState.todos.filter(t => t.deadline === d && t.status !== 'Done').length;
+      const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal === d).length;
+      add({ key: 'digest_' + d, at: wibToEpoch(d, '07:00'), until: wibToEpoch(d, '12:00'), title: '☀️ Ringkasan pagi', body: `Hari ini: ${agenda} agenda${events ? ` & ${events} event` : ''}. Semangat, Hadzmi!`, icon: 'fa-sun', color: 'bg-orange', pref: 'digest', action: todoAction('today') });
+    });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+function checkReminders() {
+  if (!appStarted) return;
+  const now = Date.now();
+  buildReminderEvents(now).forEach(e => { if (e.at <= now && now < e.until) pushNotification(e); });
+
+  // Ringkasan tugas terlambat (hanya in-app)
+  const prefs = getNotifPrefs();
+  const today = wibDateStr();
+  if (prefs.tasks && getWIBDate().getHours() >= 8) {
+    const overdueCount = appState.todos.filter(t => t.status !== 'Done' && t.deadline && now > taDueEpoch(t) + (t.time ? 2 * 3600000 : 0)).length;
+    if (overdueCount > 0) pushNotification({ key: 'task_overdue_' + today, title: '⚠️ Tugas terlambat', body: `Kamu punya ${overdueCount} tugas yang melewati deadline.`, icon: 'fa-triangle-exclamation', color: 'bg-red', pref: 'tasks', action: { tab: 'tab-hub', sub: 'sub-todo', filter: 'overdue' } });
   }
 
   // Bersihkan kunci lama (> 14 hari)
@@ -183,12 +212,19 @@ function checkReminders() {
   const cutoff = now - 14 * 86400000; let changed = false;
   Object.keys(fired).forEach(k => { if (fired[k] < cutoff) { delete fired[k]; changed = true; } });
   if (changed) writeLS(NOTIF_FIRED_KEY, fired);
+
+  if (typeof syncPushSchedule === 'function') syncPushSchedule(false);
 }
 
 function initNotifications() {
   updateNotifBadge();
-  if ('serviceWorker' in navigator && location.protocol === 'https:' && !/blogspot\.|blogger\./i.test(location.hostname)) {
-    navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; }).catch(() => {});
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !/blogspot\.|blogger\./i.test(location.hostname)) {
+    navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; if (typeof initPush === 'function') initPush(); }).catch(() => {});
+    navigator.serviceWorker.addEventListener('message', ev => {
+      const d = ev.data || {};
+      if (d.type === 'hz-navigate') runNotifAction(d.action);
+      if (d.type === 'hz-push' && typeof mergeServerNotifications === 'function') mergeServerNotifications(d.items || [], true);
+    });
   }
   checkReminders();
   reminderTimer = setInterval(checkReminders, 30000);

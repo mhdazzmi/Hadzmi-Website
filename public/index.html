@@ -10,6 +10,8 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Hadzmi Hub</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1289,6 +1291,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <div class="section-label">Notifikasi</div>
               <div class="list inset-icon">
                 <div class="row"><span class="icon-tile bg-red"><i class="fas fa-bell"></i></span><div class="flex-1"><div class="row-title">Notifikasi Sistem</div><div class="row-sub" id="notifPermissionLabel">—</div></div><button class="btn btn-tinted btn-xs" id="notifPermissionBtn" onclick="requestNotifPermission()">Izinkan</button></div>
+                <div class="row hidden" id="pushRow"><span class="icon-tile bg-pink"><i class="fas fa-tower-broadcast"></i></span><div class="flex-1"><div class="row-title">Push saat website tertutup</div><div class="row-sub" id="pushStatusLabel">Memeriksa…</div></div><button class="btn btn-tinted btn-xs hidden" id="pushToggleBtn" onclick="togglePush()">Aktifkan</button></div>
+                <button class="row hidden" id="pushTestRow" onclick="sendTestPush()"><span class="icon-tile bg-teal"><i class="fas fa-satellite-dish"></i></span><div class="flex-1 row-title">Tes Push dari Server</div><i class="fas fa-chevron-right chev"></i></button>
                 <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div class="flex-1 row-title">Deadline To-Do</div><label class="switch"><input type="checkbox" data-notif="tasks" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><div class="flex-1 row-title">Event Countdown</div><label class="switch"><input type="checkbox" data-notif="countdowns" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div class="flex-1 row-title">Focus & Sleep Timer</div><label class="switch"><input type="checkbox" data-notif="focus" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
@@ -1301,7 +1305,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                 </div>
                 <button class="row" onclick="sendTestNotification()"><span class="icon-tile bg-green"><i class="fas fa-paper-plane"></i></span><div class="flex-1 row-title">Kirim Notifikasi Tes</div><i class="fas fa-chevron-right chev"></i></button>
               </div>
-              <div class="section-foot">Notifikasi berjalan saat Hadzmi Hub terbuka (tab boleh di background). Di iPhone, tambahkan ke Layar Utama agar notifikasi sistem aktif.</div>
+              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Hub terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
             </div>
 
             <!-- Gmail -->
@@ -4282,6 +4286,7 @@ function renderSettingsPanel() {
   if ($('notifLeadSelect')) $('notifLeadSelect').value = String(prefs.lead || 30);
   updateNotifPermissionUI();
   if ($('gmailDefaultTo')) $('gmailDefaultTo').value = getGmailDefault();
+  if (typeof updatePushUI === 'function') updatePushUI();
 }
 
 function exportDataJSON() {
@@ -4354,7 +4359,7 @@ function setNotifPref(input) {
   showToast(`Notifikasi ${input.closest('.row').querySelector('.row-title').textContent} ${input.checked ? 'aktif' : 'nonaktif'}`);
   scheduleReminderCheck();
 }
-function setNotifLead(v) { const p = getNotifPrefs(); p.lead = parseInt(v) || 30; writeLS(NOTIF_PREFS_KEY, p); showToast(`Pengingat ${v} menit sebelum deadline`); }
+function setNotifLead(v) { const p = getNotifPrefs(); p.lead = parseInt(v) || 30; writeLS(NOTIF_PREFS_KEY, p); showToast(`Pengingat ${v} menit sebelum deadline`); scheduleReminderCheck(); }
 
 function getInbox() { return readLS(NOTIF_INBOX_KEY, []); }
 function setInbox(list) { writeLS(NOTIF_INBOX_KEY, list.slice(0, 60)); updateNotifBadge(); }
@@ -4389,7 +4394,7 @@ function requestNotifPermission() {
 
 function showSystemNotification(title, body, tag) {
   if (!notifSupported() || Notification.permission !== 'granted') return;
-  const opts = { body, tag: tag || undefined, icon: 'https://placehold.co/192x192/007AFF/FFFFFF?text=H', badge: 'https://placehold.co/96x96/007AFF/FFFFFF?text=H', renotify: false };
+  const opts = { body, tag: tag || undefined, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: false };
   if (swRegistration && swRegistration.showNotification) { swRegistration.showNotification(title, opts).catch(() => {}); return; }
   try { const n = new Notification(title, opts); n.onclick = () => { window.focus(); n.close(); }; } catch (e) {}
 }
@@ -4459,60 +4464,89 @@ function sendTestNotification() {
 }
 
 // ---------- Reminder engine ----------
+// Satu sumber kebenaran: daftar event pengingat dengan waktu mulai (at) & batas (until).
+// Dipakai untuk notifikasi in-app (saat website terbuka) DAN dikirim ke server untuk Web Push (saat tertutup).
 function scheduleReminderCheck() {
   clearTimeout(reminderDebounce);
   reminderDebounce = setTimeout(checkReminders, 1500);
 }
-function checkReminders() {
-  if (!appStarted) return;
+function addDaysToDateStr(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+function endOfWibDay(dateStr) { return wibToEpoch(dateStr, '23:59') + 60000; }
+
+function buildReminderEvents(now, horizonDays) {
+  now = now || Date.now();
+  const horizon = now + (horizonDays || 35) * 86400000;
   const prefs = getNotifPrefs();
-  const now = Date.now();
   const lead = (prefs.lead || 30) * 60000;
-  const today = wibDateStr(), tomorrow = wibAddDays(1);
-  const hour = getWIBDate().getHours();
+  const today = wibDateStr();
+  const out = [];
+  const add = (e) => { if (e.until > now && e.at < horizon) out.push(e); };
   const todoAction = (filter) => ({ tab: 'tab-hub', sub: 'sub-todo', filter });
 
   if (prefs.tasks) {
-    let overdueCount = 0;
     appState.todos.forEach(t => {
       if (t.status === 'Done' || !t.deadline) return;
-      const due = taDueEpoch(t);
       const sig = `${t.id}_${t.deadline}_${t.time || ''}`;
       if (t.time) {
-        if (now >= due - lead && now < due) pushNotification({ key: 'task_lead_' + sig, title: '⏰ Deadline sebentar lagi', body: `${t.title} · pukul ${t.time} WIB`, icon: 'fa-list-check', color: 'bg-blue', pref: 'tasks', action: todoAction('today') });
-        else if (now >= due && now < due + 2 * 3600000) pushNotification({ key: 'task_due_' + sig, title: '🔔 Waktunya sekarang', body: t.title, icon: 'fa-bell', color: 'bg-red', pref: 'tasks', action: todoAction('today') });
-      } else if (t.deadline === today && hour >= 7) {
-        pushNotification({ key: 'task_today_' + sig, title: '📅 Deadline hari ini', body: t.title, icon: 'fa-calendar-day', color: 'bg-indigo', pref: 'tasks', action: todoAction('today') });
+        const due = wibToEpoch(t.deadline, t.time);
+        add({ key: 'task_lead_' + sig, at: due - lead, until: due, title: '⏰ Deadline sebentar lagi', body: `${t.title} · pukul ${t.time} WIB`, icon: 'fa-list-check', color: 'bg-blue', pref: 'tasks', action: todoAction('today') });
+        add({ key: 'task_due_' + sig, at: due, until: due + 2 * 3600000, title: '🔔 Waktunya sekarang', body: t.title, icon: 'fa-bell', color: 'bg-red', pref: 'tasks', action: todoAction('today') });
+      } else {
+        add({ key: 'task_today_' + sig, at: wibToEpoch(t.deadline, '07:00'), until: endOfWibDay(t.deadline), title: '📅 Deadline hari ini', body: t.title, icon: 'fa-calendar-day', color: 'bg-indigo', pref: 'tasks', action: todoAction('today') });
       }
-      if (t.deadline === tomorrow && hour >= 19) pushNotification({ key: 'task_h1_' + sig, title: 'Deadline besok', body: `${t.title}${t.time ? ' · ' + t.time : ''}`, icon: 'fa-calendar', color: 'bg-orange', pref: 'tasks', action: todoAction('active') });
-      if (now > due + (t.time ? 2 * 3600000 : 0)) overdueCount++;
+      const prev = addDaysToDateStr(t.deadline, -1);
+      add({ key: 'task_h1_' + sig, at: wibToEpoch(prev, '19:00'), until: endOfWibDay(prev), title: 'Deadline besok', body: `${t.title}${t.time ? ' · ' + t.time : ''}`, icon: 'fa-calendar', color: 'bg-orange', pref: 'tasks', action: todoAction('active') });
     });
-    if (overdueCount > 0 && hour >= 8) pushNotification({ key: 'task_overdue_' + today, title: '⚠️ Tugas terlambat', body: `Kamu punya ${overdueCount} tugas yang melewati deadline.`, icon: 'fa-triangle-exclamation', color: 'bg-red', pref: 'tasks', action: todoAction('overdue') });
   }
 
   if (prefs.countdowns) {
     appState.countdowns.forEach(c => {
       if (c.isArchived || !c.tanggal) return;
-      const days = daysUntil(c.tanggal);
       const sig = `${c.id}_${c.tanggal}`;
       const action = { tab: 'tab-hub', sub: 'sub-countdown' };
-      if ((days === 3 || days === 1) && hour >= 8) pushNotification({ key: `cd_h${days}_${sig}`, title: days === 1 ? '⏳ Besok!' : '⏳ 3 hari lagi', body: `${c.nama} · ${prettyDate(c.tanggal, true)}`, icon: 'fa-hourglass-half', color: 'bg-purple', pref: 'countdowns', action });
-      if (days === 0 && hour >= 7) pushNotification({ key: `cd_today_${sig}`, title: '🎉 Hari ini!', body: `${c.nama}${c.jam ? ' · pukul ' + c.jam : ''}`, icon: 'fa-champagne-glasses', color: 'bg-pink', pref: 'countdowns', action });
-      if (days === 0 && c.jam) {
+      [3, 1].forEach(n => {
+        const d = addDaysToDateStr(c.tanggal, -n);
+        add({ key: `cd_h${n}_${sig}`, at: wibToEpoch(d, '08:00'), until: endOfWibDay(d), title: n === 1 ? '⏳ Besok!' : '⏳ 3 hari lagi', body: `${c.nama} · ${prettyDate(c.tanggal, true)}`, icon: 'fa-hourglass-half', color: 'bg-purple', pref: 'countdowns', action });
+      });
+      add({ key: `cd_today_${sig}`, at: wibToEpoch(c.tanggal, '07:00'), until: endOfWibDay(c.tanggal), title: '🎉 Hari ini!', body: `${c.nama}${c.jam ? ' · pukul ' + c.jam : ''}`, icon: 'fa-champagne-glasses', color: 'bg-pink', pref: 'countdowns', action });
+      if (c.jam) {
         const due = wibToEpoch(c.tanggal, c.jam);
-        if (now >= due - lead && now < due) pushNotification({ key: `cd_lead_${sig}_${c.jam}`, title: '⏰ Event segera dimulai', body: `${c.nama} · pukul ${c.jam}`, icon: 'fa-hourglass-end', color: 'bg-purple', pref: 'countdowns', action });
+        add({ key: `cd_lead_${sig}_${c.jam}`, at: due - lead, until: due, title: '⏰ Event segera dimulai', body: `${c.nama} · pukul ${c.jam}`, icon: 'fa-hourglass-end', color: 'bg-purple', pref: 'countdowns', action });
       }
     });
   }
 
-  if (prefs.kas && hour >= 20 && !appState.kas.some(k => k.tanggal === today)) {
-    pushNotification({ key: 'kas_' + today, title: '💰 Catat kas hari ini', body: 'Belum ada entri Cash Ledger untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
+  if (prefs.kas && !appState.kas.some(k => k.tanggal === today)) {
+    add({ key: 'kas_' + today, at: wibToEpoch(today, '20:00'), until: endOfWibDay(today), title: '💰 Catat kas hari ini', body: 'Belum ada entri Cash Ledger untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
   }
 
-  if (prefs.digest && hour >= 7 && hour < 12) {
-    const agenda = appState.todos.filter(t => t.deadline === today && t.status !== 'Done').length;
-    const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal === today).length;
-    if (agenda + events > 0) pushNotification({ key: 'digest_' + today, title: '☀️ Ringkasan pagi', body: `Hari ini: ${agenda} agenda${events ? ` & ${events} event` : ''}. Semangat, Hadzmi!`, icon: 'fa-sun', color: 'bg-orange', pref: 'digest', action: todoAction('today') });
+  if (prefs.digest) {
+    const days = new Set();
+    appState.todos.forEach(t => { if (t.deadline && t.status !== 'Done' && t.deadline >= today) days.add(t.deadline); });
+    appState.countdowns.forEach(c => { if (!c.isArchived && c.tanggal >= today) days.add(c.tanggal); });
+    days.forEach(d => {
+      const agenda = appState.todos.filter(t => t.deadline === d && t.status !== 'Done').length;
+      const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal === d).length;
+      add({ key: 'digest_' + d, at: wibToEpoch(d, '07:00'), until: wibToEpoch(d, '12:00'), title: '☀️ Ringkasan pagi', body: `Hari ini: ${agenda} agenda${events ? ` & ${events} event` : ''}. Semangat, Hadzmi!`, icon: 'fa-sun', color: 'bg-orange', pref: 'digest', action: todoAction('today') });
+    });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+function checkReminders() {
+  if (!appStarted) return;
+  const now = Date.now();
+  buildReminderEvents(now).forEach(e => { if (e.at <= now && now < e.until) pushNotification(e); });
+
+  // Ringkasan tugas terlambat (hanya in-app)
+  const prefs = getNotifPrefs();
+  const today = wibDateStr();
+  if (prefs.tasks && getWIBDate().getHours() >= 8) {
+    const overdueCount = appState.todos.filter(t => t.status !== 'Done' && t.deadline && now > taDueEpoch(t) + (t.time ? 2 * 3600000 : 0)).length;
+    if (overdueCount > 0) pushNotification({ key: 'task_overdue_' + today, title: '⚠️ Tugas terlambat', body: `Kamu punya ${overdueCount} tugas yang melewati deadline.`, icon: 'fa-triangle-exclamation', color: 'bg-red', pref: 'tasks', action: { tab: 'tab-hub', sub: 'sub-todo', filter: 'overdue' } });
   }
 
   // Bersihkan kunci lama (> 14 hari)
@@ -4520,12 +4554,19 @@ function checkReminders() {
   const cutoff = now - 14 * 86400000; let changed = false;
   Object.keys(fired).forEach(k => { if (fired[k] < cutoff) { delete fired[k]; changed = true; } });
   if (changed) writeLS(NOTIF_FIRED_KEY, fired);
+
+  if (typeof syncPushSchedule === 'function') syncPushSchedule(false);
 }
 
 function initNotifications() {
   updateNotifBadge();
-  if ('serviceWorker' in navigator && location.protocol === 'https:' && !/blogspot\.|blogger\./i.test(location.hostname)) {
-    navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; }).catch(() => {});
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !/blogspot\.|blogger\./i.test(location.hostname)) {
+    navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; if (typeof initPush === 'function') initPush(); }).catch(() => {});
+    navigator.serviceWorker.addEventListener('message', ev => {
+      const d = ev.data || {};
+      if (d.type === 'hz-navigate') runNotifAction(d.action);
+      if (d.type === 'hz-push' && typeof mergeServerNotifications === 'function') mergeServerNotifications(d.items || [], true);
+    });
   }
   checkReminders();
   reminderTimer = setInterval(checkReminders, 30000);
@@ -4656,6 +4697,189 @@ function shareSong(id) {
   openShareSheet(`[Musik] ${s.title}${s.artist ? ' — ' + s.artist : ''}`, `🎵 ${s.title}\nArtis: ${s.artist || '-'}\nKategori: ${s.category || '-'}\n\nLink audio:\n${s.url}${s.lyrics ? `\n\nLirik:\n${s.lyrics.replace(/\[[^\]]*\]/g, '').trim()}` : ''}`);
 }
 
+/* ---- 11-push.js ---- */
+/* =========================================================
+   11 · WEB PUSH — notifikasi saat website tertutup (butuh hosting Cloudflare)
+   ========================================================= */
+const PUSH_API = '/api';
+const PUSH_SCHED_KEY = 'app_push_sched';
+let pushConfig = null;
+let pushSyncTimer = null;
+let pushBusy = false;
+
+function pushHostSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window &&
+    (location.protocol === 'https:' || location.hostname === 'localhost') && !/blogspot\.|blogger\./i.test(location.hostname);
+}
+async function loadPushConfig() {
+  if (pushConfig !== null) return pushConfig;
+  if (!/^https?:$/.test(location.protocol) || /blogspot\.|blogger\./i.test(location.hostname)) return (pushConfig = false);
+  try {
+    const r = await fetch(PUSH_API + '/config', { cache: 'no-store' });
+    pushConfig = r.ok && /json/.test(r.headers.get('content-type') || '') ? await r.json() : false;
+  } catch (e) { pushConfig = false; }
+  return pushConfig;
+}
+async function authFetch(path, opts = {}) {
+  const user = firebaseAuth && firebaseAuth.currentUser;
+  if (!user) throw new Error('Belum login ke Firebase');
+  const token = await user.getIdToken();
+  const res = await fetch(PUSH_API + path, Object.assign({}, opts, {
+    headers: Object.assign({ 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, opts.headers || {})
+  }));
+  if (!res.ok) {
+    let msg = res.status + '';
+    try { msg = (await res.json()).error || msg; } catch (e) {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+function urlB64ToUint8Array(b64) {
+  const s = (b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(s); const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+function deviceLabel() {
+  const ua = navigator.userAgent;
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Perangkat';
+  const br = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '';
+  return `${os}${br ? ' · ' + br : ''}`;
+}
+async function getPushSubscription() {
+  if (!swRegistration || !swRegistration.pushManager) return null;
+  try { return await swRegistration.pushManager.getSubscription(); } catch (e) { return null; }
+}
+
+async function initPush() {
+  const cfg = await loadPushConfig();
+  updatePushUI();
+  if (!cfg || !cfg.pushReady) return;
+  // Perbarui langganan di server (bisa saja dihapus karena kadaluarsa)
+  const sub = await getPushSubscription();
+  if (sub) authFetch('/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub.toJSON(), label: deviceLabel() }) }).catch(() => {});
+  syncPushSchedule(true);
+  pullServerInbox();
+}
+
+async function updatePushUI() {
+  const row = $('pushRow'), testRow = $('pushTestRow'), lbl = $('pushStatusLabel'), btn = $('pushToggleBtn');
+  if (!row) return;
+  const cfg = pushConfig;
+  row.classList.remove('hidden');
+  if (!cfg) {
+    lbl.textContent = /blogspot/i.test(location.hostname) ? 'Tidak tersedia di Blogspot — pakai versi Cloudflare' : 'Server push tidak terhubung';
+    btn.classList.add('hidden'); testRow.classList.add('hidden'); return;
+  }
+  if (!cfg.pushReady) {
+    lbl.textContent = 'Server belum dikonfigurasi: ' + (cfg.missing || []).join(', ');
+    btn.classList.add('hidden'); testRow.classList.add('hidden'); return;
+  }
+  if (!pushHostSupported()) {
+    lbl.textContent = /iphone|ipad/i.test(navigator.userAgent) ? 'iPhone: Tambah ke Layar Utama, lalu buka dari ikon' : 'Browser tidak mendukung Web Push';
+    btn.classList.add('hidden'); testRow.classList.add('hidden'); return;
+  }
+  const sub = await getPushSubscription();
+  btn.classList.remove('hidden');
+  btn.textContent = sub ? 'Matikan' : 'Aktifkan';
+  btn.className = sub ? 'btn btn-danger-tinted btn-xs' : 'btn btn-tinted btn-xs';
+  lbl.textContent = sub ? `Aktif di perangkat ini (${deviceLabel()})` : 'Nonaktif di perangkat ini';
+  testRow.classList.toggle('hidden', !sub);
+}
+
+async function togglePush() {
+  if (pushBusy) return;
+  pushBusy = true;
+  try {
+    const sub = await getPushSubscription();
+    if (sub) {
+      await authFetch('/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+      await sub.unsubscribe();
+      showToast('Push dimatikan di perangkat ini.');
+    } else {
+      if (Notification.permission !== 'granted') {
+        const p = await Notification.requestPermission();
+        updateNotifPermissionUI();
+        if (p !== 'granted') throw new Error('Izin notifikasi tidak diberikan');
+      }
+      if (!swRegistration) swRegistration = await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.ready;
+      if (!pushConfig.vapidPublicKey) pushConfig.vapidPublicKey = (await authFetch('/setup-vapid', { method: 'POST', body: '{}' })).vapidPublicKey;
+      const newSub = await swRegistration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(pushConfig.vapidPublicKey) });
+      await authFetch('/subscribe', { method: 'POST', body: JSON.stringify({ subscription: newSub.toJSON(), label: deviceLabel() }) });
+      await syncPushSchedule(true, true);
+      showToast('Push aktif! Pengingat tetap masuk walau website ditutup.');
+    }
+  } catch (e) {
+    showToast('Gagal: ' + (e.message || e), false);
+  } finally {
+    pushBusy = false;
+    updatePushUI();
+  }
+}
+
+async function sendTestPush() {
+  try {
+    const r = await authFetch('/test-push', { method: 'POST', body: '{}' });
+    const ok = (r.results || []).filter(x => x.status >= 200 && x.status < 300).length;
+    showToast(ok ? `Push tes dikirim ke ${ok} perangkat. Tutup website untuk mencoba.` : 'Push tes gagal terkirim (cek perangkat).', !!ok);
+  } catch (e) { showToast('Gagal: ' + e.message, false); }
+}
+
+function hashString(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h >>> 0); }
+
+/** Kirim jadwal pengingat ke server (dibatasi: hanya jika berubah, atau tiap 6 jam). */
+function syncPushSchedule(force, immediate) {
+  clearTimeout(pushSyncTimer);
+  const run = async () => {
+    if (!pushConfig || !pushConfig.pushReady || !firebaseAuth || !firebaseAuth.currentUser) return;
+    const events = buildReminderEvents(Date.now()).map(e => ({ key: e.key, at: e.at, until: e.until, title: e.title, body: e.body, icon: e.icon, color: e.color, action: e.action || null }));
+    const h = hashString(JSON.stringify(events));
+    const last = readLS(PUSH_SCHED_KEY, {});
+    if (!force && last.h === h && Date.now() - (last.t || 0) < 6 * 3600000) return;
+    try {
+      await authFetch('/schedule', { method: 'POST', body: JSON.stringify({ events }) });
+      writeLS(PUSH_SCHED_KEY, { h, t: Date.now() });
+    } catch (e) { console.warn('schedule sync failed', e); }
+  };
+  if (immediate) return run();
+  pushSyncTimer = setTimeout(run, force ? 1500 : 5000);
+}
+
+/** Notifikasi yang dikirim server (saat website tertutup) dimasukkan ke inbox & ditandai sudah terkirim. */
+function mergeServerNotifications(items, live) {
+  if (!items || !items.length) return;
+  const fired = readLS(NOTIF_FIRED_KEY, {});
+  let inbox = getInbox(); let added = 0;
+  items.forEach(i => {
+    if (!i.key || /^test_/.test(i.key) && !live) return;
+    if (fired[i.key]) return;
+    if (inbox.some(n => n.srvId === i.id)) return;
+    fired[i.key] = fired[i.key] || i.ts || Date.now();
+    inbox.unshift({ id: 'n_' + (i.ts || Date.now()) + Math.random().toString(36).slice(2, 6), srvId: i.id, title: i.title, body: i.body || '', icon: i.icon || 'fa-bell', color: i.color || 'bg-red', ts: i.ts || Date.now(), read: false, action: i.action || null });
+    added++;
+  });
+  if (!added) return;
+  writeLS(NOTIF_FIRED_KEY, fired);
+  inbox.sort((a, b) => b.ts - a.ts);
+  setInbox(inbox);
+}
+async function pullServerInbox() {
+  if (!pushConfig || !pushConfig.pushReady) return;
+  try { const r = await authFetch('/inbox'); mergeServerNotifications(r.items || [], false); } catch (e) {}
+}
+
+// Deep link dari klik notifikasi: ?go=tab:sub:filter
+function handleDeepLink() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const go = params.get('go'); if (!go) return;
+    const [tab, sub, filter] = go.split(':');
+    history.replaceState(null, '', location.pathname);
+    if (tab && $(tab)) runNotifAction({ tab, sub: sub || null, filter: filter || null });
+  } catch (e) {}
+}
+
 /* ---- 99-boot.js ---- */
 /* =========================================================
    99 · BOOT
@@ -4682,11 +4906,12 @@ function startApp() {
   let lastTab = null;
   try { lastTab = sessionStorage.getItem('hz_last_tab'); } catch (e) {}
   if (lastTab && $(lastTab)) switchTab(lastTab);
+  handleDeepLink();
 
   initNotifications();
   sessionWatchTimer = setInterval(checkSessionExpiry, 20000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); updateDashboardGreeting(); renderDashboardTodayAgenda(); }
+    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); pullServerInbox(); updateDashboardGreeting(); renderDashboardTodayAgenda(); }
   });
 }
 
