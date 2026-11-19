@@ -69,6 +69,24 @@ Semua file Kerja hanya bisa diakses setelah login PIN (server memeriksa token Fi
 ### 💾 Penyimpanan (Settings → Penyimpanan)
 Menampilkan pemakaian Firebase (data aplikasi, per kategori) dan Cloudflare (foto & file), masing-masing dari kuota gratis 1 GB, plus cache perangkat.
 
+### 🗄️ Penyimpanan File (Settings → Penyimpanan File)
+| Penyimpanan | Kapasitas gratis | Dipakai untuk | Cara aktifkan |
+|---|---|---|---|
+| **Cloudflare R2** (utama) | 10 GB | Lagu, cover, Galeri, Bukti Kas, Gudang File | Aktifkan R2 (tambah metode pembayaran, paket Free) → hapus `//` di blok `r2_buckets` pada `wrangler.jsonc`. Upload otomatis berhenti di **9 GB** agar tidak kena tagihan. |
+| **Google Drive** | 15 GB (akun Google) | Sama, pilih "Google Drive" saat upload | Pasang `apps-script/Code.gs` di script.google.com (Script Property `SECRET`) → deploy Web App → isi `DRIVE_SCRIPT_URL` (Text) & `DRIVE_SECRET` (Secret) di Cloudflare. |
+| Cloudflare KV (lama) | 1 GB | Cadangan otomatis bila R2 belum aktif | Sudah aktif |
+| Direct link | — | Lagu (.mp3/.m4a). Link YouTube tidak didukung | — |
+
+Firebase Realtime Database **hanya menyimpan teks** (judul, catatan, keterangan, lokasi, daftar file). Langkah lengkap juga ada di dalam aplikasi (tap baris R2 / Google Drive).
+
+### 🎵 Music: upload & offline
+- **+ Lagu → Upload File**: pilih MP3/M4A + cover dari perangkat, simpan ke R2/Drive. Diputar lewat link privat bertanda tangan (streaming + seek), cover di-cache.
+- **Direct Link** tetap tersedia (tidak memakai kuota).
+- **Simpan Offline** (menu ⋯ lagu) → lagu tersimpan di perangkat; filter "Offline"; hapus per lagu atau semua di Settings → Pemakaian.
+
+### 🖼️ Galeri (tab Media → Galeri)
+Pustaka per bulan, **Album** (cover bisa diganti), **Tempat** (tag lokasi: otomatis dari GPS foto, lokasi saat ini, atau ketik manual; buka di Peta), **Favorit**, pencarian, pilih banyak (album/favorit/bagikan/hapus), viewer layar penuh (geser kiri/kanan, info, edit keterangan & lokasi). Kualitas Hemat/Asli, simpan ke R2 atau Google Drive.
+
 ### 🔔 Notifikasi
 Pusat notifikasi in-app (ikon lonceng) + banner gaya iOS + notifikasi sistem (setelah diizinkan):
 | Pemicu | Kapan |

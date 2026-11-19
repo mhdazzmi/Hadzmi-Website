@@ -26,6 +26,7 @@ function startApp() {
   if (lastTab && $(lastTab)) switchTab(lastTab);
   handleDeepLink();
 
+  loadPushConfig().then(() => { fillStoreSelects(); renderMusicModule(); renderGallery(); renderStoragePanel(); });
   initNotifications();
   sessionWatchTimer = setInterval(checkSessionExpiry, 20000);
   document.addEventListener('visibilitychange', () => {

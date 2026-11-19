@@ -55,6 +55,8 @@ let appState = {
   workDocs: readLS('app_work_docs', []),
   workNotes: readLS('app_work_notes', []),
   customLabels: readLS('app_custom_labels', {}),
+  galleryPhotos: readLS('app_gallery_photos', []),
+  galleryAlbums: readLS('app_gallery_albums', []),
   showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
 };
 
@@ -286,6 +288,8 @@ function syncToLocalStorageOnly() {
   writeLS('app_work_docs', appState.workDocs);
   writeLS('app_work_notes', appState.workNotes);
   writeLS('app_custom_labels', appState.customLabels || {});
+  writeLS('app_gallery_photos', appState.galleryPhotos || []);
+  writeLS('app_gallery_albums', appState.galleryAlbums || []);
   writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
 }
 
@@ -316,6 +320,8 @@ function applyRemoteSnapshot(val) {
   appState.workDocs = val.workDocs || [];
   appState.workNotes = val.workNotes || [];
   appState.customLabels = val.customLabels || {};
+  appState.galleryPhotos = val.galleryPhotos || [];
+  appState.galleryAlbums = val.galleryAlbums || [];
   if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
 }
 
@@ -382,8 +388,9 @@ let currentTabId = 'tab-dashboard';
 // ---------- NAMA MENU (bisa diganti di Settings → Nama Menu) ----------
 const LABEL_GROUPS = [
   ['Umum', [['app.name', 'Hadzmi Hub', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
-  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Music'], ['tab.hub', 'Hub'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
-  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.todo', 'To-Do'], ['hub.notes', 'Mind Dump'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus']]],
+  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Hub'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
+  ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
+  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus']]],
   ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Bukti Kas'], ['work.kas', 'Selisih Kas'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
 ];
 const LABEL_DEFAULTS = {};
@@ -396,6 +403,7 @@ function applyLabels() {
   document.querySelectorAll('[data-label]').forEach(el => { const t = L(el.dataset.label); if (el.textContent !== t) el.textContent = t; });
   if ($('hubTitle') && currentHubSub) $('hubTitle').textContent = L(HUB_KEYS[currentHubSub]);
   if ($('workTitle') && currentWorkSub) $('workTitle').textContent = L(WORK_KEYS[currentWorkSub]);
+  if ($('mediaTitle') && currentMediaSub) $('mediaTitle').textContent = L(MEDIA_KEYS[currentMediaSub]);
   defaultDocTitle = L('app.name');
   if (typeof isMusicPlaying === 'undefined' || !isMusicPlaying) document.title = defaultDocTitle;
   updateNavSmallTitle();
@@ -424,7 +432,18 @@ async function resetCustomLabels() {
 }
 const HUB_KEYS = { 'sub-todo': 'hub.todo', 'sub-notes': 'hub.notes', 'sub-links': 'hub.links', 'sub-countdown': 'hub.countdown', 'sub-focus': 'hub.focus' };
 const WORK_KEYS = { 'sub-photos': 'work.photos', 'sub-kas': 'work.kas', 'sub-worknotes': 'work.notes', 'sub-docs': 'work.docs', 'sub-upload': 'work.upload', 'sub-contacts': 'work.contacts' };
-let currentHubSub = 'sub-todo', currentWorkSub = 'sub-photos';
+let currentHubSub = 'sub-notes', currentWorkSub = 'sub-photos', currentMediaSub = 'sub-music';
+const MEDIA_KEYS = { 'sub-music': 'media.music', 'sub-gallery': 'media.gallery' };
+function switchMediaSub(subId) {
+  document.querySelectorAll('.media-sub').forEach(el => el.classList.toggle('hidden', el.id !== subId));
+  setSegActive(['sub-music', 'sub-gallery'], subId);
+  currentMediaSub = subId;
+  if ($('mediaTitle')) $('mediaTitle').textContent = L(MEDIA_KEYS[subId]);
+  $('musicHeadActions').classList.toggle('hidden', subId !== 'sub-music');
+  $('galleryHeadActions').classList.toggle('hidden', subId !== 'sub-gallery');
+  if (subId === 'sub-gallery') renderGallery(); else if (typeof exitGallerySelect === 'function') exitGallerySelect();
+  updateNavSmallTitle();
+}
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -472,7 +491,7 @@ function updateNavSmallTitle() {
   const el = $('navSmallTitle'); if (!el) return;
   if (currentTabId === 'tab-hub') el.textContent = $('hubTitle').textContent;
   else if (currentTabId === 'tab-workfin') el.textContent = $('workTitle').textContent;
-  else if (currentTabId === 'tab-music') el.textContent = L('tab.music');
+  else if (currentTabId === 'tab-music') el.textContent = L(MEDIA_KEYS[currentMediaSub] || 'tab.music');
   else if (currentTabId === 'tab-backup') el.textContent = L('tab.settings');
   else el.textContent = L('tab.home');
 }
@@ -482,6 +501,7 @@ function navigateFromQuickMenu(mainTabId, subTabId, labelText) {
   if (labelEl && labelText) labelEl.textContent = `Terakhir: ${labelText}`;
   switchTab(mainTabId);
   if (subTabId) {
+    if (mainTabId === 'tab-music') switchMediaSub(subTabId);
     if (mainTabId === 'tab-hub') switchHubSubTab(subTabId);
     if (mainTabId === 'tab-workfin') switchWorkFinSubTab(subTabId);
   }
@@ -489,7 +509,8 @@ function navigateFromQuickMenu(mainTabId, subTabId, labelText) {
 
 const SEARCH_MAP = [
   { label: 'Home / Dashboard', icon: 'fa-house', color: 'bg-blue', keys: ['home', 'dashboard', 'utama', 'widget'], action: () => switchTab('tab-dashboard') },
-  { label: 'Music Library', icon: 'fa-music', color: 'bg-pink', keys: ['music', 'lagu', 'audio', 'song', 'lirik'], action: () => switchTab('tab-music') },
+  { key: 'media.music', label: 'Music Library', icon: 'fa-music', color: 'bg-pink', keys: ['music', 'lagu', 'audio', 'song', 'lirik', 'offline'], action: () => { switchTab('tab-music'); switchMediaSub('sub-music'); } },
+  { key: 'media.gallery', label: 'Galeri', icon: 'fa-images', color: 'bg-cyan', keys: ['galeri', 'gallery', 'foto', 'photos', 'album', 'lokasi'], action: () => { switchTab('tab-music'); switchMediaSub('sub-gallery'); } },
   { label: 'To-Do List', icon: 'fa-list-check', color: 'bg-blue', keys: ['todo', 'task', 'tugas', 'pengingat'], action: () => navigateFromQuickMenu('tab-hub', 'sub-todo') },
   { label: 'Mind Dump', icon: 'fa-note-sticky', color: 'bg-yellow', keys: ['note', 'mind', 'catatan'], action: () => navigateFromQuickMenu('tab-hub', 'sub-notes') },
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
@@ -525,7 +546,7 @@ function renderSearchSuggestions(query) {
 function renderAllModules() {
   const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
     renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
-    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor];
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor, renderGallery];
   fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
 }
 

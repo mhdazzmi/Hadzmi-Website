@@ -18,7 +18,11 @@ const MAX_EVENTS = 400;
 const OUTBOX_MAX = 60;
 const SUBS_MAX = 12;
 const SENT_TTL_MS = 40 * 86400000;
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // batas nilai KV
+const MAX_FILE_BYTES = 25 * 1024 * 1024;         // batas nilai KV
+const MAX_R2_FILE = 300 * 1024 * 1024;            // per file di R2
+const MAX_DRIVE_FILE = 30 * 1024 * 1024;          // batas aman Apps Script
+const R2_SAFE_LIMIT = 9 * 1024 * 1024 * 1024;     // berhenti di 9 GB agar tidak lewat kuota gratis 10 GB
+const FILE_ID_RE = /^(r2-[0-9a-f-]{36}|gd-[A-Za-z0-9_-]{10,120}|[0-9a-f-]{36})$/;
 
 export default {
   async fetch(request, env, ctx) {
@@ -48,7 +52,7 @@ async function handleApi(request, env, url) {
     const ready = isConfigured(env);
     let vapidPublicKey = null;
     if (ready.ok) { try { const v = await getVapid(env, false); vapidPublicKey = v ? v.publicKey : null; } catch (e) { console.error('vapid', e && e.stack || e); } }
-    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey });
+    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV } });
   }
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
@@ -64,47 +68,47 @@ async function handleApi(request, env, url) {
     return json({ items, now: Date.now() });
   }
 
+  const fileMatch = /^\/api\/files\/([A-Za-z0-9_-]{8,200})$/.exec(path);
+  if (fileMatch && method === 'GET') {
+    const id = fileMatch[1];
+    if (!FILE_ID_RE.test(id)) throw httpError(404, 'Not found');
+    const exp = Number(url.searchParams.get('exp') || 0), sig = url.searchParams.get('sig');
+    let signed = false;
+    if (sig && exp) {
+      if (exp < Date.now() / 1000) throw httpError(403, 'Link kedaluwarsa');
+      const key = await getSignKey(env, false);
+      if (!key || (await hmac(key, id + '.' + exp)) !== sig) throw httpError(403, 'Link tidak valid');
+      signed = true;
+    } else {
+      await requireAuth(request, env);
+    }
+    return getFile(id, env, request, signed);
+  }
+
   // ---- Semua route di bawah ini wajib login (Firebase ID token milik OWNER_UID) ----
   const user = await requireAuth(request, env);
   requireKV(env);
 
-  // ---- Penyimpanan file pribadi (Bukti Foto & Gudang File) di KV ----
-  if (path === '/api/files' && method === 'POST') {
-    const len = Number(request.headers.get('Content-Length') || 0);
-    if (len > MAX_FILE_BYTES) throw httpError(413, 'File terlalu besar (maks 25 MB)');
-    const buf = await request.arrayBuffer();
-    if (!buf.byteLength) throw httpError(400, 'File kosong');
-    if (buf.byteLength > MAX_FILE_BYTES) throw httpError(413, 'File terlalu besar (maks 25 MB)');
-    let name = 'file';
-    try { name = decodeURIComponent(request.headers.get('X-File-Name') || 'file').slice(0, 200); } catch (e) {}
-    const type = (request.headers.get('Content-Type') || 'application/octet-stream').slice(0, 100);
-    const id = crypto.randomUUID();
-    await env.HUB_KV.put('file:' + id, buf, { metadata: { name, type, size: buf.byteLength, createdAt: Date.now() } });
-    return json({ id, size: buf.byteLength });
+  // ---- Penyimpanan file (R2 / Google Drive / KV lama) ----
+  if (path === '/api/files' && method === 'POST') return uploadFile(request, env, url);
+  if (fileMatch && method === 'DELETE') { await deleteFile(fileMatch[1], env); return json({ ok: true }); }
+  if (path === '/api/sign' && method === 'POST') {
+    const body = await readJson(request);
+    const ids = (body.ids || []).filter(id => FILE_ID_RE.test(id)).slice(0, 500);
+    const days = Math.min(30, Math.max(1, Number(body.days) || 7));
+    const exp = Math.floor(Date.now() / 1000) + days * 86400;
+    const key = await getSignKey(env, true);
+    const urls = {};
+    for (const id of ids) urls[id] = `/api/files/${id}?exp=${exp}&sig=${await hmac(key, id + '.' + exp)}`;
+    return json({ urls, exp });
   }
-  const fm = /^\/api\/files\/([0-9a-f-]{36})$/.exec(path);
-  if (fm && method === 'GET') {
-    const { value, metadata } = await env.HUB_KV.getWithMetadata('file:' + fm[1], 'arrayBuffer');
-    if (!value) throw httpError(404, 'File tidak ditemukan');
-    const meta = metadata || {};
-    return new Response(value, { headers: {
-      'Content-Type': meta.type || 'application/octet-stream',
-      'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(meta.name || 'file')}`,
-      'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'
-    } });
-  }
-  if (fm && method === 'DELETE') {
-    await env.HUB_KV.delete('file:' + fm[1]);
-    return json({ ok: true });
-  }
-  if (path === '/api/files-usage' && method === 'GET') {
-    let cursor, count = 0, bytes = 0;
-    do {
-      const page = await env.HUB_KV.list({ prefix: 'file:', cursor });
-      page.keys.forEach(k => { count++; bytes += (k.metadata && k.metadata.size) || 0; });
-      cursor = page.list_complete ? null : page.cursor;
-    } while (cursor);
-    return json({ count, bytes });
+  if (path === '/api/storage-usage' && method === 'GET') return json(await storageUsage(env, url.searchParams.get('recount') === '1'));
+  if (path === '/api/proxy' && method === 'GET') {
+    const target = url.searchParams.get('url') || '';
+    if (!/^https?:\/\//i.test(target)) throw httpError(400, 'URL tidak valid');
+    const res = await fetch(target, { redirect: 'follow' });
+    if (!res.ok) throw httpError(502, 'Sumber menolak (' + res.status + ')');
+    return new Response(res.body, { headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream', 'Cache-Control': 'private, no-store' } });
   }
 
   if (path === '/api/setup-vapid' && method === 'POST') {
@@ -351,3 +355,146 @@ function concatBytes(...arrs) {
   for (const a of arrs) { out.set(a, o); o += a.length; }
   return out;
 }
+
+
+// ---------------- STORAGE BACKENDS ----------------
+function storeOf(id) { return id.startsWith('r2-') ? 'r2' : id.startsWith('gd-') ? 'drive' : 'kv'; }
+async function uploadFile(request, env, url) {
+  let store = url.searchParams.get('store') || 'auto';
+  if (store === 'auto') store = env.FILES ? 'r2' : 'kv';
+  const len = Number(request.headers.get('Content-Length') || 0);
+  let name = 'file';
+  try { name = decodeURIComponent(request.headers.get('X-File-Name') || 'file').slice(0, 200); } catch (e) {}
+  const type = (request.headers.get('Content-Type') || 'application/octet-stream').slice(0, 100);
+
+  if (store === 'r2') {
+    if (!env.FILES) throw httpError(503, 'R2 belum diaktifkan');
+    if (len > MAX_R2_FILE) throw httpError(413, 'File terlalu besar (maks 300 MB)');
+    const used = Number(await env.HUB_KV.get('r2_bytes')) || 0;
+    if (used + len > R2_SAFE_LIMIT) throw httpError(507, 'Penyimpanan R2 hampir penuh (batas aman 9 GB). Hapus file lama dulu.');
+    const id = 'r2-' + crypto.randomUUID();
+    const obj = await env.FILES.put('f/' + id, request.body, { httpMetadata: { contentType: type }, customMetadata: { name } });
+    await env.HUB_KV.put('r2_bytes', String(used + (obj ? obj.size : len)));
+    return json({ id, size: obj ? obj.size : len, store });
+  }
+  const buf = await request.arrayBuffer();
+  if (!buf.byteLength) throw httpError(400, 'File kosong');
+  if (store === 'drive') {
+    if (!env.DRIVE_SCRIPT_URL || !env.DRIVE_SECRET) throw httpError(503, 'Google Drive belum disambungkan');
+    if (buf.byteLength > MAX_DRIVE_FILE) throw httpError(413, 'File terlalu besar untuk Drive (maks 30 MB)');
+    const r = await driveCall(env, { action: 'upload', name, mimeType: type, data: bytesToBase64(new Uint8Array(buf)) });
+    return json({ id: 'gd-' + r.id, size: buf.byteLength, store });
+  }
+  if (buf.byteLength > MAX_FILE_BYTES) throw httpError(413, 'File terlalu besar (maks 25 MB)');
+  const id = crypto.randomUUID();
+  await env.HUB_KV.put('file:' + id, buf, { metadata: { name, type, size: buf.byteLength, createdAt: Date.now() } });
+  return json({ id, size: buf.byteLength, store: 'kv' });
+}
+
+async function getFile(id, env, request, signed) {
+  const cache = signed ? 'private, max-age=604800, immutable' : 'private, no-store';
+  const store = storeOf(id);
+  if (store === 'r2') {
+    if (!env.FILES) throw httpError(503, 'R2 belum diaktifkan');
+    const range = request.headers.get('Range');
+    const obj = await env.FILES.get('f/' + id, range ? { range: request.headers } : undefined);
+    if (!obj) throw httpError(404, 'File tidak ditemukan');
+    const h = new Headers({ 'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff', ETag: obj.httpEtag });
+    if (range && obj.range) {
+      const off = obj.range.offset || 0, ln = obj.range.length != null ? obj.range.length : obj.size - off;
+      h.set('Content-Range', `bytes ${off}-${off + ln - 1}/${obj.size}`); h.set('Content-Length', String(ln));
+      return new Response(obj.body, { status: 206, headers: h });
+    }
+    h.set('Content-Length', String(obj.size));
+    return new Response(obj.body, { headers: h });
+  }
+  let buf, type;
+  if (store === 'drive') {
+    if (!env.DRIVE_SCRIPT_URL || !env.DRIVE_SECRET) throw httpError(503, 'Google Drive belum disambungkan');
+    const c = caches && caches.default ? caches.default : null;
+    const ck = new Request('https://hz-cache.internal/drive/' + id);
+    const hit = c ? await c.match(ck).catch(() => null) : null;
+    if (hit) { buf = await hit.arrayBuffer(); type = hit.headers.get('Content-Type'); }
+    else {
+      const r = await driveCall(env, { action: 'get', id: id.slice(3) });
+      buf = base64ToBytes(r.data).buffer; type = r.mimeType;
+      if (c) await c.put(ck, new Response(buf, { headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=2592000' } })).catch(() => {});
+    }
+  } else {
+    const { value, metadata } = await env.HUB_KV.getWithMetadata('file:' + id, 'arrayBuffer');
+    if (!value) throw httpError(404, 'File tidak ditemukan');
+    buf = value; type = (metadata || {}).type;
+  }
+  return rangeResponse(buf, type || 'application/octet-stream', request, cache);
+}
+function rangeResponse(buf, type, request, cache) {
+  const total = buf.byteLength;
+  const h = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' };
+  const m = /bytes=(\d*)-(\d*)/.exec(request.headers.get('Range') || '');
+  if (m && (m[1] || m[2])) {
+    let start = m[1] ? Number(m[1]) : total - Number(m[2]);
+    let end = m[1] && m[2] ? Number(m[2]) : total - 1;
+    start = Math.max(0, start); end = Math.min(total - 1, end);
+    if (start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${total}` } });
+    return new Response(buf.slice(start, end + 1), { status: 206, headers: { ...h, 'Content-Range': `bytes ${start}-${end}/${total}`, 'Content-Length': String(end - start + 1) } });
+  }
+  return new Response(buf, { headers: { ...h, 'Content-Length': String(total) } });
+}
+async function deleteFile(id, env) {
+  if (!FILE_ID_RE.test(id)) throw httpError(404, 'Not found');
+  const store = storeOf(id);
+  if (store === 'r2') {
+    if (!env.FILES) return;
+    const head = await env.FILES.head('f/' + id);
+    await env.FILES.delete('f/' + id);
+    if (head) { const used = Number(await env.HUB_KV.get('r2_bytes')) || 0; await env.HUB_KV.put('r2_bytes', String(Math.max(0, used - head.size))); }
+  } else if (store === 'drive') {
+    if (env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET) await driveCall(env, { action: 'delete', id: id.slice(3) }).catch(() => {});
+  } else {
+    await env.HUB_KV.delete('file:' + id);
+  }
+}
+async function storageUsage(env, recount) {
+  const out = { r2: null, kv: null, drive: null };
+  if (env.FILES) {
+    let bytes = Number(await env.HUB_KV.get('r2_bytes')) || 0, count = null;
+    if (recount) {
+      bytes = 0; count = 0; let cursor;
+      do { const page = await env.FILES.list({ prefix: 'f/', cursor }); page.objects.forEach(o => { bytes += o.size; count++; }); cursor = page.truncated ? page.cursor : null; } while (cursor);
+      await env.HUB_KV.put('r2_bytes', String(bytes));
+    }
+    out.r2 = { bytes, count, limit: 10 * 1024 * 1024 * 1024, safeLimit: R2_SAFE_LIMIT };
+  }
+  if (env.HUB_KV) {
+    let cursor, count = 0, bytes = 0;
+    do { const page = await env.HUB_KV.list({ prefix: 'file:', cursor }); page.keys.forEach(k => { count++; bytes += (k.metadata && k.metadata.size) || 0; }); cursor = page.list_complete ? null : page.cursor; } while (cursor);
+    out.kv = { bytes, count, limit: 1024 * 1024 * 1024 };
+  }
+  if (env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET) {
+    try { const r = await driveCall(env, { action: 'usage' }); out.drive = { bytes: r.used, limit: r.limit, folderBytes: r.folderBytes }; }
+    catch (e) { out.drive = { error: e.message }; }
+  }
+  return out;
+}
+async function driveCall(env, payload) {
+  const res = await fetch(env.DRIVE_SCRIPT_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, secret: env.DRIVE_SECRET }) });
+  const text = await res.text();
+  let data; try { data = JSON.parse(text); } catch (e) { throw httpError(502, 'Google Drive tidak merespons dengan benar (cek deploy Apps Script)'); }
+  if (!data.ok) throw httpError(data.error === 'unauthorized' ? 502 : 404, 'Google Drive: ' + (data.error || 'gagal'));
+  return data;
+}
+let signKeyCache = null;
+async function getSignKey(env, create) {
+  if (signKeyCache) return signKeyCache;
+  let raw = await env.HUB_KV.get('sign_key');
+  if (!raw) {
+    if (!create) return null;
+    raw = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)));
+    await env.HUB_KV.put('sign_key', raw);
+  }
+  signKeyCache = await crypto.subtle.importKey('raw', b64urlDecode(raw), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return signKeyCache;
+}
+async function hmac(key, data) { return b64urlEncode(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data)))); }
+function bytesToBase64(bytes) { let s = ''; const CH = 0x8000; for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return btoa(s); }
+function base64ToBytes(b64) { const bin = atob(b64); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }

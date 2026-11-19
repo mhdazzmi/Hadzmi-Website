@@ -7,30 +7,82 @@ const PHOTO_TYPES = ['KTP', 'Buku Tabungan', 'Bukti Kas', 'Slip / Formulir', 'La
 const fileBlobCache = new Map();   // fileId -> Blob (hanya di memori, hilang saat dikunci/reload)
 const fileUrlCache = new Map();    // fileId -> objectURL
 
-// ---------------- File API ----------------
+// ---------------- File API (R2 / Google Drive / KV) ----------------
+const STORE_NAMES = { r2: 'Cloudflare R2', drive: 'Google Drive', kv: 'Cloudflare KV' };
+function storeStatus() { return (pushConfig && pushConfig.stores) || { r2: false, drive: false, kv: !!pushConfig }; }
+function getDefaultStore() {
+  const st = storeStatus(); const pref = readLS('app_default_store', 'auto');
+  if (pref !== 'auto' && st[pref]) return pref;
+  return st.r2 ? 'r2' : st.drive && pref === 'drive' ? 'drive' : 'kv';
+}
+function setDefaultStore(v) { writeLS('app_default_store', v); showToast(v === 'auto' ? 'Otomatis: R2 jika aktif' : 'File baru disimpan ke ' + STORE_NAMES[v]); fillStoreSelects(); }
+function fillStoreSelects() {
+  const st = storeStatus(), def = getDefaultStore(), pref = readLS('app_default_store', 'auto');
+  const opts = ['r2', 'drive', 'kv'].map(k => `<option value="${k}" ${st[k] ? '' : 'disabled'}>${STORE_NAMES[k]}${st[k] ? '' : ' (belum aktif)'}</option>`).join('');
+  document.querySelectorAll('select.store-select').forEach(sel => {
+    if (sel.id === 'defaultStoreSelect') { sel.innerHTML = `<option value="auto">Otomatis</option>` + opts; sel.value = pref; }
+    else { sel.innerHTML = opts; sel.value = def; }
+  });
+  const r = $('storeStatusR2'), d = $('storeStatusDrive');
+  if (r) r.innerHTML = st.r2 ? '<span class="c-green">● Aktif</span> · tap untuk panduan' : 'Belum aktif · tap untuk langkah-langkah';
+  if (d) d.innerHTML = st.drive ? '<span class="c-green">● Tersambung</span> · tap untuk panduan' : 'Belum tersambung · tap untuk langkah-langkah';
+}
 async function getIdTokenOrThrow() {
   const u = firebaseAuth && firebaseAuth.currentUser;
   if (!u) throw new Error('Tidak terhubung. Periksa internet lalu coba lagi.');
   return u.getIdToken();
 }
-function apiUploadFile(blob, name, onProgress) {
+function apiUploadFile(blob, name, onProgress, store) {
+  store = store || getDefaultStore();
+  const max = store === 'r2' ? 300 * 1048576 : store === 'drive' ? 30 * 1048576 : FILE_MAX_BYTES;
   return getIdTokenOrThrow().then(token => new Promise((resolve, reject) => {
-    if (blob.size > FILE_MAX_BYTES) return reject(new Error(`"${name}" lebih dari 25 MB`));
+    if (blob.size > max) return reject(new Error(`"${name}" terlalu besar untuk ${STORE_NAMES[store]} (maks ${formatBytes(max)})`));
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/files');
+    xhr.open('POST', '/api/files?store=' + store);
     xhr.setRequestHeader('Authorization', 'Bearer ' + token);
     xhr.setRequestHeader('X-File-Name', encodeURIComponent(name));
     xhr.setRequestHeader('Content-Type', blob.type || 'application/octet-stream');
     xhr.upload.onprogress = e => { if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total); };
     xhr.onload = () => {
       let data = {}; try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
-      if (xhr.status >= 200 && xhr.status < 300 && data.id) { fileBlobCache.set(data.id, blob); resolve(data); }
+      if (xhr.status >= 200 && xhr.status < 300 && data.id) { fileBlobCache.set(data.id, blob); usageCache = null; resolve(data); }
       else reject(new Error(data.error || ('Upload gagal (' + xhr.status + ')')));
     };
     xhr.onerror = () => reject(new Error('Koneksi terputus saat upload'));
     xhr.send(blob);
   }));
 }
+// Link privat bertanda tangan (berlaku 7 hari) — bisa di-cache browser, dipakai untuk lagu, cover & galeri
+const SIGNED_KEY = 'app_signed_urls';
+let signedMap = readLS(SIGNED_KEY, {});
+let signPending = new Set(), signTimer = null, signWaiters = [];
+function signedUrlSync(id) {
+  const e = signedMap[id];
+  return e && e.exp * 1000 - Date.now() > 86400000 ? e.u : null;
+}
+function signIds(ids) {
+  ids = (ids || []).filter(id => id && !signedUrlSync(id));
+  if (!ids.length) return Promise.resolve();
+  ids.forEach(id => signPending.add(id));
+  return new Promise(resolve => {
+    signWaiters.push(resolve);
+    clearTimeout(signTimer);
+    signTimer = setTimeout(async () => {
+      const batch = Array.from(signPending); signPending = new Set();
+      const waiters = signWaiters; signWaiters = [];
+      try {
+        for (let i = 0; i < batch.length; i += 400) {
+          const r = await authFetch('/sign', { method: 'POST', body: JSON.stringify({ ids: batch.slice(i, i + 400), days: 7 }) });
+          Object.keys(r.urls || {}).forEach(id => { signedMap[id] = { u: r.urls[id], exp: r.exp }; });
+        }
+        const now = Date.now() / 1000; Object.keys(signedMap).forEach(k => { if (signedMap[k].exp < now) delete signedMap[k]; });
+        writeLS(SIGNED_KEY, signedMap);
+      } catch (e) { console.warn('sign failed', e); }
+      waiters.forEach(w => w());
+    }, 60);
+  });
+}
+async function signedUrl(id) { await signIds([id]); return signedUrlSync(id); }
 async function apiFetchBlob(id) {
   if (!id) throw new Error('File tidak ada');
   if (fileBlobCache.has(id)) return fileBlobCache.get(id);
@@ -425,42 +477,111 @@ function storageBar(parts, total) {
   return `<div class="store-bar">${parts.filter(p => p.bytes > 0).map(p => `<span title="${esc(p.label)}" style="background:${p.color}; width:${Math.max(0.6, (p.bytes / total) * 100)}%"></span>`).join('')}</div>
     <div class="store-legend">${parts.filter(p => p.bytes > 0).map(p => `<span><i style="background:${p.color}"></i>${esc(p.label)} ${formatBytes(p.bytes)}</span>`).join('')}</div>`;
 }
-let deviceEstimate = null;
-function renderStoragePanel() {
+let deviceEstimate = null, usageCache = null, usageLoading = false;
+async function refreshStorageUsage(recount) {
+  if (usageLoading || !firebaseAuth || !firebaseAuth.currentUser || !pushConfig) return;
+  usageLoading = true;
+  try { usageCache = await authFetch('/storage-usage' + (recount ? '?recount=1' : '')); if (recount) showToast('Pemakaian dihitung ulang.'); }
+  catch (e) { usageCache = { error: e.message }; }
+  usageLoading = false; deviceEstimate = null; renderStoragePanel(true);
+}
+function usageBlock(title, used, limit, parts, foot) {
+  const pct = limit ? (used / limit) * 100 : 0;
+  return `<div>
+    <div class="flex justify-between items-end"><div><div class="t-foot muted semibold">${title}</div><div class="store-big">${formatBytes(used)} <span class="t-foot muted" style="font-weight:500">dari ${formatBytes(limit)}</span></div></div><span class="badge ${pct > 85 ? 'tint-red' : 'tint-green'}">sisa ${formatBytes(Math.max(0, limit - used))}</span></div>
+    <div class="mt-8">${parts && used ? storageBar(parts, used) : `<div class="store-bar"><span style="background:var(--blue); width:${Math.min(100, pct)}%"></span></div>`}</div>
+    <div class="t-cap muted mt-4">Terpakai ${pct.toFixed(pct < 1 ? 3 : 1)}%${foot ? ' · ' + foot : ''}</div></div>`;
+}
+function renderStoragePanel(fromRefresh) {
   const box = $('storagePanel'); if (!box) return;
+  if (!fromRefresh && !usageCache && pushConfig) refreshStorageUsage(false);
+  fillStoreSelects();
   const s = appState;
   const fb = [
     { label: 'Musik', bytes: jsonBytes(s.musicLibrary) + jsonBytes(s.musicCategories), color: '#FF2D55' },
     { label: 'To-Do', bytes: jsonBytes(s.todos), color: '#007AFF' },
     { label: 'Catatan', bytes: jsonBytes(s.notes) + jsonBytes(s.workNotes), color: '#FFCC00' },
-    { label: 'Selisih Kas', bytes: jsonBytes(s.kas), color: '#00C7BE' },
-    { label: 'Focus', bytes: jsonBytes(s.focusHistory), color: '#5856D6' },
-    { label: 'Lainnya', bytes: jsonBytes(s.countdowns) + jsonBytes(s.links) + jsonBytes(s.contacts) + jsonBytes(s.uploads) + jsonBytes(s.customWebLinks) + jsonBytes(s.workPhotos) + jsonBytes(s.workDocs), color: '#8E8E93' }
+    { label: 'Galeri', bytes: jsonBytes(s.galleryPhotos) + jsonBytes(s.galleryAlbums), color: '#34C759' },
+    { label: 'Kerja', bytes: jsonBytes(s.kas) + jsonBytes(s.workPhotos) + jsonBytes(s.workDocs), color: '#00C7BE' },
+    { label: 'Lainnya', bytes: jsonBytes(s.focusHistory) + jsonBytes(s.countdowns) + jsonBytes(s.links) + jsonBytes(s.contacts) + jsonBytes(s.uploads) + jsonBytes(s.customWebLinks) + jsonBytes(s.customLabels), color: '#8E8E93' }
   ];
   const fbTotal = fb.reduce((n, p) => n + p.bytes, 0);
-  const photos = s.workPhotos || [], docs = s.workDocs || [];
-  const cf = [
-    { label: `${L('work.photos')} (${photos.length})`, bytes: photos.reduce((n, p) => n + (p.size || 0), 0), color: '#FF9500' },
-    { label: `${L('work.docs')} (${docs.length})`, bytes: docs.reduce((n, d) => n + (d.size || 0), 0), color: '#5E5CE6' }
-  ];
-  const cfTotal = cf.reduce((n, p) => n + p.bytes, 0);
-  const pct = b => ((b / GB) * 100).toFixed(b / GB < 0.01 ? 3 : 1);
-  box.innerHTML = `
-    <div>
-      <div class="flex justify-between items-end"><div><div class="t-foot muted semibold">FIREBASE · DATA APLIKASI</div><div class="store-big">${formatBytes(fbTotal)} <span class="t-foot muted" style="font-weight:500">dari 1 GB</span></div></div><span class="badge tint-green">sisa ${formatBytes(GB - fbTotal)}</span></div>
-      <div class="mt-8">${storageBar(fb, Math.max(fbTotal, 1))}</div>
-      <div class="t-cap muted mt-4">Terpakai ${pct(fbTotal)}% · batas unduhan 10 GB/bulan</div>
-    </div>
-    <div class="divider"></div>
-    <div>
-      <div class="flex justify-between items-end"><div><div class="t-foot muted semibold">CLOUDFLARE · FOTO & FILE KERJA</div><div class="store-big">${formatBytes(cfTotal)} <span class="t-foot muted" style="font-weight:500">dari 1 GB</span></div></div><span class="badge tint-green">sisa ${formatBytes(GB - cfTotal)}</span></div>
-      <div class="mt-8">${cfTotal ? storageBar(cf, cfTotal) : '<div class="store-bar"></div>'}</div>
-      <div class="t-cap muted mt-4">Terpakai ${pct(cfTotal)}% · maks 25 MB per file</div>
-    </div>
-    <div class="divider"></div>
-    <div class="flex justify-between items-center"><div><div class="t-foot muted semibold">PERANGKAT INI (CACHE)</div><div class="t-sub" id="deviceStorageText">${deviceEstimate ? `${formatBytes(deviceEstimate.usage)} dipakai` : 'Menghitung…'}</div></div>
-      <a class="btn btn-gray btn-xs" href="https://console.firebase.google.com/project/web-hadzmi-new/database" target="_blank" rel="noopener">Firebase Console</a></div>`;
+  // Rincian file per jenis (dari daftar di Firebase)
+  const byStore = { r2: 0, drive: 0, kv: 0 };
+  const add = (id, bytes) => { if (!id || !bytes) return; const st = id.startsWith('r2-') ? 'r2' : id.startsWith('gd-') ? 'drive' : 'kv'; byStore[st] += bytes; };
+  (s.workPhotos || []).forEach(p => add(p.fileId, p.size));
+  (s.workDocs || []).forEach(d => add(d.fileId, d.size));
+  (s.galleryPhotos || []).forEach(p => add(p.fileId, p.size));
+  (s.musicLibrary || []).forEach(m => add(m.fileId, m.size));
+  const u = usageCache || {};
+  let html = usageBlock('FIREBASE · TEKS SAJA', fbTotal, GB, fb, 'unduhan maks 10 GB/bulan');
+  if (u.r2) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', u.r2.bytes, u.r2.limit, null, 'upload berhenti otomatis di 9 GB (aman dari tagihan)');
+  else html += `<div class="divider"></div><div class="t-foot muted semibold">CLOUDFLARE R2</div><div class="t-sub muted">Belum aktif — <a href="#" onclick="openStorageGuide('r2'); return false">lihat langkah</a></div>`;
+  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Hub: ${formatBytes(u.drive.folderBytes || 0)}`);
+  else if (u.drive && u.drive.error) html += `<div class="divider"></div><div class="t-foot muted semibold">GOOGLE DRIVE</div><div class="t-sub c-red">${esc(u.drive.error)}</div>`;
+  if (u.kv && u.kv.count) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE KV (LAMA)', u.kv.bytes, u.kv.limit, null, `${u.kv.count} file`);
+  const off = typeof offlineTotalBytes === 'function' ? offlineTotalBytes() : 0;
+  html += `<div class="divider"></div>
+    <div class="flex justify-between items-center gap-8"><div><div class="t-foot muted semibold">PERANGKAT INI</div><div class="t-sub" id="deviceStorageText">${deviceEstimate ? `${formatBytes(deviceEstimate.usage)} dipakai` : 'Menghitung…'}</div><div class="t-cap muted">Lagu offline: ${formatBytes(off)}</div></div>
+      <div class="flex gap-6">${off ? '<button class="btn btn-danger-tinted btn-xs" onclick="clearAllOfflineSongs()">Hapus lagu offline</button>' : ''}<a class="btn btn-gray btn-xs" href="https://console.firebase.google.com/project/web-hadzmi-new/database" target="_blank" rel="noopener">Firebase</a></div></div>
+    <div class="t-cap muted">Rincian file: R2 ${formatBytes(byStore.r2)} · Drive ${formatBytes(byStore.drive)} · KV ${formatBytes(byStore.kv)}</div>`;
+  box.innerHTML = html;
   if (!deviceEstimate && navigator.storage && navigator.storage.estimate) {
     navigator.storage.estimate().then(e => { deviceEstimate = e; const t = $('deviceStorageText'); if (t) t.textContent = `${formatBytes(e.usage)} dipakai`; }).catch(() => {});
   }
+}
+
+// ---------------- PANDUAN PENYIMPANAN ----------------
+const APPS_SCRIPT_CODE = `/** Hadzmi Hub — Penyimpanan Google Drive */
+const FOLDER_NAME = 'Hadzmi Hub';
+function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
+function folder_() { const it = DriveApp.getFoldersByName(FOLDER_NAME); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME); }
+function inFolder_(file) { const p = file.getParents(); const fid = folder_().getId(); while (p.hasNext()) if (p.next().getId() === fid) return true; return false; }
+function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+function doGet() { return json_({ ok: true, service: 'hadzmi-hub-drive' }); }
+function doPost(e) {
+  let body; try { body = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, error: 'bad json' }); }
+  const secret = getSecret_();
+  if (!secret || body.secret !== secret) return json_({ ok: false, error: 'unauthorized' });
+  try {
+    if (body.action === 'upload') { const blob = Utilities.newBlob(Utilities.base64Decode(body.data), body.mimeType || 'application/octet-stream', body.name || 'file'); const f = folder_().createFile(blob); return json_({ ok: true, id: f.getId(), size: f.getSize() }); }
+    if (body.action === 'get') { const f = DriveApp.getFileById(body.id); if (!inFolder_(f)) return json_({ ok: false, error: 'not found' }); const b = f.getBlob(); return json_({ ok: true, name: f.getName(), mimeType: b.getContentType(), data: Utilities.base64Encode(b.getBytes()) }); }
+    if (body.action === 'delete') { const f = DriveApp.getFileById(body.id); if (inFolder_(f)) f.setTrashed(true); return json_({ ok: true }); }
+    if (body.action === 'usage') { let folderBytes = 0; const files = folder_().getFiles(); while (files.hasNext()) folderBytes += files.next().getSize(); return json_({ ok: true, used: DriveApp.getStorageUsed(), limit: DriveApp.getStorageLimit(), folderBytes: folderBytes }); }
+    return json_({ ok: false, error: 'unknown action' });
+  } catch (err) { return json_({ ok: false, error: String(err && err.message || err) }); }
+}`;
+function guideSteps(steps) {
+  return `<div class="list">${steps.map((st, i) => `<div class="row" style="align-items:flex-start; padding:14px 16px"><span class="icon-tile bg-blue" style="border-radius:99px; width:26px; height:26px; font-size:13px; font-weight:700">${i + 1}</span><div class="flex-1 t-sub" style="line-height:1.45">${st}</div></div>`).join('')}</div>`;
+}
+function openStorageGuide(kind) {
+  const st = storeStatus();
+  if (kind === 'r2') {
+    $('guideTitle').textContent = 'Aktifkan Cloudflare R2';
+    $('guideBody').innerHTML = `
+      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:#F38020"><i class="fas fa-cloud"></i></span><div><div class="t-headline">Status: ${st.r2 ? '<span class="c-green">Aktif ✓</span>' : '<span class="c-orange">Belum aktif</span>'}</div><div class="t-foot muted">Gratis 10 GB/bulan · upload otomatis berhenti di 9 GB</div></div></div></div>
+      ${guideSteps([
+        'Buka <b>dash.cloudflare.com</b> → menu kiri <b>Storage & Databases → R2 Object Storage</b>.',
+        'Tap <b>Purchase R2 Plan</b> / <b>Add payment method</b> → masukkan kartu debit/kredit atau PayPal → pilih paket <b>Free</b>. Tidak ada tagihan selama di bawah 10 GB.',
+        'Buka GitHub repo <b>Hadzmi-Website</b> → file <b>wrangler.jsonc</b> → tap ✏️ (Edit).',
+        'Di bagian <b>CLOUDFLARE R2</b>, hapus <code>// </code> di depan 3 baris <code>"r2_buckets"</code>, <code>{ "binding": "FILES" … }</code>, dan <code>],</code> → <b>Commit changes</b>. (Atau cukup bilang ke Claude: "R2 sudah aktif".)',
+        'Cloudflare otomatis deploy ulang & membuat bucket <b>hadzmi-hub-files</b> (±2 menit).',
+        'Kembali ke sini → muat ulang halaman. Status R2 berubah jadi <b>● Aktif</b> dan semua upload baru otomatis masuk R2.'
+      ])}`;
+  } else {
+    $('guideTitle').textContent = 'Sambungkan Google Drive';
+    $('guideBody').innerHTML = `
+      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Hub"</div></div></div></div>
+      ${guideSteps([
+        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Hub Drive".',
+        'Hapus isi editor, lalu tap <b>Salin Kode</b> di bawah ini dan tempel ke editor → tap 💾 <b>Save</b>.',
+        'Tap ⚙️ <b>Project Settings</b> → <b>Script Properties</b> → <b>Add script property</b>: Property <code>SECRET</code>, Value: kata rahasia panjang buatanmu (mis. 30 huruf/angka acak) → Save.',
+        'Tap <b>Deploy → New deployment</b> → ⚙️ pilih <b>Web app</b> → Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → <b>Deploy</b> → izinkan akses (Authorize) → salin <b>Web app URL</b>.',
+        'Buka Cloudflare → Worker <b>hadzmi-website-utama</b> → Settings → Variables and Secrets → tambah: <code>DRIVE_SCRIPT_URL</code> (Text) = Web app URL, dan <code>DRIVE_SECRET</code> (<b>Secret</b>) = kata rahasia yang sama → Deploy.',
+        'Muat ulang halaman ini → status Google Drive jadi <b>● Tersambung</b>. Pilih "Google Drive" di kolom <b>Simpan di</b> saat upload.'
+      ])}
+      <button class="btn btn-filled btn-block" onclick="copyText(APPS_SCRIPT_CODE); showToast('Kode Apps Script disalin!')"><i class="far fa-copy"></i> Salin Kode Apps Script</button>
+      <div class="t-cap muted center">Kata rahasia hanya disimpan di Apps Script & Cloudflare — tidak pernah dikirim ke browser.</div>`;
+  }
+  openSheet('sheetGuide');
 }

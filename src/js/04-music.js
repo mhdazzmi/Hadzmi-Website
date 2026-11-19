@@ -25,7 +25,7 @@ let lastPosSave = 0;
 let fullPlayerPanel = 'art';
 let lrcCache = { id: null, src: null, lines: null };
 
-const FAV_CAT = '__fav', RECENT_CAT = '__recent';
+const FAV_CAT = '__fav', RECENT_CAT = '__recent', OFFLINE_CAT = '__offline';
 
 function currentSong() { return appState.musicLibrary[currentSongIndex] || null; }
 function currentSongId() { const s = currentSong(); return s ? s.id : null; }
@@ -40,10 +40,98 @@ function resyncCurrentSongIndex() {
   if (idx === -1) currentSongRefId = null;
   musicQueue = musicQueue.filter(id => appState.musicLibrary.some(s => s.id === id));
 }
+// ---------- Sumber audio & cover (R2/Drive bertanda tangan, offline, atau direct link) ----------
+const OFFLINE_CACHE = 'hz-offline-music';
+const offlineUrls = new Map();
+function offlineIndex() { return readLS('app_music_offline', {}); }
+function isSongOffline(id) { return !!offlineIndex()[id]; }
+function offlineTotalBytes() { const idx = offlineIndex(); return Object.keys(idx).reduce((n, k) => n + (idx[k].bytes || 0), 0); }
+function songCoverUrl(song) {
+  if (!song) return '';
+  if (offlineUrls.has(song.id + ':cover')) return offlineUrls.get(song.id + ':cover');
+  if (song.coverId) return signedUrlSync(song.coverId) || '';
+  return (song.cover || '').trim();
+}
+function songAudioUrlSync(song) {
+  if (!song) return '';
+  if (offlineUrls.has(song.id)) return offlineUrls.get(song.id);
+  if (song.fileId) return signedUrlSync(song.fileId) || '';
+  return song.url || '';
+}
+let preparingUrls = null;
+function prepareSongUrls() {
+  if (preparingUrls) return preparingUrls;
+  preparingUrls = (async () => {
+    try {
+      const lib = appState.musicLibrary || [];
+      if (typeof signIds === 'function' && firebaseAuth && firebaseAuth.currentUser && pushConfig) {
+        await signIds(lib.flatMap(m => [m.fileId, m.coverId]).filter(Boolean));
+      }
+      const idx = offlineIndex();
+      if ('caches' in window && Object.keys(idx).length) {
+        const cache = await caches.open(OFFLINE_CACHE);
+        for (const id of Object.keys(idx)) {
+          if (!offlineUrls.has(id)) { const r = await cache.match('/offline-song/' + id); if (r) offlineUrls.set(id, URL.createObjectURL(await r.blob())); }
+          if (!offlineUrls.has(id + ':cover')) { const c = await cache.match('/offline-cover/' + id); if (c) offlineUrls.set(id + ':cover', URL.createObjectURL(await c.blob())); }
+        }
+      }
+    } catch (e) { console.warn('prepareSongUrls', e); }
+    preparingUrls = null;
+    renderMusicSongsList(); updateCurrentSongDisplayUI();
+  })();
+  return preparingUrls;
+}
+async function fetchSongBlob(song) {
+  if (song.fileId) {
+    const token = await getIdTokenOrThrow();
+    const r = await fetch('/api/files/' + song.fileId, { headers: { Authorization: 'Bearer ' + token } });
+    if (!r.ok) throw new Error('Gagal mengunduh lagu (' + r.status + ')');
+    return r.blob();
+  }
+  try { const r = await fetch(song.url, { mode: 'cors' }); if (r.ok) return await r.blob(); } catch (e) {}
+  const token = await getIdTokenOrThrow();
+  const r = await fetch('/api/proxy?url=' + encodeURIComponent(song.url), { headers: { Authorization: 'Bearer ' + token } });
+  if (!r.ok) throw new Error('Sumber lagu menolak diunduh (' + r.status + ')');
+  return r.blob();
+}
+async function saveSongOffline(id) {
+  const song = appState.musicLibrary.find(s => s.id === id); if (!song) return;
+  if (!('caches' in window)) return showToast('Browser ini tidak mendukung penyimpanan offline.', false);
+  try {
+    showToast(`Mengunduh "${song.title}" untuk offline…`);
+    const blob = await fetchSongBlob(song);
+    const cache = await caches.open(OFFLINE_CACHE);
+    await cache.put('/offline-song/' + id, new Response(blob, { headers: { 'Content-Type': blob.type || 'audio/mpeg' } }));
+    let coverBytes = 0;
+    try {
+      const cu = song.coverId ? await signedUrl(song.coverId) : song.cover;
+      if (cu) { const cr = await fetch(cu, { mode: 'cors' }); if (cr.ok) { const cb = await cr.blob(); coverBytes = cb.size; await cache.put('/offline-cover/' + id, new Response(cb, { headers: { 'Content-Type': cb.type || 'image/jpeg' } })); offlineUrls.set(id + ':cover', URL.createObjectURL(cb)); } }
+    } catch (e) {}
+    offlineUrls.set(id, URL.createObjectURL(blob));
+    const idx = offlineIndex(); idx[id] = { bytes: blob.size + coverBytes, at: Date.now() }; writeLS('app_music_offline', idx);
+    renderMusicSongsList(); renderStoragePanel();
+    showToast(`"${song.title}" tersedia offline (${formatBytes(blob.size)})`);
+  } catch (err) { showToast('Gagal simpan offline: ' + err.message, false); }
+}
+async function removeSongOffline(id, silent) {
+  try { const cache = await caches.open(OFFLINE_CACHE); await cache.delete('/offline-song/' + id); await cache.delete('/offline-cover/' + id); } catch (e) {}
+  [id, id + ':cover'].forEach(k => { if (offlineUrls.has(k)) { URL.revokeObjectURL(offlineUrls.get(k)); offlineUrls.delete(k); } });
+  const idx = offlineIndex(); delete idx[id]; writeLS('app_music_offline', idx);
+  if (!silent) { renderMusicSongsList(); renderStoragePanel(); showToast('Versi offline dihapus dari perangkat.'); }
+}
+async function clearAllOfflineSongs() {
+  const ids = Object.keys(offlineIndex()); if (!ids.length) return;
+  if (!(await iosConfirm('Hapus semua lagu offline?', `${ids.length} lagu (${formatBytes(offlineTotalBytes())}) akan dihapus dari perangkat ini. Lagu tetap ada di library.`, 'Hapus', true))) return;
+  for (const id of ids) await removeSongOffline(id, true);
+  try { await caches.delete(OFFLINE_CACHE); } catch (e) {}
+  renderMusicSongsList(); renderStoragePanel(); showToast('Semua lagu offline dihapus.');
+}
+
 function songThumbHTML(song, opts = {}) {
-  const hasCover = song && song.cover && song.cover.trim() !== '';
+  const coverU = songCoverUrl(song);
+  const hasCover = !!coverU;
   const eq = opts.eq ? `<span class="eq ${opts.paused ? 'paused' : ''}"><i></i><i></i><i></i></span>` : '';
-  return `<div class="thumb ${opts.eq ? 'has-eq' : ''}" style="background:${hasCover ? '#ddd' : `linear-gradient(135deg, ${colorFor(song ? song.title : '')}, #AF52DE)`}">${hasCover ? `<img src="${esc(song.cover)}" alt="" loading="lazy" onerror="this.remove()">` : '<i class="fas fa-music"></i>'}${eq}</div>`;
+  return `<div class="thumb ${opts.eq ? 'has-eq' : ''}" style="background:${hasCover ? '#ddd' : `linear-gradient(135deg, ${colorFor(song ? song.title : '')}, #AF52DE)`}">${hasCover ? `<img src="${esc(coverU)}" alt="" loading="lazy" onerror="this.remove()">` : '<i class="fas fa-music"></i>'}${eq}</div>`;
 }
 
 // ---------- ENGINE ----------
@@ -151,7 +239,8 @@ function updateMediaSessionLockscreen() {
   if (song) {
     const titleText = song.title || 'Unknown Track';
     const artistText = song.artist || song.category || 'Music Library';
-    const coverArt = song.cover && song.cover.trim() !== '' ? song.cover : 'https://placehold.co/512x512/FF2D55/FFFFFF?text=Music';
+    const cu = songCoverUrl(song);
+    const coverArt = cu && !/^blob:/.test(cu) ? new URL(cu, location.href).href : new URL('icons/icon-512.png', location.href).href;
     document.title = `${titleText} - ${artistText}`;
     if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -186,6 +275,7 @@ function formatAudioTime(sec) {
 
 // ---------- RENDER ----------
 function renderMusicModule() {
+  if ((appState.musicLibrary || []).some(m => (m.fileId && !signedUrlSync(m.fileId)) || (m.coverId && !signedUrlSync(m.coverId))) || (Object.keys(offlineIndex()).some(id => !offlineUrls.has(id)))) prepareSongUrls();
   renderMusicCategories();
   renderMusicSongsList();
   populateMusicCategorySelect();
@@ -202,9 +292,10 @@ function toggleMusicCustomizeMode() {
 }
 
 function setCoverInto(imgEl, fallbackEl, song) {
-  const hasCover = song && song.cover && song.cover.trim() !== '';
+  const coverU = songCoverUrl(song);
+  const hasCover = !!coverU;
   if (imgEl) {
-    if (hasCover) { if (imgEl.getAttribute('src') !== song.cover) imgEl.src = song.cover; imgEl.classList.remove('hidden'); }
+    if (hasCover) { if (imgEl.getAttribute('src') !== coverU) imgEl.src = coverU; imgEl.classList.remove('hidden'); }
     else { imgEl.classList.add('hidden'); imgEl.removeAttribute('src'); }
   }
   if (fallbackEl) fallbackEl.classList.toggle('hidden', !!hasCover);
@@ -238,8 +329,9 @@ function updateCurrentSongDisplayUI() {
   if ($('dashNpArtist')) $('dashNpArtist').textContent = song ? artist : 'Pilih lagu di Library';
   if ($('dashNpThumb')) {
     const th = $('dashNpThumb');
-    th.innerHTML = song && song.cover ? `<img src="${esc(song.cover)}" alt="" onerror="this.remove()">` : '<i class="fas fa-music"></i>';
-    th.style.background = song && song.cover ? '#ddd' : '';
+    const cu = songCoverUrl(song);
+    th.innerHTML = cu ? `<img src="${esc(cu)}" alt="" onerror="this.remove()">` : '<i class="fas fa-music"></i>';
+    th.style.background = cu ? '#ddd' : '';
   }
   if ($('dashNpPlay')) $('dashNpPlay').innerHTML = playing ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
 
@@ -251,7 +343,8 @@ function updateCurrentSongDisplayUI() {
   const fpArt = $('fpArtwork'); if (fpArt) fpArt.classList.toggle('paused', !playing);
   const bg = $('fpBg');
   if (bg) {
-    if (song && song.cover) { bg.classList.remove('fallback'); bg.style.backgroundImage = `url("${song.cover.replace(/"/g, '%22')}")`; }
+    const cu = songCoverUrl(song);
+    if (cu) { bg.classList.remove('fallback'); bg.style.backgroundImage = `url("${cu.replace(/"/g, '%22')}")`; }
     else { bg.classList.add('fallback'); bg.style.backgroundImage = ''; }
   }
   if ($('fpPlay')) $('fpPlay').innerHTML = playing ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
@@ -262,7 +355,7 @@ function updateCurrentSongDisplayUI() {
 
 function renderMusicCategories() {
   const pills = $('musicCategoryPills'); if (!pills) return;
-  const cats = [['All', 'Semua'], [FAV_CAT, '♥ Favorit'], [RECENT_CAT, 'Terakhir Diputar'], ...(appState.musicCategories || []).map(c => [c, c])];
+  const cats = [['All', 'Semua'], [FAV_CAT, '♥ Favorit'], [OFFLINE_CAT, '⬇︎ Offline'], [RECENT_CAT, 'Terakhir Diputar'], ...(appState.musicCategories || []).map(c => [c, c])];
   pills.innerHTML = cats.map(([val, label]) => `<button class="chip ${activeMusicCategory === val ? 'active pink' : ''}" data-cat="${esc(val)}">${esc(label)}</button>`).join('');
   pills.querySelectorAll('button').forEach(b => b.onclick = () => filterMusicCategory(b.dataset.cat));
 }
@@ -279,6 +372,7 @@ function getFilteredSongs() {
   const library = appState.musicLibrary || [];
   let list;
   if (activeMusicCategory === RECENT_CAT) list = getRecentIds().map(id => library.find(s => s.id === id)).filter(Boolean);
+  else if (activeMusicCategory === OFFLINE_CAT) { const idx = offlineIndex(); list = library.filter(s => idx[s.id]); }
   else list = library.filter(s => activeMusicCategory === 'All' || (activeMusicCategory === FAV_CAT ? s.favorite : s.category === activeMusicCategory));
   list = list.filter(s => (s.title + ' ' + (s.artist || '')).toLowerCase().includes(search));
   const sort = $('musicSortSelect') ? $('musicSortSelect').value : 'default';
@@ -307,7 +401,7 @@ function renderMusicSongsList() {
         ${songThumbHTML(song, { eq: isCur, paused: !isMusicPlaying })}
         <div class="flex-1">
           <div class="s-title truncate">${esc(song.title)}</div>
-          <div class="row-sub truncate">${song.favorite ? '<i class="fas fa-heart c-pink" style="font-size:10px"></i> ' : ''}${esc(song.artist || 'Unknown Artist')} · ${esc(song.category || '')}${song.lyrics ? ' · <i class="fas fa-quote-left" style="font-size:9px"></i>' : ''}</div>
+          <div class="row-sub truncate">${isSongOffline(song.id) ? '<i class="fas fa-circle-down c-green" style="font-size:10px" title="Tersedia offline"></i> ' : song.fileId ? '<i class="fas fa-cloud" style="font-size:10px; color:var(--label3)" title="Tersimpan di cloud"></i> ' : ''}${song.favorite ? '<i class="fas fa-heart c-pink" style="font-size:10px"></i> ' : ''}${esc(song.artist || 'Unknown Artist')} · ${esc(song.category || '')}${song.lyrics ? ' · <i class="fas fa-quote-left" style="font-size:9px"></i>' : ''}</div>
         </div>
         ${qIdx !== -1 ? `<span class="badge tint-orange">#${qIdx + 1}</span>` : ''}
         <div class="flex items-center gap-4" onclick="event.stopPropagation()">
@@ -501,9 +595,10 @@ function getNextAnticipatedSong() {
 
 function triggerNextTrackPreload() {
   const nextSong = getNextAnticipatedSong();
-  if (nextSong && nextSong.url && nextSong.url !== preloadedSongUrl && nextSong.url !== audioEngine.src) {
-    preloadedSongUrl = nextSong.url;
-    nextSongPreloader.src = nextSong.url;
+  const nextUrl = songAudioUrlSync(nextSong);
+  if (nextSong && nextUrl && !/^blob:/.test(nextUrl) && nextUrl !== preloadedSongUrl && nextUrl !== audioEngine.src) {
+    preloadedSongUrl = nextUrl;
+    nextSongPreloader.src = nextUrl;
   }
 }
 
@@ -516,7 +611,13 @@ function loadAndPlaySong(resumeAt) {
   ['audioSeekBar', 'fpSeek'].forEach(id => { const b = $(id); if (b) { b.value = 0; b.style.setProperty('--p', '0%'); } });
   if ($('audioCurrentTime')) $('audioCurrentTime').textContent = "00:00";
 
-  audioEngine.src = song.url;
+  const src = songAudioUrlSync(song);
+  if (!src) {
+    showToast('Menyiapkan lagu… tap putar sekali lagi.');
+    prepareSongUrls();
+    return;
+  }
+  audioEngine.src = src;
   audioEngine.playbackRate = parseFloat(($('musicRateSelect') || {}).value || 1) || 1;
   preloadedSongUrl = "";
   if (resumeAt && resumeAt > 1) {
@@ -666,6 +767,9 @@ function openSongActions(id) {
     { text: musicQueue.includes(id) ? 'Hapus dari Antrean' : 'Tambah ke Antrean', icon: 'fas fa-list-ul', onClick: () => musicQueue.includes(id) ? removeFromQueue(id) : addToNextQueue(id) },
     { text: song.favorite ? 'Hapus dari Favorit' : 'Favoritkan', icon: song.favorite ? 'fas fa-heart-crack' : 'fas fa-heart', onClick: () => toggleFavorite(id) }
   ];
+  actions.push(isSongOffline(id)
+    ? { text: 'Hapus Versi Offline', icon: 'fas fa-circle-minus', onClick: () => removeSongOffline(id) }
+    : { text: 'Simpan Offline', icon: 'fas fa-circle-down', onClick: () => saveSongOffline(id) });
   if (isCur) actions.push({ text: 'Lirik', icon: 'fas fa-quote-left', onClick: () => { closeFullPlayer(); openLyricsFullScreenModal(); } });
   actions.push({ text: 'Edit Lagu', icon: 'fas fa-pen', onClick: () => { closeFullPlayer(); editMusicSong(id); } });
   actions.push({ text: 'Bagikan via Gmail', icon: 'fas fa-envelope', onClick: () => shareSong(id) });
@@ -735,6 +839,26 @@ async function deleteMusicCategory(cat) {
 }
 
 // ---------- ADD / EDIT / DELETE SONG ----------
+let songSource = 'upload';
+function setSongSource(v) {
+  songSource = v;
+  $('songSourceSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  $('songUploadFields').classList.toggle('hidden', v !== 'upload');
+  $('songLinkFields').classList.toggle('hidden', v !== 'link');
+}
+function onSongFilePicked() {
+  const f = $('quickSongFile').files[0]; if (!f) return;
+  $('songFileLabel').textContent = `${f.name} · ${formatBytes(f.size)}`;
+  if (!$('quickSongTitle').value.trim()) $('quickSongTitle').value = f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ');
+}
+function onSongCoverPicked() { const f = $('quickSongCoverFile').files[0]; if (f) $('songCoverLabel').textContent = `${f.name} · ${formatBytes(f.size)}`; }
+function resetSongFormFiles(song) {
+  $('quickSongFile').value = ''; $('quickSongCoverFile').value = '';
+  $('songFileLabel').textContent = song && song.fileId ? 'File tersimpan ✓ — tap untuk ganti' : 'Pilih file audio (MP3/M4A)';
+  $('songCoverLabel').textContent = song && song.coverId ? 'Cover tersimpan ✓ — tap untuk ganti' : 'Pilih cover (opsional)';
+  $('songUploadProgress').classList.add('hidden');
+  if (typeof fillStoreSelects === 'function') fillStoreSelects();
+}
 function openQuickUploadSongModal() {
   populateMusicCategorySelect();
   const form = $('quickAddSongForm'); if (form) form.reset();
@@ -742,32 +866,75 @@ function openQuickUploadSongModal() {
   $('quickModalTitleHeading').textContent = 'Tambah Lagu';
   $('btnSubmitQuickSong').textContent = 'Simpan';
   if (activeMusicCategory && appState.musicCategories.includes(activeMusicCategory)) $('quickSongCategory').value = activeMusicCategory;
+  resetSongFormFiles(null);
+  setSongSource(pushConfig && pushConfig.stores ? 'upload' : 'link');
   openSheet('quickUploadSongModal');
 }
 function closeQuickUploadSongModal() { closeSheet('quickUploadSongModal'); }
-
+let songSaving = false;
 function handleQuickAddSong(e) {
   if (e) e.preventDefault();
-  const title = $('quickSongTitle').value.trim();
-  const artist = $('quickSongArtist').value.trim();
-  const url = $('quickSongUrl').value.trim();
-  const category = $('quickSongCategory').value || 'Working';
-  const cover = $('quickSongCoverUrl').value.trim();
-  const editId = $('quickAddSongEditId').value;
-  if (!title || !url) { showToast('Judul lagu dan Direct URL Audio wajib diisi!', false); return false; }
-  if (editId) {
-    const song = appState.musicLibrary.find(s => s.id === editId);
-    if (song) { song.title = title; song.artist = artist; song.url = url; song.category = category; song.cover = cover; }
-    showToast('Lagu berhasil diperbarui & disinkronkan!');
-  } else {
-    appState.musicLibrary.unshift({ id: 'song_' + Date.now(), title, artist, url, category, cover, lyrics: '' });
-    resyncCurrentSongIndex();
-    showToast('Lagu berhasil ditambahkan via Direct Link & disinkronkan!');
-  }
-  saveStateToLocal(); renderMusicSongsList(); updateCurrentSongDisplayUI(); updateMediaSessionLockscreen();
-  closeQuickUploadSongModal();
+  if (!songSaving) saveSongForm();
   return false;
 }
+async function compressCover(file) {
+  const img = await loadImage(file);
+  return (await imageToJpeg(img, 640, 0.84)).blob;
+}
+async function saveSongForm() {
+  const title = $('quickSongTitle').value.trim();
+  const artist = $('quickSongArtist').value.trim();
+  const category = $('quickSongCategory').value || 'Working';
+  const editId = $('quickAddSongEditId').value;
+  const existing = editId ? appState.musicLibrary.find(s => s.id === editId) : null;
+  if (!title) { showToast('Judul lagu wajib diisi!', false); return; }
+  const btn = $('btnSubmitQuickSong'), bar = $('songUploadProgress');
+  const data = { title, artist, category };
+  const oldFiles = [];
+  try {
+    songSaving = true;
+    if (songSource === 'link') {
+      const url = $('quickSongUrl').value.trim(), cover = $('quickSongCoverUrl').value.trim();
+      if (!url) { showToast('Direct URL audio wajib diisi!', false); return; }
+      if (/youtu\.?be/i.test(url)) { showToast('Link YouTube tidak bisa diputar. Gunakan link file .mp3/.m4a atau upload file.', false); return; }
+      Object.assign(data, { url, cover, fileId: null, coverId: null, size: 0 });
+      if (existing) oldFiles.push(existing.fileId, existing.coverId);
+    } else {
+      const f = $('quickSongFile').files[0], cf = $('quickSongCoverFile').files[0];
+      const store = $('quickSongStore').value || getDefaultStore();
+      if (!f && !(existing && existing.fileId)) { showToast('Pilih file audio dulu.', false); return; }
+      btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
+      bar.classList.remove('hidden'); const fill = bar.firstElementChild;
+      if (f) {
+        const up = await apiUploadFile(f, f.name, p => { fill.style.width = Math.round(p * 92) + '%'; }, store);
+        Object.assign(data, { fileId: up.id, size: up.size, url: '' });
+        if (existing) oldFiles.push(existing.fileId);
+      }
+      if (cf) {
+        const cblob = await compressCover(cf);
+        const upc = await apiUploadFile(cblob, title + '-cover.jpg', null, store);
+        Object.assign(data, { coverId: upc.id, cover: '' });
+        if (existing) oldFiles.push(existing.coverId);
+      }
+      fill.style.width = '100%';
+      if (existing && !f && !existing.fileId) data.url = existing.url;
+    }
+    if (existing) { Object.assign(existing, data); if (isSongOffline(existing.id) && oldFiles.length) removeSongOffline(existing.id, true); }
+    else appState.musicLibrary.unshift(Object.assign({ id: 'song_' + Date.now(), url: '', cover: '', lyrics: '' }, data));
+    resyncCurrentSongIndex();
+    saveStateToLocal();
+    oldFiles.filter(Boolean).forEach(id => apiDeleteFile(id).catch(() => {}));
+    await prepareSongUrls();
+    renderMusicSongsList(); updateCurrentSongDisplayUI(); updateMediaSessionLockscreen();
+    closeQuickUploadSongModal();
+    showToast(existing ? 'Lagu diperbarui & tersinkron!' : (data.fileId ? `Lagu ter-upload ke ${STORE_NAMES[storeOfId(data.fileId)]}!` : 'Lagu (direct link) ditambahkan!'));
+  } catch (err) {
+    showToast('Gagal: ' + err.message, false);
+  } finally {
+    songSaving = false; btn.disabled = false; btn.textContent = editId ? 'Update' : 'Simpan';
+  }
+}
+function storeOfId(id) { return !id ? '' : id.startsWith('r2-') ? 'r2' : id.startsWith('gd-') ? 'drive' : 'kv'; }
 
 function editMusicSong(id) {
   const song = appState.musicLibrary.find(s => s.id === id); if (!song) return;
@@ -784,6 +951,8 @@ function editMusicSong(id) {
   $('quickSongCoverUrl').value = song.cover || '';
   $('quickModalTitleHeading').textContent = 'Edit Lagu';
   $('btnSubmitQuickSong').textContent = 'Update';
+  resetSongFormFiles(song);
+  setSongSource(song.fileId ? 'upload' : 'link');
   openSheet('quickUploadSongModal');
 }
 
@@ -807,6 +976,7 @@ async function deleteMusicSong(id) {
   const song = appState.musicLibrary.find(s => s.id === id);
   if (await iosConfirm('Hapus lagu ini?', song ? song.title : '', 'Hapus', true)) {
     const wasCurrent = currentSongId() === id;
+    if (song) { [song.fileId, song.coverId].filter(Boolean).forEach(fid => apiDeleteFile(fid).catch(() => {})); if (isSongOffline(id)) removeSongOffline(id, true); }
     appState.musicLibrary = appState.musicLibrary.filter(s => s.id !== id);
     musicQueue = musicQueue.filter(q => q !== id);
     if (wasCurrent) { audioEngine.pause(); audioEngine.removeAttribute('src'); currentSongIndex = -1; currentSongRefId = null; isMusicPlaying = false; }

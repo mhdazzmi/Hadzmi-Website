@@ -13,12 +13,20 @@
   "triggers": { "crons": ["* * * * *"] },
   // KV dibuat otomatis oleh wrangler saat deploy pertama
   "kv_namespaces": [{ "binding": "HUB_KV" }],
+  // === CLOUDFLARE R2 (10 GB gratis) ===
+  // Aktifkan R2 dulu di Dashboard (R2 Object Storage → tambahkan metode pembayaran), lalu
+  // hapus "// " di 3 baris "r2_buckets" di bawah ini. Bucket dibuat otomatis saat deploy.
+  // "r2_buckets": [
+  //   { "binding": "FILES", "bucket_name": "hadzmi-hub-files" }
+  // ],
   "vars": {
     "FIREBASE_PROJECT_ID": "web-hadzmi-new"
   },
   // Variabel yang diisi di Dashboard (Settings → Variables and Secrets) tidak dihapus saat deploy:
   //   OWNER_UID      = UID akun Firebase-mu
   //   VAPID_SUBJECT  = mailto:emailkamu@gmail.com
+  //   DRIVE_SCRIPT_URL (Text)   = URL Web App Apps Script (apps-script/Code.gs)
+  //   DRIVE_SECRET     (Secret) = kata rahasia yang sama dengan Script Property SECRET
   "keep_vars": true,
   "observability": { "enabled": true }
 }

@@ -112,14 +112,15 @@
         <div>
           <div class="flex justify-between items-center" style="padding:0 4px 12px">
             <h2 class="section-title" style="padding:0">Menu Cepat</h2>
-            <span class="t-foot muted" id="quickNavCurrentLabel">14 shortcut</span>
+            <span class="t-foot muted" id="quickNavCurrentLabel">15 shortcut</span>
           </div>
           <div class="card card-pad">
             <div class="app-grid">
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span class="app-label" data-label="tab.home">Home</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="app-label" data-label="tab.music">Music</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span class="app-label" data-label="hub.todo">To-Do</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', 'sub-music', 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="app-label" data-label="media.music">Music</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', 'sub-gallery', 'Galeri')"><span class="icon-tile" style="background:conic-gradient(from 0deg,#FF9500,#FFCC00,#34C759,#5AC8FA,#5856D6,#FF2D55,#FF9500)"><i class="fas fa-images"></i></span><span class="app-label" data-label="media.gallery">Galeri</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span class="app-label" data-label="hub.notes">Mind Dump</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span class="app-label" data-label="hub.todo">To-Do</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label" data-label="hub.links">Bookmarks</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label" data-label="hub.countdown">Countdown</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
@@ -211,18 +212,29 @@
       </section>
 
       <!-- ================= 2. MUSIC ================= -->
-      <section id="tab-music" class="tab-content hidden" data-title="Music">
+      <section id="tab-music" class="tab-content hidden" data-title="Media">
         <div class="page-head">
           <div>
-            <div class="page-eyebrow"><i class="fab fa-apple"></i> Music</div>
-            <h1 class="t-large">Library</h1>
+            <div class="page-eyebrow" data-label="tab.music">Media</div>
+            <h1 class="t-large" id="mediaTitle">Music</h1>
           </div>
-          <div class="flex gap-8">
+          <div class="flex gap-8" id="musicHeadActions">
             <button type="button" onclick="toggleMusicCustomizeMode()" id="btnMusicCustomize" class="btn btn-gray btn-sm">Edit</button>
             <button type="button" id="btnOpenUploadSongModal" onclick="openQuickUploadSongModal()" class="btn btn-pink btn-sm"><i class="fas fa-plus"></i> Lagu</button>
           </div>
+          <div class="flex gap-8 hidden" id="galleryHeadActions">
+            <button type="button" onclick="toggleGallerySelect()" id="gallerySelectBtn" class="btn btn-gray btn-sm">Pilih</button>
+            <button type="button" onclick="document.getElementById('galleryFileInput').click()" class="btn btn-filled btn-sm"><i class="fas fa-plus"></i> Foto</button>
+          </div>
+        </div>
+        <div class="subnav">
+          <div class="seg lg">
+            <button onclick="switchMediaSub('sub-music')" id="btn-sub-music" class="active" data-label="media.music">Music</button>
+            <button onclick="switchMediaSub('sub-gallery')" id="btn-sub-gallery" data-label="media.gallery">Galeri</button>
+          </div>
         </div>
 
+        <div id="sub-music" class="media-sub">
         <div class="split">
           <!-- Now Playing -->
           <div class="sticky-col">
@@ -318,15 +330,39 @@
             <div id="musicSongsContainer" class="list inset-icon"></div>
           </div>
         </div>
+        </div>
+
+        <!-- GALERI -->
+        <div id="sub-gallery" class="media-sub hidden stack-16">
+          <input type="file" id="galleryFileInput" accept="image/*" multiple class="hidden" onchange="onGalleryPicked(event)">
+          <div class="search-bar"><i class="fas fa-magnifying-glass"></i><input type="text" id="gallerySearch" class="field" placeholder="Cari keterangan, lokasi, album, tanggal…" oninput="renderGallery()"></div>
+          <div class="seg" id="galleryViewSeg">
+            <button class="active" data-v="library" onclick="setGalleryView('library')">Pustaka</button>
+            <button data-v="albums" onclick="setGalleryView('albums')">Album</button>
+            <button data-v="places" onclick="setGalleryView('places')">Tempat</button>
+            <button data-v="favorites" onclick="setGalleryView('favorites')">Favorit</button>
+          </div>
+          <div id="galleryContext" class="hidden"></div>
+          <div id="galleryBody"></div>
+          <div class="select-bar hidden" id="gallerySelectBar">
+            <span class="t-sub semibold" id="gallerySelCount">0 dipilih</span>
+            <div class="flex gap-8">
+              <button class="btn btn-gray btn-sm" onclick="addSelectedToAlbum()" title="Tambah ke album"><i class="fas fa-rectangle-history fa-images"></i></button>
+              <button class="btn btn-gray btn-sm" onclick="favoriteSelected()" title="Favorit"><i class="far fa-heart"></i></button>
+              <button class="btn btn-tinted btn-sm" onclick="shareGalleryPhotos(gallerySelectedIds())" title="Bagikan"><i class="fas fa-arrow-up-from-bracket"></i></button>
+              <button class="btn btn-danger-tinted btn-sm" onclick="deleteGalleryPhotos(gallerySelectedIds())" title="Hapus"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ================= 3. HUB ================= -->
       <section id="tab-hub" class="tab-content hidden" data-title="Hub">
-        <div class="page-head"><div><div class="page-eyebrow" data-label="hub.space">Productivity</div><h1 class="t-large" id="hubTitle">To-Do</h1></div></div>
+        <div class="page-head"><div><div class="page-eyebrow" data-label="hub.space">Productivity</div><h1 class="t-large" id="hubTitle">Mind Dump</h1></div></div>
         <div class="subnav">
           <div class="seg lg scroll no-scrollbar">
-            <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" class="active" data-label="hub.todo">To-Do</button>
-            <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes" data-label="hub.notes">Mind Dump</button>
+            <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes" class="active" data-label="hub.notes">Mind Dump</button>
+            <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" data-label="hub.todo">To-Do</button>
             <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links" data-label="hub.links">Bookmarks</button>
             <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown" data-label="hub.countdown">Countdown</button>
             <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus" data-label="hub.focus">Focus</button>
@@ -334,7 +370,7 @@
         </div>
 
         <!-- To-Do (Reminders style) -->
-        <div id="sub-todo" class="hub-sub-content stack-16">
+        <div id="sub-todo" class="hub-sub-content hidden stack-16">
           <div class="smart-grid" id="taSmartGrid"></div>
           <div class="flex gap-8 items-center">
             <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input id="ta-search" type="text" class="field" placeholder="Cari tugas…" oninput="taRenderNotes()"></div>
@@ -349,7 +385,7 @@
         </div>
 
         <!-- Mind Dump -->
-        <div id="sub-notes" class="hub-sub-content hidden stack-16">
+        <div id="sub-notes" class="hub-sub-content stack-16">
           <div class="flex gap-8 items-center">
             <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchNoteInput" oninput="renderNotesList()" class="field" placeholder="Cari catatan…"></div>
             <span class="badge tint-yellow" id="noteCountBadge">Total: 0</span>
@@ -652,9 +688,21 @@
 
             <!-- Storage -->
             <div>
-              <div class="section-label">Penyimpanan</div>
+              <div class="section-label">Penyimpanan File</div>
+              <div class="list inset-icon">
+                <button class="row" onclick="openStorageGuide('r2')"><span class="icon-tile" style="background:#F38020"><i class="fas fa-cloud"></i></span><div class="flex-1"><div class="row-title">Cloudflare R2 <span class="badge tint-orange">Utama · 10 GB</span></div><div class="row-sub" id="storeStatusR2">Memeriksa…</div></div><i class="fas fa-chevron-right chev"></i></button>
+                <button class="row" onclick="openStorageGuide('drive')"><span class="icon-tile" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div class="flex-1"><div class="row-title">Google Drive <span class="badge tint-green">15 GB</span></div><div class="row-sub" id="storeStatusDrive">Memeriksa…</div></div><i class="fas fa-chevron-right chev"></i></button>
+                <div class="row"><span class="icon-tile bg-gray"><i class="fas fa-box"></i></span><div class="flex-1"><div class="row-title">Cloudflare KV (lama)</div><div class="row-sub">1 GB · dipakai otomatis jika R2 belum aktif</div></div></div>
+                <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-link"></i></span><div class="flex-1"><div class="row-title">Direct Link</div><div class="row-sub">Untuk lagu: tempel link .mp3, tidak memakai penyimpanan</div></div></div>
+                <div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-hard-drive"></i></span><div class="flex-1 row-title">Simpan file baru ke</div>
+                  <select class="select store-select" id="defaultStoreSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setDefaultStore(this.value)"></select></div>
+              </div>
+              <div class="section-foot">Firebase Realtime Database hanya menyimpan <b>teks</b> (judul, catatan, daftar file). Isi foto, lagu, dan dokumen disimpan di R2 / Google Drive.</div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 16px 7px"><span class="section-label" style="padding:0">Pemakaian</span><button class="link-btn t-foot" onclick="refreshStorageUsage(true)">Hitung ulang</button></div>
               <div class="card card-pad stack" id="storagePanel"></div>
-              <div class="section-foot">Data aplikasi (teks) tersimpan di Firebase Realtime Database (server Google, Singapura). Foto & file Kerja tersimpan di Cloudflare. Kuota gratis masing-masing 1 GB.</div>
             </div>
 
             <div>
@@ -733,7 +781,7 @@
     <!-- TAB BAR -->
     <nav class="tabbar" id="mainTabBar">
       <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span data-label="tab.home">Home</span></div>
-      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-music"></i><span data-label="tab.music">Music</span></div>
+      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-photo-film"></i><span data-label="tab.music">Media</span></div>
       <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Hub</span></div>
       <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span data-label="tab.work">Kerja</span></div>
       <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span data-label="tab.settings">Settings</span></div>
@@ -898,10 +946,28 @@
             <div class="fl-row"><span class="fl-label">Kategori</span><select id="quickSongCategory"></select></div>
           </div>
           <div class="form-list">
-            <div class="fl-row"><span class="fl-label">Audio URL *</span><input type="url" id="quickSongUrl" placeholder="https://files.catbox.moe/xxx.mp3" required></div>
-            <div class="fl-row"><span class="fl-label">Cover URL</span><input type="url" id="quickSongCoverUrl" placeholder="https://…jpg (opsional)"></div>
           </div>
-          <div class="section-foot">Gunakan direct link Catbox.moe / CDN audio (.mp3, .m4a).</div>
+          <div class="seg lg" id="songSourceSeg">
+            <button type="button" class="active" data-v="upload" onclick="setSongSource('upload')"><i class="fas fa-cloud-arrow-up"></i> Upload File</button>
+            <button type="button" data-v="link" onclick="setSongSource('link')"><i class="fas fa-link"></i> Direct Link</button>
+          </div>
+          <div id="songUploadFields" class="stack">
+            <input type="file" id="quickSongFile" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac" class="hidden" onchange="onSongFilePicked()">
+            <input type="file" id="quickSongCoverFile" accept="image/*" class="hidden" onchange="onSongCoverPicked()">
+            <div class="form-list">
+              <button type="button" class="fl-row" style="width:100%" onclick="document.getElementById('quickSongFile').click()"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="flex-1 truncate" id="songFileLabel" style="text-align:left">Pilih file audio (MP3/M4A)</span><i class="fas fa-chevron-right chev"></i></button>
+              <button type="button" class="fl-row" style="width:100%" onclick="document.getElementById('quickSongCoverFile').click()"><span class="icon-tile bg-orange"><i class="fas fa-image"></i></span><span class="flex-1 truncate" id="songCoverLabel" style="text-align:left">Pilih cover (opsional)</span><i class="fas fa-chevron-right chev"></i></button>
+              <div class="fl-row"><span class="fl-label">Simpan di</span><select id="quickSongStore" class="store-select"></select></div>
+            </div>
+            <div class="progress hidden" id="songUploadProgress"><div style="width:0%"></div></div>
+          </div>
+          <div id="songLinkFields" class="hidden">
+            <div class="form-list">
+              <div class="fl-row"><span class="fl-label">Audio URL *</span><input type="url" id="quickSongUrl" placeholder="https://files.catbox.moe/xxx.mp3"></div>
+              <div class="fl-row"><span class="fl-label">Cover URL</span><input type="url" id="quickSongCoverUrl" placeholder="https://…jpg (opsional)"></div>
+            </div>
+            <div class="section-foot">Direct link (.mp3/.m4a, mis. Catbox.moe) tidak memakai penyimpananmu. Link YouTube tidak didukung.</div>
+          </div>
         </div>
       </form>
     </div>
@@ -994,6 +1060,59 @@
         <div id="viewerMeta" class="t-foot muted center mt-12"></div>
         <div class="grid-3 mt-12" id="viewerActions"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Galeri: upload -->
+  <div class="backdrop center-md" id="sheetGalleryUpload" onclick="if(event.target===this) cancelGalleryUpload()">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="cancelGalleryUpload()">Batal</button>
+        <div class="sh-title" id="galleryUploadTitle">Tambah Foto</div>
+        <button class="btn-plain sh-right" id="galleryUploadBtn" style="font-weight:600" onclick="saveGalleryUpload()">Simpan</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <div class="photo-strip no-scrollbar" id="galleryPickPreview"></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Keterangan</span><input type="text" id="gUpCaption" placeholder="Opsional"></div>
+          <div class="fl-row"><span class="fl-label">Lokasi</span><input type="text" id="gUpLocation" placeholder="Mis. Pantai Kuta, Bali"><button type="button" class="icon-btn sm blue" onclick="fillLocationFromDevice('gUpLocation')" title="Lokasi saat ini"><i class="fas fa-location-crosshairs"></i></button></div>
+          <div class="fl-row"><span class="fl-label">Album</span><select id="gUpAlbum"></select></div>
+          <div class="fl-row"><span class="fl-label">Simpan di</span><select id="gUpStore" class="store-select"></select></div>
+          <div class="fl-row"><span class="fl-label">Kualitas</span><select id="gUpQuality"><option value="saver">Hemat (disarankan)</option><option value="original">Asli</option></select></div>
+        </div>
+        <div class="t-foot muted center" id="galleryUploadStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panduan penyimpanan -->
+  <div class="backdrop center-md" id="sheetGuide" onclick="if(event.target===this) closeSheet('sheetGuide')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <span class="sh-left"></span>
+        <div class="sh-title" id="guideTitle">Panduan</div>
+        <button class="btn-plain sh-right" style="font-weight:600" onclick="closeSheet('sheetGuide')">Selesai</button>
+      </div>
+      <div class="sheet-body stack-16" id="guideBody"></div>
+    </div>
+  </div>
+
+  <!-- Galeri: viewer layar penuh -->
+  <div class="gviewer" id="galleryViewer">
+    <div class="gv-top">
+      <button class="gv-btn" onclick="closeGalleryViewer()"><i class="fas fa-chevron-left"></i></button>
+      <div class="gv-title"><div id="gvDate" class="semibold">—</div><div id="gvPlace" class="t-cap" style="opacity:.75"></div></div>
+      <button class="gv-btn" onclick="openGalleryPhotoActions()"><i class="fas fa-ellipsis"></i></button>
+    </div>
+    <div class="gv-stage" id="gvStage"><img id="gvImg" alt=""><span class="spinner" id="gvSpin"></span></div>
+    <div class="gv-info hidden" id="gvInfo"></div>
+    <div class="gv-bottom">
+      <button class="gv-btn" onclick="shareGalleryPhotos([galleryViewerId])"><i class="fas fa-arrow-up-from-bracket"></i></button>
+      <button class="gv-btn" id="gvFav" onclick="toggleGalleryFav(galleryViewerId)"><i class="far fa-heart"></i></button>
+      <button class="gv-btn" id="gvInfoBtn" onclick="toggleGalleryInfo()"><i class="fas fa-circle-info"></i></button>
+      <button class="gv-btn" onclick="deleteGalleryPhotos([galleryViewerId])"><i class="far fa-trash-can"></i></button>
     </div>
   </div>
 
