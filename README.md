@@ -72,7 +72,7 @@ Menampilkan pemakaian Firebase (data aplikasi, per kategori) dan Cloudflare (fot
 ### 🗄️ Penyimpanan File (Settings → Penyimpanan File)
 | Penyimpanan | Kapasitas gratis | Dipakai untuk | Cara aktifkan |
 |---|---|---|---|
-| **Cloudflare R2** (utama) | 10 GB | Lagu, cover, Galeri, Bukti Kas, Gudang File | Aktifkan R2 (tambah metode pembayaran, paket Free) → hapus `//` di blok `r2_buckets` pada `wrangler.jsonc`. Upload otomatis berhenti di **9 GB** agar tidak kena tagihan. |
+| **Cloudflare R2** (utama) | 10 GB | Lagu, cover, Galeri, Bukti Kas, Gudang File | Aktifkan R2 (tambah metode pembayaran, paket Free) → hapus `//` di blok `r2_buckets` pada `wrangler.jsonc`. Peringatan push otomatis di **7 GB (70%)** dan **8,5 GB (85%)**; upload otomatis berhenti di **9 GB** agar tidak kena tagihan. |
 | **Google Drive** | 15 GB (akun Google) | Sama, pilih "Google Drive" saat upload | Pasang `apps-script/Code.gs` di script.google.com (Script Property `SECRET`) → deploy Web App → isi `DRIVE_SCRIPT_URL` (Text) & `DRIVE_SECRET` (Secret) di Cloudflare. |
 | Cloudflare KV (lama) | 1 GB | Cadangan otomatis bila R2 belum aktif | Sudah aktif |
 | Direct link | — | Lagu (.mp3/.m4a). Link YouTube tidak didukung | — |

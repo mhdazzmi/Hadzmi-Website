@@ -515,7 +515,16 @@ function renderStoragePanel(fromRefresh) {
   (s.musicLibrary || []).forEach(m => add(m.fileId, m.size));
   const u = usageCache || {};
   let html = usageBlock('FIREBASE · TEKS SAJA', fbTotal, GB, fb, 'unduhan maks 10 GB/bulan');
-  if (u.r2) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', u.r2.bytes, u.r2.limit, null, 'upload berhenti otomatis di 9 GB (aman dari tagihan)');
+  if (u.r2) {
+    const used = u.r2.bytes, gb = x => (x / GB).toFixed(2).replace('.', ',');
+    const lvl = used >= 9 * GB ? 3 : used >= 8.5 * GB ? 2 : used >= 7 * GB ? 1 : 0;
+    if (lvl) {
+      const msg = lvl === 3 ? `R2 mencapai ${gb(used)} GB — upload baru diblokir agar tidak kena biaya. Hapus file lama atau pakai Google Drive.` : `R2 sudah ${gb(used)} GB dari 10 GB gratis. ${lvl === 2 ? 'Upload akan diblokir di 9 GB.' : 'Mulai hapus file yang tidak perlu.'}`;
+      html = `<div class="badge ${lvl === 3 ? 'tint-red' : 'tint-orange'}" style="white-space:normal; padding:10px 12px; font-size:13px; line-height:1.4; border-radius:14px"><i class="fas fa-triangle-exclamation"></i> ${esc(msg)}</div>` + html;
+      if (typeof pushNotification === 'function') pushNotification({ key: 'storage_r2_client_L' + lvl, title: lvl === 3 ? '🛑 Penyimpanan R2 penuh (9 GB)' : `⚠️ Penyimpanan R2 ${lvl === 2 ? '85' : '70'}%`, body: msg, icon: 'fa-hard-drive', color: lvl === 3 ? 'bg-red' : 'bg-orange', action: { tab: 'tab-backup' } });
+    }
+    html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', used, u.r2.limit, null, 'peringatan di 7 GB & 8,5 GB · upload berhenti di 9 GB (aman dari tagihan)');
+  }
   else html += `<div class="divider"></div><div class="t-foot muted semibold">CLOUDFLARE R2</div><div class="t-sub muted">Belum aktif — <a href="#" onclick="openStorageGuide('r2'); return false">lihat langkah</a></div>`;
   if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Hub: ${formatBytes(u.drive.folderBytes || 0)}`);
   else if (u.drive && u.drive.error) html += `<div class="divider"></div><div class="t-foot muted semibold">GOOGLE DRIVE</div><div class="t-sub c-red">${esc(u.drive.error)}</div>`;

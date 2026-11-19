@@ -40,6 +40,7 @@ export default {
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runCron(env).catch(err => console.error('cron error', err && err.stack || err)));
+    ctx.waitUntil(checkStorageAlerts(env).catch(err => console.error('storage alert error', err)));
   }
 };
 
@@ -375,6 +376,7 @@ async function uploadFile(request, env, url) {
     const id = 'r2-' + crypto.randomUUID();
     const obj = await env.FILES.put('f/' + id, request.body, { httpMetadata: { contentType: type }, customMetadata: { name } });
     await env.HUB_KV.put('r2_bytes', String(used + (obj ? obj.size : len)));
+    await checkStorageAlerts(env).catch(() => {});
     return json({ id, size: obj ? obj.size : len, store });
   }
   const buf = await request.arrayBuffer();
@@ -463,7 +465,7 @@ async function storageUsage(env, recount) {
       do { const page = await env.FILES.list({ prefix: 'f/', cursor }); page.objects.forEach(o => { bytes += o.size; count++; }); cursor = page.truncated ? page.cursor : null; } while (cursor);
       await env.HUB_KV.put('r2_bytes', String(bytes));
     }
-    out.r2 = { bytes, count, limit: 10 * 1024 * 1024 * 1024, safeLimit: R2_SAFE_LIMIT };
+    out.r2 = { bytes, count, limit: 10 * 1024 * 1024 * 1024, safeLimit: R2_SAFE_LIMIT, alertLevels: [7 * 1024 ** 3, 8.5 * 1024 ** 3, R2_SAFE_LIMIT] };
   }
   if (env.HUB_KV) {
     let cursor, count = 0, bytes = 0;
@@ -498,3 +500,27 @@ async function getSignKey(env, create) {
 async function hmac(key, data) { return b64urlEncode(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data)))); }
 function bytesToBase64(bytes) { let s = ''; const CH = 0x8000; for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return btoa(s); }
 function base64ToBytes(b64) { const bin = atob(b64); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+
+// ---------------- PERINGATAN KUOTA R2 (agar tidak kena biaya) ----------------
+const R2_FREE_BYTES = 10 * 1024 * 1024 * 1024;
+const R2_ALERT_LEVELS = [
+  { level: 1, at: 7 * 1024 ** 3, title: '⚠️ Penyimpanan R2 70%', body: 'Sudah dipakai sekitar 7 GB dari 10 GB gratis. Mulai hapus file yang tidak perlu.' },
+  { level: 2, at: 8.5 * 1024 ** 3, title: '⚠️ Penyimpanan R2 85%', body: 'Sudah dipakai sekitar 8,5 GB dari 10 GB gratis. Upload akan diblokir di 9 GB.' },
+  { level: 3, at: R2_SAFE_LIMIT, title: '🛑 Penyimpanan R2 mencapai 9 GB', body: 'Upload baru ke R2 diblokir agar tidak kena biaya. Hapus file lama atau pakai Google Drive.' }
+];
+async function checkStorageAlerts(env) {
+  if (!env.FILES || !env.HUB_KV) return;
+  const used = Number(await env.HUB_KV.get('r2_bytes')) || 0;
+  const reached = R2_ALERT_LEVELS.filter(l => used >= l.at).pop();
+  const level = reached ? reached.level : 0;
+  const state = await kvGet(env, 'storage_alert', { level: 0 });
+  if (level === state.level) return;
+  await env.HUB_KV.put('storage_alert', JSON.stringify({ level, at: Date.now() }));
+  if (level < state.level) return; // pemakaian turun — reset agar bisa memperingatkan lagi nanti
+  const now = Date.now();
+  const gb = (used / 1024 ** 3).toFixed(2).replace('.', ',');
+  const item = { id: 'storage_r2_' + level + ':' + now, key: 'storage_r2_L' + level + '_' + now, title: reached.title, body: reached.body + ` (terpakai ${gb} GB)`, icon: 'fa-hard-drive', color: level === 3 ? 'bg-red' : 'bg-orange', action: { tab: 'tab-backup' }, ts: now };
+  const outbox = (await kvGet(env, 'outbox', [])).concat(item).slice(-OUTBOX_MAX);
+  await env.HUB_KV.put('outbox', JSON.stringify(outbox));
+  await pushAll(env).catch(() => {});
+}

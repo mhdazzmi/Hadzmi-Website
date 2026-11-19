@@ -13,12 +13,10 @@
   "triggers": { "crons": ["* * * * *"] },
   // KV dibuat otomatis oleh wrangler saat deploy pertama
   "kv_namespaces": [{ "binding": "HUB_KV" }],
-  // === CLOUDFLARE R2 (10 GB gratis) ===
-  // Aktifkan R2 dulu di Dashboard (R2 Object Storage → tambahkan metode pembayaran), lalu
-  // hapus "// " di 3 baris "r2_buckets" di bawah ini. Bucket dibuat otomatis saat deploy.
-  // "r2_buckets": [
-  //   { "binding": "FILES", "bucket_name": "hadzmi-hub-files" }
-  // ],
+  // === CLOUDFLARE R2 (10 GB gratis, aktif) — bucket dibuat otomatis saat deploy ===
+  "r2_buckets": [
+    { "binding": "FILES", "bucket_name": "hadzmi-hub-files" }
+  ],
   "vars": {
     "FIREBASE_PROJECT_ID": "web-hadzmi-new"
   },
