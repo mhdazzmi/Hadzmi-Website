@@ -40,7 +40,50 @@ function tickLockClock() {
   if ($('lockTime')) $('lockTime').textContent = `${pad2(w.getHours())}:${pad2(w.getMinutes())}`;
   if ($('lockDate')) $('lockDate').textContent = `${ID_DAYS[w.getDay()]}, ${w.getDate()} ${ID_MONTHS_LONG[w.getMonth()]}`;
 }
+function isPinMode() { return APP_AUTH.loginMode === 'pin' && !!APP_AUTH.ownerEmail; }
+let pinBuffer = '';
+let pinBusy = false;
+function renderPinDots() {
+  const dots = $('pinDots'); if (!dots) return;
+  dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('on', i < pinBuffer.length));
+}
+function pinInput(digit) {
+  if (pinBusy || $('lockScreen').classList.contains('hidden')) return;
+  if (pinBuffer.length >= APP_AUTH.pinLength) return;
+  pinBuffer += digit; haptic(6);
+  if (pinBuffer.length === 1) setLockError('');
+  renderPinDots();
+  if (pinBuffer.length === APP_AUTH.pinLength) setTimeout(() => submitLogin(), 120);
+}
+function pinBackspace() {
+  if (pinBusy) return;
+  pinBuffer = pinBuffer.slice(0, -1); renderPinDots();
+}
+function bindPinPad() {
+  const pad = $('pinPad'); if (!pad || pad.dataset.bound) return;
+  pad.dataset.bound = '1';
+  pad.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.del) pinBackspace(); else if (b.dataset.d) pinInput(b.dataset.d);
+  });
+  document.addEventListener('keydown', e => {
+    if (!isPinMode() || $('lockScreen').classList.contains('hidden')) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); pinInput(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); pinBackspace(); }
+  });
+}
 function setupLockScreenFields() {
+  $('lockSessionRule').textContent = APP_AUTH.sessionMode === 'rolling24h' ? '24 jam' : '00:00 WIB';
+  if (isPinMode()) {
+    $('lockPinWrap').classList.remove('hidden');
+    $('lockPwWrap').classList.add('hidden');
+    $('lockForm').classList.add('pin-mode');
+    $('lockSubtitle').textContent = 'Masukkan PIN';
+    pinBuffer = ''; renderPinDots(); bindPinPad();
+    return;
+  }
+  $('lockPinWrap').classList.add('hidden');
+  $('lockPwWrap').classList.remove('hidden');
   const email = getLoginEmail();
   if (email) {
     $('lockEmailWrap').classList.add('hidden');
@@ -51,7 +94,6 @@ function setupLockScreenFields() {
     $('lockEmailWrap').classList.remove('hidden');
     $('lockEmailShown').classList.add('hidden');
   }
-  $('lockSessionRule').textContent = APP_AUTH.sessionMode === 'rolling24h' ? '24 jam' : '00:00 WIB';
 }
 function showLockEmailField(e) {
   if (e) e.preventDefault();
@@ -64,6 +106,8 @@ function setLockError(msg) {
   if (msg) { const card = $('lockForm'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); haptic(40); }
 }
 function setLockBusy(busy) {
+  pinBusy = busy;
+  const dots = $('pinDots'); if (dots) dots.classList.toggle('busy', !!busy);
   const btn = $('lockGoBtn'); btn.disabled = busy;
   btn.innerHTML = busy ? '<span class="spinner"></span>' : '<i class="fas fa-arrow-right"></i>';
 }
@@ -74,12 +118,16 @@ function showLockScreen(message) {
   setupLockScreenFields();
   setLockBusy(false);
   if (message) setLockError(message);
-  setTimeout(() => { const pw = $('lockPassword'); if (pw && window.innerWidth > 760) pw.focus(); }, 300);
+  if (!isPinMode()) setTimeout(() => { const pw = $('lockPassword'); if (pw && window.innerWidth > 760) pw.focus(); }, 300);
 }
 
 function mapAuthError(err) {
   const code = (err && err.code) || '';
+  if (isPinMode() && /wrong-password|invalid-credential|invalid-login-credentials/.test(code)) return 'PIN salah. Coba lagi.';
+  if (isPinMode() && code === 'auth/user-not-found') return 'Akun PIN belum dibuat di Firebase.';
   const map = {
+    'auth/weak-password': 'PIN/sandi minimal 6 karakter.',
+    'auth/requires-recent-login': 'Demi keamanan, kunci lalu login ulang sebelum mengganti PIN.',
     'auth/wrong-password': 'Sandi salah. Coba lagi.',
     'auth/invalid-credential': 'Email atau sandi salah.',
     'auth/invalid-login-credentials': 'Email atau sandi salah.',
@@ -95,8 +143,9 @@ function mapAuthError(err) {
 
 function submitLogin(e) {
   if (e) e.preventDefault();
-  const pw = $('lockPassword').value;
-  const email = ($('lockEmail').value || getLoginEmail()).trim();
+  const pin = isPinMode();
+  const pw = pin ? pinBuffer : $('lockPassword').value;
+  const email = pin ? APP_AUTH.ownerEmail : ($('lockEmail').value || getLoginEmail()).trim();
   if (!email) { showLockEmailField(); return setLockError('Masukkan email akun dulu.'), false; }
   if (!pw) return setLockError('Masukkan sandi.'), false;
   if (!firebaseAuth) { setLockError('Firebase belum termuat. Periksa koneksi internet lalu muat ulang.'); return false; }
@@ -107,10 +156,13 @@ function submitLogin(e) {
       loginInProgress = false;
       writeLS(AUTH_EMAIL_KEY, email);
       writeLS(SESSION_KEY, { uid: cred.user.uid, email, loginAt: Date.now(), expiresAt: computeSessionExpiry() });
-      $('lockPassword').value = '';
+      $('lockPassword').value = ''; pinBuffer = ''; setLockBusy(false); renderPinDots();
       unlockApp();
     })
-    .catch(err => { loginInProgress = false; setLockBusy(false); setLockError(mapAuthError(err)); $('lockPassword').select(); });
+    .catch(err => {
+      loginInProgress = false; setLockBusy(false); setLockError(mapAuthError(err));
+      if (pin) { pinBuffer = ''; renderPinDots(); } else $('lockPassword').select();
+    });
   return false;
 }
 
@@ -127,7 +179,8 @@ function updateSessionUI() {
   const rec = getSessionRecord();
   const exp = rec && rec.expiresAt;
   if ($('settingsSessionExpiry')) $('settingsSessionExpiry').textContent = APP_AUTH.enabled ? formatExpiry(exp) : 'Kunci nonaktif';
-  if ($('settingsAccountEmail')) $('settingsAccountEmail').textContent = (rec && rec.email) || getLoginEmail() || (APP_AUTH.enabled ? '—' : 'Mode tanpa login');
+  if ($('settingsAccountEmail')) $('settingsAccountEmail').textContent = !APP_AUTH.enabled ? 'Mode tanpa login' : isPinMode() ? 'Login dengan PIN ' + APP_AUTH.pinLength + ' angka' : ((rec && rec.email) || getLoginEmail() || '—');
+  if ($('changeCredLabel')) $('changeCredLabel').textContent = isPinMode() ? 'Ganti PIN' : 'Ganti Sandi';
   const chip = $('heroSessionChip');
   if (chip) chip.innerHTML = APP_AUTH.enabled && exp ? `<i class="fas fa-lock-open"></i> Sesi s/d ${formatExpiry(exp).split(' (')[0]}` : '<i class="fas fa-lock-open"></i> Sesi aktif';
 }
@@ -162,7 +215,7 @@ function checkSessionExpiry() {
 function openAccountMenu() {
   const rec = getSessionRecord();
   openActionSheet({
-    title: (rec && rec.email) || 'Hadzmi Hub',
+    title: isPinMode() ? 'Hadzmi Hub' : ((rec && rec.email) || 'Hadzmi Hub'),
     message: APP_AUTH.enabled ? `Sesi aktif hingga ${formatExpiry(rec && rec.expiresAt)}` : 'Kunci login nonaktif',
     actions: [
       { text: 'Kunci Sekarang', icon: 'fas fa-lock', destructive: true, onClick: () => lockAppNow() },
@@ -219,4 +272,29 @@ function bootAuth() {
       else showLockScreen(lockMsg || '');
     }
   });
+}
+
+async function changePinFlow() {
+  const user = firebaseAuth && firebaseAuth.currentUser;
+  if (!user) return showToast('Login dulu untuk mengganti PIN.', false);
+  const pin = isPinMode(), n = APP_AUTH.pinLength;
+  const label = pin ? 'PIN' : 'sandi';
+  const numeric = pin ? { type: 'password', inputmode: 'numeric', maxlength: n } : { type: 'password' };
+  const ask = (title, message, input) => iosAlert({ title, message, input, actions: [{ text: 'Batal', value: false }, { text: 'Lanjut', value: true, bold: true }] });
+  const oldVal = await ask(`Ganti ${label}`, `Masukkan ${label} saat ini.`, { type: 'password' });
+  if (oldVal === null || oldVal === '') return;
+  const newVal = await ask(`${label[0].toUpperCase() + label.slice(1)} baru`, pin ? `Masukkan ${n} angka.` : 'Minimal 6 karakter.', numeric);
+  if (newVal === null) return;
+  if (pin ? !new RegExp('^\\d{' + n + '}$').test(newVal) : newVal.length < 6) return showToast(pin ? `PIN harus tepat ${n} angka.` : 'Sandi minimal 6 karakter.', false);
+  const confirmVal = await ask(`Ulangi ${label} baru`, '', numeric);
+  if (confirmVal === null) return;
+  if (confirmVal !== newVal) return showToast(`${label} baru tidak sama.`, false);
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldVal);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(newVal);
+    showToast(`${label[0].toUpperCase() + label.slice(1)} berhasil diganti. Berlaku di semua perangkat.`);
+  } catch (err) {
+    showToast(mapAuthError(err).replace('PIN salah. Coba lagi.', `${label} lama salah.`), false);
+  }
 }

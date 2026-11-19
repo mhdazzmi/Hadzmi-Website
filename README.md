@@ -28,20 +28,23 @@ Sistem login sekarang memakai **Firebase Authentication**, jadi kuncinya benar-b
 
 1. **Aktifkan Email/Password**
    Firebase Console → project `web-hadzmi-new` → **Authentication** → *Sign-in method* → **Email/Password** → Enable.
-2. **Buat akunmu**
-   Authentication → *Users* → **Add user** → isi email + sandi (sandi ini yang kamu ketik di layar kunci).
-   Salin **User UID** yang muncul.
+2. **Buat akun khusus login PIN**
+   Authentication → *Users* → **Add user**:
+   - Email: `hadzmi-hub@example.com` (akun khusus, bukan email pribadi; sudah tertanam di `APP_AUTH.ownerEmail`)
+   - Password: **PIN 6 angka**-mu
+   Salin **User UID**-nya.
 3. **Matikan pendaftaran orang lain**
    Authentication → *Settings* → *User actions* → hilangkan centang **Enable create (sign-up)**.
 4. **Kunci database** (paling penting!)
    Realtime Database → *Rules* → tempel isi `database.rules.json`, ganti `GANTI_DENGAN_UID_KAMU` dengan UID dari langkah 2 → **Publish**.
    Setelah ini hanya akunmu yang bisa membaca/menulis data. Orang lain yang tahu `apiKey` akan ditolak.
-5. (Opsional) Di `src/js/01-core.js` isi `APP_AUTH.ownerEmail = 'emailkamu@gmail.com'` supaya layar kunci cukup minta sandi. Tanpa ini pun, email otomatis diingat setelah login pertama di tiap perangkat.
+5. Layar kunci memakai **keypad PIN 6 angka** (langsung terbuka di angka ke-6). PIN bisa diganti dari aplikasi: **Settings → Keamanan → Ganti PIN**, dan berlaku di semua perangkat. Kalau mau kembali ke email + sandi: `APP_AUTH.loginMode = 'password'`.
+   Keamanan: Firebase otomatis memblokir sementara jika PIN salah berkali-kali (*too many requests*).
 
 Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disarankan).
 
 ### Cara kerja sesi
-- Setiap perangkat/browser wajib login dengan sandi saat pertama kali dibuka.
+- Setiap perangkat/browser wajib memasukkan PIN saat pertama kali dibuka.
 - Setelah login, sesi berlaku **sampai pukul 00:00 WIB**. Dibuka lagi sore/malam di hari yang sama tidak diminta sandi.
 - Lewat tengah malam, aplikasi terkunci sendiri (walaupun sedang terbuka) dan minta sandi sekali lagi.
 - Kalau mau 24 jam bergulir sejak login: `APP_AUTH.sessionMode = 'rolling24h'`.

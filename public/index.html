@@ -771,6 +771,28 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .sheet-head .btn-plain.bold { font-weight: 600; }
 .stack > .inline-input-row + .inline-input-row { margin-top: 8px; }
 
+/* PIN keypad (iOS passcode) */
+.pin-dots { display: flex; justify-content: center; gap: 18px; margin: 18px 0 20px; }
+.pin-dots span { width: 14px; height: 14px; border-radius: 99px; border: 1.6px solid rgba(28,28,30,0.55); transition: background .15s, transform .15s; }
+.pin-dots span.on { background: #1C1C1E; border-color: #1C1C1E; transform: scale(1.08); }
+.pin-dots.busy span { animation: pinPulse 1s ease-in-out infinite; }
+.pin-dots.busy span:nth-child(2) { animation-delay: .1s; } .pin-dots.busy span:nth-child(3) { animation-delay: .2s; }
+.pin-dots.busy span:nth-child(4) { animation-delay: .3s; } .pin-dots.busy span:nth-child(5) { animation-delay: .4s; } .pin-dots.busy span:nth-child(6) { animation-delay: .5s; }
+@keyframes pinPulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px 22px; justify-content: center; }
+.pin-pad button {
+  width: 76px; height: 76px; border-radius: 999px; border: 0; cursor: pointer; font-family: var(--font);
+  background: rgba(255,255,255,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.05);
+  font-size: 32px; font-weight: 400; color: #1C1C1E; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+  transition: background .12s ease, transform .1s ease; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+}
+.pin-pad button small { font-size: 9.5px; font-weight: 600; letter-spacing: .14em; margin-top: 3px; color: rgba(28,28,30,0.6); }
+.pin-pad button:active { background: rgba(28,28,30,0.18); transform: scale(0.96); }
+.pin-pad button.pin-del { background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; font-size: 24px; }
+.lock-card.pin-mode { padding-bottom: 18px; }
+@media (max-height: 760px) { .pin-pad { grid-template-columns: repeat(3, 66px); gap: 10px 20px; } .pin-pad button { width: 66px; height: 66px; font-size: 28px; } .lock-time { font-size: 72px; } }
+
   </style>
 </head>
 <body>
@@ -785,15 +807,26 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
       <div class="t-title3" style="font-weight:700">Hadzmi Hub</div>
       <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
 
-      <div id="lockEmailWrap" class="hidden" style="margin-top:16px">
-        <input type="email" id="lockEmail" class="lock-input" placeholder="Email akun" autocomplete="username" style="padding:0 20px">
+      <div id="lockPinWrap" class="hidden">
+        <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="pin-pad" id="pinPad">
+          <button type="button" data-d="1">1</button><button type="button" data-d="2">2<small>ABC</small></button><button type="button" data-d="3">3<small>DEF</small></button>
+          <button type="button" data-d="4">4<small>GHI</small></button><button type="button" data-d="5">5<small>JKL</small></button><button type="button" data-d="6">6<small>MNO</small></button>
+          <button type="button" data-d="7">7<small>PQRS</small></button><button type="button" data-d="8">8<small>TUV</small></button><button type="button" data-d="9">9<small>WXYZ</small></button>
+          <span></span><button type="button" data-d="0">0</button><button type="button" class="pin-del" data-del="1" aria-label="Hapus"><i class="fas fa-delete-left"></i></button>
+        </div>
       </div>
-      <div id="lockEmailShown" class="hidden lock-hint" style="margin-top:10px">
-        <span id="lockEmailLabel"></span> · <a href="#" onclick="showLockEmailField(event)" style="color:var(--blue)">Ganti</a>
-      </div>
-      <div style="position:relative; margin-top:12px">
-        <input type="password" id="lockPassword" class="lock-input" placeholder="Sandi" autocomplete="current-password" required>
-        <button type="submit" class="lock-go" id="lockGoBtn" aria-label="Buka"><i class="fas fa-arrow-right"></i></button>
+      <div id="lockPwWrap">
+        <div id="lockEmailWrap" class="hidden" style="margin-top:16px">
+          <input type="email" id="lockEmail" class="lock-input" placeholder="Email akun" autocomplete="username" style="padding:0 20px">
+        </div>
+        <div id="lockEmailShown" class="hidden lock-hint" style="margin-top:10px">
+          <span id="lockEmailLabel"></span> · <a href="#" onclick="showLockEmailField(event)" style="color:var(--blue)">Ganti</a>
+        </div>
+        <div style="position:relative; margin-top:12px">
+          <input type="password" id="lockPassword" class="lock-input" placeholder="Sandi" autocomplete="current-password">
+          <button type="submit" class="lock-go" id="lockGoBtn" aria-label="Buka"><i class="fas fa-arrow-right"></i></button>
+        </div>
       </div>
       <div class="lock-err" id="lockError"></div>
       <div class="lock-hint"><i class="fas fa-shield-halved"></i> Sesi berlaku hingga <b id="lockSessionRule">00:00 WIB</b> di perangkat ini, lalu wajib login lagi.</div>
@@ -1281,9 +1314,9 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <div class="section-label">Keamanan</div>
               <div class="list inset-icon">
                 <button class="row" onclick="lockAppNow()"><span class="icon-tile bg-red"><i class="fas fa-lock"></i></span><div class="flex-1 row-title">Kunci Sekarang</div><i class="fas fa-chevron-right chev"></i></button>
-                <button class="row" onclick="sendPasswordReset()"><span class="icon-tile bg-gray"><i class="fas fa-key"></i></span><div class="flex-1 row-title">Kirim Email Reset Sandi</div><i class="fas fa-chevron-right chev"></i></button>
+                <button class="row" onclick="changePinFlow()"><span class="icon-tile bg-gray"><i class="fas fa-key"></i></span><div class="flex-1 row-title" id="changeCredLabel">Ganti PIN</div><i class="fas fa-chevron-right chev"></i></button>
               </div>
-              <div class="section-foot">Setiap perangkat wajib login dengan sandi. Sesi otomatis berakhir pukul 00:00 WIB.</div>
+              <div class="section-foot">Setiap perangkat wajib memasukkan PIN. Sesi otomatis berakhir pukul 00:00 WIB.</div>
             </div>
 
             <!-- Notifications -->
@@ -1673,7 +1706,9 @@ const firebaseConfig = {
 
 const APP_AUTH = {
   enabled: true,          // false = matikan kunci login (tidak disarankan)
-  ownerEmail: '',         // opsional: isi email akun Firebase Auth agar layar kunci cukup minta sandi
+  loginMode: 'pin',       // 'pin' = keypad PIN 6 angka | 'password' = email + sandi
+  pinLength: 6,
+  ownerEmail: 'hadzmi-hub@example.com', // akun Firebase KHUSUS login PIN (bukan email pribadi); PIN = sandi akun ini
   sessionMode: 'midnight' // 'midnight' = berlaku sampai 00:00 WIB | 'rolling24h' = 24 jam sejak login
 };
 
@@ -1824,7 +1859,7 @@ function iosAlert(opts) {
         <div class="al-body">
           <div class="al-title">${esc(opts.title || '')}</div>
           ${opts.message ? `<div class="al-msg">${esc(opts.message)}</div>` : ''}
-          ${opts.input ? `<input id="iosAlertInput" type="${opts.input.type || 'text'}" placeholder="${esc(opts.input.placeholder || '')}" value="${esc(opts.input.value || '')}">` : ''}
+          ${opts.input ? `<input id="iosAlertInput" type="${opts.input.type || 'text'}" placeholder="${esc(opts.input.placeholder || '')}" value="${esc(opts.input.value || '')}"${opts.input.inputmode ? ` inputmode="${opts.input.inputmode}"` : ''}${opts.input.maxlength ? ` maxlength="${opts.input.maxlength}"` : ''} autocomplete="off">` : ''}
         </div>
         <div class="al-actions" style="${actions.length > 2 ? 'flex-direction:column' : ''}">
           ${actions.map((a, i) => `<button data-i="${i}" class="${a.bold ? 'bold' : ''} ${a.destructive ? 'destructive' : ''}" style="${actions.length > 2 && i ? 'border-left:0;border-top:.5px solid var(--sep)' : ''}">${esc(a.text)}</button>`).join('')}
@@ -1835,7 +1870,7 @@ function iosAlert(opts) {
         const a = actions[+btn.dataset.i];
         const inputEl = $('iosAlertInput');
         host.classList.remove('open');
-        setTimeout(() => { host.innerHTML = ''; }, 250);
+        setTimeout(() => { if (!host.classList.contains('open')) host.innerHTML = ''; }, 250);
         resolve(opts.input ? (a.value ? (inputEl ? inputEl.value : '') : null) : a.value);
       };
     });
@@ -2152,7 +2187,50 @@ function tickLockClock() {
   if ($('lockTime')) $('lockTime').textContent = `${pad2(w.getHours())}:${pad2(w.getMinutes())}`;
   if ($('lockDate')) $('lockDate').textContent = `${ID_DAYS[w.getDay()]}, ${w.getDate()} ${ID_MONTHS_LONG[w.getMonth()]}`;
 }
+function isPinMode() { return APP_AUTH.loginMode === 'pin' && !!APP_AUTH.ownerEmail; }
+let pinBuffer = '';
+let pinBusy = false;
+function renderPinDots() {
+  const dots = $('pinDots'); if (!dots) return;
+  dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('on', i < pinBuffer.length));
+}
+function pinInput(digit) {
+  if (pinBusy || $('lockScreen').classList.contains('hidden')) return;
+  if (pinBuffer.length >= APP_AUTH.pinLength) return;
+  pinBuffer += digit; haptic(6);
+  if (pinBuffer.length === 1) setLockError('');
+  renderPinDots();
+  if (pinBuffer.length === APP_AUTH.pinLength) setTimeout(() => submitLogin(), 120);
+}
+function pinBackspace() {
+  if (pinBusy) return;
+  pinBuffer = pinBuffer.slice(0, -1); renderPinDots();
+}
+function bindPinPad() {
+  const pad = $('pinPad'); if (!pad || pad.dataset.bound) return;
+  pad.dataset.bound = '1';
+  pad.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.del) pinBackspace(); else if (b.dataset.d) pinInput(b.dataset.d);
+  });
+  document.addEventListener('keydown', e => {
+    if (!isPinMode() || $('lockScreen').classList.contains('hidden')) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); pinInput(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); pinBackspace(); }
+  });
+}
 function setupLockScreenFields() {
+  $('lockSessionRule').textContent = APP_AUTH.sessionMode === 'rolling24h' ? '24 jam' : '00:00 WIB';
+  if (isPinMode()) {
+    $('lockPinWrap').classList.remove('hidden');
+    $('lockPwWrap').classList.add('hidden');
+    $('lockForm').classList.add('pin-mode');
+    $('lockSubtitle').textContent = 'Masukkan PIN';
+    pinBuffer = ''; renderPinDots(); bindPinPad();
+    return;
+  }
+  $('lockPinWrap').classList.add('hidden');
+  $('lockPwWrap').classList.remove('hidden');
   const email = getLoginEmail();
   if (email) {
     $('lockEmailWrap').classList.add('hidden');
@@ -2163,7 +2241,6 @@ function setupLockScreenFields() {
     $('lockEmailWrap').classList.remove('hidden');
     $('lockEmailShown').classList.add('hidden');
   }
-  $('lockSessionRule').textContent = APP_AUTH.sessionMode === 'rolling24h' ? '24 jam' : '00:00 WIB';
 }
 function showLockEmailField(e) {
   if (e) e.preventDefault();
@@ -2176,6 +2253,8 @@ function setLockError(msg) {
   if (msg) { const card = $('lockForm'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); haptic(40); }
 }
 function setLockBusy(busy) {
+  pinBusy = busy;
+  const dots = $('pinDots'); if (dots) dots.classList.toggle('busy', !!busy);
   const btn = $('lockGoBtn'); btn.disabled = busy;
   btn.innerHTML = busy ? '<span class="spinner"></span>' : '<i class="fas fa-arrow-right"></i>';
 }
@@ -2186,12 +2265,16 @@ function showLockScreen(message) {
   setupLockScreenFields();
   setLockBusy(false);
   if (message) setLockError(message);
-  setTimeout(() => { const pw = $('lockPassword'); if (pw && window.innerWidth > 760) pw.focus(); }, 300);
+  if (!isPinMode()) setTimeout(() => { const pw = $('lockPassword'); if (pw && window.innerWidth > 760) pw.focus(); }, 300);
 }
 
 function mapAuthError(err) {
   const code = (err && err.code) || '';
+  if (isPinMode() && /wrong-password|invalid-credential|invalid-login-credentials/.test(code)) return 'PIN salah. Coba lagi.';
+  if (isPinMode() && code === 'auth/user-not-found') return 'Akun PIN belum dibuat di Firebase.';
   const map = {
+    'auth/weak-password': 'PIN/sandi minimal 6 karakter.',
+    'auth/requires-recent-login': 'Demi keamanan, kunci lalu login ulang sebelum mengganti PIN.',
     'auth/wrong-password': 'Sandi salah. Coba lagi.',
     'auth/invalid-credential': 'Email atau sandi salah.',
     'auth/invalid-login-credentials': 'Email atau sandi salah.',
@@ -2207,8 +2290,9 @@ function mapAuthError(err) {
 
 function submitLogin(e) {
   if (e) e.preventDefault();
-  const pw = $('lockPassword').value;
-  const email = ($('lockEmail').value || getLoginEmail()).trim();
+  const pin = isPinMode();
+  const pw = pin ? pinBuffer : $('lockPassword').value;
+  const email = pin ? APP_AUTH.ownerEmail : ($('lockEmail').value || getLoginEmail()).trim();
   if (!email) { showLockEmailField(); return setLockError('Masukkan email akun dulu.'), false; }
   if (!pw) return setLockError('Masukkan sandi.'), false;
   if (!firebaseAuth) { setLockError('Firebase belum termuat. Periksa koneksi internet lalu muat ulang.'); return false; }
@@ -2219,10 +2303,13 @@ function submitLogin(e) {
       loginInProgress = false;
       writeLS(AUTH_EMAIL_KEY, email);
       writeLS(SESSION_KEY, { uid: cred.user.uid, email, loginAt: Date.now(), expiresAt: computeSessionExpiry() });
-      $('lockPassword').value = '';
+      $('lockPassword').value = ''; pinBuffer = ''; setLockBusy(false); renderPinDots();
       unlockApp();
     })
-    .catch(err => { loginInProgress = false; setLockBusy(false); setLockError(mapAuthError(err)); $('lockPassword').select(); });
+    .catch(err => {
+      loginInProgress = false; setLockBusy(false); setLockError(mapAuthError(err));
+      if (pin) { pinBuffer = ''; renderPinDots(); } else $('lockPassword').select();
+    });
   return false;
 }
 
@@ -2239,7 +2326,8 @@ function updateSessionUI() {
   const rec = getSessionRecord();
   const exp = rec && rec.expiresAt;
   if ($('settingsSessionExpiry')) $('settingsSessionExpiry').textContent = APP_AUTH.enabled ? formatExpiry(exp) : 'Kunci nonaktif';
-  if ($('settingsAccountEmail')) $('settingsAccountEmail').textContent = (rec && rec.email) || getLoginEmail() || (APP_AUTH.enabled ? '—' : 'Mode tanpa login');
+  if ($('settingsAccountEmail')) $('settingsAccountEmail').textContent = !APP_AUTH.enabled ? 'Mode tanpa login' : isPinMode() ? 'Login dengan PIN ' + APP_AUTH.pinLength + ' angka' : ((rec && rec.email) || getLoginEmail() || '—');
+  if ($('changeCredLabel')) $('changeCredLabel').textContent = isPinMode() ? 'Ganti PIN' : 'Ganti Sandi';
   const chip = $('heroSessionChip');
   if (chip) chip.innerHTML = APP_AUTH.enabled && exp ? `<i class="fas fa-lock-open"></i> Sesi s/d ${formatExpiry(exp).split(' (')[0]}` : '<i class="fas fa-lock-open"></i> Sesi aktif';
 }
@@ -2274,7 +2362,7 @@ function checkSessionExpiry() {
 function openAccountMenu() {
   const rec = getSessionRecord();
   openActionSheet({
-    title: (rec && rec.email) || 'Hadzmi Hub',
+    title: isPinMode() ? 'Hadzmi Hub' : ((rec && rec.email) || 'Hadzmi Hub'),
     message: APP_AUTH.enabled ? `Sesi aktif hingga ${formatExpiry(rec && rec.expiresAt)}` : 'Kunci login nonaktif',
     actions: [
       { text: 'Kunci Sekarang', icon: 'fas fa-lock', destructive: true, onClick: () => lockAppNow() },
@@ -2331,6 +2419,31 @@ function bootAuth() {
       else showLockScreen(lockMsg || '');
     }
   });
+}
+
+async function changePinFlow() {
+  const user = firebaseAuth && firebaseAuth.currentUser;
+  if (!user) return showToast('Login dulu untuk mengganti PIN.', false);
+  const pin = isPinMode(), n = APP_AUTH.pinLength;
+  const label = pin ? 'PIN' : 'sandi';
+  const numeric = pin ? { type: 'password', inputmode: 'numeric', maxlength: n } : { type: 'password' };
+  const ask = (title, message, input) => iosAlert({ title, message, input, actions: [{ text: 'Batal', value: false }, { text: 'Lanjut', value: true, bold: true }] });
+  const oldVal = await ask(`Ganti ${label}`, `Masukkan ${label} saat ini.`, { type: 'password' });
+  if (oldVal === null || oldVal === '') return;
+  const newVal = await ask(`${label[0].toUpperCase() + label.slice(1)} baru`, pin ? `Masukkan ${n} angka.` : 'Minimal 6 karakter.', numeric);
+  if (newVal === null) return;
+  if (pin ? !new RegExp('^\\d{' + n + '}$').test(newVal) : newVal.length < 6) return showToast(pin ? `PIN harus tepat ${n} angka.` : 'Sandi minimal 6 karakter.', false);
+  const confirmVal = await ask(`Ulangi ${label} baru`, '', numeric);
+  if (confirmVal === null) return;
+  if (confirmVal !== newVal) return showToast(`${label} baru tidak sama.`, false);
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, oldVal);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(newVal);
+    showToast(`${label[0].toUpperCase() + label.slice(1)} berhasil diganti. Berlaku di semua perangkat.`);
+  } catch (err) {
+    showToast(mapAuthError(err).replace('PIN salah. Coba lagi.', `${label} lama salah.`), false);
+  }
 }
 
 /* ---- 03-dashboard.js ---- */

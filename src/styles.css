@@ -745,3 +745,25 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .list .song-row + .song-row::before { left: 76px; }
 .sheet-head .btn-plain.bold { font-weight: 600; }
 .stack > .inline-input-row + .inline-input-row { margin-top: 8px; }
+
+/* PIN keypad (iOS passcode) */
+.pin-dots { display: flex; justify-content: center; gap: 18px; margin: 18px 0 20px; }
+.pin-dots span { width: 14px; height: 14px; border-radius: 99px; border: 1.6px solid rgba(28,28,30,0.55); transition: background .15s, transform .15s; }
+.pin-dots span.on { background: #1C1C1E; border-color: #1C1C1E; transform: scale(1.08); }
+.pin-dots.busy span { animation: pinPulse 1s ease-in-out infinite; }
+.pin-dots.busy span:nth-child(2) { animation-delay: .1s; } .pin-dots.busy span:nth-child(3) { animation-delay: .2s; }
+.pin-dots.busy span:nth-child(4) { animation-delay: .3s; } .pin-dots.busy span:nth-child(5) { animation-delay: .4s; } .pin-dots.busy span:nth-child(6) { animation-delay: .5s; }
+@keyframes pinPulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px 22px; justify-content: center; }
+.pin-pad button {
+  width: 76px; height: 76px; border-radius: 999px; border: 0; cursor: pointer; font-family: var(--font);
+  background: rgba(255,255,255,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.05);
+  font-size: 32px; font-weight: 400; color: #1C1C1E; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+  transition: background .12s ease, transform .1s ease; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+}
+.pin-pad button small { font-size: 9.5px; font-weight: 600; letter-spacing: .14em; margin-top: 3px; color: rgba(28,28,30,0.6); }
+.pin-pad button:active { background: rgba(28,28,30,0.18); transform: scale(0.96); }
+.pin-pad button.pin-del { background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; font-size: 24px; }
+.lock-card.pin-mode { padding-bottom: 18px; }
+@media (max-height: 760px) { .pin-pad { grid-template-columns: repeat(3, 66px); gap: 10px 20px; } .pin-pad button { width: 66px; height: 66px; font-size: 28px; } .lock-time { font-size: 72px; } }

@@ -16,7 +16,9 @@ const firebaseConfig = {
 
 const APP_AUTH = {
   enabled: true,          // false = matikan kunci login (tidak disarankan)
-  ownerEmail: '',         // opsional: isi email akun Firebase Auth agar layar kunci cukup minta sandi
+  loginMode: 'pin',       // 'pin' = keypad PIN 6 angka | 'password' = email + sandi
+  pinLength: 6,
+  ownerEmail: 'hadzmi-hub@example.com', // akun Firebase KHUSUS login PIN (bukan email pribadi); PIN = sandi akun ini
   sessionMode: 'midnight' // 'midnight' = berlaku sampai 00:00 WIB | 'rolling24h' = 24 jam sejak login
 };
 
@@ -167,7 +169,7 @@ function iosAlert(opts) {
         <div class="al-body">
           <div class="al-title">${esc(opts.title || '')}</div>
           ${opts.message ? `<div class="al-msg">${esc(opts.message)}</div>` : ''}
-          ${opts.input ? `<input id="iosAlertInput" type="${opts.input.type || 'text'}" placeholder="${esc(opts.input.placeholder || '')}" value="${esc(opts.input.value || '')}">` : ''}
+          ${opts.input ? `<input id="iosAlertInput" type="${opts.input.type || 'text'}" placeholder="${esc(opts.input.placeholder || '')}" value="${esc(opts.input.value || '')}"${opts.input.inputmode ? ` inputmode="${opts.input.inputmode}"` : ''}${opts.input.maxlength ? ` maxlength="${opts.input.maxlength}"` : ''} autocomplete="off">` : ''}
         </div>
         <div class="al-actions" style="${actions.length > 2 ? 'flex-direction:column' : ''}">
           ${actions.map((a, i) => `<button data-i="${i}" class="${a.bold ? 'bold' : ''} ${a.destructive ? 'destructive' : ''}" style="${actions.length > 2 && i ? 'border-left:0;border-top:.5px solid var(--sep)' : ''}">${esc(a.text)}</button>`).join('')}
@@ -178,7 +180,7 @@ function iosAlert(opts) {
         const a = actions[+btn.dataset.i];
         const inputEl = $('iosAlertInput');
         host.classList.remove('open');
-        setTimeout(() => { host.innerHTML = ''; }, 250);
+        setTimeout(() => { if (!host.classList.contains('open')) host.innerHTML = ''; }, 250);
         resolve(opts.input ? (a.value ? (inputEl ? inputEl.value : '') : null) : a.value);
       };
     });
