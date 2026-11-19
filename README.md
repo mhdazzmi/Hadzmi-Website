@@ -127,11 +127,11 @@ Website, API, dan cron push berjalan dalam **satu project Cloudflare Workers** (
    - Production branch: `main` (setelah Pull Request di-merge)
    - Build command: `npm run build` · Deploy command: `npx wrangler deploy` (default)
    - Klik **Deploy**. KV namespace dibuat otomatis.
-4. Buka Worker **hadzmi-hub** → **Settings → Variables and Secrets** → tambah 2 variabel (tipe *Text*):
+4. Buka Worker **hadzmi-website-utama** → **Settings → Variables and Secrets** → tambah 2 variabel (tipe *Text*):
    - `OWNER_UID` = UID Firebase-mu
    - `VAPID_SUBJECT` = `mailto:emailkamu@gmail.com`
    Lalu **Deploy** ulang (atau push commit apa saja).
-5. Firebase Console → Authentication → Settings → **Authorized domains** → tambahkan `hadzmi-hub.<akunmu>.workers.dev` (atau custom domain-mu).
+5. Firebase Console → Authentication → Settings → **Authorized domains** → tambahkan `hadzmi-website-utama.<akunmu>.workers.dev` (atau custom domain-mu).
 6. Buka website di domain baru → login → **Settings → Notifikasi → Push saat website tertutup → Aktifkan**. Lakukan di **setiap perangkat**.
    - **iPhone/iPad** (iOS 16.4+): buka di Safari → Share → **Tambah ke Layar Utama** → buka dari ikon → baru aktifkan Push.
    - Tekan **Tes Push dari Server**, lalu tutup website. Notifikasi harus tetap masuk.
