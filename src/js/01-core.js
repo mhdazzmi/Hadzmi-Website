@@ -1,0 +1,453 @@
+/* =========================================================
+   01 · CORE — config, state, Firebase, UI primitives, navigation
+   ========================================================= */
+
+// ---------- KONFIGURASI ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyBoTr_A9JQsRTHri47o0ZPIQH21SxlBjh0",
+  authDomain: "web-hadzmi-new.firebaseapp.com",
+  databaseURL: "https://web-hadzmi-new-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "web-hadzmi-new",
+  storageBucket: "web-hadzmi-new.firebasestorage.app",
+  messagingSenderId: "664176294351",
+  appId: "1:664176294351:web:5706e50b47d9cec546baba",
+  measurementId: "G-Q0TPNLKSHK"
+};
+
+const APP_AUTH = {
+  enabled: true,          // false = matikan kunci login (tidak disarankan)
+  ownerEmail: '',         // opsional: isi email akun Firebase Auth agar layar kunci cukup minta sandi
+  sessionMode: 'midnight' // 'midnight' = berlaku sampai 00:00 WIB | 'rolling24h' = 24 jam sejak login
+};
+
+const DB_PATH = 'hadzmi_assistant_data';
+const WIB_OFFSET_MS = 7 * 3600 * 1000;
+const DEFAULT_CATEGORIES = ["Sleep", "Working", "Focus"];
+
+// ---------- STATE (struktur sama dengan versi sebelumnya) ----------
+function readLS(key, fallback) {
+  try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+  catch (e) { return fallback; }
+}
+function writeLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+function writeRawLS(key, val) { try { localStorage.setItem(key, String(val)); } catch (e) {} }
+
+const savedShowFloatingDock = (() => { try { return localStorage.getItem('app_show_floating_dock'); } catch (e) { return null; } })();
+
+let appState = {
+  todos: readLS('app_todos', []),
+  countdowns: readLS('app_countdowns', []),
+  notes: readLS('app_notes', []),
+  kas: readLS('app_kas', []),
+  links: readLS('app_links', []),
+  contacts: readLS('app_contacts', []),
+  uploads: readLS('app_uploads', []),
+  customWebLinks: readLS('app_custom_web_links', []),
+  focusHistory: readLS('app_focus_history', []),
+  musicCategories: readLS('app_music_categories', DEFAULT_CATEGORIES.slice()),
+  musicLibrary: readLS('app_music_library', [
+    { id: "song_1", title: "Lofi Rain & Focus", artist: "Chill Beats", url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3", category: "Working", cover: "", lyrics: "" },
+    { id: "song_2", title: "Deep Ocean Sleep", artist: "Nature Ambience", url: "https://cdn.pixabay.com/download/audio/2021/09/06/audio-14534.mp3?filename=relaxing-ocean-waves-14534.mp3", category: "Sleep", cover: "", lyrics: "" }
+  ]),
+  showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
+};
+
+let firebaseDbRef = null;
+let firebaseAuth = null;
+let isFirebaseReady = false;
+let appStarted = false;
+let defaultDocTitle = "Hadzmi Hub";
+
+try {
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    if (firebase.auth) firebaseAuth = firebase.auth();
+    isFirebaseReady = true;
+  }
+} catch (e) {
+  console.error('Firebase initialization error:', e);
+}
+
+// ---------- UTIL ----------
+function esc(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function safeUrl(url) {
+  const u = String(url || '').trim();
+  if (/^(https?:|mailto:|tel:)/i.test(u)) return esc(u);
+  if (/^[\w.-]+\.[a-z]{2,}/i.test(u)) return esc('https://' + u);
+  return '#';
+}
+function $(id) { return document.getElementById(id); }
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function getWIBDate() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + WIB_OFFSET_MS);
+}
+function wibDateStr(d) {
+  const w = d || getWIBDate();
+  return `${w.getFullYear()}-${pad2(w.getMonth() + 1)}-${pad2(w.getDate())}`;
+}
+function wibAddDays(n) { const w = getWIBDate(); w.setDate(w.getDate() + n); return wibDateStr(w); }
+// 'YYYY-MM-DD' + 'HH:MM' (interpretasi WIB) -> epoch ms
+function wibToEpoch(dateStr, timeStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [hh, mm] = (timeStr || '00:00').split(':').map(Number);
+  return Date.UTC(y, m - 1, d, hh || 0, mm || 0) - WIB_OFFSET_MS;
+}
+const ID_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const ID_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const ID_MONTHS_LONG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+function prettyDate(dateStr, withDay) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const base = `${d} ${ID_MONTHS[m - 1]} ${y}`;
+  return withDay ? `${ID_DAYS[dt.getUTCDay()]}, ${base}` : base;
+}
+function relativeDayLabel(dateStr) {
+  if (!dateStr) return '';
+  if (dateStr === wibDateStr()) return 'Hari ini';
+  if (dateStr === wibAddDays(1)) return 'Besok';
+  if (dateStr === wibAddDays(-1)) return 'Kemarin';
+  return prettyDate(dateStr, true);
+}
+function rupiah(n) { return 'Rp ' + (Number(n) || 0).toLocaleString('id-ID'); }
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'baru saja';
+  if (s < 3600) return Math.floor(s / 60) + ' mnt lalu';
+  if (s < 86400) return Math.floor(s / 3600) + ' jam lalu';
+  return Math.floor(s / 86400) + ' hr lalu';
+}
+function initials(name) {
+  return String(name || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '?';
+}
+const AVATAR_COLORS = ['#FF9500', '#34C759', '#007AFF', '#5856D6', '#FF2D55', '#AF52DE', '#30B0C7', '#A2845E', '#FF3B30', '#00C7BE'];
+function colorFor(str) {
+  let h = 0; const s = String(str || '');
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  fallbackCopy(text); return Promise.resolve();
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove();
+}
+function haptic(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) {} }
+
+// ---------- TOAST (iOS banner) ----------
+let toastTimer = null;
+function showToast(message, isSuccess = true) {
+  const toast = $('toast'); if (!toast) return;
+  $('toastMsg').textContent = message;
+  $('toastIconWrap').className = 'b-icon ' + (isSuccess ? 'bg-blue' : 'bg-red');
+  $('toastIcon').className = isSuccess ? 'fas fa-check' : 'fas fa-exclamation';
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+// ---------- ALERT / CONFIRM (iOS) ----------
+function iosAlert(opts) {
+  return new Promise(resolve => {
+    const host = $('iosAlert');
+    const actions = opts.actions || [{ text: 'OK', value: true, bold: true }];
+    host.innerHTML = `
+      <div class="alert" role="alertdialog">
+        <div class="al-body">
+          <div class="al-title">${esc(opts.title || '')}</div>
+          ${opts.message ? `<div class="al-msg">${esc(opts.message)}</div>` : ''}
+          ${opts.input ? `<input id="iosAlertInput" type="${opts.input.type || 'text'}" placeholder="${esc(opts.input.placeholder || '')}" value="${esc(opts.input.value || '')}">` : ''}
+        </div>
+        <div class="al-actions" style="${actions.length > 2 ? 'flex-direction:column' : ''}">
+          ${actions.map((a, i) => `<button data-i="${i}" class="${a.bold ? 'bold' : ''} ${a.destructive ? 'destructive' : ''}" style="${actions.length > 2 && i ? 'border-left:0;border-top:.5px solid var(--sep)' : ''}">${esc(a.text)}</button>`).join('')}
+        </div>
+      </div>`;
+    host.querySelectorAll('button[data-i]').forEach(btn => {
+      btn.onclick = () => {
+        const a = actions[+btn.dataset.i];
+        const inputEl = $('iosAlertInput');
+        host.classList.remove('open');
+        setTimeout(() => { host.innerHTML = ''; }, 250);
+        resolve(opts.input ? (a.value ? (inputEl ? inputEl.value : '') : null) : a.value);
+      };
+    });
+    requestAnimationFrame(() => host.classList.add('open'));
+    const inp = $('iosAlertInput'); if (inp) setTimeout(() => inp.focus(), 250);
+  });
+}
+function iosConfirm(title, message, confirmText = 'OK', destructive = false) {
+  return iosAlert({ title, message, actions: [{ text: 'Batal', value: false }, { text: confirmText, value: true, bold: !destructive, destructive }] });
+}
+
+// ---------- ACTION SHEET ----------
+let actionSheetResolver = null;
+function openActionSheet(opts) {
+  return new Promise(resolve => {
+    actionSheetResolver = resolve;
+    const host = $('iosActionSheet');
+    host.innerHTML = `
+      <div class="action-sheet">
+        <div class="as-group">
+          ${opts.title || opts.message ? `<div class="as-head">${opts.title ? `<b>${esc(opts.title)}</b>` : ''}${esc(opts.message || '')}</div>` : ''}
+          ${opts.actions.map((a, i) => `<button class="as-btn ${a.destructive ? 'destructive' : ''}" data-i="${i}">${a.icon ? `<i class="${a.icon}"></i>` : ''}<span>${esc(a.text)}</span></button>`).join('')}
+        </div>
+        <div class="as-group"><button class="as-btn cancel" data-cancel="1">Batal</button></div>
+      </div>`;
+    host.querySelectorAll('.as-btn').forEach(btn => {
+      btn.onclick = () => {
+        if (btn.dataset.cancel) return closeActionSheet(null);
+        const a = opts.actions[+btn.dataset.i];
+        closeActionSheet(a.value !== undefined ? a.value : a.text);
+        if (typeof a.onClick === 'function') setTimeout(a.onClick, 10);
+      };
+    });
+    requestAnimationFrame(() => host.classList.add('open'));
+  });
+}
+function closeActionSheet(val) {
+  const host = $('iosActionSheet');
+  host.classList.remove('open');
+  setTimeout(() => { if (!host.classList.contains('open')) host.innerHTML = ''; }, 350);
+  if (actionSheetResolver) { const r = actionSheetResolver; actionSheetResolver = null; r(val); }
+}
+
+// ---------- SHEETS ----------
+const openSheets = [];
+function openSheet(id) {
+  const el = $(id); if (!el) return;
+  el.classList.add('open');
+  if (!openSheets.includes(id)) openSheets.push(id);
+  attachSheetDrag(el, id);
+}
+function closeSheet(id) {
+  const el = $(id); if (!el) return;
+  el.classList.remove('open');
+  const i = openSheets.indexOf(id); if (i > -1) openSheets.splice(i, 1);
+}
+function attachSheetDrag(backdrop, id) {
+  const sheet = backdrop.querySelector('.sheet'); const grab = backdrop.querySelector('.sheet-grabber');
+  if (!sheet || !grab || grab.dataset.bound) return;
+  grab.dataset.bound = '1';
+  const zone = [grab, backdrop.querySelector('.sheet-head')].filter(Boolean);
+  let startY = 0, dy = 0, dragging = false;
+  zone.forEach(z => {
+    z.addEventListener('touchstart', e => { startY = e.touches[0].clientY; dy = 0; dragging = true; sheet.style.transition = 'none'; }, { passive: true });
+    z.addEventListener('touchmove', e => { if (!dragging) return; dy = Math.max(0, e.touches[0].clientY - startY); sheet.style.transform = `translateY(${dy}px)`; }, { passive: true });
+    z.addEventListener('touchend', () => {
+      if (!dragging) return; dragging = false; sheet.style.transition = ''; sheet.style.transform = '';
+      if (dy > 110) {
+        if (id === 'quickUploadSongModal') closeQuickUploadSongModal();
+        else if (id === 'musicLyricsModal') closeLyricsFullScreenModal();
+        else closeSheet(id);
+      }
+    });
+  });
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if ($('iosActionSheet').classList.contains('open')) return closeActionSheet(null);
+    if ($('fullPlayer').classList.contains('open')) return closeFullPlayer();
+    const last = openSheets[openSheets.length - 1];
+    if (last) closeSheet(last);
+  }
+});
+
+// ---------- STORAGE & SYNC (logika sama: localStorage + Firebase set) ----------
+function syncToLocalStorageOnly() {
+  writeLS('app_todos', appState.todos);
+  writeLS('app_countdowns', appState.countdowns);
+  writeLS('app_notes', appState.notes);
+  writeLS('app_kas', appState.kas);
+  writeLS('app_links', appState.links);
+  writeLS('app_contacts', appState.contacts);
+  writeLS('app_uploads', appState.uploads);
+  writeLS('app_custom_web_links', appState.customWebLinks);
+  writeLS('app_focus_history', appState.focusHistory);
+  writeLS('app_music_categories', appState.musicCategories);
+  writeLS('app_music_library', appState.musicLibrary);
+  writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
+}
+
+function saveStateToLocal() {
+  syncToLocalStorageOnly();
+  if (firebaseDbRef) {
+    firebaseDbRef.set(appState).catch(err => {
+      console.error('Firebase save error:', err);
+      if (err && /permission/i.test(String(err.code || err.message))) showToast('Gagal sinkron: akses Firebase ditolak.', false);
+    });
+  }
+  if (typeof scheduleReminderCheck === 'function') scheduleReminderCheck();
+}
+
+function applyRemoteSnapshot(val) {
+  appState.todos = val.todos || [];
+  appState.countdowns = val.countdowns || [];
+  appState.notes = val.notes || [];
+  appState.kas = val.kas || [];
+  appState.links = val.links || [];
+  appState.contacts = val.contacts || [];
+  appState.uploads = val.uploads || [];
+  appState.customWebLinks = val.customWebLinks || [];
+  appState.focusHistory = val.focusHistory || [];
+  appState.musicCategories = val.musicCategories || DEFAULT_CATEGORIES.slice();
+  appState.musicLibrary = val.musicLibrary || [];
+  if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
+}
+
+function attachRealtimeSync() {
+  if (!isFirebaseReady || firebaseDbRef) return;
+  try {
+    firebaseDbRef = firebase.database().ref(DB_PATH);
+  } catch (e) { console.error(e); return; }
+
+  firebaseDbRef.on('value', (snapshot) => {
+    const val = snapshot.val();
+    if (val) {
+      applyRemoteSnapshot(val);
+      syncToLocalStorageOnly();
+      resyncCurrentSongIndex();
+      applyFloatingMusicDockVisibility();
+      renderAllModules();
+      updateCurrentSongDisplayUI();
+    } else {
+      saveStateToLocal();
+      renderAllModules();
+    }
+    if (typeof scheduleReminderCheck === 'function') scheduleReminderCheck();
+  }, (err) => {
+    console.warn('Firebase sync read warning:', err);
+    setConnectionStatus('denied');
+    renderAllModules();
+  });
+
+  try {
+    firebase.database().ref('.info/connected').on('value', snap => setConnectionStatus(snap.val() === true ? 'on' : 'off'));
+  } catch (e) {}
+}
+
+function setConnectionStatus(state) {
+  const dot = $('firebaseStatusDot'), txt = $('firebaseStatusText'), st = $('settingsDbStatus');
+  const map = { on: ['on', 'Sync', 'Terhubung'], off: ['off', 'Offline', 'Offline (cache lokal)'], denied: ['off', 'Ditolak', 'Akses ditolak (cek Rules)'] };
+  const m = map[state] || map.off;
+  if (dot) dot.className = 'status-dot ' + m[0];
+  if (txt) txt.textContent = m[1];
+  if (st) st.textContent = m[2];
+}
+
+// ---------- NAVIGATION ----------
+let currentTabId = 'tab-dashboard';
+const HUB_TITLES = { 'sub-todo': 'To-Do', 'sub-notes': 'Mind Dump', 'sub-links': 'Bookmarks', 'sub-countdown': 'Countdown' };
+const WORK_TITLES = { 'sub-contacts': 'Kontak WA', 'sub-upload': 'Upload File', 'sub-kas': 'Cash Ledger', 'sub-focus': 'Focus Room' };
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.ios-tab-item').forEach(btn => btn.classList.remove('active'));
+  const selectedTab = $(tabId);
+  if (selectedTab) selectedTab.classList.remove('hidden');
+  const activeBtn = $('btn-' + tabId);
+  if (activeBtn) activeBtn.classList.add('active');
+  currentTabId = tabId;
+  updateNavSmallTitle();
+  const root = $('personalAppRoot'); if (root) root.scrollTo({ top: 0 });
+  if (tabId === 'tab-dashboard') updateDashboardGreeting();
+  if (tabId === 'tab-music') { renderMusicModule(); updateCurrentSongDisplayUI(); }
+  if (tabId === 'tab-backup') renderSettingsPanel();
+  try { sessionStorage.setItem('hz_last_tab', tabId); } catch (e) {}
+}
+
+function setSegActive(ids, activeId) {
+  ids.forEach(id => { const b = $('btn-' + id); if (b) b.classList.toggle('active', id === activeId); });
+}
+
+function switchHubSubTab(subId) {
+  document.querySelectorAll('.hub-sub-content').forEach(el => el.classList.add('hidden'));
+  const target = $(subId); if (target) target.classList.remove('hidden');
+  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown'], subId);
+  if ($('hubTitle')) $('hubTitle').textContent = HUB_TITLES[subId] || 'Hub';
+  updateNavSmallTitle();
+}
+
+function switchWorkFinSubTab(subId) {
+  document.querySelectorAll('.workfin-sub-content').forEach(el => el.classList.add('hidden'));
+  const target = $(subId); if (target) target.classList.remove('hidden');
+  setSegActive(['sub-contacts', 'sub-upload', 'sub-kas', 'sub-focus'], subId);
+  if ($('workTitle')) $('workTitle').textContent = WORK_TITLES[subId] || 'Work';
+  updateNavSmallTitle();
+  if (subId === 'sub-focus') renderSleepLineChart();
+}
+
+function updateNavSmallTitle() {
+  const el = $('navSmallTitle'); if (!el) return;
+  if (currentTabId === 'tab-hub') el.textContent = $('hubTitle').textContent;
+  else if (currentTabId === 'tab-workfin') el.textContent = $('workTitle').textContent;
+  else if (currentTabId === 'tab-music') el.textContent = 'Music';
+  else if (currentTabId === 'tab-backup') el.textContent = 'Settings';
+  else el.textContent = 'Home';
+}
+
+function navigateFromQuickMenu(mainTabId, subTabId, labelText) {
+  const labelEl = $('quickNavCurrentLabel');
+  if (labelEl && labelText) labelEl.textContent = `Terakhir: ${labelText}`;
+  switchTab(mainTabId);
+  if (subTabId) {
+    if (mainTabId === 'tab-hub') switchHubSubTab(subTabId);
+    if (mainTabId === 'tab-workfin') switchWorkFinSubTab(subTabId);
+  }
+}
+
+const SEARCH_MAP = [
+  { label: 'Home / Dashboard', icon: 'fa-house', color: 'bg-blue', keys: ['home', 'dashboard', 'utama', 'widget'], action: () => switchTab('tab-dashboard') },
+  { label: 'Music Library', icon: 'fa-music', color: 'bg-pink', keys: ['music', 'lagu', 'audio', 'song', 'lirik'], action: () => switchTab('tab-music') },
+  { label: 'To-Do List', icon: 'fa-list-check', color: 'bg-blue', keys: ['todo', 'task', 'tugas', 'pengingat'], action: () => navigateFromQuickMenu('tab-hub', 'sub-todo') },
+  { label: 'Mind Dump', icon: 'fa-note-sticky', color: 'bg-yellow', keys: ['note', 'mind', 'catatan'], action: () => navigateFromQuickMenu('tab-hub', 'sub-notes') },
+  { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
+  { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
+  { label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
+  { label: 'Upload File', icon: 'fa-cloud-arrow-up', color: 'bg-cyan', keys: ['upload', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
+  { label: 'Cash Ledger', icon: 'fa-wallet', color: 'bg-mint', keys: ['kas', 'cash', 'ledger', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
+  { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-focus') },
+  { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'gmail'], action: () => switchTab('tab-backup') }
+];
+function searchMatches(query) {
+  const q = (query || '').toLowerCase().trim();
+  if (!q) return [];
+  return SEARCH_MAP.filter(item => item.label.toLowerCase().includes(q) || item.keys.some(k => k.includes(q) || q.includes(k)));
+}
+function filterTabs(query) {
+  const found = searchMatches(query)[0];
+  if (found) found.action();
+}
+function renderSearchSuggestions(query) {
+  const box = $('searchSuggest'); if (!box) return;
+  const items = searchMatches(query);
+  if (!items.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}"><span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span><span class="flex-1 row-title">${esc(it.label)}</span><i class="fas fa-chevron-right chev"></i></button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => { items[+b.dataset.i].action(); $('globalMenuSearch').value = ''; box.classList.add('hidden'); });
+  box.classList.remove('hidden');
+}
+
+// ---------- RENDER ALL ----------
+function renderAllModules() {
+  const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
+    renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList];
+  fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
+}
+
+// ---------- Scroll-driven nav bar ----------
+function initNavbarScroll() {
+  const root = $('personalAppRoot'), nav = $('topNavbar');
+  if (!root || !nav) return;
+  root.addEventListener('scroll', () => nav.classList.toggle('scrolled', root.scrollTop > 36), { passive: true });
+}

@@ -1,0 +1,8 @@
+{
+  "database": { "rules": "database.rules.json" },
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "database.rules.json", "build.mjs", "README.md", "src/**", "**/.*", "**/node_modules/**"],
+    "headers": [{ "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }]
+  }
+}

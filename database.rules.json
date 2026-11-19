@@ -1,0 +1,10 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "hadzmi_assistant_data": {
+      ".read": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'",
+      ".write": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'"
+    }
+  }
+}

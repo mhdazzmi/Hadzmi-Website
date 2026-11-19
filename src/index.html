@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F2F2F7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Hadzmi Hub">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Hadzmi Hub</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- === FIREBASE SDK (Realtime Database + Authentication) === -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+/*__INLINE_CSS__*/
+  </style>
+</head>
+<body>
+  <!-- =================== LOCK SCREEN =================== -->
+  <div id="lockScreen">
+    <div class="lock-date" id="lockDate">—</div>
+    <div class="lock-time" id="lockTime">--:--</div>
+    <div class="lock-hint" style="margin-top:10px"><i class="fas fa-lock"></i> Hadzmi Hub terkunci</div>
+
+    <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
+      <div class="lock-avatar"><i class="fab fa-apple"></i></div>
+      <div class="t-title3" style="font-weight:700">Hadzmi Hub</div>
+      <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
+
+      <div id="lockEmailWrap" class="hidden" style="margin-top:16px">
+        <input type="email" id="lockEmail" class="lock-input" placeholder="Email akun" autocomplete="username" style="padding:0 20px">
+      </div>
+      <div id="lockEmailShown" class="hidden lock-hint" style="margin-top:10px">
+        <span id="lockEmailLabel"></span> · <a href="#" onclick="showLockEmailField(event)" style="color:var(--blue)">Ganti</a>
+      </div>
+      <div style="position:relative; margin-top:12px">
+        <input type="password" id="lockPassword" class="lock-input" placeholder="Sandi" autocomplete="current-password" required>
+        <button type="submit" class="lock-go" id="lockGoBtn" aria-label="Buka"><i class="fas fa-arrow-right"></i></button>
+      </div>
+      <div class="lock-err" id="lockError"></div>
+      <div class="lock-hint"><i class="fas fa-shield-halved"></i> Sesi berlaku hingga <b id="lockSessionRule">00:00 WIB</b> di perangkat ini, lalu wajib login lagi.</div>
+    </form>
+  </div>
+
+  <div id="personalAppRoot" class="is-locked">
+    <!-- =================== NAV BAR =================== -->
+    <header class="navbar" id="topNavbar">
+      <div class="flex items-center gap-8">
+        <span class="conn-pill" id="firebaseStatusPill" title="Status sinkronisasi"><span class="status-dot" id="firebaseStatusDot"></span><span id="firebaseStatusText">Sync</span></span>
+      </div>
+      <div class="nav-title" id="navSmallTitle">Home</div>
+      <div class="flex items-center gap-8">
+        <button class="nav-btn-glass" onclick="openNotificationCenter()" aria-label="Notifikasi">
+          <i class="far fa-bell"></i><span class="nav-badge hidden" id="notifBadge">0</span>
+        </button>
+        <button class="nav-btn-glass" onclick="openAccountMenu()" aria-label="Akun"><i class="fas fa-user-lock"></i></button>
+      </div>
+    </header>
+
+    <!-- iOS BANNER TOAST -->
+    <div id="toast"><div class="banner"><div class="b-icon bg-blue" id="toastIconWrap"><i id="toastIcon" class="fas fa-check"></i></div><div class="flex-1"><div class="b-msg" id="toastMsg">Data updated successfully!</div></div></div></div>
+    <div id="notifBanner" onclick="onNotifBannerClick()"><div class="banner"><div class="b-icon bg-red" id="nbIcon"><i class="fas fa-bell"></i></div><div class="flex-1"><div class="flex justify-between items-center"><div class="b-title" id="nbTitle">Pengingat</div><div class="t-cap muted">sekarang</div></div><div class="b-msg" id="nbBody"></div></div></div></div>
+
+    <main class="app-main">
+      <!-- ================= 1. HOME ================= -->
+      <section id="tab-dashboard" class="tab-content stack-24" data-title="Home">
+        <div class="page-head">
+          <div>
+            <div class="page-eyebrow" id="currentDateHeader">—</div>
+            <h1 class="t-large" id="dashGreetingTitle">Selamat Pagi, Hadzmi</h1>
+          </div>
+        </div>
+
+        <div id="dashGreetingBanner" class="hero g-morning">
+          <div class="hero-art" id="sunMoonContainer"></div>
+          <div class="flex gap-8 wrap">
+            <span class="glass-chip"><i class="fas fa-globe-asia"></i> WIB (UTC+7)</span>
+            <span class="glass-chip" id="heroSessionChip"><i class="fas fa-lock-open"></i> Sesi aktif</span>
+          </div>
+          <div>
+            <div class="hero-clock" id="heroClock">--:--</div>
+            <div class="t-sub" style="opacity:.9; margin-top:6px" id="heroSummary">Apa yang ingin kamu lakukan hari ini?</div>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar" style="position:relative">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" id="globalMenuSearch" class="field" placeholder="Cari fitur… (todo, kas, lagu, tidur)" oninput="renderSearchSuggestions(this.value)" onkeydown="if(event.key==='Enter'){filterTabs(this.value); this.value=''; renderSearchSuggestions('');}">
+          <div id="searchSuggest" class="list hidden" style="position:absolute; left:0; right:0; top:52px; z-index:30"></div>
+        </div>
+
+        <!-- Quick navigation (app grid) -->
+        <div>
+          <div class="flex justify-between items-center" style="padding:0 4px 12px">
+            <h2 class="section-title" style="padding:0">Menu Cepat</h2>
+            <span class="t-foot muted" id="quickNavCurrentLabel">11 shortcut</span>
+          </div>
+          <div class="card card-pad">
+            <div class="app-grid">
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span>Home</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span>Music</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span>To-Do</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span>Mind Dump</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span>Bookmarks</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span>Countdown</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span>Kontak WA</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload')"><span class="icon-tile bg-cyan"><i class="fas fa-cloud-arrow-up"></i></span><span>Upload</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Kas')"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><span>Kas</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span>Focus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span>Settings</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do')" style="text-align:left"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div><div class="num" id="dashStatTasks">0</div><div class="lbl">Tugas Pending</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do'); taSetFilter('today')" style="text-align:left"><span class="icon-tile bg-purple"><i class="fas fa-calendar-day"></i></span><div><div class="num" id="dashStatAgendaToday">0</div><div class="lbl">Agenda Hari Ini</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-notes','Mind Dump')" style="text-align:left"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><div><div class="num" id="dashStatNotes">0</div><div class="lbl">Catatan</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Kas')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Ledger</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-focus','Focus')" style="text-align:left"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div><div class="num sm" id="dashStatFocusTime">0 mins</div><div class="lbl">Total Fokus</div></div></button>
+        </div>
+
+        <!-- Widgets -->
+        <div class="widgets">
+          <div class="card card-pad">
+            <div class="card-head">
+              <div class="widget-title c-blue"><i class="fas fa-calendar-check"></i> Agenda Hari Ini</div>
+              <span class="badge tint-blue" id="dashAgendaDateLabel">Today</span>
+            </div>
+            <div id="dashTodayAgendaList" class="list" style="box-shadow:none; border:0; max-height:240px; overflow-y:auto"></div>
+            <div class="flex gap-8 mt-12">
+              <button class="btn btn-gray btn-sm flex-1" onclick="switchTab('tab-hub'); switchHubSubTab('sub-todo');">Buka To-Do</button>
+              <button class="btn btn-tinted btn-sm" onclick="shareDailyDigest()" title="Kirim ringkasan ke Gmail"><i class="fas fa-envelope"></i> Gmail</button>
+            </div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="card-head"><div class="widget-title c-orange"><i class="fas fa-circle-plus"></i> Tambah Tugas Cepat</div></div>
+            <input type="text" id="quickTaskTitle" class="field" placeholder="Apa yang perlu dikerjakan?" onkeydown="if(event.key==='Enter') submitQuickTask()">
+            <div class="flex gap-8 mt-8">
+              <select id="quickTaskPriority" class="select" style="width:auto; flex:1">
+                <option value="Normal">Normal</option>
+                <option value="High">Prioritas Tinggi 🔥</option>
+              </select>
+              <input type="date" id="quickTaskDate" class="field" style="flex:1" title="Deadline (opsional)">
+            </div>
+            <button onclick="submitQuickTask()" class="btn btn-filled btn-block mt-12">Simpan Tugas</button>
+          </div>
+
+          <div class="card card-pad">
+            <div class="card-head"><div class="widget-title" style="color:#A05A00"><i class="fas fa-note-sticky"></i> Mind Dump Cepat</div></div>
+            <input type="text" id="quickNoteTitle" class="field" placeholder="Judul catatan…">
+            <textarea id="quickNoteContent" rows="2" class="textarea mt-8" style="min-height:64px" placeholder="Tulis pikiranmu…"></textarea>
+            <button onclick="submitQuickNote()" class="btn btn-dark btn-block mt-8">Simpan Catatan</button>
+          </div>
+
+          <div class="card card-pad">
+            <div class="card-head">
+              <div class="widget-title c-purple"><i class="fas fa-hourglass-half"></i> Event Terdekat</div>
+              <button class="link-btn t-foot" onclick="navigateFromQuickMenu('tab-hub','sub-countdown','Countdown')">Semua</button>
+            </div>
+            <div id="dashUpcomingEvents"></div>
+          </div>
+
+          <div class="card card-pad" style="grid-column: span 1">
+            <div class="card-head">
+              <div class="widget-title c-pink"><i class="fas fa-music"></i> Sedang Diputar</div>
+              <button class="link-btn t-foot" onclick="switchTab('tab-music')">Library</button>
+            </div>
+            <div class="flex items-center gap-12">
+              <div class="song-row"><div class="thumb" id="dashNpThumb" style="width:56px;height:56px;border-radius:12px"><i class="fas fa-music"></i></div></div>
+              <div class="flex-1">
+                <div class="t-headline truncate" id="dashNpTitle">Tidak ada lagu</div>
+                <div class="t-foot muted truncate" id="dashNpArtist">Pilih lagu di Library</div>
+              </div>
+              <button class="icon-btn" onclick="togglePlayMusic()" id="dashNpPlay" style="width:44px;height:44px;background:#1C1C1E;color:#fff"><i class="fas fa-play"></i></button>
+            </div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="card-head">
+              <div class="widget-title c-blue"><i class="fas fa-globe"></i> Web Shortcuts</div>
+              <button onclick="switchTab('tab-backup')" class="link-btn t-foot">Atur</button>
+            </div>
+            <div id="dashShortcutsGrid" class="grid-2"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. MUSIC ================= -->
+      <section id="tab-music" class="tab-content hidden" data-title="Music">
+        <div class="page-head">
+          <div>
+            <div class="page-eyebrow"><i class="fab fa-apple"></i> Music</div>
+            <h1 class="t-large">Library</h1>
+          </div>
+          <div class="flex gap-8">
+            <button type="button" onclick="toggleMusicCustomizeMode()" id="btnMusicCustomize" class="btn btn-gray btn-sm">Edit</button>
+            <button type="button" id="btnOpenUploadSongModal" onclick="openQuickUploadSongModal()" class="btn btn-pink btn-sm"><i class="fas fa-plus"></i> Lagu</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <!-- Now Playing -->
+          <div class="sticky-col">
+            <div class="card np-card">
+              <div class="flex justify-between items-center" style="margin-bottom:16px">
+                <span class="t-foot semibold muted"><i class="fas fa-headphones"></i> Now Playing</span>
+                <span id="musicPlayerStatus" class="badge tint-gray">Idle</span>
+              </div>
+              <div id="coverBoxContainer" class="artwork paused" onclick="openFullPlayer()" style="cursor:pointer">
+                <img id="currentSongCoverImg" src="" alt="" class="hidden">
+                <div id="musicDiscAnim" class="disc"></div>
+              </div>
+              <div class="flex items-center gap-12" style="margin-top:20px; text-align:left">
+                <div class="flex-1">
+                  <h3 id="currentSongTitle" class="np-title truncate">No track playing</h3>
+                  <p id="currentSongArtist" class="np-artist truncate">Select a track from the library</p>
+                </div>
+                <button class="icon-btn" id="npFavBtn" onclick="toggleFavoriteCurrent()" title="Favorit"><i class="far fa-heart"></i></button>
+                <button class="icon-btn" onclick="openSongActions(currentSongId())" title="Lainnya"><i class="fas fa-ellipsis"></i></button>
+              </div>
+              <div style="margin-top:12px">
+                <input type="range" id="audioSeekBar" class="scrubber" min="0" max="100" value="0" step="1" oninput="seekAudioTrack(this.value)">
+                <div class="flex justify-between t-cap2 muted semibold tabular"><span id="audioCurrentTime">00:00</span><span id="audioDuration">00:00</span></div>
+              </div>
+              <div class="transport" style="margin-top:6px">
+                <button onclick="toggleMusicShuffle()" id="btnMusicShuffle" class="t-btn t-small" title="Shuffle"><i class="fas fa-shuffle"></i></button>
+                <button onclick="playPrevSong()" class="t-btn"><i class="fas fa-backward"></i></button>
+                <button onclick="togglePlayMusic()" id="btnMusicPlayPause" class="t-btn t-play"><i class="fas fa-play"></i></button>
+                <button onclick="playNextSong()" class="t-btn"><i class="fas fa-forward"></i></button>
+                <button onclick="toggleMusicRepeat()" id="btnMusicRepeat" class="t-btn t-small" title="Repeat"><i class="fas fa-repeat"></i></button>
+              </div>
+              <div class="flex items-center gap-10" style="margin-top:14px">
+                <i class="fas fa-volume-low muted t-foot"></i>
+                <input type="range" id="audioVolumeBar" class="scrubber thin flex-1" min="0" max="1" step="0.05" value="0.8" oninput="changeAudioVolume(this.value)">
+                <i class="fas fa-volume-high muted t-foot"></i>
+              </div>
+
+              <div class="list" style="margin-top:18px; text-align:left; box-shadow:none; background:var(--fill3)">
+                <div class="row" style="background:transparent">
+                  <span class="icon-tile bg-indigo"><i class="fas fa-moon"></i></span>
+                  <div class="flex-1"><div class="row-title">Sleep Timer</div><div class="row-sub" id="sleepTimerRemaining">Mati</div></div>
+                  <select id="musicSleepTimerSelect" onchange="setMusicSleepTimer(this.value)" class="select" style="width:auto; padding:8px 30px 8px 12px; font-size:14px">
+                    <option value="off">Off</option><option value="15">15 mnt</option><option value="30">30 mnt</option><option value="60">60 mnt</option><option value="end">Akhir lagu</option>
+                  </select>
+                </div>
+                <div class="row" style="background:transparent">
+                  <span class="icon-tile bg-orange"><i class="fas fa-gauge-high"></i></span>
+                  <div class="flex-1"><div class="row-title">Kecepatan</div></div>
+                  <select id="musicRateSelect" onchange="setPlaybackRate(this.value)" class="select" style="width:auto; padding:8px 30px 8px 12px; font-size:14px">
+                    <option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option>
+                  </select>
+                </div>
+                <div class="row" style="background:transparent">
+                  <span class="icon-tile bg-pink"><i class="fas fa-window-minimize"></i></span>
+                  <div class="flex-1"><div class="row-title">Floating Mini Player</div><div class="row-sub">Audio tetap berjalan saat disembunyikan</div></div>
+                  <label class="switch"><input type="checkbox" id="btnToggleFloatingDock" onchange="toggleFloatingMusicDockSetting()"><span class="slider"></span></label>
+                </div>
+              </div>
+
+              <div class="grid-3" style="margin-top:14px">
+                <button onclick="toggleInlineLyricsDisplay()" class="btn btn-gray btn-sm"><i class="fas fa-quote-left"></i> Lirik</button>
+                <button onclick="openQueueSheet()" class="btn btn-gray btn-sm"><i class="fas fa-list-ul"></i> <span id="nextQueueCountLabel">0</span></button>
+                <button onclick="openFullPlayer()" class="btn btn-gray btn-sm"><i class="fas fa-expand"></i> Full</button>
+              </div>
+
+              <div id="inlineLyricsPanel" class="hidden" style="margin-top:14px">
+                <div class="flex justify-between items-center" style="margin-bottom:8px">
+                  <span class="t-foot semibold c-pink"><i class="fas fa-align-left"></i> Lirik</span>
+                  <div class="flex gap-6">
+                    <button onclick="openLyricsFullScreenModal()" class="btn btn-tinted btn-xs"><i class="fas fa-pen"></i> Edit / Perbesar</button>
+                    <button onclick="toggleInlineLyricsDisplay()" class="icon-btn sm"><i class="fas fa-xmark"></i></button>
+                  </div>
+                </div>
+                <div id="inlineLyricsContent" class="lyrics-box">(Tidak ada lirik untuk lagu ini)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Library -->
+          <div class="stack-16">
+            <div class="chips no-scrollbar" id="musicCategoryPills"></div>
+            <div class="flex gap-8 items-center">
+              <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="musicSearchInput" oninput="renderMusicSongsList()" class="field" placeholder="Cari judul atau artis"></div>
+              <select id="musicSortSelect" class="select" style="width:auto" onchange="renderMusicSongsList()">
+                <option value="default">Terbaru</option><option value="title">A–Z</option><option value="artist">Artis</option>
+              </select>
+            </div>
+            <div class="grid-2">
+              <button class="btn btn-gray" onclick="playCurrentView(false)"><i class="fas fa-play c-pink"></i> <span class="c-pink">Putar</span></button>
+              <button class="btn btn-gray" onclick="playCurrentView(true)"><i class="fas fa-shuffle c-pink"></i> <span class="c-pink">Acak</span></button>
+            </div>
+            <div class="t-foot muted" style="padding:0 4px" id="musicLibraryCount"></div>
+            <div id="musicSongsContainer" class="list inset-icon"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. HUB ================= -->
+      <section id="tab-hub" class="tab-content hidden" data-title="Hub">
+        <div class="page-head"><div><div class="page-eyebrow">Productivity</div><h1 class="t-large" id="hubTitle">To-Do</h1></div></div>
+        <div class="subnav">
+          <div class="seg lg">
+            <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" class="active">To-Do</button>
+            <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes">Notes</button>
+            <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links">Bookmarks</button>
+            <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown">Countdown</button>
+          </div>
+        </div>
+
+        <!-- To-Do (Reminders style) -->
+        <div id="sub-todo" class="hub-sub-content stack-16">
+          <div class="smart-grid" id="taSmartGrid"></div>
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input id="ta-search" type="text" class="field" placeholder="Cari tugas…" oninput="taRenderNotes()"></div>
+            <button class="btn btn-tinted btn-sm" onclick="shareTaskList()" title="Kirim daftar ke Gmail"><i class="fas fa-envelope"></i></button>
+          </div>
+          <div class="flex justify-between items-center" style="padding:0 4px">
+            <h2 class="t-title2" id="taListTitle" style="color:var(--blue)">To Do</h2>
+            <span class="t-foot muted" id="ta-total-notes">0 Tasks</span>
+          </div>
+          <div id="ta-notes-container"></div>
+          <button class="add-reminder" onclick="taOpenNewSheet()"><span class="plus"><i class="fas fa-plus"></i></span> Pengingat Baru</button>
+        </div>
+
+        <!-- Mind Dump -->
+        <div id="sub-notes" class="hub-sub-content hidden stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchNoteInput" oninput="renderNotesList()" class="field" placeholder="Cari catatan…"></div>
+            <span class="badge tint-yellow" id="noteCountBadge">Total: 0</span>
+            <button class="icon-btn blue" onclick="openNoteSheet()" title="Catatan baru"><i class="fas fa-pen-to-square"></i></button>
+          </div>
+          <div id="notesGridContainer" class="grid-auto"></div>
+        </div>
+
+        <!-- Bookmarks -->
+        <div id="sub-links" class="hub-sub-content hidden stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchLinkInput" oninput="renderLinksList()" class="field" placeholder="Cari bookmark…"></div>
+            <button class="btn btn-filled btn-sm" onclick="openBookmarkSheet()"><i class="fas fa-plus"></i> Baru</button>
+          </div>
+          <div id="linksGridContainer" class="grid-auto"></div>
+        </div>
+
+        <!-- Countdown -->
+        <div id="sub-countdown" class="hub-sub-content hidden stack-16">
+          <div class="flex justify-between items-center gap-8">
+            <div class="seg" style="width:220px">
+              <button class="active" id="cd-tab-aktif" onclick="gantiCountDownTab('aktif')">Aktif</button>
+              <button id="cd-tab-arsip" onclick="gantiCountDownTab('arsip')">Arsip</button>
+            </div>
+            <div class="flex gap-8">
+              <button class="btn btn-gray btn-sm" id="cdEditModeBtn" onclick="toggleCountDownEditMode()">Edit</button>
+              <button class="btn btn-filled btn-sm" onclick="openCountdownSheet()"><i class="fas fa-plus"></i> Event</button>
+            </div>
+          </div>
+          <div id="cd-list-container" class="grid-auto" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
+        </div>
+      </section>
+
+      <!-- ================= 4. WORK & FINANCE ================= -->
+      <section id="tab-workfin" class="tab-content hidden" data-title="Work & Fin">
+        <div class="page-head"><div><div class="page-eyebrow">Work & Finance</div><h1 class="t-large" id="workTitle">Kontak WA</h1></div></div>
+        <div class="subnav">
+          <div class="seg lg">
+            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts" class="active">Kontak</button>
+            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload">Upload</button>
+            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas">Kas</button>
+            <button onclick="switchWorkFinSubTab('sub-focus')" id="btn-sub-focus">Focus</button>
+          </div>
+        </div>
+
+        <!-- Contacts -->
+        <div id="sub-contacts" class="workfin-sub-content stack-16">
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="searchContactInput" oninput="renderContactsList()" class="field" placeholder="Cari kontak…"></div>
+            <button class="btn btn-green btn-sm" onclick="openContactSheet()"><i class="fas fa-user-plus"></i> Baru</button>
+          </div>
+          <div id="contactsGridContainer" class="list"></div>
+        </div>
+
+        <!-- Upload -->
+        <div id="sub-upload" class="workfin-sub-content hidden">
+          <div class="split">
+            <div class="card card-pad stack">
+              <div class="dropzone" id="uploadDropzone" onclick="document.getElementById('fileUploadInput').click()">
+                <input type="file" id="fileUploadInput" class="hidden" onchange="handleFileUpload(event)">
+                <span class="icon-tile xl bg-cyan" style="margin:0 auto 12px"><i class="fas fa-cloud-arrow-up"></i></span>
+                <div class="t-headline">Pilih atau seret file</div>
+                <div class="t-foot muted mt-4">File dicatat ke riwayat (nama, ukuran, tanggal)</div>
+              </div>
+              <div id="uploadSuccessBanner" class="hidden badge tint-green" style="padding:10px 14px; font-size:13px; width:100%; justify-content:center"><i class="fas fa-check-circle"></i> <span id="uploadSuccessText">File successfully uploaded!</span></div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px">
+                <h2 class="t-title3">Riwayat Upload</h2>
+                <button onclick="clearUploadHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
+              </div>
+              <div id="uploadHistoryList" class="list inset-icon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cash Ledger -->
+        <div id="sub-kas" class="workfin-sub-content hidden stack-16">
+          <div class="sum-tiles">
+            <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
+            <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
+            <div class="sum-tile tint-blue"><div class="s-l">Net Balance</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
+          </div>
+          <div class="split">
+            <div class="stack-16">
+              <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
+                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span> Catat Selisih Kas</h3></div>
+                <div class="seg lg" id="kasJenisSeg">
+                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Kurang (−)</button>
+                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Lebih (+)</button>
+                </div>
+                <input type="hidden" id="kasJenis" value="Kurang">
+                <div class="grid-2">
+                  <div><label class="field-label">Tanggal *</label><input type="date" id="kasTanggal" class="field" required></div>
+                  <div><label class="field-label">Jumlah (IDR) *</label><input type="number" inputmode="numeric" id="kasJumlah" class="field" placeholder="50000" required></div>
+                </div>
+                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Detail transaksi…"></div>
+                <button type="submit" class="btn btn-filled btn-block"><i class="fas fa-check"></i> Simpan Entri</button>
+              </form>
+              <div class="card card-pad stack">
+                <div class="card-head" style="margin:0"><h3><i class="fas fa-filter c-blue"></i> Filter Periode</h3><button type="button" onclick="resetKasFilter()" class="link-btn t-foot">Reset</button></div>
+                <div class="grid-2">
+                  <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
+                  <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
+                </div>
+                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Kas</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
+              <div id="kasTableBody" class="list inset-icon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Focus & Sleep -->
+        <div id="sub-focus" class="workfin-sub-content hidden">
+          <div class="split">
+            <div class="sticky-col">
+              <div id="focusRoomCard" class="card card-pad focus-card center stack-16">
+                <div class="flex justify-between items-center">
+                  <h2 id="focusRoomHeaderTitle" class="t-headline"><i class="fas fa-clock c-indigo"></i> Focus Timer</h2>
+                  <span id="focusModeBadge" class="badge tint-indigo">Pomodoro</span>
+                </div>
+                <div class="seg lg">
+                  <button type="button" id="focusModeTimerBtn" onclick="setFocusMode('timer')" class="active">Timer</button>
+                  <button type="button" id="focusModeStopwatchBtn" onclick="setFocusMode('stopwatch')">Stopwatch</button>
+                  <button type="button" id="focusModeSleepBtn" onclick="setFocusMode('sleep')"><i class="fas fa-moon"></i> Sleep</button>
+                </div>
+                <div id="focusDurationSelectGroup" class="flex justify-center items-center gap-8">
+                  <span class="t-foot muted">Durasi</span>
+                  <select id="focusDurationSelect" onchange="changeFocusDuration(this.value)" class="select" style="width:auto">
+                    <option value="15">15 Menit</option><option value="25" selected>25 Menit (Pomodoro)</option><option value="45">45 Menit</option><option value="60">60 Menit</option>
+                  </select>
+                </div>
+                <div id="sleepModeBannerInfo" class="hidden t-foot muted">Nyalakan saat mulai tidur & tekan <b>Bangun & Simpan</b> saat bangun</div>
+                <div class="focus-ring" id="focusTimerDisplayBox">
+                  <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"></circle><circle class="ring-fg" id="focusRingFg" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="0"></circle></svg>
+                  <div class="ring-center">
+                    <div id="mainFocusDisplay" class="focus-display">25:00</div>
+                    <div id="mainFocusStatusText" class="t-cap semibold muted" style="text-transform:uppercase; letter-spacing:.08em; margin-top:4px">Ready to Focus</div>
+                  </div>
+                </div>
+                <div class="flex gap-10">
+                  <button type="button" id="mainFocusResetBtn" onclick="resetFocusTimer()" class="btn btn-gray" style="min-width:110px">Reset</button>
+                  <button type="button" id="mainFocusStartBtn" onclick="toggleFocusTimer()" class="btn btn-indigo flex-1"><i class="fas fa-play"></i> Start Session</button>
+                </div>
+              </div>
+            </div>
+            <div class="stack-16">
+              <div class="card card-pad">
+                <div class="card-head">
+                  <div><h3><i class="fas fa-chart-line c-indigo"></i> Tren Durasi Tidur</h3><div class="t-foot muted">7 sesi Sleep Tracker terakhir</div></div>
+                  <div class="center"><div class="t-cap2 muted semibold">RATA-RATA</div><span id="avgSleepDurationBadge" class="badge tint-indigo">0j 0m</span></div>
+                </div>
+                <div class="chart-box" id="sleepLineChartWrapper"><div id="sleepLineChartContainer"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between items-center" style="padding:0 4px 10px">
+                  <h2 class="t-title3">Riwayat Fokus & Tidur</h2>
+                  <div class="flex gap-6">
+                    <button type="button" onclick="shareFocusReport()" class="btn btn-tinted btn-xs"><i class="fas fa-envelope"></i> Gmail</button>
+                    <button type="button" onclick="clearFocusHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
+                  </div>
+                </div>
+                <div id="focusHistoryContainer" class="list inset-icon" style="max-height:520px; overflow-y:auto"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. SETTINGS ================= -->
+      <section id="tab-backup" class="tab-content hidden stack-24" data-title="Settings">
+        <div class="page-head"><div><h1 class="t-large">Settings</h1></div></div>
+        <div class="split" style="align-items:start">
+          <div class="stack-24">
+            <!-- Profile -->
+            <div class="list">
+              <div class="row" style="padding:16px">
+                <span class="avatar" style="width:58px;height:58px;font-size:24px;background:linear-gradient(135deg,#007AFF,#5856D6)"><i class="fab fa-apple"></i></span>
+                <div class="flex-1">
+                  <div class="t-title3">Hadzmi Hub</div>
+                  <div class="t-foot muted truncate" id="settingsAccountEmail">—</div>
+                </div>
+              </div>
+              <div class="row"><span class="icon-tile bg-green"><i class="fas fa-database"></i></span><div class="flex-1 row-title">Firebase Realtime DB</div><span class="row-value" id="settingsDbStatus">—</span></div>
+              <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-clock"></i></span><div class="flex-1 row-title">Sesi berakhir</div><span class="row-value" id="settingsSessionExpiry">—</span></div>
+            </div>
+
+            <!-- Security -->
+            <div>
+              <div class="section-label">Keamanan</div>
+              <div class="list inset-icon">
+                <button class="row" onclick="lockAppNow()"><span class="icon-tile bg-red"><i class="fas fa-lock"></i></span><div class="flex-1 row-title">Kunci Sekarang</div><i class="fas fa-chevron-right chev"></i></button>
+                <button class="row" onclick="sendPasswordReset()"><span class="icon-tile bg-gray"><i class="fas fa-key"></i></span><div class="flex-1 row-title">Kirim Email Reset Sandi</div><i class="fas fa-chevron-right chev"></i></button>
+              </div>
+              <div class="section-foot">Setiap perangkat wajib login dengan sandi. Sesi otomatis berakhir pukul 00:00 WIB.</div>
+            </div>
+
+            <!-- Notifications -->
+            <div>
+              <div class="section-label">Notifikasi</div>
+              <div class="list inset-icon">
+                <div class="row"><span class="icon-tile bg-red"><i class="fas fa-bell"></i></span><div class="flex-1"><div class="row-title">Notifikasi Sistem</div><div class="row-sub" id="notifPermissionLabel">—</div></div><button class="btn btn-tinted btn-xs" id="notifPermissionBtn" onclick="requestNotifPermission()">Izinkan</button></div>
+                <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div class="flex-1 row-title">Deadline To-Do</div><label class="switch"><input type="checkbox" data-notif="tasks" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><div class="flex-1 row-title">Event Countdown</div><label class="switch"><input type="checkbox" data-notif="countdowns" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div class="flex-1 row-title">Focus & Sleep Timer</div><label class="switch"><input type="checkbox" data-notif="focus" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div class="flex-1"><div class="row-title">Pengingat Catat Kas</div><div class="row-sub">Jam 20:00 jika hari ini belum ada entri</div></div><label class="switch"><input type="checkbox" data-notif="kas" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-sun"></i></span><div class="flex-1"><div class="row-title">Ringkasan Pagi</div><div class="row-sub">Jumlah agenda hari ini (07:00)</div></div><label class="switch"><input type="checkbox" data-notif="digest" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-gray"><i class="fas fa-stopwatch-20"></i></span><div class="flex-1 row-title">Ingatkan sebelum</div>
+                  <select class="select" id="notifLeadSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setNotifLead(this.value)">
+                    <option value="10">10 menit</option><option value="30">30 menit</option><option value="60">1 jam</option><option value="120">2 jam</option>
+                  </select>
+                </div>
+                <button class="row" onclick="sendTestNotification()"><span class="icon-tile bg-green"><i class="fas fa-paper-plane"></i></span><div class="flex-1 row-title">Kirim Notifikasi Tes</div><i class="fas fa-chevron-right chev"></i></button>
+              </div>
+              <div class="section-foot">Notifikasi berjalan saat Hadzmi Hub terbuka (tab boleh di background). Di iPhone, tambahkan ke Layar Utama agar notifikasi sistem aktif.</div>
+            </div>
+
+            <!-- Gmail -->
+            <div>
+              <div class="section-label">Kirim ke Gmail</div>
+              <div class="form-list">
+                <div class="fl-row"><span class="fl-label">Penerima</span><input type="email" id="gmailDefaultTo" placeholder="email@gmail.com (opsional)" onchange="saveGmailDefault(this.value)"></div>
+              </div>
+              <div class="section-foot">Alamat default untuk tombol <i class="fas fa-envelope"></i> Gmail di Task, Notes, Countdown, Bookmark, Kas, dan laporan Focus/Sleep.</div>
+            </div>
+          </div>
+
+          <div class="stack-24">
+            <!-- Data -->
+            <div>
+              <div class="section-label">Data & Backup</div>
+              <div class="list inset-icon">
+                <button class="row" onclick="exportDataJSON()"><span class="icon-tile bg-blue"><i class="fas fa-file-export"></i></span><div class="flex-1"><div class="row-title">Export Data JSON</div><div class="row-sub">Unduh semua data jadi 1 file backup</div></div><i class="fas fa-chevron-right chev"></i></button>
+                <button class="row" onclick="document.getElementById('importJsonFile').click()"><span class="icon-tile bg-orange"><i class="fas fa-file-import"></i></span><div class="flex-1"><div class="row-title">Import Data JSON</div><div class="row-sub">Pulihkan data dari file backup</div></div><i class="fas fa-chevron-right chev"></i></button>
+                <button class="row" onclick="resetAllAppData()"><span class="icon-tile bg-red"><i class="fas fa-triangle-exclamation"></i></span><div class="flex-1 row-title c-red">Reset Semua Data (Lokal & Firebase)</div></button>
+              </div>
+              <input type="file" id="importJsonFile" class="hidden" accept=".json" onchange="importDataJSON(event)">
+            </div>
+
+            <!-- Custom web links -->
+            <div>
+              <div class="section-label">Web Shortcuts (Dashboard)</div>
+              <form id="customWebLinkForm" onsubmit="saveCustomWebLink(event)" class="form-list">
+                <div class="fl-row"><span class="fl-label">Nama</span><input type="text" id="webLinkName" placeholder="Google Drive" required></div>
+                <div class="fl-row"><span class="fl-label">URL</span><input type="url" id="webLinkUrl" placeholder="https://…" required><button type="submit" class="btn btn-filled btn-xs">Tambah</button></div>
+              </form>
+              <div id="customWebLinksList" class="list inset-icon mt-12"></div>
+            </div>
+
+            <!-- Music settings -->
+            <div>
+              <div class="section-label">Kategori Album Musik</div>
+              <form onsubmit="saveNewMusicCategory(event)" class="form-list">
+                <div class="fl-row"><input type="text" id="newCategoryNameInput" placeholder="Tambah kategori album…" required><button type="submit" class="btn btn-filled btn-xs">Tambah</button></div>
+              </form>
+              <div class="chips wrap mt-12" id="settingsCategoryList" style="overflow:visible"></div>
+            </div>
+
+            <div>
+              <div class="section-label">Tambah Lagu via Direct Link</div>
+              <form id="musicAddSongForm" onsubmit="saveMusicSongSetting(event)" class="form-list">
+                <div class="fl-row"><span class="fl-label">Judul *</span><input type="text" id="musicSongTitleInput" placeholder="Song Title" required></div>
+                <div class="fl-row"><span class="fl-label">Artis</span><input type="text" id="musicSongArtistInput" placeholder="Artist"></div>
+                <div class="fl-row"><span class="fl-label">Audio URL *</span><input type="url" id="musicSongUrlInput" placeholder="https://files.catbox.moe/xxx.mp3" required></div>
+                <div class="fl-row"><span class="fl-label">Kategori</span><select id="musicSongCategoryInput"></select></div>
+                <div class="fl-row"><span class="fl-label">Cover URL</span><input type="url" id="musicSongCoverInput" placeholder="https://…jpg (opsional)"></div>
+                <div class="fl-row" style="padding:10px 16px"><button type="submit" class="btn btn-pink btn-block btn-sm">+ Tambah ke Library</button></div>
+              </form>
+            </div>
+
+            <div class="section-foot center">Hadzmi Hub · iOS 26 Light · v3.0</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FLOATING MINI PLAYER -->
+    <div id="floatingMusicDock" class="mini-player hidden">
+      <div class="flex items-center gap-10 flex-1" style="min-width:0; cursor:pointer" onclick="openFullPlayer()">
+        <div class="mp-art" id="dockCoverWrapper"><img id="dockSongCoverImg" src="" alt="" class="hidden"><i id="dockSongIcon" class="fas fa-music"></i></div>
+        <div class="flex-1" style="min-width:0">
+          <div id="dockSongTitle" class="t-sub semibold truncate">No track playing</div>
+          <div id="dockSongArtist" class="t-cap muted truncate">Tap to open Apple Music</div>
+        </div>
+      </div>
+      <button onclick="playPrevSong()" class="mp-btn" style="font-size:15px"><i class="fas fa-backward"></i></button>
+      <button onclick="togglePlayMusic()" id="dockPlayPauseBtn" class="mp-btn"><i class="fas fa-play"></i></button>
+      <button onclick="playNextSong()" class="mp-btn" style="font-size:15px"><i class="fas fa-forward"></i></button>
+      <div class="mp-progress" id="dockProgress"></div>
+    </div>
+
+    <!-- TAB BAR -->
+    <nav class="tabbar" id="mainTabBar">
+      <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span>Home</span></div>
+      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-music"></i><span>Music</span></div>
+      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span>Hub</span></div>
+      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-briefcase"></i><span>Work</span></div>
+      <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span>Settings</span></div>
+    </nav>
+  </div>
+
+  <!-- =================== SHEETS =================== -->
+
+  <!-- Task sheet -->
+  <div class="backdrop center-md" id="sheetTask" onclick="if(event.target===this) closeSheet('sheetTask')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="taResetForm(); closeSheet('sheetTask')" id="ta-cancel-btn">Batal</button>
+        <div class="sh-title" id="ta-form-title">Pengingat Baru</div>
+        <button class="btn-plain sh-right bold" id="ta-main-btn" onclick="taSaveNote()" style="font-weight:600">Tambah</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <input type="hidden" id="ta-edit-id" value="">
+        <div class="form-list">
+          <div class="fl-row"><input id="ta-title" type="text" placeholder="Judul tugas *" style="font-weight:500"></div>
+          <div class="fl-row"><textarea id="ta-desc" placeholder="Catatan / deskripsi" rows="3"></textarea></div>
+        </div>
+        <div class="form-list">
+          <div class="fl-row"><span class="icon-tile bg-red"><i class="fas fa-calendar"></i></span><span class="fl-label">Tanggal</span><input type="date" id="ta-deadline"></div>
+          <div class="fl-row"><span class="icon-tile bg-blue"><i class="fas fa-clock"></i></span><span class="fl-label">Waktu</span><input type="time" id="ta-time"></div>
+        </div>
+        <div class="form-list">
+          <div class="fl-row"><span class="icon-tile bg-orange"><i class="fas fa-flag"></i></span><span class="fl-label">Prioritas</span>
+            <select id="ta-priority"><option value="Normal">Normal</option><option value="High">Tinggi 🔥</option></select></div>
+          <div class="fl-row"><span class="icon-tile bg-indigo"><i class="fas fa-circle-half-stroke"></i></span><span class="fl-label">Status</span>
+            <select id="ta-status"><option value="">Pending</option><option value="On Progress">In Progress</option><option value="Done">Completed (Done)</option></select></div>
+        </div>
+        <div>
+          <div class="flex justify-between items-center" style="padding:0 4px 8px"><span class="section-label" style="padding:0">Tautan</span><button type="button" onclick="taAddLinkInput('')" class="link-btn t-foot">+ Tambah Link</button></div>
+          <div id="ta-links-inputs-container" class="stack" style="--g:8px"></div>
+        </div>
+        <button class="btn btn-danger-tinted btn-block hidden" id="ta-delete-in-sheet" onclick="taDeleteFromSheet()">Hapus Tugas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note sheet -->
+  <div class="backdrop center-md" id="sheetNote" onclick="if(event.target===this) closeSheet('sheetNote')">
+    <div class="sheet white">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeSheet('sheetNote')">Batal</button>
+        <div class="sh-title" id="noteSheetTitle">Catatan Baru</div>
+        <button class="btn-plain sh-right" style="font-weight:600; color:#C08A00" onclick="saveNoteRecord()">Simpan</button>
+      </div>
+      <div class="sheet-body stack">
+        <input type="hidden" id="noteEditId" value="">
+        <input type="text" id="noteTitle" class="field" placeholder="Judul / topik" style="font-size:22px; font-weight:700; background:transparent; padding-left:4px">
+        <textarea id="noteContent" rows="9" class="textarea" placeholder="Tulis pikiranmu… *" style="background:transparent; padding-left:4px; min-height:220px"></textarea>
+        <div class="flex items-center gap-8"><i class="fas fa-tag muted"></i><input type="text" id="noteTag" class="field" placeholder="Tag kategori…" style="padding:10px 12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note view sheet -->
+  <div class="backdrop center-md" id="sheetNoteView" onclick="if(event.target===this) closeSheet('sheetNoteView')">
+    <div class="sheet white">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeSheet('sheetNoteView')">Tutup</button>
+        <div class="sh-title">Catatan</div>
+        <button class="btn-plain sh-right" id="noteViewMore"><i class="fas fa-ellipsis"></i></button>
+      </div>
+      <div class="sheet-body" id="noteViewBody"></div>
+    </div>
+  </div>
+
+  <!-- Bookmark sheet -->
+  <div class="backdrop center-md" id="sheetBookmark" onclick="if(event.target===this) closeSheet('sheetBookmark')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <form id="linkForm" onsubmit="saveLinkRecord(event)">
+        <div class="sheet-head">
+          <button type="button" class="btn-plain sh-left" id="linkCancelBtn" onclick="resetBookmarkForm(); closeSheet('sheetBookmark')">Batal</button>
+          <div class="sh-title" id="linkFormTitle">Bookmark Baru</div>
+          <button type="submit" class="btn-plain sh-right" id="linkSubmitBtn" style="font-weight:600">Simpan</button>
+        </div>
+        <div class="sheet-body stack-16">
+          <input type="hidden" id="linkEditId" value="">
+          <div class="form-list">
+            <div class="fl-row"><span class="fl-label">Judul *</span><input type="text" id="linkTitle" placeholder="Bookmark Title" required></div>
+            <div class="fl-row"><span class="fl-label">Kategori</span><input type="text" id="linkCategory" placeholder="Category"></div>
+          </div>
+          <div>
+            <div class="flex justify-between items-center" style="padding:0 4px 8px"><span class="section-label" style="padding:0">URL *</span><button type="button" onclick="addBookmarkUrlInput('')" class="link-btn t-foot">+ Tambah Link</button></div>
+            <div id="bookmarkUrlContainer" class="stack"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Countdown sheet -->
+  <div class="backdrop center-md" id="sheetCountdown" onclick="if(event.target===this) closeSheet('sheetCountdown')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" id="cd-cancel-edit-btn" onclick="resetCdForm(); closeSheet('sheetCountdown')">Batal</button>
+        <div class="sh-title" id="cd-form-title">Event Baru</div>
+        <button class="btn-plain sh-right" id="cd-submit-btn" onclick="simpanCountDown()" style="font-weight:600">Tambah</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <input type="hidden" id="cd-edit-id" value="">
+        <div class="form-list">
+          <div class="fl-row"><input type="text" id="cd-input-nama" placeholder="Nama event *" style="font-weight:500"></div>
+          <div class="fl-row"><textarea id="cd-input-catatan" rows="3" placeholder="Catatan / deskripsi"></textarea></div>
+        </div>
+        <div class="form-list">
+          <div class="fl-row"><span class="icon-tile bg-red"><i class="fas fa-calendar"></i></span><span class="fl-label">Tanggal *</span><input type="date" id="cd-input-tanggal"></div>
+          <div class="fl-row"><span class="icon-tile bg-blue"><i class="fas fa-clock"></i></span><span class="fl-label">Waktu</span><input type="time" id="cd-input-jam"></div>
+          <div class="fl-row"><span class="icon-tile bg-purple"><i class="fas fa-tag"></i></span><span class="fl-label">Kategori</span>
+            <select id="cd-input-kategori"><option value="">(None)</option><option value="Personal">Personal</option><option value="Work">Work</option><option value="Education">Education</option></select></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact sheet -->
+  <div class="backdrop center-md" id="sheetContact" onclick="if(event.target===this) closeSheet('sheetContact')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <form id="contactForm" onsubmit="saveContactRecord(event)">
+        <div class="sheet-head">
+          <button type="button" class="btn-plain sh-left" id="contactCancelEditBtn" onclick="resetContactForm(); closeSheet('sheetContact')">Batal</button>
+          <div class="sh-title" id="contactFormTitle">Kontak Baru</div>
+          <button type="submit" class="btn-plain sh-right" id="contactSubmitBtn" style="font-weight:600">Simpan</button>
+        </div>
+        <div class="sheet-body stack-16">
+          <input type="hidden" id="contactEditId" value="">
+          <div class="center"><span class="avatar bg-green" style="width:84px;height:84px;font-size:34px" id="contactAvatarPreview"><i class="fas fa-user"></i></span></div>
+          <div class="form-list">
+            <div class="fl-row"><span class="fl-label">Nama *</span><input type="text" id="contactName" placeholder="Contact Name" required oninput="updateContactAvatarPreview()"></div>
+            <div class="fl-row"><span class="fl-label">Telepon *</span><input type="tel" id="contactPhone" placeholder="081234567890" required></div>
+            <div class="fl-row"><span class="fl-label">Peran</span><input type="text" id="contactRole" placeholder="Role / catatan"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Song sheet (Quick upload / edit) -->
+  <div class="backdrop center-md" id="quickUploadSongModal" onclick="if(event.target === this) closeQuickUploadSongModal()">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <form id="quickAddSongForm" onsubmit="return handleQuickAddSong(event)">
+        <div class="sheet-head">
+          <button type="button" class="btn-plain sh-left" onclick="closeQuickUploadSongModal()">Batal</button>
+          <div class="sh-title" id="quickModalTitleHeading">Tambah Lagu</div>
+          <button type="submit" id="btnSubmitQuickSong" class="btn-plain sh-right" style="font-weight:600; color:var(--pink)">Simpan</button>
+        </div>
+        <div class="sheet-body stack-16">
+          <input type="hidden" id="quickAddSongEditId" value="">
+          <div class="form-list">
+            <div class="fl-row"><span class="fl-label">Judul *</span><input type="text" id="quickSongTitle" placeholder="Song Title" required></div>
+            <div class="fl-row"><span class="fl-label">Artis</span><input type="text" id="quickSongArtist" placeholder="Artist (opsional)"></div>
+            <div class="fl-row"><span class="fl-label">Kategori</span><select id="quickSongCategory"></select></div>
+          </div>
+          <div class="form-list">
+            <div class="fl-row"><span class="fl-label">Audio URL *</span><input type="url" id="quickSongUrl" placeholder="https://files.catbox.moe/xxx.mp3" required></div>
+            <div class="fl-row"><span class="fl-label">Cover URL</span><input type="url" id="quickSongCoverUrl" placeholder="https://…jpg (opsional)"></div>
+          </div>
+          <div class="section-foot">Gunakan direct link Catbox.moe / CDN audio (.mp3, .m4a).</div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lyrics sheet -->
+  <div class="backdrop center-md" id="musicLyricsModal" onclick="if(event.target===this) closeLyricsFullScreenModal()">
+    <div class="sheet white" style="height:92%">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeLyricsFullScreenModal()">Tutup</button>
+        <div class="sh-title">Lirik</div>
+        <button id="btnToggleEditLyrics" class="btn-plain sh-right" onclick="toggleEditLyricsMode()"><span>Edit</span></button>
+      </div>
+      <div class="sheet-body col" style="flex:1; min-height:0">
+        <p id="lyricsModalSongTitle" class="t-foot semibold c-pink center">Track Title</p>
+        <div id="lyricsReadOnlyContainer" class="lyrics-box mt-12" style="max-height:none; flex:1; font-size:22px; background:transparent"></div>
+        <div id="lyricsEditContainer" class="hidden col mt-12" style="flex:1">
+          <textarea id="lyricsTextInput" rows="14" class="textarea" style="flex:1; font-size:17px; font-weight:600" placeholder="Ketik atau tempel lirik lagu di sini…&#10;&#10;Tips: format LRC seperti [00:12.50] Baris lirik → lirik tersinkron otomatis."></textarea>
+        </div>
+        <div class="flex justify-between items-center mt-12 gap-8">
+          <span id="lyricsLockStatusLabel" class="badge tint-green"><i class="fas fa-lock"></i> Mode Terkunci (Read-Only)</span>
+          <button id="btnSaveLyricsModal" onclick="saveLyricsForCurrentSong()" class="btn btn-pink btn-sm hidden"><i class="fas fa-check"></i> Simpan Lirik</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue sheet -->
+  <div class="backdrop center-md" id="sheetQueue" onclick="if(event.target===this) closeSheet('sheetQueue')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" style="color:var(--red)" onclick="clearAllNextQueue()">Kosongkan</button>
+        <div class="sh-title">Up Next</div>
+        <button class="btn-plain sh-right" style="font-weight:600" onclick="closeSheet('sheetQueue')">Selesai</button>
+      </div>
+      <div class="sheet-body" id="queueListPanel">
+        <div id="queueItemsContainer" class="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification center -->
+  <div class="backdrop center-md" id="sheetNotif" onclick="if(event.target===this) closeSheet('sheetNotif')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="clearNotifInbox()">Hapus</button>
+        <div class="sh-title">Notifikasi</div>
+        <button class="btn-plain sh-right" style="font-weight:600" onclick="closeSheet('sheetNotif')">Selesai</button>
+      </div>
+      <div class="sheet-body stack" id="notifInboxList"></div>
+    </div>
+  </div>
+
+  <!-- Full Screen Player -->
+  <div class="fullplayer" id="fullPlayer">
+    <div class="fp-bg fallback" id="fpBg"></div>
+    <div class="fp-inner">
+      <div class="grabber" onclick="closeFullPlayer()" style="cursor:pointer"></div>
+      <div class="flex justify-between items-center" style="margin-bottom:14px">
+        <button class="icon-btn" style="background:rgba(255,255,255,0.15); color:#fff" onclick="closeFullPlayer()"><i class="fas fa-chevron-down"></i></button>
+        <div class="center"><div class="t-cap2 muted semibold" style="letter-spacing:.06em">MEMUTAR DARI</div><div class="t-foot semibold" id="fpCategory">Library</div></div>
+        <button class="icon-btn" style="background:rgba(255,255,255,0.15); color:#fff" onclick="openSongActions(currentSongId())"><i class="fas fa-ellipsis"></i></button>
+      </div>
+      <div id="fpArtSection">
+        <div class="artwork" id="fpArtwork"><img id="fpCover" class="hidden" alt=""><i class="fas fa-music art-glyph" id="fpGlyph"></i></div>
+      </div>
+      <div id="fpLyricsSection" class="hidden"><div class="fp-lyrics" id="fpLyrics"></div></div>
+      <div id="fpQueueSection" class="hidden fp-queue" style="max-height:52vh; overflow-y:auto"><div class="t-headline" style="margin:6px 0 10px">Up Next</div><div id="fpQueueList"></div></div>
+      <div class="flex items-center gap-12" style="margin-top:26px">
+        <div class="flex-1"><div class="np-title truncate" id="fpTitle">No track playing</div><div class="np-artist truncate" id="fpArtist">—</div></div>
+        <button class="icon-btn" style="background:rgba(255,255,255,0.15); color:#fff" id="fpFavBtn" onclick="toggleFavoriteCurrent()"><i class="far fa-heart"></i></button>
+      </div>
+      <div style="margin-top:16px">
+        <input type="range" class="scrubber" id="fpSeek" min="0" max="100" value="0" oninput="seekAudioTrack(this.value)">
+        <div class="flex justify-between t-cap2 muted semibold tabular"><span id="fpCur">00:00</span><span id="fpDur">00:00</span></div>
+      </div>
+      <div class="transport" style="margin-top:8px">
+        <button onclick="toggleMusicShuffle()" id="fpShuffle" class="t-btn t-small"><i class="fas fa-shuffle"></i></button>
+        <button onclick="playPrevSong()" class="t-btn"><i class="fas fa-backward"></i></button>
+        <button onclick="togglePlayMusic()" id="fpPlay" class="t-btn t-play"><i class="fas fa-play"></i></button>
+        <button onclick="playNextSong()" class="t-btn"><i class="fas fa-forward"></i></button>
+        <button onclick="toggleMusicRepeat()" id="fpRepeat" class="t-btn t-small"><i class="fas fa-repeat"></i></button>
+      </div>
+      <div class="vol"><i class="fas fa-volume-low"></i><input type="range" id="fpVolume" class="scrubber thin flex-1" min="0" max="1" step="0.05" value="0.8" oninput="changeAudioVolume(this.value)"><i class="fas fa-volume-high"></i></div>
+      <div class="fp-tools">
+        <button id="fpLyricsBtn" onclick="setFullPlayerPanel('lyrics')" title="Lirik"><i class="fas fa-quote-left"></i></button>
+        <button id="fpSleepBtn" onclick="openSleepTimerActions()" title="Sleep timer"><i class="fas fa-moon"></i></button>
+        <button id="fpQueueBtn" onclick="setFullPlayerPanel('queue')" title="Antrean"><i class="fas fa-list-ul"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Alert / Action sheet host -->
+  <div class="backdrop alert-wrap" id="iosAlert"></div>
+  <div class="backdrop" id="iosActionSheet" onclick="if(event.target===this) closeActionSheet(null)"></div>
+
+  <script>
+//__INLINE_JS__
+  </script>
+</body>
+</html>
