@@ -32,7 +32,7 @@
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
       <div class="lock-avatar"><i class="fab fa-apple"></i></div>
-      <div class="t-title3" style="font-weight:700">Hadzmi Hub</div>
+      <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Hub</div>
       <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
 
       <div id="lockPinWrap" class="hidden">
@@ -65,7 +65,7 @@
     <!-- =================== NAV BAR =================== -->
     <header class="navbar" id="topNavbar">
       <div class="flex items-center gap-8">
-        <span class="conn-pill" id="firebaseStatusPill" title="Status sinkronisasi"><span class="status-dot" id="firebaseStatusDot"></span><span id="firebaseStatusText">Sync</span></span>
+        <span class="conn-pill" id="firebaseStatusPill" title="Status sinkronisasi" onclick="explainSyncStatus()" style="cursor:pointer"><span class="status-dot" id="firebaseStatusDot"></span><span id="firebaseStatusText">Sync</span></span>
       </div>
       <div class="nav-title" id="navSmallTitle">Home</div>
       <div class="flex items-center gap-8">
@@ -91,7 +91,6 @@
         </div>
 
         <div id="dashGreetingBanner" class="hero g-morning">
-          <div class="hero-art" id="sunMoonContainer"></div>
           <div class="flex gap-8 wrap">
             <span class="glass-chip"><i class="fas fa-globe-asia"></i> WIB (UTC+7)</span>
             <span class="glass-chip" id="heroSessionChip"><i class="fas fa-lock-open"></i> Sesi aktif</span>
@@ -117,20 +116,20 @@
           </div>
           <div class="card card-pad">
             <div class="app-grid">
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span class="app-label">Home</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="app-label">Music</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span class="app-label">To-Do</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span class="app-label">Mind Dump</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label">Bookmarks</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label">Countdown</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label">Focus</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label">Selisih Kas</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Foto')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label">Bukti Foto</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label">Catatan Kerja</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-docs', 'Gudang File')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5E5CE6,#30B0C7)"><i class="fas fa-box-archive"></i></span><span class="app-label">Gudang File</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload Drive')"><span class="icon-tile bg-green" style="background:linear-gradient(135deg,#34A853,#4285F4)"><i class="fab fa-google-drive"></i></span><span class="app-label">Upload Drive</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span class="app-label">Kontak WA</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span class="app-label">Settings</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-dashboard', null, 'Home')"><span class="icon-tile bg-blue"><i class="fas fa-house"></i></span><span class="app-label" data-label="tab.home">Home</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-music', null, 'Music')"><span class="icon-tile bg-pink"><i class="fas fa-music"></i></span><span class="app-label" data-label="tab.music">Music</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-todo', 'To-Do')"><span class="icon-tile bg-blue" style="background:linear-gradient(135deg,#0A84FF,#5AC8FA)"><i class="fa-solid fa-list-check"></i></span><span class="app-label" data-label="hub.todo">To-Do</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-notes', 'Mind Dump')"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><span class="app-label" data-label="hub.notes">Mind Dump</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label" data-label="hub.links">Bookmarks</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label" data-label="hub.countdown">Countdown</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Kas')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Bukti Kas</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Selisih Kas</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label" data-label="work.notes">Catatan Kerja</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-docs', 'Gudang File')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5E5CE6,#30B0C7)"><i class="fas fa-box-archive"></i></span><span class="app-label" data-label="work.docs">Gudang File</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload Drive')"><span class="icon-tile bg-green" style="background:linear-gradient(135deg,#34A853,#4285F4)"><i class="fab fa-google-drive"></i></span><span class="app-label" data-label="work.upload">Upload Drive</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-contacts', 'Kontak WA')"><span class="icon-tile bg-green"><i class="fab fa-whatsapp"></i></span><span class="app-label" data-label="work.contacts">Kontak WA</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-backup', null, 'Settings')"><span class="icon-tile bg-gray"><i class="fas fa-gear"></i></span><span class="app-label" data-label="tab.settings">Settings</span></button>
             </div>
           </div>
         </div>
@@ -323,14 +322,14 @@
 
       <!-- ================= 3. HUB ================= -->
       <section id="tab-hub" class="tab-content hidden" data-title="Hub">
-        <div class="page-head"><div><div class="page-eyebrow">Productivity</div><h1 class="t-large" id="hubTitle">To-Do</h1></div></div>
+        <div class="page-head"><div><div class="page-eyebrow" data-label="hub.space">Productivity</div><h1 class="t-large" id="hubTitle">To-Do</h1></div></div>
         <div class="subnav">
           <div class="seg lg scroll no-scrollbar">
-            <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" class="active">To-Do</button>
-            <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes">Notes</button>
-            <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links">Bookmarks</button>
-            <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown">Countdown</button>
-            <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus">Focus</button>
+            <button onclick="switchHubSubTab('sub-todo')" id="btn-sub-todo" class="active" data-label="hub.todo">To-Do</button>
+            <button onclick="switchHubSubTab('sub-notes')" id="btn-sub-notes" data-label="hub.notes">Mind Dump</button>
+            <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links" data-label="hub.links">Bookmarks</button>
+            <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown" data-label="hub.countdown">Countdown</button>
+            <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus" data-label="hub.focus">Focus</button>
           </div>
         </div>
 
@@ -403,7 +402,7 @@
                     <option value="15">15 Menit</option><option value="25" selected>25 Menit (Pomodoro)</option><option value="45">45 Menit</option><option value="60">60 Menit</option>
                   </select>
                 </div>
-                <div id="sleepModeBannerInfo" class="hidden t-foot muted">Nyalakan saat mulai tidur & tekan <b>Bangun & Simpan</b> saat bangun</div>
+                <div id="sleepModeBannerInfo" class="hidden t-foot muted">Nyalakan saat mulai tidur & tekan <b>Wake & Save</b> saat bangun</div>
                 <div class="focus-ring" id="focusTimerDisplayBox">
                   <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"></circle><circle class="ring-fg" id="focusRingFg" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="0"></circle></svg>
                   <div class="ring-center">
@@ -442,20 +441,44 @@
 
       <!-- ================= 4. KERJA (Meja Teller) ================= -->
       <section id="tab-workfin" class="tab-content hidden" data-title="Kerja">
-        <div class="page-head"><div><div class="page-eyebrow">Meja Teller</div><h1 class="t-large" id="workTitle">Selisih Kas</h1></div></div>
+        <div class="page-head"><div><div class="page-eyebrow" data-label="work.space">Work Space</div><h1 class="t-large" id="workTitle">Bukti Kas</h1></div></div>
         <div class="subnav">
           <div class="seg lg scroll no-scrollbar">
-            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" class="active">Selisih Kas</button>
-            <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos">Bukti Foto</button>
-            <button onclick="switchWorkFinSubTab('sub-worknotes')" id="btn-sub-worknotes">Catatan</button>
-            <button onclick="switchWorkFinSubTab('sub-docs')" id="btn-sub-docs">Gudang File</button>
-            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload">Upload Drive</button>
-            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts">Kontak</button>
+            <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos" class="active" data-label="work.photos">Bukti Kas</button>
+            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" data-label="work.kas">Selisih Kas</button>
+            <button onclick="switchWorkFinSubTab('sub-worknotes')" id="btn-sub-worknotes" data-label="work.notes">Catatan Kerja</button>
+            <button onclick="switchWorkFinSubTab('sub-docs')" id="btn-sub-docs" data-label="work.docs">Gudang File</button>
+            <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload" data-label="work.upload">Upload Drive</button>
+            <button onclick="switchWorkFinSubTab('sub-contacts')" id="btn-sub-contacts" data-label="work.contacts">Kontak WA</button>
+          </div>
+        </div>
+
+        <!-- Bukti Kas (foto) -->
+        <div id="sub-photos" class="workfin-sub-content stack-16">
+          <input type="file" id="photoCameraInput" accept="image/*" capture="environment" class="hidden" onchange="onPhotosPicked(event)">
+          <input type="file" id="photoGalleryInput" accept="image/*" multiple class="hidden" onchange="onPhotosPicked(event)">
+          <div class="grid-2">
+            <button class="btn btn-filled btn-lg" onclick="document.getElementById('photoCameraInput').click()"><i class="fas fa-camera"></i> Ambil Foto</button>
+            <button class="btn btn-tinted btn-lg" onclick="document.getElementById('photoGalleryInput').click()"><i class="fas fa-images"></i> Dari Galeri</button>
+          </div>
+          <div class="flex gap-8 items-center">
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="photoSearch" class="field" placeholder="Cari nama nasabah / keterangan…" oninput="renderPhotoGallery()"></div>
+            <button class="btn btn-gray btn-sm" id="photoSelectBtn" onclick="togglePhotoSelect()">Pilih</button>
+          </div>
+          <div class="chips no-scrollbar" id="photoTypeChips"></div>
+          <div id="photoGallery"></div>
+          <div class="select-bar hidden" id="photoSelectBar">
+            <span class="t-sub semibold" id="photoSelCount">0 dipilih</span>
+            <div class="flex gap-8">
+              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-envelope"></i> Kirim</button>
+              <button class="btn btn-gray btn-sm" onclick="downloadPhotos(selectedPhotoIds())"><i class="fas fa-download"></i></button>
+              <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(selectedPhotoIds())"><i class="fas fa-trash"></i></button>
+            </div>
           </div>
         </div>
 
         <!-- Selisih Kas -->
-        <div id="sub-kas" class="workfin-sub-content stack-16">
+        <div id="sub-kas" class="workfin-sub-content hidden stack-16">
           <div class="sum-tiles">
             <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
             <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
@@ -490,30 +513,6 @@
             <div>
               <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Selisih</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
               <div id="kasTableBody" class="list inset-icon"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bukti Foto -->
-        <div id="sub-photos" class="workfin-sub-content hidden stack-16">
-          <input type="file" id="photoCameraInput" accept="image/*" capture="environment" class="hidden" onchange="onPhotosPicked(event)">
-          <input type="file" id="photoGalleryInput" accept="image/*" multiple class="hidden" onchange="onPhotosPicked(event)">
-          <div class="grid-2">
-            <button class="btn btn-filled btn-lg" onclick="document.getElementById('photoCameraInput').click()"><i class="fas fa-camera"></i> Ambil Foto</button>
-            <button class="btn btn-tinted btn-lg" onclick="document.getElementById('photoGalleryInput').click()"><i class="fas fa-images"></i> Dari Galeri</button>
-          </div>
-          <div class="flex gap-8 items-center">
-            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="photoSearch" class="field" placeholder="Cari nama nasabah / keterangan…" oninput="renderPhotoGallery()"></div>
-            <button class="btn btn-gray btn-sm" id="photoSelectBtn" onclick="togglePhotoSelect()">Pilih</button>
-          </div>
-          <div class="chips no-scrollbar" id="photoTypeChips"></div>
-          <div id="photoGallery"></div>
-          <div class="select-bar hidden" id="photoSelectBar">
-            <span class="t-sub semibold" id="photoSelCount">0 dipilih</span>
-            <div class="flex gap-8">
-              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-envelope"></i> Kirim</button>
-              <button class="btn btn-gray btn-sm" onclick="downloadPhotos(selectedPhotoIds())"><i class="fas fa-download"></i></button>
-              <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(selectedPhotoIds())"><i class="fas fa-trash"></i></button>
             </div>
           </div>
         </div>
@@ -592,12 +591,13 @@
               <div class="row" style="padding:16px">
                 <span class="avatar" style="width:58px;height:58px;font-size:24px;background:linear-gradient(135deg,#007AFF,#5856D6)"><i class="fab fa-apple"></i></span>
                 <div class="flex-1">
-                  <div class="t-title3">Hadzmi Hub</div>
+                  <div class="t-title3" data-label="app.name">Hadzmi Hub</div>
                   <div class="t-foot muted truncate" id="settingsAccountEmail">—</div>
                 </div>
               </div>
               <div class="row"><span class="icon-tile bg-green"><i class="fas fa-database"></i></span><div class="flex-1 row-title">Firebase Realtime DB</div><span class="row-value" id="settingsDbStatus">—</span></div>
               <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-clock"></i></span><div class="flex-1 row-title">Sesi berakhir</div><span class="row-value" id="settingsSessionExpiry">—</span></div>
+              <button class="row" onclick="copyLoginUid()"><span class="icon-tile bg-indigo"><i class="fas fa-fingerprint"></i></span><div class="flex-1"><div class="row-title">UID login</div><div class="row-sub" id="settingsUid" style="font-family:ui-monospace,Menlo,monospace; font-size:12px">—</div></div><i class="far fa-copy chev"></i></button>
             </div>
 
             <!-- Security -->
@@ -643,6 +643,13 @@
           </div>
 
           <div class="stack-24">
+            <!-- Nama Menu -->
+            <div>
+              <div class="flex justify-between items-center" style="padding:0 16px 7px"><span class="section-label" style="padding:0">Nama Menu</span><button class="link-btn t-foot" onclick="resetCustomLabels()">Kembalikan default</button></div>
+              <div class="form-list" id="labelEditor"></div>
+              <div class="section-foot">Ketik nama baru lalu tekan Return/Done. Kosongkan untuk kembali ke nama bawaan. Tersinkron ke semua perangkat.</div>
+            </div>
+
             <!-- Storage -->
             <div>
               <div class="section-label">Penyimpanan</div>
@@ -725,11 +732,11 @@
 
     <!-- TAB BAR -->
     <nav class="tabbar" id="mainTabBar">
-      <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span>Home</span></div>
-      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-music"></i><span>Music</span></div>
-      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span>Hub</span></div>
-      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span>Kerja</span></div>
-      <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span>Settings</span></div>
+      <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span data-label="tab.home">Home</span></div>
+      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-music"></i><span data-label="tab.music">Music</span></div>
+      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Hub</span></div>
+      <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span data-label="tab.work">Kerja</span></div>
+      <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span data-label="tab.settings">Settings</span></div>
     </nav>
   </div>
 

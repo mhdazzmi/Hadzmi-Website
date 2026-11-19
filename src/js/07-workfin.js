@@ -281,10 +281,10 @@ function setFocusMode(mode) {
     focusTimeSeconds = 0;
   } else {
     head.innerHTML = '<i class="fas fa-moon" style="color:#A5B4FC"></i> Sleep Tracker'; badge.textContent = 'iOS Sleep'; badge.className = 'badge'; badge.style.cssText = 'background:rgba(255,255,255,.15); color:#E0E7FF';
-    status.textContent = 'Ready to Sleep'; start.className = 'btn flex-1'; start.style.cssText = 'background:#fff; color:#1E1B4B'; start.innerHTML = '<i class="fas fa-moon"></i> Start Sleep'; reset.textContent = 'Wake & Save';
+    status.textContent = 'Ready to Sleep'; start.className = 'btn flex-1'; start.style.cssText = 'background:#fff; color:#1E1B4B'; start.innerHTML = '<i class="fas fa-moon"></i> Start Sleep'; reset.textContent = 'Wake & Save'; reset.style.cssText = 'min-width:110px; background:#fff; color:#1E1B4B';
     focusTimeSeconds = 0;
   }
-  if (mode !== 'sleep') { badge.style.cssText = ''; start.style.cssText = ''; }
+  if (mode !== 'sleep') { badge.style.cssText = ''; start.style.cssText = ''; reset.style.cssText = 'min-width:110px'; }
   focusInitialSeconds = focusTimeSeconds;
   updateFocusDisplay();
 }

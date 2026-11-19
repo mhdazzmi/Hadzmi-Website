@@ -11,6 +11,7 @@ function startApp() {
   if ($('kasTanggal') && !$('kasTanggal').value) $('kasTanggal').value = wibDateStr();
   taResetForm();
   resetBookmarkForm();
+  applyLabels();
   renderAllModules();
 
   if (isFirebaseReady) attachRealtimeSync();

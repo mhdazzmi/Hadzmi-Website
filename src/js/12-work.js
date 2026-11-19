@@ -154,7 +154,7 @@ async function savePickedPhotos() {
     status.textContent = errors[0];
     showToast(ok ? `${ok} foto tersimpan, ${errors.length} gagal: ${errors[0]}` : `Gagal: ${errors[0]}`, false);
     if (!ok) return;
-  } else showToast(`${ok} foto bukti tersimpan & tersinkron!`);
+  } else showToast(`${ok} foto tersimpan di ${L('work.photos')}!`);
   pickedPhotos.forEach(p => URL.revokeObjectURL(p.preview)); pickedPhotos = [];
   closeSheet('sheetPhotoSave');
 }
@@ -177,7 +177,7 @@ function renderPhotoGallery() {
   }
   const list = filteredPhotos();
   if (!list.length) {
-    box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada bukti foto'}</div><div class="e-sub">Foto KTP, buku tabungan, atau bukti kas nasabah dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
+    box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada foto ' + esc(L('work.photos'))}</div><div class="e-sub">Foto KTP, buku tabungan, atau bukti kas nasabah dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
     return;
   }
   const groups = {};
@@ -440,8 +440,8 @@ function renderStoragePanel() {
   const fbTotal = fb.reduce((n, p) => n + p.bytes, 0);
   const photos = s.workPhotos || [], docs = s.workDocs || [];
   const cf = [
-    { label: `Bukti Foto (${photos.length})`, bytes: photos.reduce((n, p) => n + (p.size || 0), 0), color: '#FF9500' },
-    { label: `Gudang File (${docs.length})`, bytes: docs.reduce((n, d) => n + (d.size || 0), 0), color: '#5E5CE6' }
+    { label: `${L('work.photos')} (${photos.length})`, bytes: photos.reduce((n, p) => n + (p.size || 0), 0), color: '#FF9500' },
+    { label: `${L('work.docs')} (${docs.length})`, bytes: docs.reduce((n, d) => n + (d.size || 0), 0), color: '#5E5CE6' }
   ];
   const cfTotal = cf.reduce((n, p) => n + p.bytes, 0);
   const pct = b => ((b / GB) * 100).toFixed(b / GB < 0.01 ? 3 : 1);

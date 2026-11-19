@@ -188,7 +188,7 @@ function buildReminderEvents(now, horizonDays) {
     days.forEach(d => {
       const agenda = appState.todos.filter(t => t.deadline === d && t.status !== 'Done').length;
       const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal === d).length;
-      add({ key: 'digest_' + d, at: wibToEpoch(d, '07:00'), until: wibToEpoch(d, '12:00'), title: '☀️ Ringkasan pagi', body: `Hari ini: ${agenda} agenda${events ? ` & ${events} event` : ''}. Semangat, Hadzmi!`, icon: 'fa-sun', color: 'bg-orange', pref: 'digest', action: todoAction('today') });
+      add({ key: 'digest_' + d, at: wibToEpoch(d, '07:00'), until: wibToEpoch(d, '12:00'), title: '☀️ Ringkasan pagi', body: `Hari ini: ${agenda} agenda${events ? ` & ${events} event` : ''}. Semangat, ${L('user.name')}!`, icon: 'fa-sun', color: 'bg-orange', pref: 'digest', action: todoAction('today') });
     });
   }
   return out.sort((a, b) => a.at - b.at);

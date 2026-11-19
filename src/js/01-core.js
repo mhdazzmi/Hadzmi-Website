@@ -54,6 +54,7 @@ let appState = {
   workPhotos: readLS('app_work_photos', []),
   workDocs: readLS('app_work_docs', []),
   workNotes: readLS('app_work_notes', []),
+  customLabels: readLS('app_custom_labels', {}),
   showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
 };
 
@@ -284,6 +285,7 @@ function syncToLocalStorageOnly() {
   writeLS('app_work_photos', appState.workPhotos);
   writeLS('app_work_docs', appState.workDocs);
   writeLS('app_work_notes', appState.workNotes);
+  writeLS('app_custom_labels', appState.customLabels || {});
   writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
 }
 
@@ -313,6 +315,7 @@ function applyRemoteSnapshot(val) {
   appState.workPhotos = val.workPhotos || [];
   appState.workDocs = val.workDocs || [];
   appState.workNotes = val.workNotes || [];
+  appState.customLabels = val.customLabels || {};
   if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
 }
 
@@ -347,7 +350,25 @@ function attachRealtimeSync() {
   } catch (e) {}
 }
 
+let lastSyncState = 'off';
+function explainSyncStatus() {
+  const uid = firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser.uid : '(belum login)';
+  const msg = {
+    on: 'Data tersinkron realtime dengan Firebase.',
+    off: 'Sedang offline. Perubahan disimpan di perangkat dan akan tersinkron saat online.',
+    denied: `Firebase MENOLAK akun ini.\nPastikan Realtime Database → Rules memakai UID ini (di 2 tempat) lalu tekan Publish:\n\n${uid}`
+  }[lastSyncState] || '';
+  iosAlert({ title: lastSyncState === 'denied' ? 'Akses Ditolak' : lastSyncState === 'on' ? 'Tersinkron' : 'Offline', message: msg,
+    actions: lastSyncState === 'denied' ? [{ text: 'Tutup', value: false }, { text: 'Salin UID', value: true, bold: true }] : [{ text: 'OK', value: false, bold: true }] })
+    .then(v => { if (v) copyLoginUid(); });
+}
+function copyLoginUid() {
+  const uid = firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser.uid : '';
+  if (!uid) return showToast('Belum login.', false);
+  copyText(uid); showToast('UID disalin: ' + uid.slice(0, 8) + '…');
+}
 function setConnectionStatus(state) {
+  lastSyncState = state;
   const dot = $('firebaseStatusDot'), txt = $('firebaseStatusText'), st = $('settingsDbStatus');
   const map = { on: ['on', 'Sync', 'Terhubung'], off: ['off', 'Offline', 'Offline (cache lokal)'], denied: ['off', 'Ditolak', 'Akses ditolak (cek Rules)'] };
   const m = map[state] || map.off;
@@ -358,8 +379,52 @@ function setConnectionStatus(state) {
 
 // ---------- NAVIGATION ----------
 let currentTabId = 'tab-dashboard';
-const HUB_TITLES = { 'sub-todo': 'To-Do', 'sub-notes': 'Mind Dump', 'sub-links': 'Bookmarks', 'sub-countdown': 'Countdown', 'sub-focus': 'Focus Room' };
-const WORK_TITLES = { 'sub-kas': 'Selisih Kas', 'sub-photos': 'Bukti Foto', 'sub-worknotes': 'Catatan Kerja', 'sub-docs': 'Gudang File', 'sub-upload': 'Upload Drive', 'sub-contacts': 'Kontak WA' };
+// ---------- NAMA MENU (bisa diganti di Settings → Nama Menu) ----------
+const LABEL_GROUPS = [
+  ['Umum', [['app.name', 'Hadzmi Hub', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
+  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Music'], ['tab.hub', 'Hub'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
+  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.todo', 'To-Do'], ['hub.notes', 'Mind Dump'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus']]],
+  ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Bukti Kas'], ['work.kas', 'Selisih Kas'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
+];
+const LABEL_DEFAULTS = {};
+LABEL_GROUPS.forEach(([, items]) => items.forEach(([k, d]) => { LABEL_DEFAULTS[k] = d; }));
+function L(key) {
+  const c = appState.customLabels && appState.customLabels[key];
+  return (c && String(c).trim()) || LABEL_DEFAULTS[key] || key;
+}
+function applyLabels() {
+  document.querySelectorAll('[data-label]').forEach(el => { const t = L(el.dataset.label); if (el.textContent !== t) el.textContent = t; });
+  if ($('hubTitle') && currentHubSub) $('hubTitle').textContent = L(HUB_KEYS[currentHubSub]);
+  if ($('workTitle') && currentWorkSub) $('workTitle').textContent = L(WORK_KEYS[currentWorkSub]);
+  defaultDocTitle = L('app.name');
+  if (typeof isMusicPlaying === 'undefined' || !isMusicPlaying) document.title = defaultDocTitle;
+  updateNavSmallTitle();
+}
+function renderLabelEditor() {
+  const box = $('labelEditor'); if (!box || box.contains(document.activeElement)) return;
+  box.innerHTML = LABEL_GROUPS.map(([group, items]) => `<div class="fl-row" style="min-height:34px; background:var(--fill3)"><span class="t-cap muted semibold" style="text-transform:uppercase; letter-spacing:.04em">${esc(group)}</span></div>` +
+    items.map(([k, d, hint]) => `<div class="fl-row"><span class="fl-label t-sub" style="min-width:118px; color:var(--label2)">${esc(hint || d)}</span><input type="text" maxlength="28" data-key="${k}" placeholder="${esc(d)}" value="${esc((appState.customLabels || {})[k] || '')}" enterkeyhint="done"></div>`).join('')).join('');
+  box.querySelectorAll('input[data-key]').forEach(inp => {
+    inp.addEventListener('change', () => setCustomLabel(inp.dataset.key, inp.value));
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+  });
+}
+function setCustomLabel(key, value) {
+  appState.customLabels = Object.assign({}, appState.customLabels || {});
+  const v = String(value || '').trim();
+  if (!v || v === LABEL_DEFAULTS[key]) delete appState.customLabels[key]; else appState.customLabels[key] = v.slice(0, 28);
+  saveStateToLocal(); applyLabels(); updateDashboardGreeting();
+  showToast(v ? `Nama diganti jadi "${L(key)}"` : `Kembali ke "${LABEL_DEFAULTS[key]}"`);
+}
+async function resetCustomLabels() {
+  if (!(await iosConfirm('Kembalikan semua nama menu?', 'Semua nama kembali ke bawaan.', 'Kembalikan', true))) return;
+  appState.customLabels = {}; saveStateToLocal(); applyLabels(); updateDashboardGreeting();
+  const box = $('labelEditor'); if (box) box.innerHTML = ''; renderLabelEditor();
+  showToast('Nama menu dikembalikan ke bawaan.');
+}
+const HUB_KEYS = { 'sub-todo': 'hub.todo', 'sub-notes': 'hub.notes', 'sub-links': 'hub.links', 'sub-countdown': 'hub.countdown', 'sub-focus': 'hub.focus' };
+const WORK_KEYS = { 'sub-photos': 'work.photos', 'sub-kas': 'work.kas', 'sub-worknotes': 'work.notes', 'sub-docs': 'work.docs', 'sub-upload': 'work.upload', 'sub-contacts': 'work.contacts' };
+let currentHubSub = 'sub-todo', currentWorkSub = 'sub-photos';
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -385,7 +450,8 @@ function switchHubSubTab(subId) {
   document.querySelectorAll('.hub-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
   setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus'], subId);
-  if ($('hubTitle')) $('hubTitle').textContent = HUB_TITLES[subId] || 'Hub';
+  currentHubSub = subId;
+  if ($('hubTitle')) $('hubTitle').textContent = L(HUB_KEYS[subId] || 'tab.hub');
   updateNavSmallTitle();
   if (subId === 'sub-focus') renderSleepLineChart();
 }
@@ -394,7 +460,8 @@ function switchWorkFinSubTab(subId) {
   document.querySelectorAll('.workfin-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
   setSegActive(['sub-kas', 'sub-photos', 'sub-worknotes', 'sub-docs', 'sub-upload', 'sub-contacts'], subId);
-  if ($('workTitle')) $('workTitle').textContent = WORK_TITLES[subId] || 'Kerja';
+  currentWorkSub = subId;
+  if ($('workTitle')) $('workTitle').textContent = L(WORK_KEYS[subId] || 'tab.work');
   updateNavSmallTitle();
   if (subId === 'sub-photos') renderPhotoGallery();
   if (subId === 'sub-docs') renderDocs();
@@ -405,9 +472,9 @@ function updateNavSmallTitle() {
   const el = $('navSmallTitle'); if (!el) return;
   if (currentTabId === 'tab-hub') el.textContent = $('hubTitle').textContent;
   else if (currentTabId === 'tab-workfin') el.textContent = $('workTitle').textContent;
-  else if (currentTabId === 'tab-music') el.textContent = 'Music';
-  else if (currentTabId === 'tab-backup') el.textContent = 'Settings';
-  else el.textContent = 'Home';
+  else if (currentTabId === 'tab-music') el.textContent = L('tab.music');
+  else if (currentTabId === 'tab-backup') el.textContent = L('tab.settings');
+  else el.textContent = L('tab.home');
 }
 
 function navigateFromQuickMenu(mainTabId, subTabId, labelText) {
@@ -428,18 +495,18 @@ const SEARCH_MAP = [
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
-  { label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
-  { label: 'Bukti Foto', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
-  { label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
-  { label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
-  { label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
-  { label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
+  { key: 'work.kas', label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
+  { key: 'work.photos', label: 'Bukti Kas', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
+  { key: 'work.notes', label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
+  { key: 'work.docs', label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
+  { key: 'work.upload', label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
+  { key: 'work.contacts', label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
   { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'gmail'], action: () => switchTab('tab-backup') }
 ];
 function searchMatches(query) {
   const q = (query || '').toLowerCase().trim();
   if (!q) return [];
-  return SEARCH_MAP.filter(item => item.label.toLowerCase().includes(q) || item.keys.some(k => k.includes(q) || q.includes(k)));
+  return SEARCH_MAP.filter(item => (item.key ? L(item.key) : item.label).toLowerCase().includes(q) || item.label.toLowerCase().includes(q) || item.keys.some(k => k.includes(q) || q.includes(k)));
 }
 function filterTabs(query) {
   const found = searchMatches(query)[0];
@@ -449,7 +516,7 @@ function renderSearchSuggestions(query) {
   const box = $('searchSuggest'); if (!box) return;
   const items = searchMatches(query);
   if (!items.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}"><span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span><span class="flex-1 row-title">${esc(it.label)}</span><i class="fas fa-chevron-right chev"></i></button>`).join('');
+  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}"><span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span><span class="flex-1 row-title">${esc(it.key ? L(it.key) : it.label)}</span><i class="fas fa-chevron-right chev"></i></button>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => { items[+b.dataset.i].action(); $('globalMenuSearch').value = ''; box.classList.add('hidden'); });
   box.classList.remove('hidden');
 }
@@ -458,7 +525,7 @@ function renderSearchSuggestions(query) {
 function renderAllModules() {
   const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
     renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
-    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel];
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor];
   fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
 }
 

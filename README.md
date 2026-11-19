@@ -58,7 +58,7 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 | Sub-menu | Isi |
 |---|---|
 | **Selisih Kas** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan ke Gmail. Data lama Cash Ledger tetap ada. |
-| **Bukti Foto** | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Galeri per tanggal, filter jenis, cari nama nasabah, pilih banyak → **Kirim** (menu Bagikan iOS → Gmail, foto jadi lampiran) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
+| **Bukti Kas** (foto) | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Galeri per tanggal, filter jenis, cari nama nasabah, pilih banyak → **Kirim** (menu Bagikan iOS → Gmail, foto jadi lampiran) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
 | **Catatan** | Catatan khusus pekerjaan (terpisah dari Mind Dump). |
 | **Gudang File** | Upload banyak file sekaligus (PDF, gambar, dokumen, teks; maks 25 MB/file) ke folder (mis. "Materi BRI"); pratinjau PDF/gambar/teks, buka, unduh, kirim, ganti nama, pindah folder. |
 | **Upload Drive** | Uploader Google Drive dengan logika yang sama seperti uploader lama (Apps Script, multi-file, nama kustom `nama-1.ext`). |

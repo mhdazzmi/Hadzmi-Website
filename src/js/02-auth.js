@@ -181,6 +181,7 @@ function updateSessionUI() {
   const exp = rec && rec.expiresAt;
   if ($('settingsSessionExpiry')) $('settingsSessionExpiry').textContent = APP_AUTH.enabled ? formatExpiry(exp) : 'Kunci nonaktif';
   if ($('settingsAccountEmail')) $('settingsAccountEmail').textContent = !APP_AUTH.enabled ? 'Mode tanpa login' : isPinMode() ? 'Login dengan PIN ' + APP_AUTH.pinLength + ' angka' : ((rec && rec.email) || getLoginEmail() || '—');
+  if ($('settingsUid')) $('settingsUid').textContent = firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser.uid : '—';
   if ($('changeCredLabel')) $('changeCredLabel').textContent = isPinMode() ? 'Ganti PIN' : 'Ganti Sandi';
   const chip = $('heroSessionChip');
   if (chip) chip.innerHTML = APP_AUTH.enabled && exp ? `<i class="fas fa-lock-open"></i> Sesi s/d ${formatExpiry(exp).split(' (')[0]}` : '<i class="fas fa-lock-open"></i> Sesi aktif';

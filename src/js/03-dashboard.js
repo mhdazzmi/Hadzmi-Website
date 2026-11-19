@@ -23,10 +23,10 @@ const SKY_ICONS = {
 
 function updateDashboardGreeting() {
   const hours = getWIBDate().getHours();
-  let greeting = "Selamat Pagi, Hadzmi", key = 'morning', cls = 'g-morning';
-  if (hours >= 11 && hours < 15) { greeting = "Selamat Siang, Hadzmi"; key = 'noon'; cls = 'g-noon'; }
-  else if (hours >= 15 && hours < 18) { greeting = "Selamat Sore, Hadzmi"; key = 'evening'; cls = 'g-evening'; }
-  else if (hours >= 18 || hours < 4) { greeting = "Selamat Malam, Hadzmi"; key = 'night'; cls = 'g-night'; }
+  let greeting = `Selamat Pagi, ${L('user.name')}`, key = 'morning', cls = 'g-morning';
+  if (hours >= 11 && hours < 15) { greeting = `Selamat Siang, ${L('user.name')}`; key = 'noon'; cls = 'g-noon'; }
+  else if (hours >= 15 && hours < 18) { greeting = `Selamat Sore, ${L('user.name')}`; key = 'evening'; cls = 'g-evening'; }
+  else if (hours >= 18 || hours < 4) { greeting = `Selamat Malam, ${L('user.name')}`; key = 'night'; cls = 'g-night'; }
 
   const banner = $('dashGreetingBanner');
   if (banner) banner.className = `hero ${cls}`;
