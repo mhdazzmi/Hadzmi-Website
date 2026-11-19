@@ -984,6 +984,20 @@
       </div>
       <div class="sheet-body col" style="flex:1; min-height:0">
         <p id="lyricsModalSongTitle" class="t-foot semibold c-pink center">Track Title</p>
+        <div class="grid-2 mt-8" id="lyricsToolRow">
+          <button class="btn btn-tinted btn-sm" onclick="searchSyncedLyrics()"><i class="fas fa-magnifying-glass"></i> Cari Otomatis</button>
+          <button class="btn btn-gray btn-sm" onclick="startTapSync()"><i class="fas fa-hand-pointer"></i> Sinkron Tap</button>
+        </div>
+        <div id="lyricsTapSync" class="hidden col mt-12" style="flex:1; min-height:0">
+          <div class="flex justify-between items-center"><span class="badge tint-pink" id="tapSyncProgress">Baris 1/1</span><span class="t-foot muted tabular" id="tapSyncTime">00:00</span></div>
+          <div class="tap-lines" id="tapSyncLines"></div>
+          <button class="tap-big" id="tapSyncBtn" onclick="tapSyncStamp()">TAP<small>saat baris ini mulai dinyanyikan</small></button>
+          <div class="grid-3 mt-8">
+            <button class="btn btn-gray btn-sm" onclick="tapSyncUndo()"><i class="fas fa-rotate-left"></i> Mundur</button>
+            <button class="btn btn-gray btn-sm" onclick="togglePlayMusic()"><i class="fas fa-play"></i>/<i class="fas fa-pause"></i></button>
+            <button class="btn btn-danger-tinted btn-sm" onclick="cancelTapSync()">Batal</button>
+          </div>
+        </div>
         <div id="lyricsReadOnlyContainer" class="lyrics-box mt-12" style="max-height:none; flex:1; font-size:22px; background:transparent"></div>
         <div id="lyricsEditContainer" class="hidden col mt-12" style="flex:1">
           <textarea id="lyricsTextInput" rows="14" class="textarea" style="flex:1; font-size:17px; font-weight:600" placeholder="Ketik atau tempel lirik lagu di sini…&#10;&#10;Tips: format LRC seperti [00:12.50] Baris lirik → lirik tersinkron otomatis."></textarea>

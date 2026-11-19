@@ -547,7 +547,7 @@ function openLyricsFullScreenModal() {
   openSheet('musicLyricsModal');
   highlightLrc(audioEngine.currentTime || 0);
 }
-function closeLyricsFullScreenModal() { closeSheet('musicLyricsModal'); }
+function closeLyricsFullScreenModal() { if (tapTimer) exitTapSync(); closeSheet('musicLyricsModal'); }
 function toggleEditLyricsMode() { isLyricsEditing = !isLyricsEditing; applyLyricsModeUI(); }
 function applyLyricsModeUI() {
   const read = $('lyricsReadOnlyContainer'), edit = $('lyricsEditContainer'), btnT = $('btnToggleEditLyrics'), btnS = $('btnSaveLyricsModal'), lock = $('lyricsLockStatusLabel');
@@ -998,4 +998,108 @@ function applyFloatingMusicDockVisibility() {
   const isShown = appState.showFloatingMusicDock === true;
   if (dock) dock.classList.toggle('hidden', !isShown);
   if (sw) sw.checked = isShown;
+}
+
+// ---------- LIRIK OTOMATIS (LRCLIB) & SINKRON TAP ----------
+function fmtDur(sec) { sec = Math.round(sec || 0); return `${Math.floor(sec / 60)}:${pad2(sec % 60)}`; }
+async function lrclibFetch(path) {
+  const url = 'https://lrclib.net/api/' + path;
+  try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) {}
+  const token = await getIdTokenOrThrow();
+  const r = await fetch('/api/proxy?url=' + encodeURIComponent(url), { headers: { Authorization: 'Bearer ' + token } });
+  if (!r.ok) throw new Error('Layanan lirik tidak bisa dihubungi (' + r.status + ')');
+  return r.json();
+}
+async function searchSyncedLyrics() {
+  const song = currentSong();
+  if (!song) return showToast('Putar lagunya dulu, lalu cari liriknya.', false);
+  const cleanTitle = song.title.replace(/\(.*?\)|\[.*?\]|official.*|lyrics?|video|audio/gi, '').trim();
+  showToast(`Mencari lirik "${cleanTitle}"…`);
+  let results = [];
+  try {
+    const qs = new URLSearchParams({ track_name: cleanTitle }); if (song.artist) qs.set('artist_name', song.artist);
+    results = await lrclibFetch('search?' + qs);
+    if (!results.length) results = await lrclibFetch('search?' + new URLSearchParams({ q: (cleanTitle + ' ' + (song.artist || '')).trim() }));
+  } catch (err) { return showToast(err.message, false); }
+  results = (results || []).filter(r => !r.instrumental && (r.syncedLyrics || r.plainLyrics));
+  if (!results.length) {
+    const v = await iosAlert({ title: 'Lirik tidak ditemukan', message: `Tidak ada lirik untuk "${cleanTitle}" di database.\nCoba ganti judul/artis lagu agar persis, atau pakai Sinkron Tap.`, actions: [{ text: 'Tutup', value: false }, { text: 'Sinkron Tap', value: true, bold: true }] });
+    if (v) startTapSync();
+    return;
+  }
+  const dur = isFinite(audioEngine.duration) && currentSongId() === song.id ? audioEngine.duration : 0;
+  results.sort((a, b) => (!!b.syncedLyrics - !!a.syncedLyrics) || (dur ? Math.abs(a.duration - dur) - Math.abs(b.duration - dur) : 0));
+  const pick = await openActionSheet({
+    title: 'Pilih lirik', message: dur ? `Durasi lagumu ${fmtDur(dur)} — pilih yang durasinya paling mirip` : 'Pilih yang judul & artisnya cocok',
+    actions: results.slice(0, 6).map((r, i) => ({ text: `${r.syncedLyrics ? '⏱ ' : ''}${r.trackName} — ${r.artistName} (${fmtDur(r.duration)})`, value: i }))
+  });
+  if (pick === null || pick === undefined) return;
+  const chosen = results[pick];
+  if (song.lyrics && song.lyrics.trim() && !(await iosConfirm('Ganti lirik yang ada?', 'Lirik lama akan diganti dengan hasil pencarian.', 'Ganti'))) return;
+  song.lyrics = (chosen.syncedLyrics || chosen.plainLyrics || '').trim();
+  afterLyricsChanged(song);
+  showToast(chosen.syncedLyrics ? 'Lirik tersinkron dipasang — akan mengikuti nyanyian ✓' : 'Hanya lirik biasa yang tersedia. Pakai Sinkron Tap agar mengikuti nyanyian.', !!chosen.syncedLyrics);
+}
+function afterLyricsChanged(song) {
+  saveStateToLocal();
+  $('lyricsTextInput').value = song.lyrics || '';
+  renderLyricsInto($('lyricsReadOnlyContainer'), song, '(Belum ada lirik untuk lagu ini)');
+  updateInlineLyricsContent(); renderMusicSongsList();
+  highlightLrc(audioEngine.currentTime || 0);
+}
+
+let tapLines = [], tapTimes = [], tapIdx = 0, tapTimer = null;
+function formatLrcTime(t) { const m = Math.floor(t / 60), s = t - m * 60; return `${pad2(m)}:${s.toFixed(2).padStart(5, '0')}`; }
+function startTapSync() {
+  const song = currentSong();
+  if (!song) return showToast('Putar lagunya dulu.', false);
+  const src = (isLyricsEditing ? $('lyricsTextInput').value : song.lyrics) || '';
+  tapLines = src.split(/\r?\n/).map(l => l.replace(/\[[^\]]*\]/g, '').trim()).filter(Boolean);
+  if (!tapLines.length) {
+    iosAlert({ title: 'Tempel lirik dulu', message: 'Tap "Edit", tempel lirik biasa (tanpa waktu), simpan, lalu tekan Sinkron Tap.' });
+    if (!isLyricsEditing) toggleEditLyricsMode();
+    return;
+  }
+  tapTimes = []; tapIdx = 0;
+  ['lyricsReadOnlyContainer', 'lyricsEditContainer', 'lyricsToolRow'].forEach(id => $(id).classList.add('hidden'));
+  $('lyricsTapSync').classList.remove('hidden');
+  renderTapSync();
+  try { audioEngine.currentTime = 0; } catch (e) {}
+  if (!isMusicPlaying) togglePlayMusic();
+  clearInterval(tapTimer);
+  tapTimer = setInterval(() => { if ($('tapSyncTime')) $('tapSyncTime').textContent = formatAudioTime(audioEngine.currentTime || 0); }, 250);
+  showToast('Lagu diputar dari awal. Tap tombol saat tiap baris mulai dinyanyikan.');
+}
+function renderTapSync() {
+  $('tapSyncProgress').textContent = `Baris ${Math.min(tapIdx + 1, tapLines.length)}/${tapLines.length}`;
+  const box = $('tapSyncLines');
+  box.innerHTML = tapLines.map((l, i) => `<span class="tl ${i < tapIdx ? 'done' : i === tapIdx ? 'cur' : ''}">${i < tapIdx ? `<small>${formatLrcTime(tapTimes[i])}</small>` : ''}${esc(l)}</span>`).join('');
+  const cur = box.querySelector('.tl.cur');
+  if (cur) box.scrollTo({ top: cur.offsetTop - box.offsetTop - box.clientHeight / 3, behavior: 'smooth' });
+}
+function tapSyncStamp() {
+  if (tapIdx >= tapLines.length) return;
+  tapTimes[tapIdx] = audioEngine.currentTime || 0;
+  tapIdx++; haptic(8);
+  if (tapIdx >= tapLines.length) return finishTapSync();
+  renderTapSync();
+}
+function tapSyncUndo() {
+  if (!tapIdx) return;
+  tapIdx--; tapTimes.length = tapIdx;
+  try { audioEngine.currentTime = Math.max(0, (tapIdx ? tapTimes[tapIdx - 1] : 0)); } catch (e) {}
+  renderTapSync();
+}
+function exitTapSync() {
+  clearInterval(tapTimer); tapTimer = null;
+  $('lyricsTapSync').classList.add('hidden'); $('lyricsToolRow').classList.remove('hidden');
+  isLyricsEditing = false; applyLyricsModeUI();
+}
+function cancelTapSync() { exitTapSync(); showToast('Sinkron dibatalkan, lirik tidak diubah.'); }
+function finishTapSync() {
+  const song = currentSong(); if (!song) return exitTapSync();
+  song.lyrics = tapLines.map((l, i) => `[${formatLrcTime(tapTimes[i])}] ${l}`).join('\n');
+  exitTapSync();
+  afterLyricsChanged(song);
+  showToast(`Selesai! ${tapLines.length} baris tersinkron — lirik akan mengikuti nyanyian ✓`);
 }

@@ -82,6 +82,7 @@ Firebase Realtime Database **hanya menyimpan teks** (judul, catatan, keterangan,
 ### 🎵 Music: upload & offline
 - **+ Lagu → Upload File**: pilih MP3/M4A + cover dari perangkat, simpan ke R2/Drive. Diputar lewat link privat bertanda tangan (streaming + seek), cover di-cache.
 - **Direct Link** tetap tersedia (tidak memakai kuota).
+- **Lirik mengikuti nyanyian** (Lirik → Edit/Perbesar): **Cari Otomatis** mengambil lirik tersinkron dari LRCLIB (gratis), atau **Sinkron Tap** — putar lagu dan tap saat tiap baris mulai dinyanyikan; hasilnya format LRC.
 - **Simpan Offline** (menu ⋯ lagu) → lagu tersimpan di perangkat; filter "Offline"; hapus per lagu atau semua di Settings → Pemakaian.
 
 ### 🖼️ Galeri (tab Media → Galeri)
