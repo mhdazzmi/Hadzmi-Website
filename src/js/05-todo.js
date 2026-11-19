@@ -73,7 +73,7 @@ function taRowHTML(item) {
       <button class="check ${isDone ? 'done' : ''} ${high && !isDone ? 'high' : ''} ${isProg ? 'prog' : ''}" onclick="taToggleDone('${id}', this)" aria-label="Tandai selesai"><i class="fas fa-check"></i></button>
       <div class="flex-1 tappable" onclick="taEditTask('${id}')" style="cursor:pointer">
         <div class="t-title">${high && !isDone ? '<span class="flag">!! </span>' : ''}${esc(item.title)}</div>
-        ${item.desc ? `<div class="t-notes clamp2">${esc(item.desc)}</div>` : ''}
+        ${item.desc ? `<div class="t-notes clamp2">${linkify(item.desc)}</div>` : ''}
         ${links.length ? `<div class="t-links" onclick="event.stopPropagation()">${links.slice(0, 3).map(l => `<a href="${safeUrl(l)}" target="_blank" rel="noopener" class="truncate"><i class="fas fa-link" style="font-size:11px"></i> ${esc(l.replace(/^https?:\/\//, ''))}</a>`).join('')}${links.length > 3 ? `<span class="t-cap muted">+${links.length - 3} link lainnya</span>` : ''}</div>` : ''}
         ${(dateText || isProg) ? `<div class="t-meta">
           ${dateText ? `<span class="${overdue ? 'overdue' : ''}"><i class="far fa-calendar"></i> ${esc(dateText)}</span>` : ''}
@@ -176,7 +176,6 @@ function taOpenActions(id) {
   if (item.status !== 'On Progress') actions.push({ text: 'Tandai In Progress', icon: 'fas fa-circle-half-stroke', onClick: () => taUpdateStatus(id, 'On Progress') });
   if (item.status) actions.push({ text: 'Kembalikan ke Pending', icon: 'far fa-circle', onClick: () => taUpdateStatus(id, '') });
   actions.push({ text: 'Edit Detail', icon: 'fas fa-pen', onClick: () => taEditTask(id) });
-  actions.push({ text: 'Kirim ke Gmail', icon: 'fas fa-envelope', onClick: () => shareTask(id) });
   actions.push({ text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => taDeleteNote(id) });
   openActionSheet({ title: item.title, message: item.deadline ? `Deadline: ${relativeDayLabel(item.deadline)}${item.time ? ' ' + item.time : ''}` : 'Tanpa deadline', actions });
 }

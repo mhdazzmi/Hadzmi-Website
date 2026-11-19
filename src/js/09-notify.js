@@ -118,7 +118,7 @@ async function clearNotifInbox() {
   setInbox([]); renderNotifInbox();
 }
 function sendTestNotification() {
-  pushNotification({ title: 'Notifikasi Tes ✅', body: 'Notifikasi Hadzmi Hub berfungsi dengan baik.', icon: 'fa-paper-plane', color: 'bg-green' });
+  pushNotification({ title: 'Notifikasi Tes ✅', body: 'Notifikasi Hadzmi Assistant berfungsi dengan baik.', icon: 'fa-paper-plane', color: 'bg-green' });
 }
 
 // ---------- Reminder engine ----------

@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#F2F2F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Hadzmi Hub">
+  <meta name="apple-mobile-web-app-title" content="Hadzmi Assistant">
   <meta name="robots" content="noindex, nofollow">
-  <title>Hadzmi Hub</title>
+  <title>Hadzmi Assistant</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -882,6 +882,78 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .tap-big small { font-size: 12px; font-weight: 600; letter-spacing: 0; opacity: .85; margin-top: 4px; }
 .tap-big:active { transform: scale(0.97); }
 
+.pdf-pages { display: block !important; overflow-y: auto; padding: 8px; background: #E9EAEE; text-align: center; }
+.pdf-pages canvas { display: block; margin: 0 auto 10px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.12); border-radius: 4px; max-width: 100%; height: auto; }
+.lock-avatar img, .app-logo img { width: 100% !important; height: 100% !important; object-fit: cover; border-radius: inherit; }
+.lock-avatar { overflow: hidden; background: #102554; }
+.app-logo { overflow: hidden; background: #102554; border-radius: 15px !important; }
+.chip.suggest { border-style: dashed; color: var(--blue); }
+
+/* Lirik kecil (Now Playing): gaya karaoke, baris aktif di tengah */
+#inlineLyricsContent[data-lrc="1"] { max-height: 168px; padding: 56px 16px; -webkit-mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent); mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent); scrollbar-width: none; }
+#inlineLyricsContent[data-lrc="1"]::-webkit-scrollbar { display: none; }
+#inlineLyricsContent .lrc-line.active { font-size: 1.12em; }
+.auto-link { color: var(--blue) !important; text-decoration: underline; text-decoration-color: rgba(0,122,255,.35); word-break: break-all; }
+
+.streak-pill { display: inline-flex; align-items: center; gap: 5px; height: 40px; padding: 0 13px; border-radius: 999px; border: 0.5px solid rgba(0,0,0,0.06); background: var(--glass-strong); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 2px 10px rgba(0,0,0,0.06); font-size: 15px; font-weight: 700; color: #1C1C1E; font-variant-numeric: tabular-nums; cursor: pointer; }
+.streak-pill i { color: #FF6B00; background: linear-gradient(180deg,#FFB300,#FF3B30); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-size: 16px; }
+.streak-pill.cold i { background: none; -webkit-text-fill-color: var(--gray); color: var(--gray); }
+
+/* Editor foto */
+.pe-stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; margin: 4px 12px; }
+.pe-stage canvas { max-width: 100%; max-height: 100%; display: block; }
+.pe-crop { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,.55); cursor: move; touch-action: none; }
+.pe-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px); background-size: 33.333% 33.333%; background-position: -1px -1px; }
+.pe-h { position: absolute; width: 26px; height: 26px; border: 4px solid #fff; touch-action: none; z-index: 2; }
+.pe-h.tl { left: -4px; top: -4px; border-right: 0; border-bottom: 0; cursor: nwse-resize; }
+.pe-h.tr { right: -4px; top: -4px; border-left: 0; border-bottom: 0; cursor: nesw-resize; }
+.pe-h.bl { left: -4px; bottom: -4px; border-right: 0; border-top: 0; cursor: nesw-resize; }
+.pe-h.br { right: -4px; bottom: -4px; border-left: 0; border-top: 0; cursor: nwse-resize; }
+.pe-tools { padding: 10px 12px calc(var(--safe-b) + 14px); }
+.pe-tools .chip { background: rgba(255,255,255,.12); color: #fff; border-color: transparent; }
+.pe-tools .chip.active { background: #FFD60A; color: #000; }
+/* Galeri Tersembunyi — tampilan gelap berbeda */
+.vault-panel { background: linear-gradient(160deg, #0B1020 0%, #151B33 60%, #1C1430 100%); color: #fff; border-radius: 26px; padding: 18px; min-height: 360px; }
+.vault-panel .muted { color: rgba(235,235,245,.6); }
+.vault-lock { text-align: center; padding: 34px 8px; }
+.vault-lock .vl-icon { width: 76px; height: 76px; border-radius: 22px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: linear-gradient(135deg,#3A3F67,#1D2140); box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 10px 30px rgba(0,0,0,.4); }
+.vault-lock input { width: 100%; max-width: 320px; height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #fff; font-size: 17px; text-align: center; outline: none; margin-top: 10px; }
+.vault-lock input::placeholder { color: rgba(255,255,255,.4); }
+.vault-panel .g-grid { gap: 3px; border-radius: 14px; overflow: hidden; }
+.vault-panel .photo-cell { background: rgba(255,255,255,.06); }
+.vault-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.vault-head .btn-gray { background: rgba(255,255,255,.12); color: #fff; }
+.vault-viewer { background: #05070F; }
+
+/* Wallet */
+.wallet-stack { display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
+.wcard { position: relative; isolation: isolate; width: 100%; max-width: 420px; aspect-ratio: 1.586; border-radius: 18px; overflow: hidden; color: #fff; text-align: left; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.25); border: 0; cursor: pointer; font-family: var(--font); transition: transform .3s var(--ease); }
+.wc-slot { width: 100%; max-width: 420px; height: 74px; }
+.wc-slot:last-child { height: auto; }
+.wc-slot .wcard:hover { transform: translateY(-8px); }
+.wcard .wc-bg { position: absolute; inset: 0; width: 100% !important; height: 100% !important; object-fit: cover; z-index: 0; }
+.wcard .wc-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.28), transparent 45%, rgba(0,0,0,.35)); z-index: 1; }
+.wcard > *:not(.wc-bg):not(.wc-shade) { position: relative; z-index: 2; }
+.wcard .wc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.wcard .wc-issuer { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
+.wcard .wc-name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.wcard .wc-num { font-size: 17px; font-weight: 600; letter-spacing: .12em; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.wcard .wc-holder { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .06em; }
+.wcard .wc-chip { width: 38px; height: 28px; border-radius: 6px; background: linear-gradient(135deg,#F5D97A,#C9A44A); opacity: .9; }
+.wcard.has-img .wc-chip { display: none; }
+.wd-code { background: #fff; border-radius: 22px; padding: 18px; text-align: center; box-shadow: var(--shadow-card); }
+.wd-code svg { width: 100%; max-width: 280px; height: auto; display: block; margin: 0 auto; }
+.wd-code.barcode svg { max-width: 100%; }
+.wd-code .wd-val { font-family: ui-monospace, Menlo, monospace; font-size: 15px; margin-top: 8px; letter-spacing: .06em; word-break: break-all; }
+.wallet-scan { position: fixed; inset: 0; z-index: 2147483300; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; font-family: var(--font); }
+.wallet-scan .ws-name { font-size: 20px; font-weight: 700; margin-bottom: 18px; }
+.wallet-scan .ws-code { width: min(86vw, 70vh); }
+.wallet-scan .ws-code svg { width: 100%; height: auto; display: block; }
+.wallet-scan .ws-text { font-family: ui-monospace, Menlo, monospace; font-size: 20px; margin-top: 14px; letter-spacing: .08em; word-break: break-all; }
+.wallet-scan .ws-hint { position: absolute; bottom: calc(var(--safe-b) + 20px); font-size: 13px; color: #8E8E93; }
+.swatch { width: 34px; height: 34px; border-radius: 99px; border: 3px solid transparent; cursor: pointer; padding: 0; }
+.swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--blue); }
+
   </style>
 </head>
 <body>
@@ -889,8 +961,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
   <div id="lockScreen">
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
-      <div class="lock-avatar"><i class="fab fa-apple"></i></div>
-      <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Hub</div>
+      <div class="lock-avatar"><img src="icons/icon-192.png" alt="" onerror="this.outerHTML='<i class=&quot;fas fa-h&quot;></i>'"></div>
+      <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Assistant</div>
       <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
 
       <div id="lockPinWrap" class="hidden">
@@ -927,6 +999,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
       </div>
       <div class="nav-title" id="navSmallTitle">Home</div>
       <div class="flex items-center gap-8">
+        <button class="streak-pill" id="streakPill" onclick="explainStreak()" aria-label="Streak"><i class="fas fa-fire"></i><span id="streakCount">1</span></button>
         <button class="nav-btn-glass" onclick="openNotificationCenter()" aria-label="Notifikasi">
           <i class="far fa-bell"></i><span class="nav-badge hidden" id="notifBadge">0</span>
         </button>
@@ -970,7 +1043,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
         <div>
           <div class="flex justify-between items-center" style="padding:0 4px 12px">
             <h2 class="section-title" style="padding:0">Menu Cepat</h2>
-            <span class="t-foot muted" id="quickNavCurrentLabel">15 shortcut</span>
+            <span class="t-foot muted" id="quickNavCurrentLabel">16 shortcut</span>
           </div>
           <div class="card card-pad">
             <div class="app-grid">
@@ -982,6 +1055,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label" data-label="hub.links">Bookmarks</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label" data-label="hub.countdown">Countdown</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-wallet', 'Wallet')"><span class="icon-tile" style="background:linear-gradient(160deg,#1C1C1E,#3A3A3C)"><i class="fas fa-wallet"></i></span><span class="app-label" data-label="hub.wallet">Wallet</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Kas')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Bukti Kas</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Selisih Kas</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label" data-label="work.notes">Catatan Kerja</span></button>
@@ -992,6 +1066,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             </div>
           </div>
         </div>
+
+        <div id="dashUpcomingTop" class="hidden"></div>
 
         <!-- Stats -->
         <div class="stat-grid">
@@ -1012,7 +1088,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <div id="dashTodayAgendaList" class="list" style="box-shadow:none; border:0; max-height:240px; overflow-y:auto"></div>
             <div class="flex gap-8 mt-12">
               <button class="btn btn-gray btn-sm flex-1" onclick="switchTab('tab-hub'); switchHubSubTab('sub-todo');">Buka To-Do</button>
-              <button class="btn btn-tinted btn-sm" onclick="shareDailyDigest()" title="Kirim ringkasan ke Gmail"><i class="fas fa-envelope"></i> Gmail</button>
             </div>
           </div>
 
@@ -1036,7 +1111,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <button onclick="submitQuickNote()" class="btn btn-dark btn-block mt-8">Simpan Catatan</button>
           </div>
 
-          <div class="card card-pad">
+          <div id="dashUpcomingSlot" class="hidden"></div>
+          <div class="card card-pad" id="dashUpcomingCard">
             <div class="card-head">
               <div class="widget-title c-purple"><i class="fas fa-hourglass-half"></i> Event Terdekat</div>
               <button class="link-btn t-foot" onclick="navigateFromQuickMenu('tab-hub','sub-countdown','Countdown')">Semua</button>
@@ -1082,7 +1158,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
           <div class="flex gap-8 hidden" id="galleryHeadActions">
             <button type="button" onclick="toggleGallerySelect()" id="gallerySelectBtn" class="btn btn-gray btn-sm">Pilih</button>
-            <button type="button" onclick="document.getElementById('galleryFileInput').click()" class="btn btn-filled btn-sm"><i class="fas fa-plus"></i> Foto</button>
+            <button type="button" onclick="galleryAddClick()" class="btn btn-filled btn-sm"><i class="fas fa-plus"></i> Foto</button>
           </div>
         </div>
         <div class="subnav">
@@ -1139,13 +1215,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                   </select>
                 </div>
                 <div class="row" style="background:transparent">
-                  <span class="icon-tile bg-orange"><i class="fas fa-gauge-high"></i></span>
-                  <div class="flex-1"><div class="row-title">Kecepatan</div></div>
-                  <select id="musicRateSelect" onchange="setPlaybackRate(this.value)" class="select" style="width:auto; padding:8px 30px 8px 12px; font-size:14px">
-                    <option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option>
-                  </select>
-                </div>
-                <div class="row" style="background:transparent">
                   <span class="icon-tile bg-pink"><i class="fas fa-window-minimize"></i></span>
                   <div class="flex-1"><div class="row-title">Floating Mini Player</div><div class="row-sub">Audio tetap berjalan saat disembunyikan</div></div>
                   <label class="switch"><input type="checkbox" id="btnToggleFloatingDock" onchange="toggleFloatingMusicDockSetting()"><span class="slider"></span></label>
@@ -1193,12 +1262,14 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
         <!-- GALERI -->
         <div id="sub-gallery" class="media-sub hidden stack-16">
           <input type="file" id="galleryFileInput" accept="image/*" multiple class="hidden" onchange="onGalleryPicked(event)">
+          <input type="file" id="vaultFileInput" accept="image/*" multiple class="hidden" onchange="onVaultPicked(event)">
           <div class="search-bar"><i class="fas fa-magnifying-glass"></i><input type="text" id="gallerySearch" class="field" placeholder="Cari keterangan, lokasi, album, tanggal…" oninput="renderGallery()"></div>
           <div class="seg" id="galleryViewSeg">
             <button class="active" data-v="library" onclick="setGalleryView('library')">Pustaka</button>
             <button data-v="albums" onclick="setGalleryView('albums')">Album</button>
             <button data-v="places" onclick="setGalleryView('places')">Tempat</button>
             <button data-v="favorites" onclick="setGalleryView('favorites')">Favorit</button>
+            <button data-v="hidden" onclick="setGalleryView('hidden')"><i class="fas fa-lock" style="font-size:11px"></i> Tersembunyi</button>
           </div>
           <div id="galleryContext" class="hidden"></div>
           <div id="galleryBody"></div>
@@ -1207,6 +1278,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <div class="flex gap-8">
               <button class="btn btn-gray btn-sm" onclick="addSelectedToAlbum()" title="Tambah ke album"><i class="fas fa-rectangle-history fa-images"></i></button>
               <button class="btn btn-gray btn-sm" onclick="favoriteSelected()" title="Favorit"><i class="far fa-heart"></i></button>
+              <button class="btn btn-gray btn-sm" onclick="hideGalleryPhotos(gallerySelectedIds())" title="Sembunyikan"><i class="fas fa-eye-slash"></i></button>
               <button class="btn btn-tinted btn-sm" onclick="shareGalleryPhotos(gallerySelectedIds())" title="Bagikan"><i class="fas fa-arrow-up-from-bracket"></i></button>
               <button class="btn btn-danger-tinted btn-sm" onclick="deleteGalleryPhotos(gallerySelectedIds())" title="Hapus"><i class="fas fa-trash"></i></button>
             </div>
@@ -1224,6 +1296,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links" data-label="hub.links">Bookmarks</button>
             <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown" data-label="hub.countdown">Countdown</button>
             <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus" data-label="hub.focus">Focus</button>
+            <button onclick="switchHubSubTab('sub-wallet')" id="btn-sub-wallet" data-label="hub.wallet">Wallet</button>
           </div>
         </div>
 
@@ -1232,7 +1305,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <div class="smart-grid" id="taSmartGrid"></div>
           <div class="flex gap-8 items-center">
             <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input id="ta-search" type="text" class="field" placeholder="Cari tugas…" oninput="taRenderNotes()"></div>
-            <button class="btn btn-tinted btn-sm" onclick="shareTaskList()" title="Kirim daftar ke Gmail"><i class="fas fa-envelope"></i></button>
+            <button class="btn btn-tinted btn-sm" onclick="pdfTaskList()" title="Ekspor PDF"><i class="fas fa-file-pdf"></i></button>
           </div>
           <div class="flex justify-between items-center" style="padding:0 4px">
             <h2 class="t-title2" id="taListTitle" style="color:var(--blue)">To Do</h2>
@@ -1276,7 +1349,16 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <div id="cd-list-container" class="grid-auto" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
         </div>
 
-        <!-- Focus & Sleep (pindah ke Hub) -->
+        <!-- Wallet -->
+        <div id="sub-wallet" class="hub-sub-content hidden stack-16">
+          <div class="flex justify-between items-center" style="padding:0 4px">
+            <span class="t-foot muted" id="walletCount">0 kartu</span>
+            <button class="btn btn-filled btn-sm" onclick="openWalletEditor()"><i class="fas fa-plus"></i> Kartu</button>
+          </div>
+          <div id="walletStack" class="wallet-stack"></div>
+        </div>
+
+        <!-- Focus & Sleep (di Planner) -->
         <div id="sub-focus" class="hub-sub-content hidden">
           <div class="split">
             <div class="sticky-col">
@@ -1322,7 +1404,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                 <div class="flex justify-between items-center" style="padding:0 4px 10px">
                   <h2 class="t-title3">Riwayat Fokus & Tidur</h2>
                   <div class="flex gap-6">
-                    <button type="button" onclick="shareFocusReport()" class="btn btn-tinted btn-xs"><i class="fas fa-envelope"></i> Gmail</button>
+                    <button type="button" onclick="pdfFocusReport()" class="btn btn-tinted btn-xs"><i class="fas fa-file-pdf"></i> PDF</button>
                     <button type="button" onclick="clearFocusHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
                   </div>
                 </div>
@@ -1364,7 +1446,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <div class="select-bar hidden" id="photoSelectBar">
             <span class="t-sub semibold" id="photoSelCount">0 dipilih</span>
             <div class="flex gap-8">
-              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-envelope"></i> Kirim</button>
+              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
               <button class="btn btn-gray btn-sm" onclick="downloadPhotos(selectedPhotoIds())"><i class="fas fa-download"></i></button>
               <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(selectedPhotoIds())"><i class="fas fa-trash"></i></button>
             </div>
@@ -1401,7 +1483,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                   <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
                   <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
                 </div>
-                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
+                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="pdfKasReport()"><i class="fas fa-file-pdf"></i> Laporan PDF</button>
               </div>
             </div>
             <div>
@@ -1483,9 +1565,9 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <!-- Profile -->
             <div class="list">
               <div class="row" style="padding:16px">
-                <span class="avatar" style="width:58px;height:58px;font-size:24px;background:linear-gradient(135deg,#007AFF,#5856D6)"><i class="fab fa-apple"></i></span>
+                <span class="avatar app-logo" style="width:58px;height:58px"><img src="icons/icon-192.png" alt=""></span>
                 <div class="flex-1">
-                  <div class="t-title3" data-label="app.name">Hadzmi Hub</div>
+                  <div class="t-title3" data-label="app.name">Hadzmi Assistant</div>
                   <div class="t-foot muted truncate" id="settingsAccountEmail">—</div>
                 </div>
               </div>
@@ -1523,26 +1605,11 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                 </div>
                 <button class="row" onclick="sendTestNotification()"><span class="icon-tile bg-green"><i class="fas fa-paper-plane"></i></span><div class="flex-1 row-title">Kirim Notifikasi Tes</div><i class="fas fa-chevron-right chev"></i></button>
               </div>
-              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Hub terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
-            </div>
-
-            <!-- Gmail -->
-            <div>
-              <div class="section-label">Kirim ke Gmail</div>
-              <div class="form-list">
-                <div class="fl-row"><span class="fl-label">Penerima</span><input type="email" id="gmailDefaultTo" placeholder="email@gmail.com (opsional)" onchange="saveGmailDefault(this.value)"></div>
-              </div>
-              <div class="section-foot">Alamat default untuk tombol <i class="fas fa-envelope"></i> Gmail di Task, Notes, Countdown, Bookmark, Kas, dan laporan Focus/Sleep.</div>
+              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Assistant terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
             </div>
           </div>
 
           <div class="stack-24">
-            <!-- Nama Menu -->
-            <div>
-              <div class="flex justify-between items-center" style="padding:0 16px 7px"><span class="section-label" style="padding:0">Nama Menu</span><button class="link-btn t-foot" onclick="resetCustomLabels()">Kembalikan default</button></div>
-              <div class="form-list" id="labelEditor"></div>
-              <div class="section-foot">Ketik nama baru lalu tekan Return/Done. Kosongkan untuk kembali ke nama bawaan. Tersinkron ke semua perangkat.</div>
-            </div>
 
             <!-- Storage -->
             <div>
@@ -1615,7 +1682,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               </form>
             </div>
 
-            <div class="section-foot center">Hadzmi Hub · iOS 26 Light · v3.0</div>
+            <div class="section-foot center">Hadzmi Assistant · iOS 26 Light · v3.0</div>
           </div>
         </div>
       </section>
@@ -1639,8 +1706,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
     <!-- TAB BAR -->
     <nav class="tabbar" id="mainTabBar">
       <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span data-label="tab.home">Home</span></div>
-      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-photo-film"></i><span data-label="tab.music">Media</span></div>
-      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Hub</span></div>
+      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-circle-play"></i><span data-label="tab.music">Media</span></div>
+      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Planner</span></div>
       <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span data-label="tab.work">Kerja</span></div>
       <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span data-label="tab.settings">Settings</span></div>
     </nav>
@@ -1846,13 +1913,14 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <button class="btn btn-tinted btn-sm" onclick="searchSyncedLyrics()"><i class="fas fa-magnifying-glass"></i> Cari Otomatis</button>
           <button class="btn btn-gray btn-sm" onclick="startTapSync()"><i class="fas fa-hand-pointer"></i> Sinkron Tap</button>
         </div>
+        <button class="link-btn t-foot hidden mt-8" id="btnClearLyricSync" onclick="clearLyricSync()" style="align-self:center"><i class="fas fa-eraser"></i> Hapus waktu sinkron (jadi lirik biasa, bisa di-tap ulang)</button>
         <div id="lyricsTapSync" class="hidden col mt-12" style="flex:1; min-height:0">
           <div class="flex justify-between items-center"><span class="badge tint-pink" id="tapSyncProgress">Baris 1/1</span><span class="t-foot muted tabular" id="tapSyncTime">00:00</span></div>
           <div class="tap-lines" id="tapSyncLines"></div>
           <button class="tap-big" id="tapSyncBtn" onclick="tapSyncStamp()">TAP<small>saat baris ini mulai dinyanyikan</small></button>
           <div class="grid-3 mt-8">
-            <button class="btn btn-gray btn-sm" onclick="tapSyncUndo()"><i class="fas fa-rotate-left"></i> Mundur</button>
-            <button class="btn btn-gray btn-sm" onclick="togglePlayMusic()"><i class="fas fa-play"></i>/<i class="fas fa-pause"></i></button>
+            <button class="btn btn-gray btn-sm" onclick="tapSyncUndo()"><i class="fas fa-rotate-left"></i> Mundur 1</button>
+            <button class="btn btn-gray btn-sm" onclick="tapSyncRestart()"><i class="fas fa-backward-fast"></i> Ulang dari Awal</button>
             <button class="btn btn-danger-tinted btn-sm" onclick="cancelTapSync()">Batal</button>
           </div>
         </div>
@@ -1958,6 +2026,129 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
     </div>
   </div>
 
+  <!-- Gudang: upload -->
+  <div class="backdrop center-md" id="sheetDocUpload" onclick="if(event.target===this) cancelDocUpload()">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="cancelDocUpload()">Batal</button>
+        <div class="sh-title" id="docUploadTitle">Upload File</div>
+        <button class="btn-plain sh-right" id="docUploadBtn" style="font-weight:600" onclick="saveDocUpload()">Upload</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <div class="list" id="docUploadList" style="box-shadow:none"></div>
+        <div>
+          <div class="form-list">
+            <div class="fl-row"><span class="fl-label">Kategori</span><input type="text" id="docFolderInput" list="docFolderList" placeholder="Mis. Materi BRI" oninput="renderDocFolderSuggest()"></div>
+            <div class="fl-row"><span class="fl-label">Simpan di</span><select id="docStoreSelect" class="store-select"></select></div>
+          </div>
+          <datalist id="docFolderList"></datalist>
+          <div class="chips wrap mt-8" id="docFolderSuggest" style="overflow:visible"></div>
+          <div class="section-foot" id="docFolderHint">Nama kategori yang sama otomatis masuk ke kelompok yang sama.</div>
+        </div>
+        <div class="progress hidden" id="docUploadProgress"><div style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Galeri: editor (putar & potong) -->
+  <div class="backdrop" id="sheetPhotoEdit">
+    <div class="sheet" style="max-width:820px; height:96%; background:#111; color:#fff">
+      <div class="sheet-head" style="color:#fff">
+        <button class="btn-plain sh-left" style="color:#fff" onclick="closePhotoEditor()">Batal</button>
+        <div class="sh-title">Edit Foto</div>
+        <button class="btn-plain sh-right" id="peSaveBtn" style="font-weight:600; color:#FFD60A" onclick="savePhotoEdit()">Simpan</button>
+      </div>
+      <div class="pe-stage" id="peStage"><canvas id="peCanvas"></canvas><div class="pe-crop" id="peCrop"><span class="pe-h tl"></span><span class="pe-h tr"></span><span class="pe-h bl"></span><span class="pe-h br"></span><span class="pe-grid"></span></div></div>
+      <div class="pe-tools">
+        <div class="chips no-scrollbar" id="peAspect" style="justify-content:center">
+          <button class="chip active" data-a="free">Bebas</button><button class="chip" data-a="1">1:1</button><button class="chip" data-a="1.3333">4:3</button><button class="chip" data-a="0.75">3:4</button><button class="chip" data-a="1.7778">16:9</button><button class="chip" data-a="0.5625">9:16</button>
+        </div>
+        <div class="flex justify-center gap-12 mt-8">
+          <button class="gv-btn" onclick="peRotate(-90)" title="Putar kiri"><i class="fas fa-rotate-left"></i></button>
+          <button class="gv-btn" onclick="peRotate(90)" title="Putar kanan"><i class="fas fa-rotate-right"></i></button>
+          <button class="gv-btn" onclick="peReset()" title="Reset"><i class="fas fa-arrows-rotate"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Galeri Tersembunyi: viewer -->
+  <div class="gviewer vault-viewer" id="vaultViewer">
+    <div class="gv-top">
+      <button class="gv-btn" onclick="closeVaultViewer()"><i class="fas fa-chevron-left"></i></button>
+      <div class="gv-title"><div class="semibold"><i class="fas fa-lock" style="font-size:12px"></i> Tersembunyi</div><div id="vvDate" class="t-cap" style="opacity:.75"></div></div>
+      <button class="gv-btn" onclick="openVaultItemActions()"><i class="fas fa-ellipsis"></i></button>
+    </div>
+    <div class="gv-stage" id="vvStage"><img id="vvImg" alt=""><span class="spinner" id="vvSpin"></span></div>
+    <div class="gv-bottom">
+      <button class="gv-btn" onclick="shareVaultItem()"><i class="fas fa-arrow-up-from-bracket"></i></button>
+      <button class="gv-btn" onclick="unhideVaultItems([vaultViewerId])" title="Tampilkan lagi"><i class="fas fa-eye"></i></button>
+      <button class="gv-btn" onclick="deleteVaultItems([vaultViewerId])"><i class="far fa-trash-can"></i></button>
+    </div>
+  </div>
+
+  <!-- Wallet: tambah / edit kartu -->
+  <div class="backdrop center-md" id="sheetWalletEdit" onclick="if(event.target===this) closeSheet('sheetWalletEdit')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeSheet('sheetWalletEdit')">Batal</button>
+        <div class="sh-title" id="walletEditTitle">Kartu Baru</div>
+        <button class="btn-plain sh-right" id="walletSaveBtn" style="font-weight:600" onclick="saveWalletCard()">Simpan</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <input type="hidden" id="wcId">
+        <div id="wcPreview"></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Nama kartu *</span><input type="text" id="wcName" placeholder="Mis. Member Indomaret" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Penerbit</span><input type="text" id="wcIssuer" placeholder="Mis. Indomaret, Gramedia" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Nomor</span><input type="text" id="wcNumber" placeholder="Nomor member / kartu" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Atas nama</span><input type="text" id="wcHolder" placeholder="Nama di kartu" oninput="renderWalletPreview()"></div>
+        </div>
+        <div><div class="section-label" style="padding:0 4px 8px">Warna kartu</div><div class="chips wrap" id="wcColors" style="overflow:visible"></div></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Jenis kode</span><select id="wcCodeType" onchange="renderWalletPreview()"><option value="qr">QR Code</option><option value="code128">Barcode (Code 128)</option><option value="ean13">Barcode EAN-13</option><option value="none">Tanpa kode</option></select></div>
+          <div class="fl-row"><span class="fl-label">Isi kode</span><input type="text" id="wcCode" placeholder="Teks / angka di QR atau barcode" oninput="renderWalletPreview()"></div>
+        </div>
+        <div class="grid-2">
+          <button class="btn btn-gray btn-sm" type="button" onclick="$('wcCode').value = $('wcNumber').value; renderWalletPreview()"><i class="fas fa-copy"></i> Pakai nomor kartu</button>
+          <button class="btn btn-tinted btn-sm" type="button" onclick="$('wcScanInput').click()"><i class="fas fa-qrcode"></i> Baca QR dari foto</button>
+        </div>
+        <input type="file" id="wcScanInput" accept="image/*" class="hidden" onchange="scanQrFromPhoto(event)">
+        <div class="form-list">
+          <input type="file" id="wcFrontInput" accept="image/*" class="hidden" onchange="pickWalletImage(event, 'front')">
+          <input type="file" id="wcBackInput" accept="image/*" class="hidden" onchange="pickWalletImage(event, 'back')">
+          <button type="button" class="fl-row" style="width:100%" onclick="$('wcFrontInput').click()"><span class="icon-tile bg-blue"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcFrontLabel" style="text-align:left">Foto sisi depan (opsional)</span><i class="fas fa-camera chev"></i></button>
+          <button type="button" class="fl-row" style="width:100%" onclick="$('wcBackInput').click()"><span class="icon-tile bg-gray"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcBackLabel" style="text-align:left">Foto sisi belakang (opsional)</span><i class="fas fa-camera chev"></i></button>
+          <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="wcNote" placeholder="Opsional"></div>
+        </div>
+        <button class="btn btn-danger-tinted btn-block hidden" id="wcDeleteBtn" onclick="deleteWalletCard($('wcId').value)">Hapus Kartu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wallet: detail kartu -->
+  <div class="backdrop center-md" id="sheetWalletCard" onclick="if(event.target===this) closeWalletCard()">
+    <div class="sheet" style="background:#F2F2F7">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeWalletCard()">Tutup</button>
+        <div class="sh-title" id="wdTitle">Kartu</div>
+        <button class="btn-plain sh-right" onclick="openWalletEditor(walletOpenId)">Edit</button>
+      </div>
+      <div class="sheet-body stack-16" id="wdBody"></div>
+    </div>
+  </div>
+
+  <!-- Wallet: mode scan (layar putih, kode besar) -->
+  <div class="wallet-scan hidden" id="walletScan" onclick="closeWalletScan()">
+    <div class="ws-name" id="wsName"></div>
+    <div class="ws-code" id="wsCode"></div>
+    <div class="ws-text" id="wsText"></div>
+    <div class="ws-hint"><i class="fas fa-sun"></i> Naikkan kecerahan layar agar mudah di-scan · tap untuk menutup</div>
+  </div>
+
   <!-- Panduan penyimpanan -->
   <div class="backdrop center-md" id="sheetGuide" onclick="if(event.target===this) closeSheet('sheetGuide')">
     <div class="sheet">
@@ -1984,6 +2175,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
       <button class="gv-btn" onclick="shareGalleryPhotos([galleryViewerId])"><i class="fas fa-arrow-up-from-bracket"></i></button>
       <button class="gv-btn" id="gvFav" onclick="toggleGalleryFav(galleryViewerId)"><i class="far fa-heart"></i></button>
       <button class="gv-btn" id="gvInfoBtn" onclick="toggleGalleryInfo()"><i class="fas fa-circle-info"></i></button>
+      <button class="gv-btn" onclick="openPhotoEditor(galleryViewerId)" title="Edit"><i class="fas fa-crop-simple"></i></button>
       <button class="gv-btn" onclick="deleteGalleryPhotos([galleryViewerId])"><i class="far fa-trash-can"></i></button>
     </div>
   </div>
@@ -2092,6 +2284,9 @@ let appState = {
   customLabels: readLS('app_custom_labels', {}),
   galleryPhotos: readLS('app_gallery_photos', []),
   galleryAlbums: readLS('app_gallery_albums', []),
+  visitDays: readLS('app_visit_days', []),
+  vault: readLS('app_vault', null),
+  walletCards: readLS('app_wallet_cards', []),
   showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
 };
 
@@ -2099,7 +2294,7 @@ let firebaseDbRef = null;
 let firebaseAuth = null;
 let isFirebaseReady = false;
 let appStarted = false;
-let defaultDocTitle = "Hadzmi Hub";
+let defaultDocTitle = "Hadzmi Assistant";
 
 try {
   if (typeof firebase !== 'undefined') {
@@ -2124,6 +2319,14 @@ function safeUrl(url) {
   return '#';
 }
 function $(id) { return document.getElementById(id); }
+/** Teks → HTML aman dengan link otomatis (http(s)://, www., domain.com/…) yang bisa diklik. */
+function linkify(text) {
+  return esc(text).replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+|\b[a-z0-9-]+\.(?:com|id|co\.id|net|org|io|app|dev|me|ly|gl|link|ai|xyz)(?:\/[^\s<]*)?)/gi, m => {
+    const trail = (m.match(/[.,!?;:)\]]+$/) || [''])[0]; const url = m.slice(0, m.length - trail.length);
+    const href = /^https?:/i.test(url) ? url : 'https://' + url;
+    return `<a href="${href}" target="_blank" rel="noopener" class="auto-link" onclick="event.stopPropagation()">${url}</a>${trail}`;
+  });
+}
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 function getWIBDate() {
@@ -2325,6 +2528,9 @@ function syncToLocalStorageOnly() {
   writeLS('app_custom_labels', appState.customLabels || {});
   writeLS('app_gallery_photos', appState.galleryPhotos || []);
   writeLS('app_gallery_albums', appState.galleryAlbums || []);
+  writeLS('app_visit_days', appState.visitDays || []);
+  writeLS('app_vault', appState.vault || null);
+  writeLS('app_wallet_cards', appState.walletCards || []);
   writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
 }
 
@@ -2357,6 +2563,9 @@ function applyRemoteSnapshot(val) {
   appState.customLabels = val.customLabels || {};
   appState.galleryPhotos = val.galleryPhotos || [];
   appState.galleryAlbums = val.galleryAlbums || [];
+  appState.visitDays = val.visitDays || [];
+  appState.vault = val.vault || null;
+  appState.walletCards = val.walletCards || [];
   if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
 }
 
@@ -2370,6 +2579,7 @@ function attachRealtimeSync() {
     const val = snapshot.val();
     if (val) {
       applyRemoteSnapshot(val);
+      recordVisit(true);
       syncToLocalStorageOnly();
       resyncCurrentSongIndex();
       applyFloatingMusicDockVisibility();
@@ -2422,18 +2632,15 @@ function setConnectionStatus(state) {
 let currentTabId = 'tab-dashboard';
 // ---------- NAMA MENU (bisa diganti di Settings → Nama Menu) ----------
 const LABEL_GROUPS = [
-  ['Umum', [['app.name', 'Hadzmi Hub', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
-  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Hub'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
+  ['Umum', [['app.name', 'Hadzmi Assistant', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
+  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Planner'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
   ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
-  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus']]],
+  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus'], ['hub.wallet', 'Wallet']]],
   ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Bukti Kas'], ['work.kas', 'Selisih Kas'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
 ];
 const LABEL_DEFAULTS = {};
 LABEL_GROUPS.forEach(([, items]) => items.forEach(([k, d]) => { LABEL_DEFAULTS[k] = d; }));
-function L(key) {
-  const c = appState.customLabels && appState.customLabels[key];
-  return (c && String(c).trim()) || LABEL_DEFAULTS[key] || key;
-}
+function L(key) { return LABEL_DEFAULTS[key] || key; }
 function applyLabels() {
   document.querySelectorAll('[data-label]').forEach(el => { const t = L(el.dataset.label); if (el.textContent !== t) el.textContent = t; });
   if ($('hubTitle') && currentHubSub) $('hubTitle').textContent = L(HUB_KEYS[currentHubSub]);
@@ -2465,11 +2672,12 @@ async function resetCustomLabels() {
   const box = $('labelEditor'); if (box) box.innerHTML = ''; renderLabelEditor();
   showToast('Nama menu dikembalikan ke bawaan.');
 }
-const HUB_KEYS = { 'sub-todo': 'hub.todo', 'sub-notes': 'hub.notes', 'sub-links': 'hub.links', 'sub-countdown': 'hub.countdown', 'sub-focus': 'hub.focus' };
+const HUB_KEYS = { 'sub-todo': 'hub.todo', 'sub-notes': 'hub.notes', 'sub-links': 'hub.links', 'sub-countdown': 'hub.countdown', 'sub-focus': 'hub.focus', 'sub-wallet': 'hub.wallet' };
 const WORK_KEYS = { 'sub-photos': 'work.photos', 'sub-kas': 'work.kas', 'sub-worknotes': 'work.notes', 'sub-docs': 'work.docs', 'sub-upload': 'work.upload', 'sub-contacts': 'work.contacts' };
 let currentHubSub = 'sub-notes', currentWorkSub = 'sub-photos', currentMediaSub = 'sub-music';
 const MEDIA_KEYS = { 'sub-music': 'media.music', 'sub-gallery': 'media.gallery' };
 function switchMediaSub(subId) {
+  if (subId !== 'sub-gallery' && typeof vaultKey !== 'undefined' && vaultKey) lockVault();
   document.querySelectorAll('.media-sub').forEach(el => el.classList.toggle('hidden', el.id !== subId));
   setSegActive(['sub-music', 'sub-gallery'], subId);
   currentMediaSub = subId;
@@ -2481,6 +2689,7 @@ function switchMediaSub(subId) {
 }
 
 function switchTab(tabId) {
+  if (tabId !== 'tab-music' && typeof vaultKey !== 'undefined' && vaultKey) lockVault();
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.ios-tab-item').forEach(btn => btn.classList.remove('active'));
   const selectedTab = $(tabId);
@@ -2503,11 +2712,12 @@ function setSegActive(ids, activeId) {
 function switchHubSubTab(subId) {
   document.querySelectorAll('.hub-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
-  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus'], subId);
+  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus', 'sub-wallet'], subId);
   currentHubSub = subId;
   if ($('hubTitle')) $('hubTitle').textContent = L(HUB_KEYS[subId] || 'tab.hub');
   updateNavSmallTitle();
   if (subId === 'sub-focus') renderSleepLineChart();
+  if (subId === 'sub-wallet') renderWallet();
 }
 
 function switchWorkFinSubTab(subId) {
@@ -2551,6 +2761,7 @@ const SEARCH_MAP = [
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
+  { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
   { key: 'work.kas', label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
   { key: 'work.photos', label: 'Bukti Kas', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
   { key: 'work.notes', label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
@@ -2581,7 +2792,7 @@ function renderSearchSuggestions(query) {
 function renderAllModules() {
   const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
     renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
-    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor, renderGallery];
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor, renderGallery, renderStreak, renderWallet];
   fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
 }
 
@@ -2590,6 +2801,39 @@ function initNavbarScroll() {
   const root = $('personalAppRoot'), nav = $('topNavbar');
   if (!root || !nav) return;
   root.addEventListener('scroll', () => nav.classList.toggle('scrolled', root.scrollTop > 36), { passive: true });
+}
+
+// ---------- STREAK (hari berturut-turut membuka aplikasi) ----------
+function recordVisit(fromRemote) {
+  const today = wibDateStr();
+  const days = appState.visitDays || (appState.visitDays = []);
+  if (!days.includes(today)) {
+    days.push(today); days.sort();
+    if (days.length > 400) days.splice(0, days.length - 400);
+    if (fromRemote) setTimeout(saveStateToLocal, 50); else saveStateToLocal();
+  }
+  renderStreak();
+}
+function streakStats() {
+  const set = new Set(appState.visitDays || []);
+  let cur = 0, d = set.has(wibDateStr()) ? 0 : -1;
+  while (set.has(wibAddDays(d))) { cur++; d--; }
+  let best = 0, run = 0, prev = null;
+  Array.from(set).sort().forEach(day => {
+    run = prev && addDaysToDateStr(prev, 1) === day ? run + 1 : 1;
+    best = Math.max(best, run); prev = day;
+  });
+  return { cur, best, total: set.size };
+}
+function renderStreak() {
+  const el = $('streakCount'); if (!el) return;
+  const { cur } = streakStats(); el.textContent = cur;
+  $('streakPill').classList.toggle('cold', cur < 2);
+}
+function explainStreak() {
+  const { cur, best, total } = streakStats();
+  const last7 = Array.from({ length: 7 }, (_, i) => wibAddDays(i - 6)).map(d => (appState.visitDays || []).includes(d) ? '🔥' : '·').join(' ');
+  iosAlert({ title: `🔥 ${cur} hari berturut-turut`, message: `Kamu membuka ${L('app.name')} ${cur} hari beruntun.\nRekor terbaik: ${best} hari · Total hari aktif: ${total}\n\n7 hari terakhir:\n${last7}\n\nBuka minimal sekali sehari agar streak tidak putus!` });
 }
 
 /* ---- 02-auth.js ---- */
@@ -2791,7 +3035,7 @@ function quickLock() {
 async function lockAppNow(auto) {
   if (!APP_AUTH.enabled) return showToast('Kunci login sedang dinonaktifkan di konfigurasi.', false);
   if (auto !== true) {
-    const ok = await iosConfirm('Kunci Hadzmi Hub?', 'Kamu perlu memasukkan sandi lagi untuk membuka di perangkat ini.', 'Kunci', true);
+    const ok = await iosConfirm('Kunci Hadzmi Assistant?', 'Kamu perlu memasukkan sandi lagi untuk membuka di perangkat ini.', 'Kunci', true);
     if (!ok) return;
   }
   performLock(auto === true ? 'Sesi berakhir. Silakan login kembali.' : '');
@@ -2811,14 +3055,14 @@ function checkSessionExpiry() {
   const rec = getSessionRecord();
   if (!rec || Date.now() >= rec.expiresAt) performLock('Sesi harian berakhir (00:00 WIB). Silakan login kembali.');
   else if (rec.expiresAt - Date.now() < 10 * 60 * 1000 && typeof pushNotification === 'function') {
-    pushNotification({ key: 'session_' + rec.expiresAt, title: 'Sesi segera berakhir', body: 'Hadzmi Hub akan terkunci otomatis dalam < 10 menit.', icon: 'fa-lock', color: 'bg-gray', system: false });
+    pushNotification({ key: 'session_' + rec.expiresAt, title: 'Sesi segera berakhir', body: 'Hadzmi Assistant akan terkunci otomatis dalam < 10 menit.', icon: 'fa-lock', color: 'bg-gray', system: false });
   }
 }
 
 function openAccountMenu() {
   const rec = getSessionRecord();
   openActionSheet({
-    title: isPinMode() ? 'Hadzmi Hub' : ((rec && rec.email) || 'Hadzmi Hub'),
+    title: isPinMode() ? 'Hadzmi Assistant' : ((rec && rec.email) || 'Hadzmi Assistant'),
     message: APP_AUTH.enabled ? `Sesi aktif hingga ${formatExpiry(rec && rec.expiresAt)}` : 'Kunci login nonaktif',
     actions: [
       { text: 'Kunci Sekarang', icon: 'fas fa-lock', destructive: true, onClick: () => lockAppNow() },
@@ -2983,6 +3227,12 @@ function renderDashboardUpcoming() {
   const today = wibDateStr();
   const items = (appState.countdowns || []).filter(c => !c.isArchived && c.tanggal >= today)
     .sort((a, b) => (a.tanggal + (a.jam || '')).localeCompare(b.tanggal + (b.jam || ''))).slice(0, 3);
+  // Ada event → kartu pindah ke atas (di bawah Menu Cepat); tidak ada → kembali ke grid widget
+  const card = $('dashUpcomingCard'), top = $('dashUpcomingTop'), slot = $('dashUpcomingSlot');
+  if (card && top && slot) {
+    if (items.length && card.parentElement !== top) { top.appendChild(card); top.classList.remove('hidden'); }
+    else if (!items.length && card.parentElement === top) { slot.parentElement.insertBefore(card, slot); top.classList.add('hidden'); }
+  }
   if (!items.length) { box.innerHTML = `<div class="empty" style="padding:18px 8px"><i class="fas fa-calendar-plus"></i><div class="e-sub">Belum ada event mendatang.</div></div>`; return; }
   box.innerHTML = items.map(c => {
     const rel = formatRelativeTime(c.tanggal);
@@ -3593,8 +3843,16 @@ function highlightLrc(cur) {
     box.dataset.active = String(idx);
     box.querySelectorAll('.lrc-line').forEach((el, i) => { el.classList.toggle('active', i === idx); el.classList.toggle('past', i < idx); });
     const act = box.querySelector('.lrc-line.active');
-    if (act && box.offsetParent !== null) box.scrollTo({ top: act.offsetTop - box.clientHeight / 2.6, behavior: 'smooth' });
+    if (act && box.offsetParent !== null) {
+      const top = box.scrollTop + (act.getBoundingClientRect().top - box.getBoundingClientRect().top) - (box.clientHeight - act.offsetHeight) / 2;
+      box.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } else if (idx < 0) box.scrollTo({ top: 0 });
   });
+  // Mini player & widget Home menampilkan baris yang sedang dinyanyikan
+  const lineText = idx >= 0 && lines[idx] ? lines[idx].text : '';
+  const dockA = $('dockSongArtist'), dashA = $('dashNpArtist');
+  if (lineText && isMusicPlaying) { if (dockA) dockA.textContent = '♪ ' + lineText; if (dashA) dashA.textContent = '♪ ' + lineText; }
+  else if (idx !== lastLrcIdx && song) { const art = song.artist || song.category || ''; if (dockA) dockA.textContent = art; if (dashA) dashA.textContent = art; }
   lastLrcIdx = idx;
 }
 
@@ -3615,6 +3873,7 @@ function openLyricsFullScreenModal() {
   $('lyricsModalSongTitle').textContent = `${song.title} (${song.artist || song.category})`;
   $('lyricsTextInput').value = song.lyrics || '';
   renderLyricsInto($('lyricsReadOnlyContainer'), song, '(Belum ada lirik untuk lagu ini. Klik "Edit" untuk menambahkan lirik baru)');
+  if ($('btnClearLyricSync')) $('btnClearLyricSync').classList.toggle('hidden', !getLrcLines(song));
   isLyricsEditing = false; applyLyricsModeUI();
   openSheet('musicLyricsModal');
   highlightLrc(audioEngine.currentTime || 0);
@@ -3844,7 +4103,6 @@ function openSongActions(id) {
     : { text: 'Simpan Offline', icon: 'fas fa-circle-down', onClick: () => saveSongOffline(id) });
   if (isCur) actions.push({ text: 'Lirik', icon: 'fas fa-quote-left', onClick: () => { closeFullPlayer(); openLyricsFullScreenModal(); } });
   actions.push({ text: 'Edit Lagu', icon: 'fas fa-pen', onClick: () => { closeFullPlayer(); editMusicSong(id); } });
-  actions.push({ text: 'Bagikan via Gmail', icon: 'fas fa-envelope', onClick: () => shareSong(id) });
   actions.push({ text: 'Hapus dari Library', icon: 'fas fa-trash', destructive: true, onClick: () => deleteMusicSong(id) });
   openActionSheet({ title: song.title, message: song.artist || song.category, actions });
 }
@@ -4114,6 +4372,7 @@ async function searchSyncedLyrics() {
 }
 function afterLyricsChanged(song) {
   saveStateToLocal();
+  if ($('btnClearLyricSync')) $('btnClearLyricSync').classList.toggle('hidden', !getLrcLines(song));
   $('lyricsTextInput').value = song.lyrics || '';
   renderLyricsInto($('lyricsReadOnlyContainer'), song, '(Belum ada lirik untuk lagu ini)');
   updateInlineLyricsContent(); renderMusicSongsList();
@@ -4155,6 +4414,18 @@ function tapSyncStamp() {
   tapIdx++; haptic(8);
   if (tapIdx >= tapLines.length) return finishTapSync();
   renderTapSync();
+}
+function tapSyncRestart() {
+  tapTimes = []; tapIdx = 0;
+  try { audioEngine.currentTime = 0; } catch (e) {}
+  if (!isMusicPlaying) togglePlayMusic();
+  renderTapSync(); showToast('Diulang dari awal — semua tap dihapus.');
+}
+async function clearLyricSync() {
+  const song = currentSong(); if (!song || !getLrcLines(song)) return;
+  if (!(await iosConfirm('Hapus waktu sinkron?', 'Lirik tetap ada tapi tidak lagi mengikuti nyanyian. Kamu bisa Sinkron Tap ulang.', 'Hapus Waktu', true))) return;
+  song.lyrics = song.lyrics.split(/\r?\n/).map(l => l.replace(/\[[^\]]*\]/g, '').trim()).filter(Boolean).join('\n');
+  afterLyricsChanged(song); showToast('Waktu sinkron dihapus.');
 }
 function tapSyncUndo() {
   if (!tapIdx) return;
@@ -4252,7 +4523,7 @@ function taRowHTML(item) {
       <button class="check ${isDone ? 'done' : ''} ${high && !isDone ? 'high' : ''} ${isProg ? 'prog' : ''}" onclick="taToggleDone('${id}', this)" aria-label="Tandai selesai"><i class="fas fa-check"></i></button>
       <div class="flex-1 tappable" onclick="taEditTask('${id}')" style="cursor:pointer">
         <div class="t-title">${high && !isDone ? '<span class="flag">!! </span>' : ''}${esc(item.title)}</div>
-        ${item.desc ? `<div class="t-notes clamp2">${esc(item.desc)}</div>` : ''}
+        ${item.desc ? `<div class="t-notes clamp2">${linkify(item.desc)}</div>` : ''}
         ${links.length ? `<div class="t-links" onclick="event.stopPropagation()">${links.slice(0, 3).map(l => `<a href="${safeUrl(l)}" target="_blank" rel="noopener" class="truncate"><i class="fas fa-link" style="font-size:11px"></i> ${esc(l.replace(/^https?:\/\//, ''))}</a>`).join('')}${links.length > 3 ? `<span class="t-cap muted">+${links.length - 3} link lainnya</span>` : ''}</div>` : ''}
         ${(dateText || isProg) ? `<div class="t-meta">
           ${dateText ? `<span class="${overdue ? 'overdue' : ''}"><i class="far fa-calendar"></i> ${esc(dateText)}</span>` : ''}
@@ -4355,7 +4626,6 @@ function taOpenActions(id) {
   if (item.status !== 'On Progress') actions.push({ text: 'Tandai In Progress', icon: 'fas fa-circle-half-stroke', onClick: () => taUpdateStatus(id, 'On Progress') });
   if (item.status) actions.push({ text: 'Kembalikan ke Pending', icon: 'far fa-circle', onClick: () => taUpdateStatus(id, '') });
   actions.push({ text: 'Edit Detail', icon: 'fas fa-pen', onClick: () => taEditTask(id) });
-  actions.push({ text: 'Kirim ke Gmail', icon: 'fas fa-envelope', onClick: () => shareTask(id) });
   actions.push({ text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => taDeleteNote(id) });
   openActionSheet({ title: item.title, message: item.deadline ? `Deadline: ${relativeDayLabel(item.deadline)}${item.time ? ' ' + item.time : ''}` : 'Tanpa deadline', actions });
 }
@@ -4499,12 +4769,12 @@ function renderNoteCards(coll, container, search, emptyIcon) {
           <span class="t-cap muted">${esc(note.date || '')}</span>
         </div>
         ${note.title ? `<div class="n-title">${esc(note.title)}</div>` : ''}
-        <div class="n-body">${esc(isLong ? note.content.slice(0, 180) + '…' : note.content)}</div>
+        <div class="n-body">${linkify(isLong ? note.content.slice(0, 180) + '…' : note.content)}</div>
         <div class="n-foot" onclick="event.stopPropagation()">
           <button onclick="togglePinNote('${id}'${c})" class="icon-btn sm ${note.isPinned ? '' : 'clear'}" style="${note.isPinned ? 'color:#C08A00; background:rgba(255,204,0,.2)' : 'color:var(--label2)'}" title="Pin"><i class="fas fa-thumbtack"></i></button>
           <div class="flex gap-4">
             <button onclick="copyNoteText('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Salin"><i class="far fa-copy"></i></button>
-            <button onclick="shareNote('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Gmail"><i class="far fa-envelope"></i></button>
+            <button onclick="pdfNote('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="PDF"><i class="far fa-file-pdf"></i></button>
             <button onclick="editNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Edit"><i class="fas fa-pen"></i></button>
             <button onclick="deleteNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--red)" title="Hapus"><i class="far fa-trash-can"></i></button>
           </div>
@@ -4528,10 +4798,10 @@ function viewNote(id, coll) {
   $('noteViewBody').innerHTML = `
     <div class="flex items-center gap-8 wrap" style="margin-bottom:10px">${note.isPinned ? '<span class="badge tint-yellow"><i class="fas fa-thumbtack"></i> Pinned</span>' : ''}${note.tag ? `<span class="badge tint-yellow">${esc(note.tag)}</span>` : ''}<span class="t-cap muted">${esc(note.date || '')}</span></div>
     ${note.title ? `<h2 class="t-title2" style="margin-bottom:10px">${esc(note.title)}</h2>` : ''}
-    <div class="t-callout pre" style="line-height:1.55">${esc(note.content)}</div>
+    <div class="t-callout pre" style="line-height:1.55">${linkify(note.content)}</div>
     <div class="grid-2 mt-28">
       <button class="btn btn-gray btn-sm" onclick="editNoteRecord('${sid}'${c})"><i class="fas fa-pen"></i> Edit</button>
-      <button class="btn btn-tinted btn-sm" onclick="shareNote('${sid}'${c})"><i class="fas fa-envelope"></i> Gmail</button>
+      <button class="btn btn-tinted btn-sm" onclick="pdfNote('${sid}'${c})"><i class="fas fa-file-pdf"></i> PDF</button>
     </div>`;
   $('noteViewMore').onclick = () => openActionSheet({
     title: note.title || 'Catatan', actions: [
@@ -4617,7 +4887,6 @@ function openBookmarkActions(id) {
   openActionSheet({ title: link.title, actions: [
     { text: 'Edit', icon: 'fas fa-pen', onClick: () => editLinkRecord(id) },
     { text: 'Salin Link', icon: 'far fa-copy', onClick: () => { copyText((link.urls || [link.url]).join('\n')); showToast('Link disalin!'); } },
-    { text: 'Kirim ke Gmail', icon: 'fas fa-envelope', onClick: () => shareBookmark(id) },
     { text: 'Hapus', icon: 'far fa-trash-can', destructive: true, onClick: () => deleteLinkRecord(id) }
   ] });
 }
@@ -4712,11 +4981,11 @@ function renderCountDownLog() {
           <div class="col gap-6" onclick="event.stopPropagation()">
             <button onclick="editCountDown('${id}')" class="icon-btn sm blue" title="Edit"><i class="fas fa-pen"></i></button>
             <button onclick="toggleArchiveCountDown('${id}')" class="icon-btn sm" title="${item.isArchived ? 'Pulihkan' : 'Arsipkan'}"><i class="fas ${item.isArchived ? 'fa-box-open' : 'fa-box-archive'}"></i></button>
-            <button onclick="shareCountdown('${id}')" class="icon-btn sm" title="Gmail"><i class="far fa-envelope"></i></button>
+            <button onclick="pdfCountdown('${id}')" class="icon-btn sm" title="PDF"><i class="far fa-file-pdf"></i></button>
             ${countdownEditMode ? `<button onclick="deleteCountDown('${id}')" class="icon-btn sm red" title="Hapus"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         </div>
-        ${hasNote && isExpanded ? `<div class="cd-note"><span class="t-cap2 bold c-blue" style="display:block; margin-bottom:4px; letter-spacing:.04em">DESKRIPSI / CATATAN</span>${esc(item.catatan)}</div>` : ''}
+        ${hasNote && isExpanded ? `<div class="cd-note"><span class="t-cap2 bold c-blue" style="display:block; margin-bottom:4px; letter-spacing:.04em">DESKRIPSI / CATATAN</span>${linkify(item.catatan)}</div>` : ''}
       </div>`;
   }).join('');
 }
@@ -5206,8 +5475,16 @@ function renderFocusHistory() {
       <span class="icon-tile ${icon[1]}"><i class="fas ${icon[0]}"></i></span>
       <div class="flex-1"><div class="row-title">${esc(f.mode)} · <span class="semibold tabular">${esc(durationLabel)}</span></div><div class="row-sub">${esc(prettyDate(f.date))} · ${esc(f.startTime)}–${esc(f.endTime)}</div></div>
       <span class="badge ${badge}">${isSleep ? 'Sleep' : esc(f.status)}</span>
+      <button class="icon-btn sm clear" style="color:var(--red)" onclick="deleteFocusEntry('${esc(f.id)}')" title="Hapus"><i class="far fa-trash-can"></i></button>
     </div>`;
   }).join('');
+}
+async function deleteFocusEntry(id) {
+  const f = (appState.focusHistory || []).find(x => x.id === id); if (!f) return;
+  if (!(await iosConfirm(`Hapus sesi ${f.mode === 'Sleep' ? 'tidur' : 'fokus'} ini?`, `${prettyDate(f.date)} · ${f.startTime}–${f.endTime}`, 'Hapus', true))) return;
+  appState.focusHistory = appState.focusHistory.filter(x => x.id !== id);
+  saveStateToLocal(); renderFocusHistory(); renderSleepLineChart(); renderDashboardStats();
+  showToast('Sesi dihapus.');
 }
 async function clearFocusHistory() {
   if (await iosConfirm('Hapus semua riwayat?', 'Semua log fokus & tidur akan dihapus.', 'Hapus', true)) {
@@ -5226,7 +5503,6 @@ function renderSettingsPanel() {
   document.querySelectorAll('[data-notif]').forEach(inp => { inp.checked = !!prefs[inp.dataset.notif]; });
   if ($('notifLeadSelect')) $('notifLeadSelect').value = String(prefs.lead || 30);
   updateNotifPermissionUI();
-  if ($('gmailDefaultTo')) $('gmailDefaultTo').value = getGmailDefault();
   if (typeof updatePushUI === 'function') updatePushUI();
   if ($('photoRetentionSelect')) $('photoRetentionSelect').value = String(readLS('app_photo_retention', 0));
   renderStoragePanel();
@@ -5276,7 +5552,7 @@ async function resetAllAppData() {
   try {
     Object.keys(localStorage).filter(k => k.startsWith('app_')).forEach(k => localStorage.removeItem(k));
   } catch (err) {}
-  appState = { todos: [], countdowns: [], notes: [], kas: [], links: [], contacts: [], uploads: [], customWebLinks: [], focusHistory: [], musicCategories: DEFAULT_CATEGORIES.slice(), musicLibrary: [], workPhotos: [], workDocs: [], workNotes: [], galleryPhotos: [], galleryAlbums: [], customLabels: {}, showFloatingMusicDock: false };
+  appState = { todos: [], countdowns: [], notes: [], kas: [], links: [], contacts: [], uploads: [], customWebLinks: [], focusHistory: [], musicCategories: DEFAULT_CATEGORIES.slice(), musicLibrary: [], workPhotos: [], workDocs: [], workNotes: [], galleryPhotos: [], galleryAlbums: [], visitDays: appState.visitDays || [], vault: null, walletCards: [], customLabels: {}, showFloatingMusicDock: false };
   audioEngine.pause(); audioEngine.removeAttribute('src'); currentSongIndex = -1; currentSongRefId = null; musicQueue = [];
   saveStateToLocal(); applyFloatingMusicDockVisibility(); renderAllModules(); updateMusicPlayerUI();
   showToast('All application data has been reset.');
@@ -5403,7 +5679,7 @@ async function clearNotifInbox() {
   setInbox([]); renderNotifInbox();
 }
 function sendTestNotification() {
-  pushNotification({ title: 'Notifikasi Tes ✅', body: 'Notifikasi Hadzmi Hub berfungsi dengan baik.', icon: 'fa-paper-plane', color: 'bg-green' });
+  pushNotification({ title: 'Notifikasi Tes ✅', body: 'Notifikasi Hadzmi Assistant berfungsi dengan baik.', icon: 'fa-paper-plane', color: 'bg-green' });
 }
 
 // ---------- Reminder engine ----------
@@ -5518,127 +5794,219 @@ function initNotifications() {
 
 /* ---- 10-share.js ---- */
 /* =========================================================
-   10 · SEND TO GMAIL — compose via Gmail web/app, mailto, copy, share
+   10 · PDF — ekspor catatan, countdown, laporan ke PDF + pratinjau, bagikan (WhatsApp), unduh
    ========================================================= */
-const GMAIL_DEFAULT_KEY = 'app_gmail_default_to';
-const MAX_MAIL_BODY = 5500;
-
-function getGmailDefault() { return readLS(GMAIL_DEFAULT_KEY, '') || ''; }
-function saveGmailDefault(v) {
-  const val = String(v || '').trim();
-  if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return showToast('Format email tidak valid.', false);
-  writeLS(GMAIL_DEFAULT_KEY, val);
-  showToast(val ? 'Penerima default disimpan.' : 'Penerima default dikosongkan.');
+const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const scriptPromises = {};
+function loadScriptOnce(url) {
+  if (!scriptPromises[url]) scriptPromises[url] = new Promise((resolve, reject) => {
+    const s = document.createElement('script'); s.src = url; s.async = true;
+    s.onload = resolve; s.onerror = () => { delete scriptPromises[url]; reject(new Error('Gagal memuat komponen PDF (cek internet)')); };
+    document.head.appendChild(s);
+  });
+  return scriptPromises[url];
 }
-function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
-function isMobile() { return /android|iphone|ipad|ipod/i.test(navigator.userAgent) || isIOS(); }
-
-function buildMailBody(body) {
-  const footer = `\n\n—\nDikirim dari Hadzmi Hub · ${prettyDate(wibDateStr(), true)}`;
-  let b = String(body || '');
-  if (b.length > MAX_MAIL_BODY) b = b.slice(0, MAX_MAIL_BODY) + '\n\n[…dipotong karena terlalu panjang]';
-  return b + footer;
+// Font PDF standar hanya mendukung huruf Latin — emoji & simbol khusus dibersihkan
+function pdfText(s) {
+  return String(s == null ? '' : s).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, '-')
+    .replace(/…/g, '...').replace(/[•·]/g, '-').replace(/×/g, 'x').replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '');
 }
 
-function openShareSheet(subject, rawBody) {
-  const to = getGmailDefault();
-  const body = buildMailBody(rawBody);
-  const enc = encodeURIComponent;
-  const gmailWeb = `https://mail.google.com/mail/?view=cm&fs=1&tf=1${to ? '&to=' + enc(to) : ''}&su=${enc(subject)}&body=${enc(body)}`;
-  const gmailIOS = `googlegmail:///co?${to ? 'to=' + enc(to) + '&' : ''}subject=${enc(subject)}&body=${enc(body)}`;
-  const mailto = `mailto:${to ? enc(to) : ''}?subject=${enc(subject)}&body=${enc(body)}`;
-  const actions = [
-    { text: isMobile() ? 'Gmail (Browser)' : 'Kirim lewat Gmail', icon: 'fas fa-envelope', onClick: () => window.open(gmailWeb, '_blank', 'noopener') }
-  ];
-  if (isIOS()) actions.push({ text: 'Aplikasi Gmail', icon: 'fab fa-google', onClick: () => { location.href = gmailIOS; } });
-  actions.push({ text: isMobile() ? 'Aplikasi Email (Gmail/Mail)' : 'Aplikasi Email Default', icon: 'fas fa-paper-plane', onClick: () => { location.href = mailto; } });
-  if (navigator.share) actions.push({ text: 'Bagikan…', icon: 'fas fa-arrow-up-from-bracket', onClick: () => navigator.share({ title: subject, text: body }).catch(() => {}) });
-  actions.push({ text: 'Salin Teks', icon: 'far fa-copy', onClick: () => { copyText(subject + '\n\n' + body); showToast('Teks disalin ke clipboard!'); } });
-  openActionSheet({ title: 'Kirim ke Gmail', message: subject + (to ? `\nKe: ${to}` : ''), actions });
+/** blocks: {heading} | {meta:[[label,value]]} | {para} | {table:{cols:[{h,w,align}], rows:[[...]]}} | {stats:[[label,value]]} */
+async function buildPdf({ title, subtitle, blocks, fileName }) {
+  await loadScriptOnce(JSPDF_URL);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, H = 297, M = 16, CW = W - M * 2;
+  const NAVY = [16, 37, 84], GREY = [110, 110, 118], LINE = [225, 226, 232];
+  let y = 0;
+  const header = (first) => {
+    doc.setFillColor(...NAVY); doc.rect(0, 0, W, first ? 34 : 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    if (first) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(pdfText(L('app.name')).toUpperCase(), M, 11);
+      doc.setFontSize(18); doc.text(doc.splitTextToSize(pdfText(title), CW)[0], M, 21);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); if (subtitle) doc.text(pdfText(subtitle), M, 28);
+      y = 44;
+    } else { doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(pdfText(title), M, 9); y = 24; }
+    doc.setTextColor(20, 20, 24);
+  };
+  const ensure = (h) => { if (y + h > H - 18) { doc.addPage(); header(false); } };
+  header(true);
+  for (const b of blocks || []) {
+    if (b.heading) {
+      ensure(14); y += 3;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor(...NAVY); doc.text(pdfText(b.heading), M, y);
+      doc.setDrawColor(...LINE); doc.line(M, y + 2.2, W - M, y + 2.2); y += 8; doc.setTextColor(20, 20, 24);
+    } else if (b.meta) {
+      doc.setFontSize(10.5);
+      b.meta.filter(r => r[1] !== '' && r[1] != null).forEach(([k, v]) => {
+        const lines = doc.splitTextToSize(pdfText(v), CW - 38); ensure(lines.length * 5 + 2);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY); doc.text(pdfText(k), M, y);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(20, 20, 24); doc.text(lines, M + 38, y); y += lines.length * 5 + 1.5;
+      });
+      y += 3;
+    } else if (b.para != null) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+      pdfText(b.para).split('\n').forEach(par => {
+        const lines = par.trim() ? doc.splitTextToSize(par, CW) : [''];
+        lines.forEach(ln => { ensure(5.6); doc.text(ln, M, y); y += 5.6; });
+      });
+      y += 3;
+    } else if (b.stats) {
+      ensure(22); const n = b.stats.length, gap = 4, w = (CW - gap * (n - 1)) / n;
+      b.stats.forEach(([k, v, color], i) => {
+        const x = M + i * (w + gap);
+        doc.setFillColor(...(color || [240, 242, 248])); doc.roundedRect(x, y, w, 18, 3, 3, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GREY); doc.text(pdfText(k), x + 4, y + 6.5);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20, 20, 24); doc.text(doc.splitTextToSize(pdfText(v), w - 8)[0], x + 4, y + 13.5);
+      });
+      y += 24;
+    } else if (b.table) {
+      const cols = b.table.cols, total = cols.reduce((s, c) => s + c.w, 0);
+      const ws = cols.map(c => c.w / total * CW);
+      const drawHead = () => {
+        ensure(10); doc.setFillColor(...NAVY); doc.rect(M, y - 5, CW, 8, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        let x = M; cols.forEach((c, i) => { doc.text(pdfText(c.h), c.align === 'right' ? x + ws[i] - 2 : x + 2, y, { align: c.align === 'right' ? 'right' : 'left' }); x += ws[i]; });
+        y += 6; doc.setTextColor(20, 20, 24);
+      };
+      drawHead();
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+      b.table.rows.forEach((row, ri) => {
+        const cells = row.map((v, i) => doc.splitTextToSize(pdfText(v), ws[i] - 4));
+        const h = Math.max(...cells.map(c => c.length)) * 4.6 + 2.5;
+        if (y + h > H - 18) { doc.addPage(); header(false); drawHead(); doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); }
+        if (ri % 2) { doc.setFillColor(246, 247, 251); doc.rect(M, y - 4, CW, h, 'F'); }
+        let x = M; cells.forEach((c, i) => { doc.text(c, cols[i].align === 'right' ? x + ws[i] - 2 : x + 2, y, { align: cols[i].align === 'right' ? 'right' : 'left' }); x += ws[i]; });
+        y += h;
+      });
+      y += 5;
+    }
+  }
+  const pages = doc.getNumberOfPages();
+  const stamp = `Dibuat ${new Date().toLocaleString('id-ID')}`;
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GREY);
+    doc.text(pdfText(stamp), M, H - 8); doc.text(`Halaman ${i} / ${pages}`, W - M, H - 8, { align: 'right' });
+  }
+  return doc.output('blob');
 }
 
-// ---------- Text builders ----------
-function taskLine(t) {
-  const st = t.status === 'Done' ? '✅' : t.status === 'On Progress' ? '🟠' : '⬜';
-  return `${st} ${t.priority === 'High' ? '🔥 ' : ''}${t.title}${t.deadline ? ` — ${prettyDate(t.deadline, true)}${t.time ? ' ' + t.time : ''}` : ''}`;
+// ---------- Pratinjau PDF (pdf.js — semua halaman tampil, juga di iPad) ----------
+async function renderPdfInto(box, blob) {
+  box.innerHTML = '<span class="spinner dark"></span>';
+  try {
+    await loadScriptOnce(PDFJS_URL);
+    const lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+    const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    box.innerHTML = ''; box.classList.add('pdf-pages');
+    const width = Math.max(280, box.clientWidth - 16), dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (let n = 1; n <= Math.min(pdf.numPages, 80); n++) {
+      const page = await pdf.getPage(n);
+      const vp1 = page.getViewport({ scale: 1 }), scale = width / vp1.width, vp = page.getViewport({ scale: scale * dpr });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = width + 'px';
+      box.appendChild(c);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+    if (pdf.numPages > 80) box.insertAdjacentHTML('beforeend', `<div class="t-foot muted center">Menampilkan 80 dari ${pdf.numPages} halaman — unduh untuk melihat semua.</div>`);
+  } catch (err) {
+    box.classList.remove('pdf-pages');
+    box.innerHTML = `<iframe src="${URL.createObjectURL(blob)}" title="PDF"></iframe>`;
+  }
 }
-function shareTask(id) {
-  const t = appState.todos.find(x => x.id === id); if (!t) return;
-  const status = t.status === 'Done' ? 'Selesai' : t.status === 'On Progress' ? 'In Progress' : 'Pending';
-  const body = [
-    `📌 ${t.title}`, '',
-    `Status    : ${status}`,
-    `Prioritas : ${t.priority === 'High' ? 'Tinggi 🔥' : 'Normal'}`,
-    `Deadline  : ${t.deadline ? prettyDate(t.deadline, true) + (t.time ? ' pukul ' + t.time + ' WIB' : '') : '-'}`,
-    t.desc ? `\nDeskripsi:\n${t.desc}` : '',
-    (t.links || []).filter(Boolean).length ? `\nTautan:\n${t.links.filter(Boolean).map(l => '• ' + l).join('\n')}` : ''
-  ].join('\n');
-  openShareSheet(`[Tugas] ${t.title}`, body);
+let pdfViewerBlob = null, pdfViewerName = '';
+async function openPdfPreview(blob, name, meta) {
+  pdfViewerBlob = blob; pdfViewerName = name;
+  $('viewerTitle').textContent = name;
+  $('viewerMeta').textContent = meta || `PDF · ${formatBytes(blob.size)}`;
+  $('viewerActions').innerHTML = `
+    <button class="btn btn-green btn-sm" onclick="shareBlobFile(pdfViewerBlob, pdfViewerName, 'application/pdf')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+    <button class="btn btn-tinted btn-sm" onclick="shareBlobFile(pdfViewerBlob, pdfViewerName, 'application/pdf')"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
+    <button class="btn btn-gray btn-sm" onclick="downloadBlob(pdfViewerBlob, pdfViewerName)"><i class="fas fa-download"></i> Unduh</button>`;
+  $('viewerMore').onclick = () => downloadBlob(pdfViewerBlob, pdfViewerName);
+  openSheet('sheetViewer');
+  await renderPdfInto($('viewerBody'), blob);
 }
-function shareTaskList() {
-  const smart = TA_SMART.find(s => s.key === taFilterStatus) || TA_SMART[0];
-  const list = appState.todos.filter(t => taMatches(t, taFilterStatus));
-  if (!list.length) return showToast('Tidak ada tugas di daftar ini.', false);
-  openShareSheet(`[To-Do] ${smart.label} — ${prettyDate(wibDateStr())}`, `Daftar "${smart.label}" (${list.length} tugas):\n\n` + list.map(taskLine).join('\n'));
+/** Bagikan file lewat menu Bagikan perangkat (pilih WhatsApp, Gmail, Files, dll). */
+async function shareBlobFile(blob, name, type) {
+  const file = new File([blob], name, { type: type || blob.type || 'application/octet-stream' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  downloadBlob(file, name);
+  showToast('Perangkat tidak mendukung bagikan file — file diunduh, lampirkan manual di WhatsApp.');
 }
-function shareDailyDigest() {
-  const today = wibDateStr();
-  const agenda = appState.todos.filter(t => t.deadline === today && t.status !== 'Done');
-  const overdue = appState.todos.filter(t => taIsOverdue(t) && t.deadline !== today);
-  const pending = appState.todos.filter(t => t.status !== 'Done' && t.deadline !== today && !taIsOverdue(t));
-  const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal >= today).sort((a, b) => a.tanggal.localeCompare(b.tanggal)).slice(0, 5);
-  let net = 0; appState.kas.forEach(k => { net += k.jenis === 'Lebih' ? k.jumlah : -k.jumlah; });
-  const body = [
-    `Ringkasan ${prettyDate(today, true)}`, '',
-    `📅 AGENDA HARI INI (${agenda.length})`, agenda.length ? agenda.map(taskLine).join('\n') : '— tidak ada —', '',
-    overdue.length ? `⚠️ TERLAMBAT (${overdue.length})\n${overdue.map(taskLine).join('\n')}\n` : '',
-    `🗂 PENDING LAINNYA (${pending.length})`, pending.slice(0, 15).map(taskLine).join('\n') || '— tidak ada —', '',
-    `⏳ EVENT MENDATANG`, events.length ? events.map(c => `• ${c.nama} — ${prettyDate(c.tanggal, true)} (${daysUntil(c.tanggal)} hari lagi)`).join('\n') : '— tidak ada —', '',
-    `💰 Net Ledger: ${rupiah(net)}`
-  ].join('\n');
-  openShareSheet(`[Hadzmi Hub] Ringkasan ${prettyDate(today)}`, body);
+async function makeAndShowPdf(spec) {
+  try {
+    showToast('Membuat PDF…');
+    const blob = await buildPdf(spec);
+    await openPdfPreview(blob, spec.fileName);
+  } catch (err) { showToast(err.message || 'Gagal membuat PDF', false); }
 }
-function shareNote(id, coll) {
+function pdfName(s) { return safeFileName(s).replace(/\.pdf$/i, '') + '.pdf'; }
+
+// ---------- Dokumen ----------
+function pdfNote(id, coll) {
   const n = (appState[coll || 'notes'] || []).find(x => x.id === id); if (!n) return;
-  openShareSheet(`[${coll === 'workNotes' ? 'Catatan Kerja' : 'Catatan'}] ${n.title || n.content.slice(0, 40)}`, `${n.title ? n.title + '\n\n' : ''}${n.content}${n.tag ? `\n\n#${n.tag}` : ''}`);
+  const kind = coll === 'workNotes' ? L('work.notes') : L('hub.notes');
+  makeAndShowPdf({
+    title: n.title || 'Catatan', subtitle: `${kind}${n.date ? ' · ' + n.date : ''}`, fileName: pdfName(n.title || 'catatan'),
+    blocks: [...(n.tag ? [{ meta: [['Tag', n.tag]] }] : []), { para: n.content }]
+  });
 }
-function shareCountdown(id) {
+function pdfCountdown(id) {
   const c = appState.countdowns.find(x => x.id === id); if (!c) return;
   const rel = formatRelativeTime(c.tanggal);
-  openShareSheet(`[Event] ${c.nama} — ${prettyDate(c.tanggal)}`, [`🎯 ${c.nama}`, `Tanggal : ${prettyDate(c.tanggal, true)}${c.jam ? ' pukul ' + c.jam + ' WIB' : ''}`, `Kategori: ${c.kategori || '-'}`, `Status  : ${rel.text}`, c.catatan ? `\nCatatan:\n${c.catatan}` : ''].join('\n'));
+  makeAndShowPdf({
+    title: c.nama, subtitle: L('hub.countdown'), fileName: pdfName('event-' + c.nama),
+    blocks: [{ meta: [['Tanggal', prettyDate(c.tanggal, true) + (c.jam ? ' pukul ' + c.jam + ' WIB' : '')], ['Kategori', c.kategori || '-'], ['Status', rel.text], ['Arsip', c.isArchived ? 'Ya' : 'Tidak']] },
+      ...(c.catatan && c.catatan.trim() ? [{ heading: 'Catatan' }, { para: c.catatan }] : [])]
+  });
 }
-function shareBookmark(id) {
-  const l = appState.links.find(x => x.id === id); if (!l) return;
-  openShareSheet(`[Bookmark] ${l.title}`, `${l.title}${l.category ? ' (' + l.category + ')' : ''}\n\n${(l.urls || [l.url]).map(u => '• ' + u).join('\n')}`);
-}
-function shareKasReport() {
+function pdfKasReport() {
   const list = getFilteredKas();
-  if (!list.length) return showToast('Tidak ada entri kas pada periode ini.', false);
+  if (!list.length) return showToast('Tidak ada catatan selisih pada periode ini.', false);
   let lebih = 0, kurang = 0; list.forEach(k => { if (k.jenis === 'Lebih') lebih += k.jumlah; else kurang += k.jumlah; });
   const a = $('kasFilterAwal').value, b = $('kasFilterAkhir').value;
   const period = a || b ? `${a ? prettyDate(a) : 'awal'} s/d ${b ? prettyDate(b) : 'sekarang'}` : 'Semua periode';
-  const body = [`LAPORAN SELISIH KAS`, `Periode: ${period}`, '',
-    `Total Lebih  : ${rupiah(lebih)}`, `Total Kurang : ${rupiah(kurang)}`, `Net Balance  : ${rupiah(lebih - kurang)}`, '',
-    `RINCIAN (${list.length} entri):`,
-    ...list.map(k => `${k.tanggal}${k.jam ? ' ' + k.jam : ''}  ${k.jenis === 'Lebih' ? '+' : '−'}${rupiah(k.jumlah).padEnd(14)} ${k.keterangan || ''}`)].join('\n');
-  openShareSheet(`[Kas] Laporan Selisih — ${period}`, body);
+  makeAndShowPdf({
+    title: 'Laporan Selisih Kas', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-selisih-kas-' + wibDateStr()),
+    blocks: [
+      { stats: [['Total Lebih', rupiah(lebih), [228, 247, 234]], ['Total Kurang', rupiah(kurang), [253, 232, 232]], ['Net Selisih', rupiah(lebih - kurang), [229, 238, 255]]] },
+      { heading: 'Rincian' },
+      { table: { cols: [{ h: 'Tanggal', w: 26 }, { h: 'Jam', w: 11 }, { h: 'Jenis', w: 13 }, { h: 'Nominal', w: 22, align: 'right' }, { h: 'Keterangan', w: 40 }],
+        rows: list.map(k => [prettyDate(k.tanggal), k.jam || '-', k.jenis, (k.jenis === 'Lebih' ? '+' : '-') + rupiah(k.jumlah), k.keterangan || '-']) } }
+    ]
+  });
 }
-function shareFocusReport() {
+function pdfFocusReport() {
   const hist = appState.focusHistory || [];
   if (!hist.length) return showToast('Belum ada riwayat fokus/tidur.', false);
-  const sleep = hist.filter(f => f.mode === 'Sleep').slice(0, 7);
-  const focus = hist.filter(f => f.mode !== 'Sleep').slice(0, 15);
   const fmt = s => `${Math.floor(s / 3600)}j ${Math.round((s % 3600) / 60)}m`;
-  const avg = sleep.length ? fmt(Math.round(sleep.reduce((a, s) => a + s.durationSeconds, 0) / sleep.length)) : '-';
-  const totalFocus = focus.reduce((a, f) => a + f.durationSeconds, 0);
-  const body = [`LAPORAN FOKUS & TIDUR`, '',
-    `😴 Tidur (7 sesi terakhir) — rata-rata ${avg}`, ...(sleep.length ? sleep.map(s => `• ${s.date}  ${s.startTime}–${s.endTime}  ${fmt(s.durationSeconds)}`) : ['— belum ada —']), '',
-    `🎯 Fokus (15 sesi terakhir) — total ${Math.round(totalFocus / 60)} menit`, ...(focus.length ? focus.map(f => `• ${f.date}  ${f.mode}  ${Math.round(f.durationSeconds / 60)} mnt  (${f.status})`) : ['— belum ada —'])].join('\n');
-  openShareSheet(`[Hadzmi Hub] Laporan Fokus & Tidur`, body);
+  const sleep = hist.filter(f => f.mode === 'Sleep'), focus = hist.filter(f => f.mode !== 'Sleep');
+  const avg = sleep.length ? fmt(Math.round(sleep.reduce((n, s) => n + s.durationSeconds, 0) / sleep.length)) : '-';
+  const totalFocus = focus.reduce((n, f) => n + f.durationSeconds, 0);
+  makeAndShowPdf({
+    title: 'Laporan Fokus & Tidur', subtitle: `${hist.length} sesi tercatat`, fileName: pdfName('laporan-fokus-tidur-' + wibDateStr()),
+    blocks: [
+      { stats: [['Rata-rata tidur', avg], ['Sesi tidur', String(sleep.length)], ['Total fokus', Math.round(totalFocus / 60) + ' menit']] },
+      ...(sleep.length ? [{ heading: 'Tidur' }, { table: { cols: [{ h: 'Tanggal', w: 30 }, { h: 'Mulai', w: 15 }, { h: 'Bangun', w: 15 }, { h: 'Durasi', w: 20, align: 'right' }], rows: sleep.map(s => [prettyDate(s.date), s.startTime, s.endTime, fmt(s.durationSeconds)]) } }] : []),
+      ...(focus.length ? [{ heading: 'Fokus' }, { table: { cols: [{ h: 'Tanggal', w: 28 }, { h: 'Mode', w: 18 }, { h: 'Waktu', w: 22 }, { h: 'Durasi', w: 16, align: 'right' }, { h: 'Status', w: 18 }], rows: focus.map(f => [prettyDate(f.date), f.mode, `${f.startTime}-${f.endTime}`, Math.round(f.durationSeconds / 60) + ' mnt', f.status]) } }] : [])
+    ]
+  });
 }
-function shareSong(id) {
-  const s = appState.musicLibrary.find(x => x.id === id); if (!s) return;
-  openShareSheet(`[Musik] ${s.title}${s.artist ? ' — ' + s.artist : ''}`, `🎵 ${s.title}\nArtis: ${s.artist || '-'}\nKategori: ${s.category || '-'}\n\nLink audio:\n${s.url}${s.lyrics ? `\n\nLirik:\n${s.lyrics.replace(/\[[^\]]*\]/g, '').trim()}` : ''}`);
+function pdfTaskList() {
+  const smart = TA_SMART.find(s => s.key === taFilterStatus) || TA_SMART[0];
+  const list = appState.todos.filter(t => taMatches(t, taFilterStatus));
+  if (!list.length) return showToast('Tidak ada tugas di daftar ini.', false);
+  makeAndShowPdf({
+    title: `To-Do: ${smart.label}`, subtitle: `${list.length} tugas · ${prettyDate(wibDateStr(), true)}`, fileName: pdfName('todo-' + smart.label + '-' + wibDateStr()),
+    blocks: [{ table: { cols: [{ h: 'Status', w: 17 }, { h: 'Tugas', w: 50 }, { h: 'Deadline', w: 28 }, { h: 'Prioritas', w: 15 }],
+      rows: list.map(t => [t.status === 'Done' ? 'Selesai' : t.status === 'On Progress' ? 'Proses' : 'Pending', t.title + (t.desc ? '\n' + t.desc : ''), t.deadline ? prettyDate(t.deadline) + (t.time ? ' ' + t.time : '') : '-', t.priority === 'High' ? 'Tinggi' : 'Normal']) } }]
+  });
 }
 
 /* ---- 11-push.js ---- */
@@ -6059,19 +6427,16 @@ function renderPhotoGallery() {
     box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada foto ' + esc(L('work.photos'))}</div><div class="e-sub">Foto KTP, buku tabungan, atau bukti kas nasabah dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
     return;
   }
-  const groups = {};
-  list.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt)
-    .forEach(p => (groups[p.date] = groups[p.date] || []).push(p));
+  const sorted = list.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt);
   box.className = photoSelecting ? 'selecting' : '';
-  box.innerHTML = Object.keys(groups).sort().reverse().map(d => `
-    <div class="photo-day"><span>${esc(relativeDayLabel(d))}</span><span class="t-foot muted" style="font-weight:500">${groups[d].length} foto</span></div>
-    <div class="photo-grid">${groups[d].map(p => `
-      <button class="photo-cell ${selectedPhotos.has(p.id) ? 'sel' : ''}" data-id="${esc(p.id)}" title="${esc((p.label || p.type) + ' · ' + p.type)}">
+  box.innerHTML = `<div class="photo-day"><span>${sorted.length} foto</span><span class="t-foot muted" style="font-weight:500">terbaru di atas</span></div>
+    <div class="photo-grid">${sorted.map(p => `
+      <button class="photo-cell ${selectedPhotos.has(p.id) ? 'sel' : ''}" data-id="${esc(p.id)}" title="${esc((p.label || p.type) + ' · ' + p.type + ' · ' + prettyDate(p.date))}">
         <span class="ph-load"><span class="spinner dark"></span></span>
         <img alt="" data-file="${esc(p.thumbId || p.fileId)}">
         <span class="ph-tag">${esc(p.label || p.type)}</span>
         <span class="ph-check"><i class="fas fa-check"></i></span>
-      </button>`).join('')}</div>`).join('');
+      </button>`).join('')}</div>`;
   box.querySelectorAll('.photo-cell').forEach(cell => {
     cell.onclick = () => photoSelecting ? togglePhotoPick(cell.dataset.id, cell) : openPhotoViewer(cell.dataset.id);
     queueThumb(cell.querySelector('img'));
@@ -6103,12 +6468,12 @@ async function openPhotoViewer(id) {
   $('viewerBody').innerHTML = '<span class="spinner dark"></span>';
   $('viewerMeta').innerHTML = `${esc(p.type)} · ${esc(prettyDate(p.date, true))}${p.time ? ' · ' + esc(p.time) : ''} · ${formatBytes(p.size)}${p.note ? `<br>${esc(p.note)}` : ''}`;
   $('viewerActions').innerHTML = `
-    <button class="btn btn-tinted btn-sm" onclick="sharePhotos(['${esc(p.id)}'])"><i class="fas fa-envelope"></i> Kirim</button>
+    <button class="btn btn-tinted btn-sm" onclick="sharePhotos(['${esc(p.id)}'])"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
     <button class="btn btn-gray btn-sm" onclick="downloadPhotos(['${esc(p.id)}'])"><i class="fas fa-download"></i> Unduh</button>
     <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(['${esc(p.id)}'])"><i class="fas fa-trash"></i> Hapus</button>`;
   $('viewerMore').onclick = () => openActionSheet({ title: p.label || p.type, actions: [
     { text: 'Ubah Keterangan', icon: 'fas fa-pen', onClick: () => editPhotoMeta(p.id) },
-    { text: 'Kirim / Bagikan', icon: 'fas fa-envelope', onClick: () => sharePhotos([p.id]) },
+    { text: 'Bagikan', icon: 'fas fa-arrow-up-from-bracket', onClick: () => sharePhotos([p.id]) },
     { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deletePhotos([p.id]) }
   ] });
   openSheet('sheetViewer');
@@ -6124,7 +6489,7 @@ async function editPhotoMeta(id) {
   if ($('sheetViewer').classList.contains('open')) $('viewerTitle').textContent = p.label || p.type;
 }
 
-/** Bagikan foto sebagai lampiran (pilih Gmail di menu Bagikan). */
+/** Bagikan foto sebagai lampiran (pilih WhatsApp / Gmail / Files di menu Bagikan). */
 async function sharePhotos(ids) {
   const items = ids.map(photoById).filter(Boolean);
   if (!items.length) return showToast('Pilih foto dulu.', false);
@@ -6141,9 +6506,9 @@ async function sharePhotos(ids) {
     try { await navigator.share({ files, title: subject, text }); return; }
     catch (err) { if (err && err.name === 'AbortError') return; }
   }
-  // Cadangan: unduh lalu buka Gmail (lampirkan file yang terunduh secara manual)
+  // Cadangan: perangkat tidak mendukung bagikan file → unduh
   files.forEach((f, i) => setTimeout(() => downloadBlob(f, f.name), i * 400));
-  setTimeout(() => openShareSheet(subject, text + '\n\n(Lampirkan foto yang baru saja terunduh)'), files.length * 400 + 300);
+  showToast('Perangkat tidak mendukung bagikan file — foto diunduh.');
 }
 async function downloadPhotos(ids) {
   const items = ids.map(photoById).filter(Boolean); if (!items.length) return showToast('Pilih foto dulu.', false);
@@ -6177,46 +6542,81 @@ async function applyPhotoRetention() {
 
 // ---------------- GUDANG FILE ----------------
 let docFolderFilter = 'Semua';
+let pendingDocs = [];
+function docFolders() {
+  const map = {};
+  (appState.workDocs || []).forEach(d => { const f = (d.folder || 'Umum').trim(); map[f.toLowerCase()] = map[f.toLowerCase()] || { name: f, n: 0 }; map[f.toLowerCase()].n++; });
+  return Object.values(map).sort((a, b) => b.n - a.n);
+}
+// Nama kategori sama (abaikan huruf besar/kecil & spasi) → masuk kelompok yang sama
+function canonicalFolder(name) {
+  const clean = String(name || '').trim().replace(/\s+/g, ' ');
+  if (!clean) return 'Umum';
+  const hit = docFolders().find(f => f.name.toLowerCase() === clean.toLowerCase());
+  return hit ? hit.name : clean;
+}
+// Tebak kategori dari nama file (mis. "SOP Teller 2025.pdf" → kategori "SOP")
+function guessFolderFor(fileNames) {
+  const words = fileNames.join(' ').toLowerCase().replace(/[_\-.()]+/g, ' ');
+  return docFolders().find(f => f.name.toLowerCase().split(/\s+/).every(w => w.length > 1 && words.includes(w)));
+}
 function onDocsPicked(e) { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) uploadDocFiles(files); }
-async function uploadDocFiles(files) {
-  const big = files.filter(f => f.size > FILE_MAX_BYTES);
-  if (big.length) showToast(`${big.length} file > 25 MB dilewati (${big[0].name})`, false);
-  files = files.filter(f => f.size <= FILE_MAX_BYTES);
-  if (!files.length) return;
-  const folders = Array.from(new Set((appState.workDocs || []).map(d => d.folder).filter(Boolean)));
-  const folder = await iosAlert({
-    title: `Simpan ${files.length} file`, message: 'Masukkan ke folder apa?' + (folders.length ? `\nFolder yang ada: ${folders.slice(0, 6).join(', ')}` : ''),
-    input: { placeholder: 'Mis. Materi BRI, SOP, Formulir', value: docFolderFilter !== 'Semua' ? docFolderFilter : (readLS('app_last_doc_folder', '') || '') },
-    actions: [{ text: 'Batal', value: false }, { text: 'Upload', value: true, bold: true }]
-  });
-  if (folder === null) return;
-  const fname = (folder || '').trim() || 'Umum';
-  writeLS('app_last_doc_folder', fname);
+function uploadDocFiles(files) {
+  if (!pushConfig) return showToast('Penyimpanan cloud belum terhubung (cek internet).', false);
+  pendingDocs = files;
+  $('docUploadTitle').textContent = files.length > 1 ? `Upload ${files.length} File` : 'Upload File';
+  $('docUploadList').innerHTML = files.map(f => { const [ic, bg] = fileIconFor(f.type, f.name); return `<div class="row"><span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span><div class="flex-1"><div class="row-title truncate">${esc(f.name)}</div><div class="row-sub">${formatBytes(f.size)}</div></div></div>`; }).join('');
+  const guess = guessFolderFor(files.map(f => f.name));
+  $('docFolderInput').value = docFolderFilter !== 'Semua' ? docFolderFilter : guess ? guess.name : (readLS('app_last_doc_folder', '') || '');
+  $('docFolderList').innerHTML = docFolders().map(f => `<option value="${esc(f.name)}">`).join('');
+  $('docUploadProgress').classList.add('hidden');
+  fillStoreSelects();
+  renderDocFolderSuggest();
+  openSheet('sheetDocUpload');
+}
+function renderDocFolderSuggest() {
+  const q = $('docFolderInput').value.trim().toLowerCase();
+  const list = docFolders().filter(f => !q || f.name.toLowerCase().includes(q)).slice(0, 8);
+  $('docFolderSuggest').innerHTML = list.map(f => `<button type="button" class="chip ${f.name.toLowerCase() === q ? 'active blue' : ''}" data-f="${esc(f.name)}"><i class="fas fa-folder"></i> ${esc(f.name)} <span class="muted">${f.n}</span></button>`).join('');
+  $('docFolderSuggest').querySelectorAll('button').forEach(b => b.onclick = () => { $('docFolderInput').value = b.dataset.f; renderDocFolderSuggest(); });
+  const exists = q && docFolders().some(f => f.name.toLowerCase() === q);
+  $('docFolderHint').textContent = !q ? 'Pilih kategori yang ada atau ketik nama baru.' : exists ? `✓ Masuk ke kategori yang sudah ada: "${canonicalFolder(q)}"` : `Kategori baru "${$('docFolderInput').value.trim()}" akan dibuat.`;
+}
+function cancelDocUpload() { if ($('docUploadBtn').disabled) return; pendingDocs = []; closeSheet('sheetDocUpload'); }
+async function saveDocUpload() {
+  const files = pendingDocs; if (!files.length) return;
+  const folder = canonicalFolder($('docFolderInput').value);
+  const store = $('docStoreSelect').value || getDefaultStore();
+  writeLS('app_last_doc_folder', folder);
+  const btn = $('docUploadBtn'), bar = $('docUploadProgress'), fill = bar.firstElementChild;
+  btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>'; bar.classList.remove('hidden');
   let ok = 0;
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     try {
-      const up = await apiUploadFile(f, f.name, p => showToast(`Upload ${i + 1}/${files.length}: ${f.name} — ${Math.round(p * 100)}%`));
+      const up = await apiUploadFile(f, f.name, p => { fill.style.width = Math.round(((i + p) / files.length) * 100) + '%'; }, store);
       appState.workDocs = appState.workDocs || [];
-      appState.workDocs.unshift({ id: 'doc_' + Date.now() + '_' + i, fileId: up.id, name: f.name, type: f.type || '', size: f.size, folder: fname, createdAt: Date.now() });
+      appState.workDocs.unshift({ id: 'doc_' + Date.now() + '_' + i, fileId: up.id, name: f.name, type: f.type || '', size: f.size, folder, createdAt: Date.now() });
       ok++;
     } catch (err) { showToast(`Gagal: ${err.message}`, false); }
   }
-  if (ok) { saveStateToLocal(); renderDocs(); renderStoragePanel(); showToast(`${ok} file tersimpan di Gudang "${fname}"`); }
+  btn.disabled = false; btn.textContent = 'Upload';
+  if (ok) { saveStateToLocal(); docFolderFilter = folder; renderDocs(); renderStoragePanel(); showToast(`${ok} file tersimpan di "${folder}" (${STORE_NAMES[store]})`); }
+  if (ok === files.length) { pendingDocs = []; closeSheet('sheetDocUpload'); }
 }
 function docById(id) { return (appState.workDocs || []).find(d => d.id === id); }
 function renderDocs() {
   const list = $('docList'); if (!list) return;
   const all = appState.workDocs || [];
-  const folders = Array.from(new Set(all.map(d => d.folder || 'Umum'))).sort();
-  if (docFolderFilter !== 'Semua' && !folders.includes(docFolderFilter)) docFolderFilter = 'Semua';
+  const folders = docFolders().map(f => f.name);
+  if (docFolderFilter !== 'Semua' && !folders.some(f => f.toLowerCase() === docFolderFilter.toLowerCase())) docFolderFilter = 'Semua';
   const chips = $('docFolderChips');
   if (chips) {
     chips.innerHTML = ['Semua', ...folders].map(f => `<button class="chip ${docFolderFilter === f ? 'active blue' : ''}" data-f="${esc(f)}"><i class="fas ${f === 'Semua' ? 'fa-layer-group' : 'fa-folder'}"></i> ${esc(f)}</button>`).join('');
     chips.querySelectorAll('button').forEach(b => b.onclick = () => { docFolderFilter = b.dataset.f; renderDocs(); });
   }
   const q = ($('docSearch') ? $('docSearch').value : '').toLowerCase();
-  const rows = all.filter(d => (docFolderFilter === 'Semua' || (d.folder || 'Umum') === docFolderFilter) && (d.name + ' ' + (d.folder || '')).toLowerCase().includes(q));
+  const rows = all.filter(d => (docFolderFilter === 'Semua' || (d.folder || 'Umum').toLowerCase() === docFolderFilter.toLowerCase()) && (d.name + ' ' + (d.folder || '')).toLowerCase().includes(q));
   if ($('docCountBadge')) $('docCountBadge').textContent = `${all.length} file · ${formatBytes(all.reduce((n, d) => n + (d.size || 0), 0))}`;
   if (!rows.length) { list.innerHTML = `<div class="empty"><i class="fas fa-box-open"></i><div class="e-title">${all.length ? 'Tidak ada file yang cocok' : 'Gudang masih kosong'}</div><div class="e-sub">Upload materi, SOP, PDF, gambar, atau dokumen kerja.</div></div>`; return; }
   list.innerHTML = rows.map(d => {
@@ -6224,6 +6624,7 @@ function renderDocs() {
     return `<div class="row tappable" onclick="openDocViewer('${esc(d.id)}')">
       <span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span>
       <div class="flex-1"><div class="row-title truncate">${esc(d.name)}</div><div class="row-sub truncate"><i class="fas fa-folder" style="font-size:10px"></i> ${esc(d.folder || 'Umum')} · ${formatBytes(d.size)} · ${esc(new Date(d.createdAt).toLocaleDateString('id-ID'))}</div></div>
+      <button class="icon-btn sm green" onclick="event.stopPropagation(); shareDoc('${esc(d.id)}')" title="Share ke WhatsApp"><i class="fab fa-whatsapp"></i></button>
       <button class="icon-btn sm clear" style="color:var(--label2)" onclick="event.stopPropagation(); openDocActions('${esc(d.id)}')"><i class="fas fa-ellipsis"></i></button>
     </div>`;
   }).join('');
@@ -6233,20 +6634,22 @@ async function openDocViewer(id) {
   const d = docById(id); if (!d) return;
   $('viewerTitle').textContent = d.name;
   $('viewerMeta').textContent = `${d.folder || 'Umum'} · ${formatBytes(d.size)} · ${new Date(d.createdAt).toLocaleString('id-ID')}`;
+  $('viewerBody').classList.remove('pdf-pages');
   $('viewerBody').innerHTML = '<span class="spinner dark"></span>';
   $('viewerActions').innerHTML = `
-    <button class="btn btn-tinted btn-sm" onclick="openDocInTab('${esc(d.id)}')"><i class="fas fa-up-right-from-square"></i> Buka</button>
-    <button class="btn btn-gray btn-sm" onclick="downloadDoc('${esc(d.id)}')"><i class="fas fa-download"></i> Unduh</button>
-    <button class="btn btn-gray btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fas fa-envelope"></i> Kirim</button>`;
+    <button class="btn btn-green btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+    <button class="btn btn-tinted btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
+    <button class="btn btn-gray btn-sm" onclick="downloadDoc('${esc(d.id)}')"><i class="fas fa-download"></i> Unduh</button>`;
   $('viewerMore').onclick = () => openDocActions(d.id);
   openSheet('sheetViewer');
   try {
     const blob = await apiFetchBlob(d.fileId);
-    const url = await fileObjectUrl(d.fileId);
-    if (/^image\//.test(d.type)) $('viewerBody').innerHTML = `<img src="${url}" alt="">`;
-    else if (/pdf/.test(d.type) || /\.pdf$/i.test(d.name)) $('viewerBody').innerHTML = `<iframe src="${url}" title="${esc(d.name)}"></iframe>`;
+    if (/^image\//.test(d.type)) $('viewerBody').innerHTML = `<img src="${await fileObjectUrl(d.fileId)}" alt="">`;
+    else if (/pdf/.test(d.type) || /\.pdf$/i.test(d.name)) await renderPdfInto($('viewerBody'), blob);
+    else if (/^audio\//.test(d.type)) $('viewerBody').innerHTML = `<audio controls src="${await fileObjectUrl(d.fileId)}" style="width:90%"></audio>`;
+    else if (/^video\//.test(d.type)) $('viewerBody').innerHTML = `<video controls playsinline src="${await fileObjectUrl(d.fileId)}" style="max-width:100%; max-height:70vh"></video>`;
     else if (isTextDoc(d)) { const t = await blob.text(); $('viewerBody').innerHTML = `<pre>${esc(t.slice(0, 200000))}</pre>`; }
-    else $('viewerBody').innerHTML = `<div class="empty"><i class="fas ${fileIconFor(d.type, d.name)[0]}"></i><div class="e-sub">Pratinjau tidak tersedia untuk jenis file ini.<br>Tap <b>Buka</b> atau <b>Unduh</b>.</div></div>`;
+    else $('viewerBody').innerHTML = `<div class="empty"><i class="fas ${fileIconFor(d.type, d.name)[0]}"></i><div class="e-sub">Pratinjau belum tersedia untuk jenis file ini (mis. Word/Excel).<br>Tap <b>Bagikan</b> → buka di aplikasi lain, atau <b>Unduh</b>.</div></div>`;
   } catch (err) { $('viewerBody').innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i><div class="e-sub">${esc(err.message)}</div></div>`; }
 }
 async function openDocInTab(id) {
@@ -6258,22 +6661,18 @@ async function openDocInTab(id) {
 async function downloadDoc(id) { const d = docById(id); if (!d) return; try { downloadBlob(await apiFetchBlob(d.fileId), d.name); } catch (err) { showToast(err.message, false); } }
 async function shareDoc(id) {
   const d = docById(id); if (!d) return;
-  if (!fileBlobCache.has(d.fileId)) { showToast('Menyiapkan file… tap Kirim sekali lagi.'); apiFetchBlob(d.fileId).catch(() => {}); return; }
-  const file = new File([fileBlobCache.get(d.fileId)], d.name, { type: d.type || 'application/octet-stream' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: d.name }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
-  }
-  downloadBlob(file, d.name);
-  setTimeout(() => openShareSheet(`[File] ${d.name}`, `File: ${d.name}\nFolder: ${d.folder || 'Umum'}\n\n(Lampirkan file yang baru saja terunduh)`), 500);
+  if (!fileBlobCache.has(d.fileId)) { showToast('Menyiapkan file… tap sekali lagi untuk membagikan.'); apiFetchBlob(d.fileId).catch(err => showToast(err.message, false)); return; }
+  shareBlobFile(fileBlobCache.get(d.fileId), d.name, d.type);
 }
 function openDocActions(id) {
   const d = docById(id); if (!d) return;
   openActionSheet({ title: d.name, message: `${d.folder || 'Umum'} · ${formatBytes(d.size)}`, actions: [
-    { text: 'Buka', icon: 'fas fa-up-right-from-square', onClick: () => openDocInTab(id) },
+    { text: 'Lihat', icon: 'fas fa-eye', onClick: () => openDocViewer(id) },
+    { text: 'Share ke WhatsApp', icon: 'fab fa-whatsapp', onClick: () => shareDoc(id) },
     { text: 'Unduh', icon: 'fas fa-download', onClick: () => downloadDoc(id) },
-    { text: 'Kirim / Bagikan', icon: 'fas fa-envelope', onClick: () => shareDoc(id) },
+    { text: 'Buka di Tab Baru', icon: 'fas fa-up-right-from-square', onClick: () => openDocInTab(id) },
     { text: 'Ganti Nama', icon: 'fas fa-pen', onClick: () => renameDoc(id) },
-    { text: 'Pindah Folder', icon: 'fas fa-folder', onClick: () => moveDoc(id) },
+    { text: 'Pindah Kategori', icon: 'fas fa-folder', onClick: () => moveDoc(id) },
     { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deleteDoc(id) }
   ] });
 }
@@ -6285,9 +6684,9 @@ async function renameDoc(id) {
 }
 async function moveDoc(id) {
   const d = docById(id); if (!d) return;
-  const v = await iosAlert({ title: 'Pindah ke folder', input: { value: d.folder || '' , placeholder: 'Nama folder' }, actions: [{ text: 'Batal', value: false }, { text: 'Pindah', value: true, bold: true }] });
+  const v = await iosAlert({ title: 'Pindah ke kategori', message: docFolders().length ? 'Kategori: ' + docFolders().map(f => f.name).slice(0, 6).join(', ') : '', input: { value: d.folder || '', placeholder: 'Nama kategori' }, actions: [{ text: 'Batal', value: false }, { text: 'Pindah', value: true, bold: true }] });
   if (v === null) return;
-  d.folder = v.trim() || 'Umum'; saveStateToLocal(); renderDocs(); showToast(`Dipindah ke "${d.folder}"`);
+  d.folder = canonicalFolder(v); saveStateToLocal(); renderDocs(); showToast(`Dipindah ke "${d.folder}"`);
 }
 async function deleteDoc(id) {
   const d = docById(id); if (!d) return;
@@ -6353,7 +6752,7 @@ function renderStoragePanel(fromRefresh) {
     html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', used, u.r2.limit, null, 'peringatan di 7 GB & 8,5 GB · upload berhenti di 9 GB (aman dari tagihan)');
   }
   else html += `<div class="divider"></div><div class="t-foot muted semibold">CLOUDFLARE R2</div><div class="t-sub muted">Belum aktif — <a href="#" onclick="openStorageGuide('r2'); return false">lihat langkah</a></div>`;
-  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Hub: ${formatBytes(u.drive.folderBytes || 0)}`);
+  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Assistant: ${formatBytes(u.drive.folderBytes || 0)}`);
   else if (u.drive && u.drive.error) html += `<div class="divider"></div><div class="t-foot muted semibold">GOOGLE DRIVE</div><div class="t-sub c-red">${esc(u.drive.error)}</div>`;
   if (u.kv && u.kv.count) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE KV (LAMA)', u.kv.bytes, u.kv.limit, null, `${u.kv.count} file`);
   const off = typeof offlineTotalBytes === 'function' ? offlineTotalBytes() : 0;
@@ -6368,8 +6767,8 @@ function renderStoragePanel(fromRefresh) {
 }
 
 // ---------------- PANDUAN PENYIMPANAN ----------------
-const APPS_SCRIPT_CODE = `/** Hadzmi Hub — Penyimpanan Google Drive */
-const FOLDER_NAME = 'Hadzmi Hub';
+const APPS_SCRIPT_CODE = `/** Hadzmi Assistant — Penyimpanan Google Drive */
+const FOLDER_NAME = 'Hadzmi Assistant';
 function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
 function folder_() { const it = DriveApp.getFoldersByName(FOLDER_NAME); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME); }
 function inFolder_(file) { const p = file.getParents(); const fid = folder_().getId(); while (p.hasNext()) if (p.next().getId() === fid) return true; return false; }
@@ -6408,9 +6807,9 @@ function openStorageGuide(kind) {
   } else {
     $('guideTitle').textContent = 'Sambungkan Google Drive';
     $('guideBody').innerHTML = `
-      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Hub"</div></div></div></div>
+      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Assistant"</div></div></div></div>
       ${guideSteps([
-        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Hub Drive".',
+        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Assistant Drive".',
         'Hapus isi editor, lalu tap <b>Salin Kode</b> di bawah ini dan tempel ke editor → tap 💾 <b>Save</b>.',
         'Tap ⚙️ <b>Project Settings</b> → <b>Script Properties</b> → <b>Add script property</b>: Property <code>SECRET</code>, Value: kata rahasia panjang buatanmu (mis. 30 huruf/angka acak) → Save.',
         'Tap <b>Deploy → New deployment</b> → ⚙️ pilih <b>Web app</b> → Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → <b>Deploy</b> → izinkan akses (Authorize) → salin <b>Web app URL</b>.',
@@ -6629,7 +7028,7 @@ async function addPhotosToAlbum(ids) {
 function addSelectedToAlbum() { const ids = gallerySelectedIds(); if (!ids.length) return showToast('Pilih foto dulu.', false); addPhotosToAlbum(ids); }
 
 // ---------- Render ----------
-function setGalleryView(v) { galleryView = v; galleryAlbumOpen = null; galleryPlaceOpen = null; galleryCoverPick = false; renderGallery(); }
+function setGalleryView(v) { if (galleryView === 'hidden' && v !== 'hidden' && typeof lockVault === 'function' && vaultKey) lockVault(); if (v === 'hidden') exitGallerySelect(); galleryView = v; galleryAlbumOpen = null; galleryPlaceOpen = null; galleryCoverPick = false; renderGallery(); }
 function filteredGalleryPhotos() {
   const q = ($('gallerySearch') ? $('gallerySearch').value : '').toLowerCase().trim();
   let list = gPhotos().slice().sort((a, b) => (b.takenAt || 0) - (a.takenAt || 0));
@@ -6682,6 +7081,7 @@ function renderGallery() {
   if (seg) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === galleryView));
   const ctx = $('galleryContext');
   const all = gPhotos();
+  if (galleryView === 'hidden') { ctx.classList.add('hidden'); ctx.innerHTML = ''; return renderVault(body); }
   // Bar konteks (album / tempat terbuka)
   if (galleryAlbumOpen || galleryPlaceOpen) {
     const a = galleryAlbumOpen && gAlbum(galleryAlbumOpen);
@@ -6892,6 +7292,522 @@ async function deleteGalleryPhotos(ids) {
   });
 })();
 
+/* ---- 14-vault.js ---- */
+/* =========================================================
+   14 · GALERI TERSEMBUNYI (terenkripsi) + EDITOR FOTO (putar & potong)
+   Foto tersembunyi dienkripsi AES-256-GCM DI PERANGKAT sebelum di-upload.
+   Kunci berasal dari sandi khusus (PBKDF2) — sandi tidak pernah disimpan / dikirim ke mana pun.
+   ========================================================= */
+let vaultKey = null, vaultRaw = null, vaultTimer = null;
+const vaultUrls = new Map();
+let vaultViewerId = null, vaultList = [];
+const PBKDF2_ITER = 310000;
+
+const b64e = buf => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+const b64d = str => { const bin = atob(str); const o = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i); return o; };
+async function deriveKek(pw, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function aesEnc(key, data) { const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data); return { iv: b64e(iv), ct: new Uint8Array(ct) }; }
+async function aesDec(key, iv, ct) { return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(iv) }, key, ct)); }
+function vaultItems() { return (appState.vault && appState.vault.items) || []; }
+function touchVault() { clearTimeout(vaultTimer); vaultTimer = setTimeout(() => lockVault(true), 5 * 60 * 1000); }
+function lockVault(auto) {
+  vaultKey = null; vaultRaw = null; clearTimeout(vaultTimer);
+  vaultUrls.forEach(u => URL.revokeObjectURL(u)); vaultUrls.clear();
+  closeVaultViewer();
+  if (galleryView === 'hidden') renderGallery();
+  if (auto === true) showToast('Galeri Tersembunyi dikunci otomatis.');
+}
+async function createVault(pw, pw2) {
+  if (!pw || pw.length < 6) return showToast('Sandi minimal 6 karakter.', false);
+  if (pw !== pw2) return showToast('Ulangi sandi tidak sama.', false);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const raw = crypto.getRandomValues(new Uint8Array(32));
+  const kek = await deriveKek(pw, salt);
+  const w = await aesEnc(kek, raw);
+  appState.vault = { v: 1, salt: b64e(salt), wrapIv: w.iv, wrapped: b64e(w.ct), items: [] };
+  saveStateToLocal();
+  await openVaultWithRaw(raw);
+  showToast('Galeri Tersembunyi dibuat & terbuka.');
+}
+async function openVaultWithRaw(raw) {
+  vaultRaw = raw;
+  vaultKey = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  touchVault(); renderGallery();
+}
+async function unlockVault(pw) {
+  const v = appState.vault; if (!v) return false;
+  try {
+    const kek = await deriveKek(pw, b64d(v.salt));
+    const raw = await aesDec(kek, v.wrapIv, b64d(v.wrapped));
+    await openVaultWithRaw(raw); return true;
+  } catch (e) { return false; }
+}
+async function changeVaultPassword() {
+  if (!vaultRaw) return showToast('Buka Galeri Tersembunyi dulu.', false);
+  const p1 = await iosAlert({ title: 'Sandi baru', message: 'Minimal 6 karakter', input: { type: 'password' }, actions: [{ text: 'Batal', value: false }, { text: 'Lanjut', value: true, bold: true }] });
+  if (!p1) return; if (p1.length < 6) return showToast('Sandi minimal 6 karakter.', false);
+  const p2 = await iosAlert({ title: 'Ulangi sandi baru', input: { type: 'password' }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });
+  if (p2 !== p1) return showToast('Sandi tidak sama.', false);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const w = await aesEnc(await deriveKek(p1, salt), vaultRaw);
+  Object.assign(appState.vault, { salt: b64e(salt), wrapIv: w.iv, wrapped: b64e(w.ct) });
+  saveStateToLocal(); showToast('Sandi Galeri Tersembunyi diganti.');
+}
+async function vaultMeta(item) {
+  if (item._meta) return item._meta;
+  const m = JSON.parse(new TextDecoder().decode(await aesDec(vaultKey, item.iv.m, b64d(item.meta))));
+  Object.defineProperty(item, '_meta', { value: m, enumerable: false, configurable: true });
+  return m;
+}
+async function vaultBlobUrl(item, which) {
+  const k = item.id + ':' + which; if (vaultUrls.has(k)) return vaultUrls.get(k);
+  const fid = which === 'thumb' ? item.thumbId : item.fileId;
+  const token = await getIdTokenOrThrow();
+  const r = await fetch('/api/files/' + fid, { headers: { Authorization: 'Bearer ' + token } });
+  if (!r.ok) throw new Error('Gagal memuat (' + r.status + ')');
+  const plain = await aesDec(vaultKey, which === 'thumb' ? item.iv.t : item.iv.f, new Uint8Array(await r.arrayBuffer()));
+  const u = URL.createObjectURL(new Blob([plain], { type: 'image/jpeg' })); vaultUrls.set(k, u); return u;
+}
+async function addImageToVault(fullBlob, thumbBlob, meta, store) {
+  const fe = await aesEnc(vaultKey, new Uint8Array(await fullBlob.arrayBuffer()));
+  const te = await aesEnc(vaultKey, new Uint8Array(await thumbBlob.arrayBuffer()));
+  const me = await aesEnc(vaultKey, new TextEncoder().encode(JSON.stringify(meta)));
+  const rnd = () => 'v_' + Math.random().toString(36).slice(2, 12) + '.bin';
+  const up = await apiUploadFile(new Blob([fe.ct], { type: 'application/octet-stream' }), rnd(), null, store);
+  const upT = await apiUploadFile(new Blob([te.ct], { type: 'application/octet-stream' }), rnd(), null, store);
+  appState.vault.items = vaultItems();
+  appState.vault.items.unshift({ id: 'vt_' + Date.now() + Math.random().toString(36).slice(2, 6), fileId: up.id, thumbId: upT.id, iv: { f: fe.iv, t: te.iv, m: me.iv }, meta: b64e(me.ct), size: up.size + upT.size });
+}
+
+// ---------- UI Galeri Tersembunyi ----------
+function galleryAddClick() {
+  if (galleryView === 'hidden') { if (!vaultKey) return showToast('Buka Galeri Tersembunyi dulu.', false); return $('vaultFileInput').click(); }
+  $('galleryFileInput').click();
+}
+async function onVaultPicked(e) {
+  const files = Array.from(e.target.files || []); e.target.value = '';
+  if (!files.length || !vaultKey) return;
+  let ok = 0;
+  for (let i = 0; i < files.length; i++) {
+    try {
+      showToast(`Mengenkripsi & mengunggah ${i + 1}/${files.length}…`);
+      const exif = await readExif(files[i]); const img = await loadImage(files[i]);
+      const full = await imageToJpeg(img, 2560, 0.9), thumb = await imageToJpeg(img, 480, 0.74);
+      await addImageToVault(full.blob, thumb.blob, { name: files[i].name, caption: '', takenAt: exif.takenAt || files[i].lastModified || Date.now(), createdAt: Date.now(), w: full.w, h: full.h }, getDefaultStore());
+      ok++;
+    } catch (err) { showToast('Gagal: ' + err.message, false); }
+  }
+  if (ok) { saveStateToLocal(); renderGallery(); renderStoragePanel(); showToast(`${ok} foto disimpan terenkripsi di Tersembunyi 🔒`); }
+  touchVault();
+}
+function renderVault(body) {
+  body.className = '';
+  if (!appState.vault) {
+    body.innerHTML = `<div class="vault-panel"><div class="vault-lock"><div class="vl-icon"><i class="fas fa-user-lock"></i></div>
+      <div class="t-title3">Galeri Tersembunyi</div>
+      <div class="t-foot muted" style="max-width:360px; margin:6px auto 4px">Buat sandi khusus (berbeda dari PIN). Foto dienkripsi di perangkat sebelum disimpan — tanpa sandi ini tidak ada yang bisa melihatnya, termasuk dari dashboard.</div>
+      <input type="password" id="vaultNewPw" placeholder="Buat sandi" autocomplete="new-password"><br>
+      <input type="password" id="vaultNewPw2" placeholder="Ulangi sandi" autocomplete="new-password"><br>
+      <button class="btn btn-filled mt-16" onclick="createVault($('vaultNewPw').value, $('vaultNewPw2').value)"><i class="fas fa-lock"></i> Buat & Buka</button>
+      <div class="t-cap muted mt-12">Sandi tidak bisa dipulihkan jika lupa.</div></div></div>`;
+    return;
+  }
+  if (!vaultKey) {
+    body.innerHTML = `<div class="vault-panel"><form class="vault-lock" onsubmit="event.preventDefault(); submitVaultUnlock()"><div class="vl-icon"><i class="fas fa-lock"></i></div>
+      <div class="t-title3">Tersembunyi</div><div class="t-foot muted">${vaultItems().length} foto terenkripsi</div>
+      <input type="password" id="vaultPw" placeholder="Sandi Galeri Tersembunyi" autocomplete="current-password"><br>
+      <button type="submit" class="btn btn-filled mt-16" id="vaultUnlockBtn"><i class="fas fa-unlock"></i> Buka</button></form></div>`;
+    setTimeout(() => { const i = $('vaultPw'); if (i && window.innerWidth > 760) i.focus(); }, 200);
+    return;
+  }
+  const items = vaultItems();
+  body.innerHTML = `<div class="vault-panel">
+    <div class="vault-head"><div><div class="t-headline"><i class="fas fa-lock-open"></i> Tersembunyi</div><div class="t-cap muted">${items.length} foto · terkunci otomatis 5 menit</div></div>
+      <div class="flex gap-6"><button class="btn btn-gray btn-sm" onclick="$('vaultFileInput').click()"><i class="fas fa-plus"></i></button><button class="btn btn-gray btn-sm" onclick="changeVaultPassword()"><i class="fas fa-key"></i></button><button class="btn btn-gray btn-sm" onclick="lockVault()"><i class="fas fa-lock"></i> Kunci</button></div></div>
+    ${items.length ? `<div class="g-grid">${items.map(it => `<button class="photo-cell" data-id="${esc(it.id)}"><span class="ph-load"><span class="spinner"></span></span><img alt=""></button>`).join('')}</div>`
+      : `<div class="empty" style="color:rgba(235,235,245,.6)"><i class="fas fa-eye-slash"></i><div class="e-sub">Belum ada foto. Tap + atau pilih foto di Pustaka lalu "Sembunyikan".</div></div>`}</div>`;
+  vaultList = items.map(i => i.id);
+  body.querySelectorAll('.photo-cell').forEach(cell => {
+    const it = items.find(x => x.id === cell.dataset.id);
+    cell.onclick = () => openVaultViewer(it.id);
+    vaultBlobUrl(it, 'thumb').then(u => { cell.querySelector('img').src = u; const l = cell.querySelector('.ph-load'); if (l) l.remove(); })
+      .catch(() => { const l = cell.querySelector('.ph-load'); if (l) l.innerHTML = '<i class="fas fa-triangle-exclamation"></i>'; });
+  });
+  touchVault();
+}
+async function submitVaultUnlock() {
+  const btn = $('vaultUnlockBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  const ok = await unlockVault($('vaultPw').value);
+  if (!ok) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-unlock"></i> Buka'; const f = btn.closest('form'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake'); showToast('Sandi salah.', false); $('vaultPw').select(); }
+}
+async function ensureVaultOpen() {
+  if (vaultKey) return true;
+  if (!appState.vault) { setGalleryView('hidden'); showToast('Buat sandi Galeri Tersembunyi dulu.', false); return false; }
+  const pw = await iosAlert({ title: 'Buka Tersembunyi', message: 'Masukkan sandi Galeri Tersembunyi', input: { type: 'password' }, actions: [{ text: 'Batal', value: false }, { text: 'Buka', value: true, bold: true }] });
+  if (!pw) return false;
+  if (!(await unlockVault(pw))) { showToast('Sandi salah.', false); return false; }
+  return true;
+}
+/** Pindahkan foto dari Galeri ke Tersembunyi (dienkripsi ulang, file asli dihapus). */
+async function hideGalleryPhotos(ids) {
+  const items = ids.map(gPhoto).filter(Boolean); if (!items.length) return showToast('Pilih foto dulu.', false);
+  if (!(await ensureVaultOpen())) return;
+  let ok = 0;
+  for (const p of items) {
+    try {
+      showToast(`Menyembunyikan ${ok + 1}/${items.length}…`);
+      const full = await galleryBlob(p);
+      const tu = await signedUrl(p.thumbId); const tr = await fetch(tu); const thumb = await tr.blob();
+      await addImageToVault(full, thumb, { name: p.name, caption: p.caption || '', takenAt: p.takenAt, createdAt: p.createdAt, w: p.w, h: p.h, location: p.location || null }, storeOfId(p.fileId) || getDefaultStore());
+      apiDeleteFile(p.fileId).catch(() => {}); apiDeleteFile(p.thumbId).catch(() => {});
+      appState.galleryPhotos = gPhotos().filter(x => x.id !== p.id); gallerySelected.delete(p.id);
+      ok++;
+    } catch (err) { showToast('Gagal: ' + err.message, false); }
+  }
+  if (ok) { saveStateToLocal(); exitGallerySelect(); closeGalleryViewer(); renderGallery(); showToast(`${ok} foto dipindah ke Tersembunyi 🔒`); }
+}
+async function unhideVaultItems(ids) {
+  if (!vaultKey) return;
+  let ok = 0;
+  for (const id of ids) {
+    const it = vaultItems().find(x => x.id === id); if (!it) continue;
+    try {
+      const m = await vaultMeta(it);
+      const fullU = await vaultBlobUrl(it, 'full'), thU = await vaultBlobUrl(it, 'thumb');
+      const full = await (await fetch(fullU)).blob(), th = await (await fetch(thU)).blob();
+      const store = storeOfId(it.fileId) || getDefaultStore();
+      const up = await apiUploadFile(full, m.name || 'foto.jpg', null, store), upT = await apiUploadFile(th, 'thumb_' + (m.name || 'foto.jpg'), null, store);
+      gPhotos().unshift({ id: 'gp_' + Date.now() + '_' + ok, fileId: up.id, thumbId: upT.id, name: m.name || 'foto.jpg', w: m.w, h: m.h, size: up.size + upT.size, takenAt: m.takenAt, createdAt: m.createdAt || Date.now(), caption: m.caption || '', location: m.location || null, albumIds: [], fav: false });
+      apiDeleteFile(it.fileId).catch(() => {}); apiDeleteFile(it.thumbId).catch(() => {});
+      appState.vault.items = vaultItems().filter(x => x.id !== id);
+      ok++;
+    } catch (err) { showToast('Gagal: ' + err.message, false); }
+  }
+  if (ok) { saveStateToLocal(); closeVaultViewer(); renderGallery(); showToast(`${ok} foto dikembalikan ke Pustaka.`); }
+}
+async function deleteVaultItems(ids) {
+  if (!(await iosConfirm(`Hapus ${ids.length} foto tersembunyi?`, 'Dihapus permanen.', 'Hapus', true))) return;
+  ids.forEach(id => { const it = vaultItems().find(x => x.id === id); if (it) { apiDeleteFile(it.fileId).catch(() => {}); apiDeleteFile(it.thumbId).catch(() => {}); } });
+  appState.vault.items = vaultItems().filter(x => !ids.includes(x.id));
+  saveStateToLocal(); closeVaultViewer(); renderGallery(); renderStoragePanel(); showToast('Foto dihapus.');
+}
+async function openVaultViewer(id) {
+  vaultViewerId = id; $('vaultViewer').classList.add('open'); touchVault();
+  const it = vaultItems().find(x => x.id === id); if (!it) return;
+  $('vvSpin').classList.remove('hidden'); $('vvImg').removeAttribute('src');
+  try {
+    const m = await vaultMeta(it);
+    const d = new Date(m.takenAt || m.createdAt || Date.now());
+    $('vvDate').textContent = `${d.getDate()} ${ID_MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+    const th = vaultUrls.get(it.id + ':thumb'); if (th) $('vvImg').src = th;
+    $('vvImg').src = await vaultBlobUrl(it, 'full');
+  } catch (err) { showToast(err.message, false); }
+  $('vvSpin').classList.add('hidden');
+}
+function closeVaultViewer() { const v = $('vaultViewer'); if (v) v.classList.remove('open'); vaultViewerId = null; }
+function stepVaultViewer(dir) { const i = vaultList.indexOf(vaultViewerId), j = i + dir; if (j >= 0 && j < vaultList.length) openVaultViewer(vaultList[j]); }
+async function shareVaultItem() {
+  const it = vaultItems().find(x => x.id === vaultViewerId); if (!it) return;
+  const u = vaultUrls.get(it.id + ':full'); if (!u) return showToast('Tunggu foto selesai dimuat.', false);
+  const m = await vaultMeta(it); shareBlobFile(await (await fetch(u)).blob(), m.name || 'foto.jpg', 'image/jpeg');
+}
+function openVaultItemActions() {
+  const id = vaultViewerId; if (!id) return;
+  openActionSheet({ title: 'Foto Tersembunyi', actions: [
+    { text: 'Tampilkan di Pustaka', icon: 'fas fa-eye', onClick: () => unhideVaultItems([id]) },
+    { text: 'Bagikan', icon: 'fas fa-arrow-up-from-bracket', onClick: shareVaultItem },
+    { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deleteVaultItems([id]) }
+  ] });
+}
+(function bindVaultViewer() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const st = $('vvStage'); if (!st) return; let x0 = null, y0 = 0;
+    st.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    st.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) stepVaultViewer(dx < 0 ? 1 : -1); else if (dy > 110) closeVaultViewer(); });
+    document.addEventListener('keydown', e => { if (!$('vaultViewer').classList.contains('open')) return; if (e.key === 'ArrowRight') stepVaultViewer(1); if (e.key === 'ArrowLeft') stepVaultViewer(-1); if (e.key === 'Escape') closeVaultViewer(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && vaultKey) lockVault(); });
+  });
+})();
+
+// ---------- EDITOR FOTO: putar & potong ----------
+let pe = null;
+async function openPhotoEditor(id) {
+  const p = gPhoto(id); if (!p) return;
+  try {
+    showToast('Memuat foto…');
+    const img = await loadImage(await galleryBlob(p));
+    pe = { id, img, rot: 0, aspect: null, crop: { x: 0, y: 0, w: 1, h: 1 } };
+    openSheet('sheetPhotoEdit');
+    $('peAspect').querySelectorAll('button').forEach(b => { b.classList.toggle('active', b.dataset.a === 'free'); b.onclick = () => peSetAspect(b.dataset.a); });
+    setTimeout(peDraw, 60);
+    bindPeCrop();
+  } catch (err) { showToast(err.message, false); }
+}
+function closePhotoEditor() { closeSheet('sheetPhotoEdit'); pe = null; }
+function peDims() { const r = pe.rot % 180 !== 0; return { w: r ? pe.img.naturalHeight : pe.img.naturalWidth, h: r ? pe.img.naturalWidth : pe.img.naturalHeight }; }
+function peRender(canvas, maxW, maxH) {
+  const d = peDims(), sc = Math.min(1, maxW / d.w, maxH / d.h);
+  canvas.width = Math.round(d.w * sc); canvas.height = Math.round(d.h * sc);
+  const c = canvas.getContext('2d'); c.save(); c.translate(canvas.width / 2, canvas.height / 2); c.rotate(pe.rot * Math.PI / 180);
+  const iw = pe.img.naturalWidth * sc, ih = pe.img.naturalHeight * sc; c.drawImage(pe.img, -iw / 2, -ih / 2, iw, ih); c.restore();
+}
+function peDraw() {
+  if (!pe) return;
+  const stage = $('peStage'), cv = $('peCanvas');
+  peRender(cv, stage.clientWidth, stage.clientHeight);
+  const r = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect(), box = $('peCrop');
+  box.style.left = (r.left - sr.left + pe.crop.x * r.width) + 'px'; box.style.top = (r.top - sr.top + pe.crop.y * r.height) + 'px';
+  box.style.width = (pe.crop.w * r.width) + 'px'; box.style.height = (pe.crop.h * r.height) + 'px';
+}
+function peRotate(deg) { if (!pe) return; pe.rot = (pe.rot + deg + 360) % 360; pe.crop = { x: 0, y: 0, w: 1, h: 1 }; if (pe.aspect) peSetAspect(String(pe.aspect)); else peDraw(); }
+function peReset() { if (!pe) return; pe.rot = 0; pe.aspect = null; pe.crop = { x: 0, y: 0, w: 1, h: 1 }; $('peAspect').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.a === 'free')); peDraw(); }
+function peSetAspect(a) {
+  if (!pe) return;
+  $('peAspect').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.a === a));
+  pe.aspect = a === 'free' ? null : parseFloat(a);
+  if (pe.aspect) {
+    const d = peDims(), imgA = d.w / d.h; let w = 1, h = 1;
+    if (pe.aspect > imgA) h = imgA / pe.aspect; else w = pe.aspect / imgA;
+    pe.crop = { x: (1 - w) / 2, y: (1 - h) / 2, w, h };
+  }
+  peDraw();
+}
+function bindPeCrop() {
+  const box = $('peCrop'); if (box.dataset.bound) return; box.dataset.bound = '1';
+  let drag = null;
+  const start = e => {
+    if (!pe) return; e.preventDefault();
+    const t = e.target.classList.contains('pe-h') ? [...e.target.classList].find(c => c.length === 2) : 'move';
+    const r = $('peCanvas').getBoundingClientRect();
+    drag = { t, x0: e.clientX, y0: e.clientY, c: { ...pe.crop }, rw: r.width, rh: r.height };
+    box.setPointerCapture && box.setPointerCapture(e.pointerId);
+  };
+  const move = e => {
+    if (!drag || !pe) return;
+    const dx = (e.clientX - drag.x0) / drag.rw, dy = (e.clientY - drag.y0) / drag.rh, c = { ...drag.c }, min = 0.08;
+    if (drag.t === 'move') { c.x = Math.min(1 - c.w, Math.max(0, c.x + dx)); c.y = Math.min(1 - c.h, Math.max(0, c.y + dy)); }
+    else {
+      if (drag.t.includes('l')) { const nx = Math.min(c.x + c.w - min, Math.max(0, c.x + dx)); c.w += c.x - nx; c.x = nx; }
+      if (drag.t.includes('r')) c.w = Math.min(1 - c.x, Math.max(min, c.w + dx));
+      if (drag.t.includes('t')) { const ny = Math.min(c.y + c.h - min, Math.max(0, c.y + dy)); c.h += c.y - ny; c.y = ny; }
+      if (drag.t.includes('b')) c.h = Math.min(1 - c.y, Math.max(min, c.h + dy));
+      if (pe.aspect) { const d = peDims(); const want = pe.aspect * d.h / d.w; c.h = Math.min(1 - c.y, c.w / want); c.w = c.h * want; }
+    }
+    pe.crop = c; peDraw();
+  };
+  box.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', () => { drag = null; });
+  window.addEventListener('resize', () => { if (pe) peDraw(); });
+}
+async function savePhotoEdit() {
+  if (!pe) return;
+  const p = gPhoto(pe.id); if (!p) return closePhotoEditor();
+  const btn = $('peSaveBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner" style="display:inline-block"></span>';
+  try {
+    const full = document.createElement('canvas'); peRender(full, 4096, 4096);
+    const c = pe.crop, sx = Math.round(c.x * full.width), sy = Math.round(c.y * full.height), sw = Math.round(c.w * full.width), sh = Math.round(c.h * full.height);
+    const out = document.createElement('canvas'); out.width = sw; out.height = sh; out.getContext('2d').drawImage(full, sx, sy, sw, sh, 0, 0, sw, sh);
+    const blob = await new Promise(r => out.toBlob(r, 'image/jpeg', 0.9));
+    const img = await loadImage(blob); const thumb = await imageToJpeg(img, 480, 0.74);
+    const store = storeOfId(p.fileId) || getDefaultStore();
+    const up = await apiUploadFile(blob, p.name || 'foto.jpg', null, store), upT = await apiUploadFile(thumb.blob, 'thumb_' + (p.name || 'foto.jpg'), null, store);
+    const old = [p.fileId, p.thumbId];
+    Object.assign(p, { fileId: up.id, thumbId: upT.id, w: sw, h: sh, size: up.size + upT.size });
+    saveStateToLocal(); old.forEach(f => apiDeleteFile(f).catch(() => {}));
+    closePhotoEditor(); renderGallery();
+    if (galleryViewerId === p.id) showViewerPhoto();
+    showToast('Foto diperbarui ✓');
+  } catch (err) { showToast('Gagal menyimpan: ' + err.message, false); }
+  btn.disabled = false; btn.textContent = 'Simpan';
+}
+
+/* ---- 15-wallet.js ---- */
+/* =========================================================
+   15 · WALLET — kartu member ala Apple Wallet, QR / barcode bisa di-scan dari layar
+   Teks kartu disimpan di Firebase; foto kartu di R2/Drive (link privat).
+   ========================================================= */
+const QR_LIB = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+const BARCODE_LIB = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
+const JSQR_LIB = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+const WALLET_COLORS = ['#1C1C1E', '#102554', '#0A84FF', '#30B0C7', '#34C759', '#FF9500', '#FF3B30', '#FF2D55', '#AF52DE', '#A2845E'];
+let walletOpenId = null, walletPending = { front: null, back: null }, walletColor = WALLET_COLORS[1], wakeLock = null;
+
+function wCards() { return appState.walletCards || (appState.walletCards = []); }
+function wCard(id) { return wCards().find(c => c.id === id); }
+function maskNum(n) { const s = String(n || '').replace(/\s+/g, ''); if (s.length <= 4) return s; return '•••• ' + s.slice(-4); }
+function groupNum(n) { return String(n || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
+function wCardHTML(c, opts = {}) {
+  const img = c.frontId ? signedUrlSync(c.frontId) : (opts.frontPreview || '');
+  return `<div class="wcard ${img ? 'has-img' : ''}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
+    ${img ? `<img class="wc-bg" src="${esc(img)}" alt=""><div class="wc-shade"></div>` : ''}
+    <div class="wc-top"><div><div class="wc-issuer">${esc(c.issuer || '')}</div><div class="wc-name">${esc(c.name || 'Kartu')}</div></div>${c.codeType && c.codeType !== 'none' ? `<i class="fas ${c.codeType === 'qr' ? 'fa-qrcode' : 'fa-barcode'}" style="font-size:20px; opacity:.85"></i>` : ''}</div>
+    <div><div class="wc-chip"></div><div class="wc-num" style="margin-top:10px">${esc(opts.full ? groupNum(c.number) : maskNum(c.number))}</div><div class="wc-holder">${esc(c.holder || '')}</div></div>
+  </div>`;
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, v + amt));
+  return '#' + ((f(n >> 16) << 16) | (f((n >> 8) & 255) << 8) | f(n & 255)).toString(16).padStart(6, '0');
+}
+function renderWallet() {
+  const box = $('walletStack'); if (!box) return;
+  const cards = wCards();
+  if ($('walletCount')) $('walletCount').textContent = `${cards.length} kartu`;
+  if (!cards.length) { box.innerHTML = `<div class="card w-full"><div class="empty"><i class="fas fa-wallet"></i><div class="e-title">Wallet masih kosong</div><div class="e-sub">Tambahkan kartu member, kartu anggota, voucher, dll. QR/barcode-nya bisa langsung di-scan dari layar HP.</div></div></div>`; return; }
+  box.innerHTML = cards.map(c => `<div class="wc-slot">${wCardHTML(c, { onclick: `openWalletCard('${esc(c.id)}')` })}</div>`).join('');
+  const missing = cards.map(c => c.frontId).filter(id => id && !signedUrlSync(id));
+  if (missing.length && firebaseAuth && firebaseAuth.currentUser && pushConfig) signIds(missing).then(() => { if (missing.some(id => signedUrlSync(id))) renderWallet(); });
+}
+
+// ---------- Kode QR / barcode ----------
+async function renderCodeInto(el, type, value) {
+  el.innerHTML = '';
+  if (!value || type === 'none') return false;
+  try {
+    if (type === 'qr') {
+      await loadScriptOnce(QR_LIB);
+      const qr = qrcode(0, 'M'); qr.addData(String(value)); qr.make();
+      el.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+    } else {
+      await loadScriptOnce(BARCODE_LIB);
+      el.innerHTML = '<svg></svg>';
+      JsBarcode(el.querySelector('svg'), String(value), { format: type === 'ean13' ? 'EAN13' : 'CODE128', displayValue: false, height: 100, width: 2.6, margin: 12, background: '#ffffff' });
+    }
+    return true;
+  } catch (err) {
+    el.innerHTML = `<div class="t-foot c-red">${type === 'ean13' ? 'EAN-13 harus 12–13 angka yang valid.' : 'Kode tidak valid.'}</div>`;
+    return false;
+  }
+}
+
+// ---------- Detail & mode scan ----------
+function openWalletCard(id) {
+  const c = wCard(id); if (!c) return;
+  walletOpenId = id;
+  $('wdTitle').textContent = c.name;
+  const hasBack = !!c.backId;
+  $('wdBody').innerHTML = `
+    <div id="wdCardWrap" style="display:flex; justify-content:center">${wCardHTML(c, { full: true, onclick: hasBack ? 'flipWalletCard()' : '' })}</div>
+    ${hasBack ? '<div class="t-cap muted center">Tap kartu untuk melihat sisi belakang</div>' : ''}
+    ${c.codeType && c.codeType !== 'none' && c.code ? `<div class="wd-code ${c.codeType !== 'qr' ? 'barcode' : ''}" onclick="openWalletScan()"><div id="wdCode"></div><div class="wd-val">${esc(c.code)}</div></div>
+      <button class="btn btn-dark btn-block btn-lg" onclick="openWalletScan()"><i class="fas fa-expand"></i> Mode Scan (layar penuh)</button>` : ''}
+    <div class="list inset-icon">
+      ${c.number ? `<button class="row" onclick="copyText('${esc(c.number)}'); showToast('Nomor disalin')"><span class="icon-tile bg-blue"><i class="fas fa-hashtag"></i></span><div class="flex-1"><div class="row-sub">Nomor</div><div class="row-title tabular">${esc(groupNum(c.number))}</div></div><i class="far fa-copy chev"></i></button>` : ''}
+      ${c.holder ? `<div class="row"><span class="icon-tile bg-gray"><i class="fas fa-user"></i></span><div class="flex-1"><div class="row-sub">Atas nama</div><div class="row-title">${esc(c.holder)}</div></div></div>` : ''}
+      ${c.note ? `<div class="row"><span class="icon-tile bg-orange"><i class="fas fa-note-sticky"></i></span><div class="flex-1"><div class="row-sub">Catatan</div><div class="row-title">${linkify(c.note)}</div></div></div>` : ''}
+    </div>`;
+  openSheet('sheetWalletCard');
+  if (c.code && c.codeType !== 'none') renderCodeInto($('wdCode'), c.codeType, c.code);
+  if ((c.frontId && !signedUrlSync(c.frontId)) || (c.backId && !signedUrlSync(c.backId))) signIds([c.frontId, c.backId].filter(Boolean)).then(() => { if (walletOpenId === id) $('wdCardWrap').innerHTML = wCardHTML(c, { full: true, onclick: hasBack ? 'flipWalletCard()' : '' }); });
+}
+let walletShowingBack = false;
+function flipWalletCard() {
+  const c = wCard(walletOpenId); if (!c || !c.backId) return;
+  walletShowingBack = !walletShowingBack;
+  const u = signedUrlSync(walletShowingBack ? c.backId : c.frontId);
+  $('wdCardWrap').innerHTML = walletShowingBack
+    ? `<div class="wcard has-img" style="background:#222" onclick="flipWalletCard()">${u ? `<img class="wc-bg" src="${esc(u)}" alt="">` : ''}</div>`
+    : wCardHTML(c, { full: true, onclick: 'flipWalletCard()' });
+}
+function closeWalletCard() { closeSheet('sheetWalletCard'); walletOpenId = null; walletShowingBack = false; }
+async function openWalletScan() {
+  const c = wCard(walletOpenId); if (!c || !c.code) return;
+  $('wsName').textContent = c.name; $('wsText').textContent = c.code;
+  $('walletScan').classList.remove('hidden');
+  await renderCodeInto($('wsCode'), c.codeType, c.code);
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+function closeWalletScan() { $('walletScan').classList.add('hidden'); try { if (wakeLock) wakeLock.release(); } catch (e) {} wakeLock = null; }
+
+// ---------- Tambah / edit ----------
+function openWalletEditor(id) {
+  const c = id ? wCard(id) : null;
+  closeSheet('sheetWalletCard');
+  $('wcId').value = c ? c.id : '';
+  $('walletEditTitle').textContent = c ? 'Edit Kartu' : 'Kartu Baru';
+  ['Name', 'Issuer', 'Number', 'Holder', 'Code', 'Note'].forEach(k => { $('wc' + k).value = c ? (c[k.toLowerCase()] || '') : ''; });
+  $('wcCodeType').value = c ? (c.codeType || 'qr') : 'qr';
+  walletColor = c ? (c.color || WALLET_COLORS[1]) : WALLET_COLORS[1];
+  walletPending = { front: null, back: null };
+  $('wcFrontLabel').textContent = c && c.frontId ? 'Foto depan tersimpan ✓ — tap untuk ganti' : 'Foto sisi depan (opsional)';
+  $('wcBackLabel').textContent = c && c.backId ? 'Foto belakang tersimpan ✓ — tap untuk ganti' : 'Foto sisi belakang (opsional)';
+  $('wcDeleteBtn').classList.toggle('hidden', !c);
+  $('wcColors').innerHTML = WALLET_COLORS.map(col => `<button type="button" class="swatch ${col === walletColor ? 'active' : ''}" style="background:${col}" data-c="${col}"></button>`).join('');
+  $('wcColors').querySelectorAll('button').forEach(b => b.onclick = () => { walletColor = b.dataset.c; $('wcColors').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); renderWalletPreview(); });
+  renderWalletPreview();
+  openSheet('sheetWalletEdit');
+}
+function walletDraft() {
+  const id = $('wcId').value, old = id ? wCard(id) : {};
+  return { ...old, name: $('wcName').value.trim(), issuer: $('wcIssuer').value.trim(), number: $('wcNumber').value.trim(), holder: $('wcHolder').value.trim(), codeType: $('wcCodeType').value, code: $('wcCode').value.trim(), note: $('wcNote').value.trim(), color: walletColor };
+}
+function renderWalletPreview() {
+  const d = walletDraft();
+  $('wcPreview').innerHTML = `<div style="display:flex; justify-content:center">${wCardHTML(d, { full: true, frontPreview: walletPending.front ? walletPending.front.url : '' })}</div>`;
+}
+async function pickWalletImage(e, side) {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const img = await loadImage(f); const r = await imageToJpeg(img, 1400, 0.88);
+    if (walletPending[side]) URL.revokeObjectURL(walletPending[side].url);
+    walletPending[side] = { blob: r.blob, url: URL.createObjectURL(r.blob) };
+    $(side === 'front' ? 'wcFrontLabel' : 'wcBackLabel').textContent = `Foto ${side === 'front' ? 'depan' : 'belakang'} dipilih ✓`;
+    renderWalletPreview();
+    // Coba baca QR otomatis dari foto kartu
+    if (!$('wcCode').value.trim()) { const found = await decodeQrFromImage(img); if (found) { $('wcCode').value = found; $('wcCodeType').value = 'qr'; renderWalletPreview(); showToast('QR terbaca otomatis dari foto ✓'); } }
+  } catch (err) { showToast(err.message, false); }
+}
+async function decodeQrFromImage(img) {
+  try {
+    await loadScriptOnce(JSQR_LIB);
+    const sc = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height);
+    const data = ctx.getImageData(0, 0, c.width, c.height);
+    const res = jsQR(data.data, c.width, c.height, { inversionAttempts: 'attemptBoth' });
+    return res && res.data ? res.data : null;
+  } catch (e) { return null; }
+}
+async function scanQrFromPhoto(e) {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  showToast('Membaca QR…');
+  const found = await decodeQrFromImage(await loadImage(f));
+  if (found) { $('wcCode').value = found; $('wcCodeType').value = 'qr'; renderWalletPreview(); showToast('QR terbaca ✓'); }
+  else showToast('QR tidak terbaca. Pastikan foto tajam & QR terlihat penuh.', false);
+}
+async function saveWalletCard() {
+  const d = walletDraft();
+  if (!d.name) return showToast('Nama kartu wajib diisi.', false);
+  if (d.codeType === 'ean13' && d.code && !/^\d{12,13}$/.test(d.code)) return showToast('EAN-13 harus 12–13 angka.', false);
+  const btn = $('walletSaveBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
+  try {
+    const old = [];
+    for (const side of ['front', 'back']) {
+      const p = walletPending[side]; if (!p) continue;
+      const up = await apiUploadFile(p.blob, `kartu-${side}.jpg`, null, getDefaultStore());
+      if (d[side + 'Id']) old.push(d[side + 'Id']);
+      d[side + 'Id'] = up.id;
+    }
+    if (d.id) Object.assign(wCard(d.id), d);
+    else wCards().unshift(Object.assign(d, { id: 'wc_' + Date.now(), createdAt: Date.now() }));
+    saveStateToLocal(); old.forEach(f => apiDeleteFile(f).catch(() => {}));
+    if (d.frontId || d.backId) await signIds([d.frontId, d.backId].filter(Boolean));
+    closeSheet('sheetWalletEdit'); renderWallet(); showToast('Kartu tersimpan di Wallet ✓');
+  } catch (err) { showToast('Gagal: ' + err.message, false); }
+  btn.disabled = false; btn.textContent = 'Simpan';
+}
+async function deleteWalletCard(id) {
+  const c = wCard(id); if (!c) return;
+  if (!(await iosConfirm(`Hapus "${c.name}"?`, 'Kartu dihapus dari Wallet di semua perangkat.', 'Hapus', true))) return;
+  [c.frontId, c.backId].filter(Boolean).forEach(f => apiDeleteFile(f).catch(() => {}));
+  appState.walletCards = wCards().filter(x => x.id !== id);
+  saveStateToLocal(); closeSheet('sheetWalletEdit'); renderWallet(); showToast('Kartu dihapus.');
+}
+
 /* ---- 99-boot.js ---- */
 /* =========================================================
    99 · BOOT
@@ -6907,6 +7823,7 @@ function startApp() {
   taResetForm();
   resetBookmarkForm();
   applyLabels();
+  recordVisit(false);
   renderAllModules();
 
   if (isFirebaseReady) attachRealtimeSync();
@@ -6930,7 +7847,7 @@ function startApp() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  defaultDocTitle = document.title || 'Hadzmi Hub';
+  defaultDocTitle = document.title || 'Hadzmi Assistant';
   initNavbarScroll();
   bootAuth();
 });

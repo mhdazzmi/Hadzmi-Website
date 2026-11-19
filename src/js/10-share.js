@@ -1,123 +1,215 @@
 /* =========================================================
-   10 · SEND TO GMAIL — compose via Gmail web/app, mailto, copy, share
+   10 · PDF — ekspor catatan, countdown, laporan ke PDF + pratinjau, bagikan (WhatsApp), unduh
    ========================================================= */
-const GMAIL_DEFAULT_KEY = 'app_gmail_default_to';
-const MAX_MAIL_BODY = 5500;
-
-function getGmailDefault() { return readLS(GMAIL_DEFAULT_KEY, '') || ''; }
-function saveGmailDefault(v) {
-  const val = String(v || '').trim();
-  if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return showToast('Format email tidak valid.', false);
-  writeLS(GMAIL_DEFAULT_KEY, val);
-  showToast(val ? 'Penerima default disimpan.' : 'Penerima default dikosongkan.');
+const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const scriptPromises = {};
+function loadScriptOnce(url) {
+  if (!scriptPromises[url]) scriptPromises[url] = new Promise((resolve, reject) => {
+    const s = document.createElement('script'); s.src = url; s.async = true;
+    s.onload = resolve; s.onerror = () => { delete scriptPromises[url]; reject(new Error('Gagal memuat komponen PDF (cek internet)')); };
+    document.head.appendChild(s);
+  });
+  return scriptPromises[url];
 }
-function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
-function isMobile() { return /android|iphone|ipad|ipod/i.test(navigator.userAgent) || isIOS(); }
-
-function buildMailBody(body) {
-  const footer = `\n\n—\nDikirim dari Hadzmi Hub · ${prettyDate(wibDateStr(), true)}`;
-  let b = String(body || '');
-  if (b.length > MAX_MAIL_BODY) b = b.slice(0, MAX_MAIL_BODY) + '\n\n[…dipotong karena terlalu panjang]';
-  return b + footer;
+// Font PDF standar hanya mendukung huruf Latin — emoji & simbol khusus dibersihkan
+function pdfText(s) {
+  return String(s == null ? '' : s).replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—−]/g, '-')
+    .replace(/…/g, '...').replace(/[•·]/g, '-').replace(/×/g, 'x').replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '');
 }
 
-function openShareSheet(subject, rawBody) {
-  const to = getGmailDefault();
-  const body = buildMailBody(rawBody);
-  const enc = encodeURIComponent;
-  const gmailWeb = `https://mail.google.com/mail/?view=cm&fs=1&tf=1${to ? '&to=' + enc(to) : ''}&su=${enc(subject)}&body=${enc(body)}`;
-  const gmailIOS = `googlegmail:///co?${to ? 'to=' + enc(to) + '&' : ''}subject=${enc(subject)}&body=${enc(body)}`;
-  const mailto = `mailto:${to ? enc(to) : ''}?subject=${enc(subject)}&body=${enc(body)}`;
-  const actions = [
-    { text: isMobile() ? 'Gmail (Browser)' : 'Kirim lewat Gmail', icon: 'fas fa-envelope', onClick: () => window.open(gmailWeb, '_blank', 'noopener') }
-  ];
-  if (isIOS()) actions.push({ text: 'Aplikasi Gmail', icon: 'fab fa-google', onClick: () => { location.href = gmailIOS; } });
-  actions.push({ text: isMobile() ? 'Aplikasi Email (Gmail/Mail)' : 'Aplikasi Email Default', icon: 'fas fa-paper-plane', onClick: () => { location.href = mailto; } });
-  if (navigator.share) actions.push({ text: 'Bagikan…', icon: 'fas fa-arrow-up-from-bracket', onClick: () => navigator.share({ title: subject, text: body }).catch(() => {}) });
-  actions.push({ text: 'Salin Teks', icon: 'far fa-copy', onClick: () => { copyText(subject + '\n\n' + body); showToast('Teks disalin ke clipboard!'); } });
-  openActionSheet({ title: 'Kirim ke Gmail', message: subject + (to ? `\nKe: ${to}` : ''), actions });
+/** blocks: {heading} | {meta:[[label,value]]} | {para} | {table:{cols:[{h,w,align}], rows:[[...]]}} | {stats:[[label,value]]} */
+async function buildPdf({ title, subtitle, blocks, fileName }) {
+  await loadScriptOnce(JSPDF_URL);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, H = 297, M = 16, CW = W - M * 2;
+  const NAVY = [16, 37, 84], GREY = [110, 110, 118], LINE = [225, 226, 232];
+  let y = 0;
+  const header = (first) => {
+    doc.setFillColor(...NAVY); doc.rect(0, 0, W, first ? 34 : 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    if (first) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(pdfText(L('app.name')).toUpperCase(), M, 11);
+      doc.setFontSize(18); doc.text(doc.splitTextToSize(pdfText(title), CW)[0], M, 21);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); if (subtitle) doc.text(pdfText(subtitle), M, 28);
+      y = 44;
+    } else { doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(pdfText(title), M, 9); y = 24; }
+    doc.setTextColor(20, 20, 24);
+  };
+  const ensure = (h) => { if (y + h > H - 18) { doc.addPage(); header(false); } };
+  header(true);
+  for (const b of blocks || []) {
+    if (b.heading) {
+      ensure(14); y += 3;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor(...NAVY); doc.text(pdfText(b.heading), M, y);
+      doc.setDrawColor(...LINE); doc.line(M, y + 2.2, W - M, y + 2.2); y += 8; doc.setTextColor(20, 20, 24);
+    } else if (b.meta) {
+      doc.setFontSize(10.5);
+      b.meta.filter(r => r[1] !== '' && r[1] != null).forEach(([k, v]) => {
+        const lines = doc.splitTextToSize(pdfText(v), CW - 38); ensure(lines.length * 5 + 2);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...GREY); doc.text(pdfText(k), M, y);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(20, 20, 24); doc.text(lines, M + 38, y); y += lines.length * 5 + 1.5;
+      });
+      y += 3;
+    } else if (b.para != null) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+      pdfText(b.para).split('\n').forEach(par => {
+        const lines = par.trim() ? doc.splitTextToSize(par, CW) : [''];
+        lines.forEach(ln => { ensure(5.6); doc.text(ln, M, y); y += 5.6; });
+      });
+      y += 3;
+    } else if (b.stats) {
+      ensure(22); const n = b.stats.length, gap = 4, w = (CW - gap * (n - 1)) / n;
+      b.stats.forEach(([k, v, color], i) => {
+        const x = M + i * (w + gap);
+        doc.setFillColor(...(color || [240, 242, 248])); doc.roundedRect(x, y, w, 18, 3, 3, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GREY); doc.text(pdfText(k), x + 4, y + 6.5);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20, 20, 24); doc.text(doc.splitTextToSize(pdfText(v), w - 8)[0], x + 4, y + 13.5);
+      });
+      y += 24;
+    } else if (b.table) {
+      const cols = b.table.cols, total = cols.reduce((s, c) => s + c.w, 0);
+      const ws = cols.map(c => c.w / total * CW);
+      const drawHead = () => {
+        ensure(10); doc.setFillColor(...NAVY); doc.rect(M, y - 5, CW, 8, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+        let x = M; cols.forEach((c, i) => { doc.text(pdfText(c.h), c.align === 'right' ? x + ws[i] - 2 : x + 2, y, { align: c.align === 'right' ? 'right' : 'left' }); x += ws[i]; });
+        y += 6; doc.setTextColor(20, 20, 24);
+      };
+      drawHead();
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+      b.table.rows.forEach((row, ri) => {
+        const cells = row.map((v, i) => doc.splitTextToSize(pdfText(v), ws[i] - 4));
+        const h = Math.max(...cells.map(c => c.length)) * 4.6 + 2.5;
+        if (y + h > H - 18) { doc.addPage(); header(false); drawHead(); doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); }
+        if (ri % 2) { doc.setFillColor(246, 247, 251); doc.rect(M, y - 4, CW, h, 'F'); }
+        let x = M; cells.forEach((c, i) => { doc.text(c, cols[i].align === 'right' ? x + ws[i] - 2 : x + 2, y, { align: cols[i].align === 'right' ? 'right' : 'left' }); x += ws[i]; });
+        y += h;
+      });
+      y += 5;
+    }
+  }
+  const pages = doc.getNumberOfPages();
+  const stamp = `Dibuat ${new Date().toLocaleString('id-ID')}`;
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GREY);
+    doc.text(pdfText(stamp), M, H - 8); doc.text(`Halaman ${i} / ${pages}`, W - M, H - 8, { align: 'right' });
+  }
+  return doc.output('blob');
 }
 
-// ---------- Text builders ----------
-function taskLine(t) {
-  const st = t.status === 'Done' ? '✅' : t.status === 'On Progress' ? '🟠' : '⬜';
-  return `${st} ${t.priority === 'High' ? '🔥 ' : ''}${t.title}${t.deadline ? ` — ${prettyDate(t.deadline, true)}${t.time ? ' ' + t.time : ''}` : ''}`;
+// ---------- Pratinjau PDF (pdf.js — semua halaman tampil, juga di iPad) ----------
+async function renderPdfInto(box, blob) {
+  box.innerHTML = '<span class="spinner dark"></span>';
+  try {
+    await loadScriptOnce(PDFJS_URL);
+    const lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+    const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    box.innerHTML = ''; box.classList.add('pdf-pages');
+    const width = Math.max(280, box.clientWidth - 16), dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (let n = 1; n <= Math.min(pdf.numPages, 80); n++) {
+      const page = await pdf.getPage(n);
+      const vp1 = page.getViewport({ scale: 1 }), scale = width / vp1.width, vp = page.getViewport({ scale: scale * dpr });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = width + 'px';
+      box.appendChild(c);
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+    }
+    if (pdf.numPages > 80) box.insertAdjacentHTML('beforeend', `<div class="t-foot muted center">Menampilkan 80 dari ${pdf.numPages} halaman — unduh untuk melihat semua.</div>`);
+  } catch (err) {
+    box.classList.remove('pdf-pages');
+    box.innerHTML = `<iframe src="${URL.createObjectURL(blob)}" title="PDF"></iframe>`;
+  }
 }
-function shareTask(id) {
-  const t = appState.todos.find(x => x.id === id); if (!t) return;
-  const status = t.status === 'Done' ? 'Selesai' : t.status === 'On Progress' ? 'In Progress' : 'Pending';
-  const body = [
-    `📌 ${t.title}`, '',
-    `Status    : ${status}`,
-    `Prioritas : ${t.priority === 'High' ? 'Tinggi 🔥' : 'Normal'}`,
-    `Deadline  : ${t.deadline ? prettyDate(t.deadline, true) + (t.time ? ' pukul ' + t.time + ' WIB' : '') : '-'}`,
-    t.desc ? `\nDeskripsi:\n${t.desc}` : '',
-    (t.links || []).filter(Boolean).length ? `\nTautan:\n${t.links.filter(Boolean).map(l => '• ' + l).join('\n')}` : ''
-  ].join('\n');
-  openShareSheet(`[Tugas] ${t.title}`, body);
+let pdfViewerBlob = null, pdfViewerName = '';
+async function openPdfPreview(blob, name, meta) {
+  pdfViewerBlob = blob; pdfViewerName = name;
+  $('viewerTitle').textContent = name;
+  $('viewerMeta').textContent = meta || `PDF · ${formatBytes(blob.size)}`;
+  $('viewerActions').innerHTML = `
+    <button class="btn btn-green btn-sm" onclick="shareBlobFile(pdfViewerBlob, pdfViewerName, 'application/pdf')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+    <button class="btn btn-tinted btn-sm" onclick="shareBlobFile(pdfViewerBlob, pdfViewerName, 'application/pdf')"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
+    <button class="btn btn-gray btn-sm" onclick="downloadBlob(pdfViewerBlob, pdfViewerName)"><i class="fas fa-download"></i> Unduh</button>`;
+  $('viewerMore').onclick = () => downloadBlob(pdfViewerBlob, pdfViewerName);
+  openSheet('sheetViewer');
+  await renderPdfInto($('viewerBody'), blob);
 }
-function shareTaskList() {
-  const smart = TA_SMART.find(s => s.key === taFilterStatus) || TA_SMART[0];
-  const list = appState.todos.filter(t => taMatches(t, taFilterStatus));
-  if (!list.length) return showToast('Tidak ada tugas di daftar ini.', false);
-  openShareSheet(`[To-Do] ${smart.label} — ${prettyDate(wibDateStr())}`, `Daftar "${smart.label}" (${list.length} tugas):\n\n` + list.map(taskLine).join('\n'));
+/** Bagikan file lewat menu Bagikan perangkat (pilih WhatsApp, Gmail, Files, dll). */
+async function shareBlobFile(blob, name, type) {
+  const file = new File([blob], name, { type: type || blob.type || 'application/octet-stream' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  downloadBlob(file, name);
+  showToast('Perangkat tidak mendukung bagikan file — file diunduh, lampirkan manual di WhatsApp.');
 }
-function shareDailyDigest() {
-  const today = wibDateStr();
-  const agenda = appState.todos.filter(t => t.deadline === today && t.status !== 'Done');
-  const overdue = appState.todos.filter(t => taIsOverdue(t) && t.deadline !== today);
-  const pending = appState.todos.filter(t => t.status !== 'Done' && t.deadline !== today && !taIsOverdue(t));
-  const events = appState.countdowns.filter(c => !c.isArchived && c.tanggal >= today).sort((a, b) => a.tanggal.localeCompare(b.tanggal)).slice(0, 5);
-  let net = 0; appState.kas.forEach(k => { net += k.jenis === 'Lebih' ? k.jumlah : -k.jumlah; });
-  const body = [
-    `Ringkasan ${prettyDate(today, true)}`, '',
-    `📅 AGENDA HARI INI (${agenda.length})`, agenda.length ? agenda.map(taskLine).join('\n') : '— tidak ada —', '',
-    overdue.length ? `⚠️ TERLAMBAT (${overdue.length})\n${overdue.map(taskLine).join('\n')}\n` : '',
-    `🗂 PENDING LAINNYA (${pending.length})`, pending.slice(0, 15).map(taskLine).join('\n') || '— tidak ada —', '',
-    `⏳ EVENT MENDATANG`, events.length ? events.map(c => `• ${c.nama} — ${prettyDate(c.tanggal, true)} (${daysUntil(c.tanggal)} hari lagi)`).join('\n') : '— tidak ada —', '',
-    `💰 Net Ledger: ${rupiah(net)}`
-  ].join('\n');
-  openShareSheet(`[Hadzmi Hub] Ringkasan ${prettyDate(today)}`, body);
+async function makeAndShowPdf(spec) {
+  try {
+    showToast('Membuat PDF…');
+    const blob = await buildPdf(spec);
+    await openPdfPreview(blob, spec.fileName);
+  } catch (err) { showToast(err.message || 'Gagal membuat PDF', false); }
 }
-function shareNote(id, coll) {
+function pdfName(s) { return safeFileName(s).replace(/\.pdf$/i, '') + '.pdf'; }
+
+// ---------- Dokumen ----------
+function pdfNote(id, coll) {
   const n = (appState[coll || 'notes'] || []).find(x => x.id === id); if (!n) return;
-  openShareSheet(`[${coll === 'workNotes' ? 'Catatan Kerja' : 'Catatan'}] ${n.title || n.content.slice(0, 40)}`, `${n.title ? n.title + '\n\n' : ''}${n.content}${n.tag ? `\n\n#${n.tag}` : ''}`);
+  const kind = coll === 'workNotes' ? L('work.notes') : L('hub.notes');
+  makeAndShowPdf({
+    title: n.title || 'Catatan', subtitle: `${kind}${n.date ? ' · ' + n.date : ''}`, fileName: pdfName(n.title || 'catatan'),
+    blocks: [...(n.tag ? [{ meta: [['Tag', n.tag]] }] : []), { para: n.content }]
+  });
 }
-function shareCountdown(id) {
+function pdfCountdown(id) {
   const c = appState.countdowns.find(x => x.id === id); if (!c) return;
   const rel = formatRelativeTime(c.tanggal);
-  openShareSheet(`[Event] ${c.nama} — ${prettyDate(c.tanggal)}`, [`🎯 ${c.nama}`, `Tanggal : ${prettyDate(c.tanggal, true)}${c.jam ? ' pukul ' + c.jam + ' WIB' : ''}`, `Kategori: ${c.kategori || '-'}`, `Status  : ${rel.text}`, c.catatan ? `\nCatatan:\n${c.catatan}` : ''].join('\n'));
+  makeAndShowPdf({
+    title: c.nama, subtitle: L('hub.countdown'), fileName: pdfName('event-' + c.nama),
+    blocks: [{ meta: [['Tanggal', prettyDate(c.tanggal, true) + (c.jam ? ' pukul ' + c.jam + ' WIB' : '')], ['Kategori', c.kategori || '-'], ['Status', rel.text], ['Arsip', c.isArchived ? 'Ya' : 'Tidak']] },
+      ...(c.catatan && c.catatan.trim() ? [{ heading: 'Catatan' }, { para: c.catatan }] : [])]
+  });
 }
-function shareBookmark(id) {
-  const l = appState.links.find(x => x.id === id); if (!l) return;
-  openShareSheet(`[Bookmark] ${l.title}`, `${l.title}${l.category ? ' (' + l.category + ')' : ''}\n\n${(l.urls || [l.url]).map(u => '• ' + u).join('\n')}`);
-}
-function shareKasReport() {
+function pdfKasReport() {
   const list = getFilteredKas();
-  if (!list.length) return showToast('Tidak ada entri kas pada periode ini.', false);
+  if (!list.length) return showToast('Tidak ada catatan selisih pada periode ini.', false);
   let lebih = 0, kurang = 0; list.forEach(k => { if (k.jenis === 'Lebih') lebih += k.jumlah; else kurang += k.jumlah; });
   const a = $('kasFilterAwal').value, b = $('kasFilterAkhir').value;
   const period = a || b ? `${a ? prettyDate(a) : 'awal'} s/d ${b ? prettyDate(b) : 'sekarang'}` : 'Semua periode';
-  const body = [`LAPORAN SELISIH KAS`, `Periode: ${period}`, '',
-    `Total Lebih  : ${rupiah(lebih)}`, `Total Kurang : ${rupiah(kurang)}`, `Net Balance  : ${rupiah(lebih - kurang)}`, '',
-    `RINCIAN (${list.length} entri):`,
-    ...list.map(k => `${k.tanggal}${k.jam ? ' ' + k.jam : ''}  ${k.jenis === 'Lebih' ? '+' : '−'}${rupiah(k.jumlah).padEnd(14)} ${k.keterangan || ''}`)].join('\n');
-  openShareSheet(`[Kas] Laporan Selisih — ${period}`, body);
+  makeAndShowPdf({
+    title: 'Laporan Selisih Kas', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-selisih-kas-' + wibDateStr()),
+    blocks: [
+      { stats: [['Total Lebih', rupiah(lebih), [228, 247, 234]], ['Total Kurang', rupiah(kurang), [253, 232, 232]], ['Net Selisih', rupiah(lebih - kurang), [229, 238, 255]]] },
+      { heading: 'Rincian' },
+      { table: { cols: [{ h: 'Tanggal', w: 26 }, { h: 'Jam', w: 11 }, { h: 'Jenis', w: 13 }, { h: 'Nominal', w: 22, align: 'right' }, { h: 'Keterangan', w: 40 }],
+        rows: list.map(k => [prettyDate(k.tanggal), k.jam || '-', k.jenis, (k.jenis === 'Lebih' ? '+' : '-') + rupiah(k.jumlah), k.keterangan || '-']) } }
+    ]
+  });
 }
-function shareFocusReport() {
+function pdfFocusReport() {
   const hist = appState.focusHistory || [];
   if (!hist.length) return showToast('Belum ada riwayat fokus/tidur.', false);
-  const sleep = hist.filter(f => f.mode === 'Sleep').slice(0, 7);
-  const focus = hist.filter(f => f.mode !== 'Sleep').slice(0, 15);
   const fmt = s => `${Math.floor(s / 3600)}j ${Math.round((s % 3600) / 60)}m`;
-  const avg = sleep.length ? fmt(Math.round(sleep.reduce((a, s) => a + s.durationSeconds, 0) / sleep.length)) : '-';
-  const totalFocus = focus.reduce((a, f) => a + f.durationSeconds, 0);
-  const body = [`LAPORAN FOKUS & TIDUR`, '',
-    `😴 Tidur (7 sesi terakhir) — rata-rata ${avg}`, ...(sleep.length ? sleep.map(s => `• ${s.date}  ${s.startTime}–${s.endTime}  ${fmt(s.durationSeconds)}`) : ['— belum ada —']), '',
-    `🎯 Fokus (15 sesi terakhir) — total ${Math.round(totalFocus / 60)} menit`, ...(focus.length ? focus.map(f => `• ${f.date}  ${f.mode}  ${Math.round(f.durationSeconds / 60)} mnt  (${f.status})`) : ['— belum ada —'])].join('\n');
-  openShareSheet(`[Hadzmi Hub] Laporan Fokus & Tidur`, body);
+  const sleep = hist.filter(f => f.mode === 'Sleep'), focus = hist.filter(f => f.mode !== 'Sleep');
+  const avg = sleep.length ? fmt(Math.round(sleep.reduce((n, s) => n + s.durationSeconds, 0) / sleep.length)) : '-';
+  const totalFocus = focus.reduce((n, f) => n + f.durationSeconds, 0);
+  makeAndShowPdf({
+    title: 'Laporan Fokus & Tidur', subtitle: `${hist.length} sesi tercatat`, fileName: pdfName('laporan-fokus-tidur-' + wibDateStr()),
+    blocks: [
+      { stats: [['Rata-rata tidur', avg], ['Sesi tidur', String(sleep.length)], ['Total fokus', Math.round(totalFocus / 60) + ' menit']] },
+      ...(sleep.length ? [{ heading: 'Tidur' }, { table: { cols: [{ h: 'Tanggal', w: 30 }, { h: 'Mulai', w: 15 }, { h: 'Bangun', w: 15 }, { h: 'Durasi', w: 20, align: 'right' }], rows: sleep.map(s => [prettyDate(s.date), s.startTime, s.endTime, fmt(s.durationSeconds)]) } }] : []),
+      ...(focus.length ? [{ heading: 'Fokus' }, { table: { cols: [{ h: 'Tanggal', w: 28 }, { h: 'Mode', w: 18 }, { h: 'Waktu', w: 22 }, { h: 'Durasi', w: 16, align: 'right' }, { h: 'Status', w: 18 }], rows: focus.map(f => [prettyDate(f.date), f.mode, `${f.startTime}-${f.endTime}`, Math.round(f.durationSeconds / 60) + ' mnt', f.status]) } }] : [])
+    ]
+  });
 }
-function shareSong(id) {
-  const s = appState.musicLibrary.find(x => x.id === id); if (!s) return;
-  openShareSheet(`[Musik] ${s.title}${s.artist ? ' — ' + s.artist : ''}`, `🎵 ${s.title}\nArtis: ${s.artist || '-'}\nKategori: ${s.category || '-'}\n\nLink audio:\n${s.url}${s.lyrics ? `\n\nLirik:\n${s.lyrics.replace(/\[[^\]]*\]/g, '').trim()}` : ''}`);
+function pdfTaskList() {
+  const smart = TA_SMART.find(s => s.key === taFilterStatus) || TA_SMART[0];
+  const list = appState.todos.filter(t => taMatches(t, taFilterStatus));
+  if (!list.length) return showToast('Tidak ada tugas di daftar ini.', false);
+  makeAndShowPdf({
+    title: `To-Do: ${smart.label}`, subtitle: `${list.length} tugas · ${prettyDate(wibDateStr(), true)}`, fileName: pdfName('todo-' + smart.label + '-' + wibDateStr()),
+    blocks: [{ table: { cols: [{ h: 'Status', w: 17 }, { h: 'Tugas', w: 50 }, { h: 'Deadline', w: 28 }, { h: 'Prioritas', w: 15 }],
+      rows: list.map(t => [t.status === 'Done' ? 'Selesai' : t.status === 'On Progress' ? 'Proses' : 'Pending', t.title + (t.desc ? '\n' + t.desc : ''), t.deadline ? prettyDate(t.deadline) + (t.time ? ' ' + t.time : '') : '-', t.priority === 'High' ? 'Tinggi' : 'Normal']) } }]
+  });
 }

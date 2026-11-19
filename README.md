@@ -1,6 +1,6 @@
-# Hadzmi Hub · iOS 26 Light
+# Hadzmi Assistant · iOS 26 Light
 
-Personal assistant hub (To-Do, Mind Dump, Bookmarks, Countdown, Music, Kontak WA, Upload log, Cash Ledger, Focus & Sleep) dengan desain ulang ala iOS, kunci sandi, notifikasi, dan **Kirim ke Gmail**.
+Asisten pribadi (Planner: Mind Dump, To-Do, Bookmarks, Countdown, Focus & Sleep, Wallet · Media: Music & Galeri · Kerja · Settings) dengan desain ala iOS 26, login PIN, notifikasi push, dan **ekspor PDF**.
 
 > Struktur data di Firebase (`hadzmi_assistant_data`) dan key `localStorage` **sama persis** dengan versi lama, jadi data yang sudah ada langsung terbaca. Tidak perlu migrasi.
 
@@ -54,11 +54,11 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 
 ## Fitur yang ditambahkan
 
-### 🏦 Menu Kerja (Meja Teller)
+### 🏦 Menu Kerja (Work Space)
 | Sub-menu | Isi |
 |---|---|
-| **Selisih Kas** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan ke Gmail. Data lama Cash Ledger tetap ada. |
-| **Bukti Kas** (foto) | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Galeri per tanggal, filter jenis, cari nama nasabah, pilih banyak → **Kirim** (menu Bagikan iOS → Gmail, foto jadi lampiran) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
+| **Selisih Kas** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan **PDF**. Data lama Cash Ledger tetap ada. |
+| **Bukti Kas** (foto) | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Tampilan galeri (grid), filter jenis, cari nama nasabah, pilih banyak → **Bagikan** (menu Bagikan iOS) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
 | **Catatan** | Catatan khusus pekerjaan (terpisah dari Mind Dump). |
 | **Gudang File** | Upload banyak file sekaligus (PDF, gambar, dokumen, teks; maks 25 MB/file) ke folder (mis. "Materi BRI"); pratinjau PDF/gambar/teks, buka, unduh, kirim, ganti nama, pindah folder. |
 | **Upload Drive** | Uploader Google Drive dengan logika yang sama seperti uploader lama (Apps Script, multi-file, nama kustom `nama-1.ext`). |
@@ -104,10 +104,8 @@ Pusat notifikasi in-app (ikon lonceng) + banner gaya iOS + notifikasi sistem (se
 
 Semua bisa dinyalakan/dimatikan di **Settings → Notifikasi**. Dengan hosting Cloudflare + **Push** aktif, notifikasi tetap masuk walau website ditutup (lihat bagian Deploy ke Cloudflare). Di Blogspot, notifikasi hanya berjalan selama website terbuka.
 
-### ✉️ Kirim ke Gmail
-Tombol ✉️ membuka sheet iOS: **Gmail (web)**, **Aplikasi Gmail** (iPhone), **Aplikasi Email (mailto)**, **Bagikan…**, **Salin**.
-Tersedia di: detail tugas, daftar tugas, ringkasan harian (Home), catatan, countdown, bookmark, laporan Cash Ledger (mengikuti filter periode), laporan Focus & Sleep, dan lagu.
-Penerima default bisa diatur di Settings → Kirim ke Gmail.
+### 📄 Ekspor PDF (pengganti Gmail)
+Mind Dump, Catatan Kerja, Countdown, daftar To-Do, laporan Focus/Sleep, dan laporan Selisih Kas bisa dijadikan **PDF** (header navy, tabel rapi). PDF langsung tampil sebagai preview → **WhatsApp** / **Bagikan** / **Unduh**.
 
 ### 🎵 Music (dikembangkan)
 - **Now Playing** layar penuh (latar blur dari cover, swipe ke bawah untuk menutup)
@@ -132,6 +130,17 @@ Smart list (To Do, Hari Ini, In Progress, Terlambat, Selesai, Semua), pengelompo
 - Input pengguna di-escape (aman dari HTML rusak/XSS saat mengetik `<`, `"`, dll.)
 
 ---
+
+### 🆕 Update terbaru
+| Fitur | Keterangan |
+|---|---|
+| **Wallet** (Planner → Wallet) | Kartu member/anggota/voucher tampil seperti kartu asli (foto depan/belakang atau warna). QR / CODE128 / EAN-13 dibuat ulang tajam di layar → **Mode Scan** layar putih penuh + layar tidak mati (Wake Lock). QR bisa dibaca otomatis dari foto kartu. |
+| **Galeri Tersembunyi** | Tab Galeri → *Tersembunyi*. Sandi khusus dibuat saat pertama kali dibuka (tidak tersimpan di kode/server). Foto dienkripsi AES-256-GCM di perangkat sebelum upload; terkunci otomatis 5 menit / saat pindah menu. Sandi **tidak bisa dipulihkan**. |
+| **Edit Foto** | Putar 90°, potong (bebas / 1:1 / 4:3 / 3:4 / 16:9 / 9:16). Pilih banyak → Sembunyikan / Hapus. |
+| **Gudang File** | Pilih penyimpanan saat upload, kategori otomatis (nama mirip → grup sama), klik file = preview (PDF/gambar/audio/video/teks), tombol WhatsApp. |
+| **Lirik karaoke** | Lirik kecil di Now Playing ikut timing tap-sync, baris aktif di tengah; mini player menampilkan baris yang sedang dinyanyikan. |
+| **Streak** | Ikon 🔥 di samping notifikasi = berapa hari berturut-turut web dibuka. |
+| Lainnya | Link di catatan otomatis biru & bisa diklik · Event Terdekat pindah ke bawah Menu Cepat bila ada · hapus riwayat focus/sleep per item · logo navy baru · tombol kecepatan & ubah nama menu dihapus. |
 
 ## 💡 Rekomendasi platform (gratis, jangka panjang, siap API)
 
@@ -184,7 +193,7 @@ Setelah itu setiap `git push` ke `main` otomatis ter-deploy.
 Batasan: pengingat yang dibuat/diubah baru masuk ke server setelah website dibuka minimal sekali sesudah perubahan itu (otomatis di perangkat mana pun). Ringkasan "tugas terlambat" dan "sesi hampir habis" hanya muncul in-app.
 
 ### Biaya
-Paket gratis: 100.000 request/hari, cron, KV 1.000 tulis & 100.000 baca/hari. Pemakaian Hadzmi Hub hanya sekitar 1.500 baca dan puluhan tulis per hari, jadi tetap **Rp 0**.
+Paket gratis: 100.000 request/hari, cron, KV 1.000 tulis & 100.000 baca/hari. Pemakaian Hadzmi Assistant hanya sekitar 1.500 baca dan puluhan tulis per hari, jadi tetap **Rp 0**.
 
 ### Tetap di Blogspot (tanpa push)
 Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama seperti sebelumnya. Semua fitur jalan kecuali Push saat website tertutup.

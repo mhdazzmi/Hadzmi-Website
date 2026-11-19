@@ -1,4 +1,4 @@
-// Hadzmi Hub service worker: Web Push + klik notifikasi.
+// Hadzmi Assistant service worker: Web Push + klik notifikasi.
 // Push dari server dikirim tanpa payload; isi notifikasi diambil dari /api/pending.
 const STATE_CACHE = 'hz-sw-state';
 const STATE_URL = '/__sw_state';
@@ -38,9 +38,9 @@ async function handlePush(event) {
   }
   if (!items.length) {
     // Browser mewajibkan setiap push menampilkan notifikasi
-    return self.registration.showNotification('Hadzmi Hub', { body: 'Ada pengingat baru. Buka untuk melihat.', icon: ICON, badge: ICON, tag: 'hz-generic' });
+    return self.registration.showNotification('Hadzmi Assistant', { body: 'Ada pengingat baru. Buka untuk melihat.', icon: ICON, badge: ICON, tag: 'hz-generic' });
   }
-  await Promise.all(items.map(i => self.registration.showNotification(i.title || 'Hadzmi Hub', {
+  await Promise.all(items.map(i => self.registration.showNotification(i.title || 'Hadzmi Assistant', {
     body: i.body || '', icon: ICON, badge: ICON, tag: i.key || i.id, data: { action: i.action || null, key: i.key }, renotify: false
   })));
   // Beri tahu tab yang sedang terbuka (supaya inbox in-app ikut terisi)

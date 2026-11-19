@@ -1,5 +1,5 @@
 /* =========================================================
-   Hadzmi Hub — Cloudflare Worker
+   Hadzmi Assistant — Cloudflare Worker
    - Melayani file statis (folder public/) lewat binding ASSETS
    - API /api/* : langganan push, jadwal pengingat, inbox
    - Cron tiap menit: kirim Web Push (VAPID) untuk pengingat yang jatuh tempo,
@@ -158,7 +158,7 @@ async function handleApi(request, env, url) {
 
   if (path === '/api/test-push' && method === 'POST') {
     const now = Date.now();
-    const item = { id: 'test:' + now, key: 'test_' + now, title: 'Tes Push dari Server ✅', body: 'Push notification Hadzmi Hub berfungsi, walau website tertutup.', icon: 'fa-paper-plane', color: 'bg-green', action: null, ts: now };
+    const item = { id: 'test:' + now, key: 'test_' + now, title: 'Tes Push dari Server ✅', body: 'Push notification Hadzmi Assistant berfungsi, walau website tertutup.', icon: 'fa-paper-plane', color: 'bg-green', action: null, ts: now };
     const outbox = (await kvGet(env, 'outbox', [])).concat(item).slice(-OUTBOX_MAX);
     await env.HUB_KV.put('outbox', JSON.stringify(outbox));
     const results = await pushAll(env);

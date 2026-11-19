@@ -459,8 +459,16 @@ function renderFocusHistory() {
       <span class="icon-tile ${icon[1]}"><i class="fas ${icon[0]}"></i></span>
       <div class="flex-1"><div class="row-title">${esc(f.mode)} · <span class="semibold tabular">${esc(durationLabel)}</span></div><div class="row-sub">${esc(prettyDate(f.date))} · ${esc(f.startTime)}–${esc(f.endTime)}</div></div>
       <span class="badge ${badge}">${isSleep ? 'Sleep' : esc(f.status)}</span>
+      <button class="icon-btn sm clear" style="color:var(--red)" onclick="deleteFocusEntry('${esc(f.id)}')" title="Hapus"><i class="far fa-trash-can"></i></button>
     </div>`;
   }).join('');
+}
+async function deleteFocusEntry(id) {
+  const f = (appState.focusHistory || []).find(x => x.id === id); if (!f) return;
+  if (!(await iosConfirm(`Hapus sesi ${f.mode === 'Sleep' ? 'tidur' : 'fokus'} ini?`, `${prettyDate(f.date)} · ${f.startTime}–${f.endTime}`, 'Hapus', true))) return;
+  appState.focusHistory = appState.focusHistory.filter(x => x.id !== id);
+  saveStateToLocal(); renderFocusHistory(); renderSleepLineChart(); renderDashboardStats();
+  showToast('Sesi dihapus.');
 }
 async function clearFocusHistory() {
   if (await iosConfirm('Hapus semua riwayat?', 'Semua log fokus & tidur akan dihapus.', 'Hapus', true)) {

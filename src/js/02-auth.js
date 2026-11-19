@@ -196,7 +196,7 @@ function quickLock() {
 async function lockAppNow(auto) {
   if (!APP_AUTH.enabled) return showToast('Kunci login sedang dinonaktifkan di konfigurasi.', false);
   if (auto !== true) {
-    const ok = await iosConfirm('Kunci Hadzmi Hub?', 'Kamu perlu memasukkan sandi lagi untuk membuka di perangkat ini.', 'Kunci', true);
+    const ok = await iosConfirm('Kunci Hadzmi Assistant?', 'Kamu perlu memasukkan sandi lagi untuk membuka di perangkat ini.', 'Kunci', true);
     if (!ok) return;
   }
   performLock(auto === true ? 'Sesi berakhir. Silakan login kembali.' : '');
@@ -216,14 +216,14 @@ function checkSessionExpiry() {
   const rec = getSessionRecord();
   if (!rec || Date.now() >= rec.expiresAt) performLock('Sesi harian berakhir (00:00 WIB). Silakan login kembali.');
   else if (rec.expiresAt - Date.now() < 10 * 60 * 1000 && typeof pushNotification === 'function') {
-    pushNotification({ key: 'session_' + rec.expiresAt, title: 'Sesi segera berakhir', body: 'Hadzmi Hub akan terkunci otomatis dalam < 10 menit.', icon: 'fa-lock', color: 'bg-gray', system: false });
+    pushNotification({ key: 'session_' + rec.expiresAt, title: 'Sesi segera berakhir', body: 'Hadzmi Assistant akan terkunci otomatis dalam < 10 menit.', icon: 'fa-lock', color: 'bg-gray', system: false });
   }
 }
 
 function openAccountMenu() {
   const rec = getSessionRecord();
   openActionSheet({
-    title: isPinMode() ? 'Hadzmi Hub' : ((rec && rec.email) || 'Hadzmi Hub'),
+    title: isPinMode() ? 'Hadzmi Assistant' : ((rec && rec.email) || 'Hadzmi Assistant'),
     message: APP_AUTH.enabled ? `Sesi aktif hingga ${formatExpiry(rec && rec.expiresAt)}` : 'Kunci login nonaktif',
     actions: [
       { text: 'Kunci Sekarang', icon: 'fas fa-lock', destructive: true, onClick: () => lockAppNow() },

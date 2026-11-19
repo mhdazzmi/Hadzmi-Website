@@ -521,8 +521,16 @@ function highlightLrc(cur) {
     box.dataset.active = String(idx);
     box.querySelectorAll('.lrc-line').forEach((el, i) => { el.classList.toggle('active', i === idx); el.classList.toggle('past', i < idx); });
     const act = box.querySelector('.lrc-line.active');
-    if (act && box.offsetParent !== null) box.scrollTo({ top: act.offsetTop - box.clientHeight / 2.6, behavior: 'smooth' });
+    if (act && box.offsetParent !== null) {
+      const top = box.scrollTop + (act.getBoundingClientRect().top - box.getBoundingClientRect().top) - (box.clientHeight - act.offsetHeight) / 2;
+      box.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } else if (idx < 0) box.scrollTo({ top: 0 });
   });
+  // Mini player & widget Home menampilkan baris yang sedang dinyanyikan
+  const lineText = idx >= 0 && lines[idx] ? lines[idx].text : '';
+  const dockA = $('dockSongArtist'), dashA = $('dashNpArtist');
+  if (lineText && isMusicPlaying) { if (dockA) dockA.textContent = '♪ ' + lineText; if (dashA) dashA.textContent = '♪ ' + lineText; }
+  else if (idx !== lastLrcIdx && song) { const art = song.artist || song.category || ''; if (dockA) dockA.textContent = art; if (dashA) dashA.textContent = art; }
   lastLrcIdx = idx;
 }
 
@@ -543,6 +551,7 @@ function openLyricsFullScreenModal() {
   $('lyricsModalSongTitle').textContent = `${song.title} (${song.artist || song.category})`;
   $('lyricsTextInput').value = song.lyrics || '';
   renderLyricsInto($('lyricsReadOnlyContainer'), song, '(Belum ada lirik untuk lagu ini. Klik "Edit" untuk menambahkan lirik baru)');
+  if ($('btnClearLyricSync')) $('btnClearLyricSync').classList.toggle('hidden', !getLrcLines(song));
   isLyricsEditing = false; applyLyricsModeUI();
   openSheet('musicLyricsModal');
   highlightLrc(audioEngine.currentTime || 0);
@@ -772,7 +781,6 @@ function openSongActions(id) {
     : { text: 'Simpan Offline', icon: 'fas fa-circle-down', onClick: () => saveSongOffline(id) });
   if (isCur) actions.push({ text: 'Lirik', icon: 'fas fa-quote-left', onClick: () => { closeFullPlayer(); openLyricsFullScreenModal(); } });
   actions.push({ text: 'Edit Lagu', icon: 'fas fa-pen', onClick: () => { closeFullPlayer(); editMusicSong(id); } });
-  actions.push({ text: 'Bagikan via Gmail', icon: 'fas fa-envelope', onClick: () => shareSong(id) });
   actions.push({ text: 'Hapus dari Library', icon: 'fas fa-trash', destructive: true, onClick: () => deleteMusicSong(id) });
   openActionSheet({ title: song.title, message: song.artist || song.category, actions });
 }
@@ -1042,6 +1050,7 @@ async function searchSyncedLyrics() {
 }
 function afterLyricsChanged(song) {
   saveStateToLocal();
+  if ($('btnClearLyricSync')) $('btnClearLyricSync').classList.toggle('hidden', !getLrcLines(song));
   $('lyricsTextInput').value = song.lyrics || '';
   renderLyricsInto($('lyricsReadOnlyContainer'), song, '(Belum ada lirik untuk lagu ini)');
   updateInlineLyricsContent(); renderMusicSongsList();
@@ -1083,6 +1092,18 @@ function tapSyncStamp() {
   tapIdx++; haptic(8);
   if (tapIdx >= tapLines.length) return finishTapSync();
   renderTapSync();
+}
+function tapSyncRestart() {
+  tapTimes = []; tapIdx = 0;
+  try { audioEngine.currentTime = 0; } catch (e) {}
+  if (!isMusicPlaying) togglePlayMusic();
+  renderTapSync(); showToast('Diulang dari awal — semua tap dihapus.');
+}
+async function clearLyricSync() {
+  const song = currentSong(); if (!song || !getLrcLines(song)) return;
+  if (!(await iosConfirm('Hapus waktu sinkron?', 'Lirik tetap ada tapi tidak lagi mengikuti nyanyian. Kamu bisa Sinkron Tap ulang.', 'Hapus Waktu', true))) return;
+  song.lyrics = song.lyrics.split(/\r?\n/).map(l => l.replace(/\[[^\]]*\]/g, '').trim()).filter(Boolean).join('\n');
+  afterLyricsChanged(song); showToast('Waktu sinkron dihapus.');
 }
 function tapSyncUndo() {
   if (!tapIdx) return;

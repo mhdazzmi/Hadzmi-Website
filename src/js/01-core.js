@@ -57,6 +57,9 @@ let appState = {
   customLabels: readLS('app_custom_labels', {}),
   galleryPhotos: readLS('app_gallery_photos', []),
   galleryAlbums: readLS('app_gallery_albums', []),
+  visitDays: readLS('app_visit_days', []),
+  vault: readLS('app_vault', null),
+  walletCards: readLS('app_wallet_cards', []),
   showFloatingMusicDock: savedShowFloatingDock !== null ? savedShowFloatingDock === 'true' : false
 };
 
@@ -64,7 +67,7 @@ let firebaseDbRef = null;
 let firebaseAuth = null;
 let isFirebaseReady = false;
 let appStarted = false;
-let defaultDocTitle = "Hadzmi Hub";
+let defaultDocTitle = "Hadzmi Assistant";
 
 try {
   if (typeof firebase !== 'undefined') {
@@ -89,6 +92,14 @@ function safeUrl(url) {
   return '#';
 }
 function $(id) { return document.getElementById(id); }
+/** Teks → HTML aman dengan link otomatis (http(s)://, www., domain.com/…) yang bisa diklik. */
+function linkify(text) {
+  return esc(text).replace(/(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+|\b[a-z0-9-]+\.(?:com|id|co\.id|net|org|io|app|dev|me|ly|gl|link|ai|xyz)(?:\/[^\s<]*)?)/gi, m => {
+    const trail = (m.match(/[.,!?;:)\]]+$/) || [''])[0]; const url = m.slice(0, m.length - trail.length);
+    const href = /^https?:/i.test(url) ? url : 'https://' + url;
+    return `<a href="${href}" target="_blank" rel="noopener" class="auto-link" onclick="event.stopPropagation()">${url}</a>${trail}`;
+  });
+}
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 function getWIBDate() {
@@ -290,6 +301,9 @@ function syncToLocalStorageOnly() {
   writeLS('app_custom_labels', appState.customLabels || {});
   writeLS('app_gallery_photos', appState.galleryPhotos || []);
   writeLS('app_gallery_albums', appState.galleryAlbums || []);
+  writeLS('app_visit_days', appState.visitDays || []);
+  writeLS('app_vault', appState.vault || null);
+  writeLS('app_wallet_cards', appState.walletCards || []);
   writeRawLS('app_show_floating_dock', appState.showFloatingMusicDock === true);
 }
 
@@ -322,6 +336,9 @@ function applyRemoteSnapshot(val) {
   appState.customLabels = val.customLabels || {};
   appState.galleryPhotos = val.galleryPhotos || [];
   appState.galleryAlbums = val.galleryAlbums || [];
+  appState.visitDays = val.visitDays || [];
+  appState.vault = val.vault || null;
+  appState.walletCards = val.walletCards || [];
   if (typeof val.showFloatingMusicDock === 'boolean') appState.showFloatingMusicDock = val.showFloatingMusicDock;
 }
 
@@ -335,6 +352,7 @@ function attachRealtimeSync() {
     const val = snapshot.val();
     if (val) {
       applyRemoteSnapshot(val);
+      recordVisit(true);
       syncToLocalStorageOnly();
       resyncCurrentSongIndex();
       applyFloatingMusicDockVisibility();
@@ -387,18 +405,15 @@ function setConnectionStatus(state) {
 let currentTabId = 'tab-dashboard';
 // ---------- NAMA MENU (bisa diganti di Settings → Nama Menu) ----------
 const LABEL_GROUPS = [
-  ['Umum', [['app.name', 'Hadzmi Hub', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
-  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Hub'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
+  ['Umum', [['app.name', 'Hadzmi Assistant', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
+  ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Planner'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
   ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
-  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus']]],
+  ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus'], ['hub.wallet', 'Wallet']]],
   ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Bukti Kas'], ['work.kas', 'Selisih Kas'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
 ];
 const LABEL_DEFAULTS = {};
 LABEL_GROUPS.forEach(([, items]) => items.forEach(([k, d]) => { LABEL_DEFAULTS[k] = d; }));
-function L(key) {
-  const c = appState.customLabels && appState.customLabels[key];
-  return (c && String(c).trim()) || LABEL_DEFAULTS[key] || key;
-}
+function L(key) { return LABEL_DEFAULTS[key] || key; }
 function applyLabels() {
   document.querySelectorAll('[data-label]').forEach(el => { const t = L(el.dataset.label); if (el.textContent !== t) el.textContent = t; });
   if ($('hubTitle') && currentHubSub) $('hubTitle').textContent = L(HUB_KEYS[currentHubSub]);
@@ -430,11 +445,12 @@ async function resetCustomLabels() {
   const box = $('labelEditor'); if (box) box.innerHTML = ''; renderLabelEditor();
   showToast('Nama menu dikembalikan ke bawaan.');
 }
-const HUB_KEYS = { 'sub-todo': 'hub.todo', 'sub-notes': 'hub.notes', 'sub-links': 'hub.links', 'sub-countdown': 'hub.countdown', 'sub-focus': 'hub.focus' };
+const HUB_KEYS = { 'sub-todo': 'hub.todo', 'sub-notes': 'hub.notes', 'sub-links': 'hub.links', 'sub-countdown': 'hub.countdown', 'sub-focus': 'hub.focus', 'sub-wallet': 'hub.wallet' };
 const WORK_KEYS = { 'sub-photos': 'work.photos', 'sub-kas': 'work.kas', 'sub-worknotes': 'work.notes', 'sub-docs': 'work.docs', 'sub-upload': 'work.upload', 'sub-contacts': 'work.contacts' };
 let currentHubSub = 'sub-notes', currentWorkSub = 'sub-photos', currentMediaSub = 'sub-music';
 const MEDIA_KEYS = { 'sub-music': 'media.music', 'sub-gallery': 'media.gallery' };
 function switchMediaSub(subId) {
+  if (subId !== 'sub-gallery' && typeof vaultKey !== 'undefined' && vaultKey) lockVault();
   document.querySelectorAll('.media-sub').forEach(el => el.classList.toggle('hidden', el.id !== subId));
   setSegActive(['sub-music', 'sub-gallery'], subId);
   currentMediaSub = subId;
@@ -446,6 +462,7 @@ function switchMediaSub(subId) {
 }
 
 function switchTab(tabId) {
+  if (tabId !== 'tab-music' && typeof vaultKey !== 'undefined' && vaultKey) lockVault();
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.ios-tab-item').forEach(btn => btn.classList.remove('active'));
   const selectedTab = $(tabId);
@@ -468,11 +485,12 @@ function setSegActive(ids, activeId) {
 function switchHubSubTab(subId) {
   document.querySelectorAll('.hub-sub-content').forEach(el => el.classList.add('hidden'));
   const target = $(subId); if (target) target.classList.remove('hidden');
-  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus'], subId);
+  setSegActive(['sub-todo', 'sub-notes', 'sub-links', 'sub-countdown', 'sub-focus', 'sub-wallet'], subId);
   currentHubSub = subId;
   if ($('hubTitle')) $('hubTitle').textContent = L(HUB_KEYS[subId] || 'tab.hub');
   updateNavSmallTitle();
   if (subId === 'sub-focus') renderSleepLineChart();
+  if (subId === 'sub-wallet') renderWallet();
 }
 
 function switchWorkFinSubTab(subId) {
@@ -516,6 +534,7 @@ const SEARCH_MAP = [
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
+  { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
   { key: 'work.kas', label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
   { key: 'work.photos', label: 'Bukti Kas', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
   { key: 'work.notes', label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
@@ -546,7 +565,7 @@ function renderSearchSuggestions(query) {
 function renderAllModules() {
   const fns = [renderDashboardStats, renderCustomWebLinks, taRenderNotes, renderCountDownLog, renderNotesList, renderKasData,
     renderLinksList, renderContactsList, renderUploadHistory, renderDashboardTodayAgenda, renderDashboardUpcoming, renderFocusHistory,
-    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor, renderGallery];
+    renderSleepLineChart, renderMusicModule, renderSettingsCategoryList, renderWorkNotes, renderPhotoGallery, renderDocs, renderStoragePanel, applyLabels, renderLabelEditor, renderGallery, renderStreak, renderWallet];
   fns.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } });
 }
 
@@ -555,4 +574,37 @@ function initNavbarScroll() {
   const root = $('personalAppRoot'), nav = $('topNavbar');
   if (!root || !nav) return;
   root.addEventListener('scroll', () => nav.classList.toggle('scrolled', root.scrollTop > 36), { passive: true });
+}
+
+// ---------- STREAK (hari berturut-turut membuka aplikasi) ----------
+function recordVisit(fromRemote) {
+  const today = wibDateStr();
+  const days = appState.visitDays || (appState.visitDays = []);
+  if (!days.includes(today)) {
+    days.push(today); days.sort();
+    if (days.length > 400) days.splice(0, days.length - 400);
+    if (fromRemote) setTimeout(saveStateToLocal, 50); else saveStateToLocal();
+  }
+  renderStreak();
+}
+function streakStats() {
+  const set = new Set(appState.visitDays || []);
+  let cur = 0, d = set.has(wibDateStr()) ? 0 : -1;
+  while (set.has(wibAddDays(d))) { cur++; d--; }
+  let best = 0, run = 0, prev = null;
+  Array.from(set).sort().forEach(day => {
+    run = prev && addDaysToDateStr(prev, 1) === day ? run + 1 : 1;
+    best = Math.max(best, run); prev = day;
+  });
+  return { cur, best, total: set.size };
+}
+function renderStreak() {
+  const el = $('streakCount'); if (!el) return;
+  const { cur } = streakStats(); el.textContent = cur;
+  $('streakPill').classList.toggle('cold', cur < 2);
+}
+function explainStreak() {
+  const { cur, best, total } = streakStats();
+  const last7 = Array.from({ length: 7 }, (_, i) => wibAddDays(i - 6)).map(d => (appState.visitDays || []).includes(d) ? '🔥' : '·').join(' ');
+  iosAlert({ title: `🔥 ${cur} hari berturut-turut`, message: `Kamu membuka ${L('app.name')} ${cur} hari beruntun.\nRekor terbaik: ${best} hari · Total hari aktif: ${total}\n\n7 hari terakhir:\n${last7}\n\nBuka minimal sekali sehari agar streak tidak putus!` });
 }

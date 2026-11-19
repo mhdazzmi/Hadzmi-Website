@@ -1,6 +1,6 @@
 {
-  "name": "Hadzmi Hub",
-  "short_name": "Hadzmi Hub",
+  "name": "Hadzmi Assistant",
+  "short_name": "Hadzmi",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -12,6 +12,7 @@ function startApp() {
   taResetForm();
   resetBookmarkForm();
   applyLabels();
+  recordVisit(false);
   renderAllModules();
 
   if (isFirebaseReady) attachRealtimeSync();
@@ -35,7 +36,7 @@ function startApp() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  defaultDocTitle = document.title || 'Hadzmi Hub';
+  defaultDocTitle = document.title || 'Hadzmi Assistant';
   initNavbarScroll();
   bootAuth();
 });

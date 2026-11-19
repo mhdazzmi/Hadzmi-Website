@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#F2F2F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Hadzmi Hub">
+  <meta name="apple-mobile-web-app-title" content="Hadzmi Assistant">
   <meta name="robots" content="noindex, nofollow">
-  <title>Hadzmi Hub</title>
+  <title>Hadzmi Assistant</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -31,8 +31,8 @@
   <div id="lockScreen">
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
-      <div class="lock-avatar"><i class="fab fa-apple"></i></div>
-      <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Hub</div>
+      <div class="lock-avatar"><img src="icons/icon-192.png" alt="" onerror="this.outerHTML='<i class=&quot;fas fa-h&quot;></i>'"></div>
+      <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Assistant</div>
       <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
 
       <div id="lockPinWrap" class="hidden">
@@ -69,6 +69,7 @@
       </div>
       <div class="nav-title" id="navSmallTitle">Home</div>
       <div class="flex items-center gap-8">
+        <button class="streak-pill" id="streakPill" onclick="explainStreak()" aria-label="Streak"><i class="fas fa-fire"></i><span id="streakCount">1</span></button>
         <button class="nav-btn-glass" onclick="openNotificationCenter()" aria-label="Notifikasi">
           <i class="far fa-bell"></i><span class="nav-badge hidden" id="notifBadge">0</span>
         </button>
@@ -112,7 +113,7 @@
         <div>
           <div class="flex justify-between items-center" style="padding:0 4px 12px">
             <h2 class="section-title" style="padding:0">Menu Cepat</h2>
-            <span class="t-foot muted" id="quickNavCurrentLabel">15 shortcut</span>
+            <span class="t-foot muted" id="quickNavCurrentLabel">16 shortcut</span>
           </div>
           <div class="card card-pad">
             <div class="app-grid">
@@ -124,6 +125,7 @@
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label" data-label="hub.links">Bookmarks</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label" data-label="hub.countdown">Countdown</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-wallet', 'Wallet')"><span class="icon-tile" style="background:linear-gradient(160deg,#1C1C1E,#3A3A3C)"><i class="fas fa-wallet"></i></span><span class="app-label" data-label="hub.wallet">Wallet</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Kas')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Bukti Kas</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Selisih Kas</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label" data-label="work.notes">Catatan Kerja</span></button>
@@ -134,6 +136,8 @@
             </div>
           </div>
         </div>
+
+        <div id="dashUpcomingTop" class="hidden"></div>
 
         <!-- Stats -->
         <div class="stat-grid">
@@ -154,7 +158,6 @@
             <div id="dashTodayAgendaList" class="list" style="box-shadow:none; border:0; max-height:240px; overflow-y:auto"></div>
             <div class="flex gap-8 mt-12">
               <button class="btn btn-gray btn-sm flex-1" onclick="switchTab('tab-hub'); switchHubSubTab('sub-todo');">Buka To-Do</button>
-              <button class="btn btn-tinted btn-sm" onclick="shareDailyDigest()" title="Kirim ringkasan ke Gmail"><i class="fas fa-envelope"></i> Gmail</button>
             </div>
           </div>
 
@@ -178,7 +181,8 @@
             <button onclick="submitQuickNote()" class="btn btn-dark btn-block mt-8">Simpan Catatan</button>
           </div>
 
-          <div class="card card-pad">
+          <div id="dashUpcomingSlot" class="hidden"></div>
+          <div class="card card-pad" id="dashUpcomingCard">
             <div class="card-head">
               <div class="widget-title c-purple"><i class="fas fa-hourglass-half"></i> Event Terdekat</div>
               <button class="link-btn t-foot" onclick="navigateFromQuickMenu('tab-hub','sub-countdown','Countdown')">Semua</button>
@@ -224,7 +228,7 @@
           </div>
           <div class="flex gap-8 hidden" id="galleryHeadActions">
             <button type="button" onclick="toggleGallerySelect()" id="gallerySelectBtn" class="btn btn-gray btn-sm">Pilih</button>
-            <button type="button" onclick="document.getElementById('galleryFileInput').click()" class="btn btn-filled btn-sm"><i class="fas fa-plus"></i> Foto</button>
+            <button type="button" onclick="galleryAddClick()" class="btn btn-filled btn-sm"><i class="fas fa-plus"></i> Foto</button>
           </div>
         </div>
         <div class="subnav">
@@ -281,13 +285,6 @@
                   </select>
                 </div>
                 <div class="row" style="background:transparent">
-                  <span class="icon-tile bg-orange"><i class="fas fa-gauge-high"></i></span>
-                  <div class="flex-1"><div class="row-title">Kecepatan</div></div>
-                  <select id="musicRateSelect" onchange="setPlaybackRate(this.value)" class="select" style="width:auto; padding:8px 30px 8px 12px; font-size:14px">
-                    <option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option>
-                  </select>
-                </div>
-                <div class="row" style="background:transparent">
                   <span class="icon-tile bg-pink"><i class="fas fa-window-minimize"></i></span>
                   <div class="flex-1"><div class="row-title">Floating Mini Player</div><div class="row-sub">Audio tetap berjalan saat disembunyikan</div></div>
                   <label class="switch"><input type="checkbox" id="btnToggleFloatingDock" onchange="toggleFloatingMusicDockSetting()"><span class="slider"></span></label>
@@ -335,12 +332,14 @@
         <!-- GALERI -->
         <div id="sub-gallery" class="media-sub hidden stack-16">
           <input type="file" id="galleryFileInput" accept="image/*" multiple class="hidden" onchange="onGalleryPicked(event)">
+          <input type="file" id="vaultFileInput" accept="image/*" multiple class="hidden" onchange="onVaultPicked(event)">
           <div class="search-bar"><i class="fas fa-magnifying-glass"></i><input type="text" id="gallerySearch" class="field" placeholder="Cari keterangan, lokasi, album, tanggal…" oninput="renderGallery()"></div>
           <div class="seg" id="galleryViewSeg">
             <button class="active" data-v="library" onclick="setGalleryView('library')">Pustaka</button>
             <button data-v="albums" onclick="setGalleryView('albums')">Album</button>
             <button data-v="places" onclick="setGalleryView('places')">Tempat</button>
             <button data-v="favorites" onclick="setGalleryView('favorites')">Favorit</button>
+            <button data-v="hidden" onclick="setGalleryView('hidden')"><i class="fas fa-lock" style="font-size:11px"></i> Tersembunyi</button>
           </div>
           <div id="galleryContext" class="hidden"></div>
           <div id="galleryBody"></div>
@@ -349,6 +348,7 @@
             <div class="flex gap-8">
               <button class="btn btn-gray btn-sm" onclick="addSelectedToAlbum()" title="Tambah ke album"><i class="fas fa-rectangle-history fa-images"></i></button>
               <button class="btn btn-gray btn-sm" onclick="favoriteSelected()" title="Favorit"><i class="far fa-heart"></i></button>
+              <button class="btn btn-gray btn-sm" onclick="hideGalleryPhotos(gallerySelectedIds())" title="Sembunyikan"><i class="fas fa-eye-slash"></i></button>
               <button class="btn btn-tinted btn-sm" onclick="shareGalleryPhotos(gallerySelectedIds())" title="Bagikan"><i class="fas fa-arrow-up-from-bracket"></i></button>
               <button class="btn btn-danger-tinted btn-sm" onclick="deleteGalleryPhotos(gallerySelectedIds())" title="Hapus"><i class="fas fa-trash"></i></button>
             </div>
@@ -366,6 +366,7 @@
             <button onclick="switchHubSubTab('sub-links')" id="btn-sub-links" data-label="hub.links">Bookmarks</button>
             <button onclick="switchHubSubTab('sub-countdown')" id="btn-sub-countdown" data-label="hub.countdown">Countdown</button>
             <button onclick="switchHubSubTab('sub-focus')" id="btn-sub-focus" data-label="hub.focus">Focus</button>
+            <button onclick="switchHubSubTab('sub-wallet')" id="btn-sub-wallet" data-label="hub.wallet">Wallet</button>
           </div>
         </div>
 
@@ -374,7 +375,7 @@
           <div class="smart-grid" id="taSmartGrid"></div>
           <div class="flex gap-8 items-center">
             <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input id="ta-search" type="text" class="field" placeholder="Cari tugas…" oninput="taRenderNotes()"></div>
-            <button class="btn btn-tinted btn-sm" onclick="shareTaskList()" title="Kirim daftar ke Gmail"><i class="fas fa-envelope"></i></button>
+            <button class="btn btn-tinted btn-sm" onclick="pdfTaskList()" title="Ekspor PDF"><i class="fas fa-file-pdf"></i></button>
           </div>
           <div class="flex justify-between items-center" style="padding:0 4px">
             <h2 class="t-title2" id="taListTitle" style="color:var(--blue)">To Do</h2>
@@ -418,7 +419,16 @@
           <div id="cd-list-container" class="grid-auto" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))"></div>
         </div>
 
-        <!-- Focus & Sleep (pindah ke Hub) -->
+        <!-- Wallet -->
+        <div id="sub-wallet" class="hub-sub-content hidden stack-16">
+          <div class="flex justify-between items-center" style="padding:0 4px">
+            <span class="t-foot muted" id="walletCount">0 kartu</span>
+            <button class="btn btn-filled btn-sm" onclick="openWalletEditor()"><i class="fas fa-plus"></i> Kartu</button>
+          </div>
+          <div id="walletStack" class="wallet-stack"></div>
+        </div>
+
+        <!-- Focus & Sleep (di Planner) -->
         <div id="sub-focus" class="hub-sub-content hidden">
           <div class="split">
             <div class="sticky-col">
@@ -464,7 +474,7 @@
                 <div class="flex justify-between items-center" style="padding:0 4px 10px">
                   <h2 class="t-title3">Riwayat Fokus & Tidur</h2>
                   <div class="flex gap-6">
-                    <button type="button" onclick="shareFocusReport()" class="btn btn-tinted btn-xs"><i class="fas fa-envelope"></i> Gmail</button>
+                    <button type="button" onclick="pdfFocusReport()" class="btn btn-tinted btn-xs"><i class="fas fa-file-pdf"></i> PDF</button>
                     <button type="button" onclick="clearFocusHistory()" class="btn btn-danger-tinted btn-xs">Hapus Log</button>
                   </div>
                 </div>
@@ -506,7 +516,7 @@
           <div class="select-bar hidden" id="photoSelectBar">
             <span class="t-sub semibold" id="photoSelCount">0 dipilih</span>
             <div class="flex gap-8">
-              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-envelope"></i> Kirim</button>
+              <button class="btn btn-tinted btn-sm" onclick="sharePhotos(selectedPhotoIds())"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
               <button class="btn btn-gray btn-sm" onclick="downloadPhotos(selectedPhotoIds())"><i class="fas fa-download"></i></button>
               <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(selectedPhotoIds())"><i class="fas fa-trash"></i></button>
             </div>
@@ -543,7 +553,7 @@
                   <div><label class="field-label">Dari</label><input type="date" id="kasFilterAwal" onchange="renderKasData()" class="field"></div>
                   <div><label class="field-label">Sampai</label><input type="date" id="kasFilterAkhir" onchange="renderKasData()" class="field"></div>
                 </div>
-                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="shareKasReport()"><i class="fas fa-envelope"></i> Kirim Laporan ke Gmail</button>
+                <button type="button" class="btn btn-tinted btn-block btn-sm" onclick="pdfKasReport()"><i class="fas fa-file-pdf"></i> Laporan PDF</button>
               </div>
             </div>
             <div>
@@ -625,9 +635,9 @@
             <!-- Profile -->
             <div class="list">
               <div class="row" style="padding:16px">
-                <span class="avatar" style="width:58px;height:58px;font-size:24px;background:linear-gradient(135deg,#007AFF,#5856D6)"><i class="fab fa-apple"></i></span>
+                <span class="avatar app-logo" style="width:58px;height:58px"><img src="icons/icon-192.png" alt=""></span>
                 <div class="flex-1">
-                  <div class="t-title3" data-label="app.name">Hadzmi Hub</div>
+                  <div class="t-title3" data-label="app.name">Hadzmi Assistant</div>
                   <div class="t-foot muted truncate" id="settingsAccountEmail">—</div>
                 </div>
               </div>
@@ -665,26 +675,11 @@
                 </div>
                 <button class="row" onclick="sendTestNotification()"><span class="icon-tile bg-green"><i class="fas fa-paper-plane"></i></span><div class="flex-1 row-title">Kirim Notifikasi Tes</div><i class="fas fa-chevron-right chev"></i></button>
               </div>
-              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Hub terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
-            </div>
-
-            <!-- Gmail -->
-            <div>
-              <div class="section-label">Kirim ke Gmail</div>
-              <div class="form-list">
-                <div class="fl-row"><span class="fl-label">Penerima</span><input type="email" id="gmailDefaultTo" placeholder="email@gmail.com (opsional)" onchange="saveGmailDefault(this.value)"></div>
-              </div>
-              <div class="section-foot">Alamat default untuk tombol <i class="fas fa-envelope"></i> Gmail di Task, Notes, Countdown, Bookmark, Kas, dan laporan Focus/Sleep.</div>
+              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Assistant terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
             </div>
           </div>
 
           <div class="stack-24">
-            <!-- Nama Menu -->
-            <div>
-              <div class="flex justify-between items-center" style="padding:0 16px 7px"><span class="section-label" style="padding:0">Nama Menu</span><button class="link-btn t-foot" onclick="resetCustomLabels()">Kembalikan default</button></div>
-              <div class="form-list" id="labelEditor"></div>
-              <div class="section-foot">Ketik nama baru lalu tekan Return/Done. Kosongkan untuk kembali ke nama bawaan. Tersinkron ke semua perangkat.</div>
-            </div>
 
             <!-- Storage -->
             <div>
@@ -757,7 +752,7 @@
               </form>
             </div>
 
-            <div class="section-foot center">Hadzmi Hub · iOS 26 Light · v3.0</div>
+            <div class="section-foot center">Hadzmi Assistant · iOS 26 Light · v3.0</div>
           </div>
         </div>
       </section>
@@ -781,8 +776,8 @@
     <!-- TAB BAR -->
     <nav class="tabbar" id="mainTabBar">
       <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span data-label="tab.home">Home</span></div>
-      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-photo-film"></i><span data-label="tab.music">Media</span></div>
-      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Hub</span></div>
+      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-circle-play"></i><span data-label="tab.music">Media</span></div>
+      <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Planner</span></div>
       <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span data-label="tab.work">Kerja</span></div>
       <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span data-label="tab.settings">Settings</span></div>
     </nav>
@@ -988,13 +983,14 @@
           <button class="btn btn-tinted btn-sm" onclick="searchSyncedLyrics()"><i class="fas fa-magnifying-glass"></i> Cari Otomatis</button>
           <button class="btn btn-gray btn-sm" onclick="startTapSync()"><i class="fas fa-hand-pointer"></i> Sinkron Tap</button>
         </div>
+        <button class="link-btn t-foot hidden mt-8" id="btnClearLyricSync" onclick="clearLyricSync()" style="align-self:center"><i class="fas fa-eraser"></i> Hapus waktu sinkron (jadi lirik biasa, bisa di-tap ulang)</button>
         <div id="lyricsTapSync" class="hidden col mt-12" style="flex:1; min-height:0">
           <div class="flex justify-between items-center"><span class="badge tint-pink" id="tapSyncProgress">Baris 1/1</span><span class="t-foot muted tabular" id="tapSyncTime">00:00</span></div>
           <div class="tap-lines" id="tapSyncLines"></div>
           <button class="tap-big" id="tapSyncBtn" onclick="tapSyncStamp()">TAP<small>saat baris ini mulai dinyanyikan</small></button>
           <div class="grid-3 mt-8">
-            <button class="btn btn-gray btn-sm" onclick="tapSyncUndo()"><i class="fas fa-rotate-left"></i> Mundur</button>
-            <button class="btn btn-gray btn-sm" onclick="togglePlayMusic()"><i class="fas fa-play"></i>/<i class="fas fa-pause"></i></button>
+            <button class="btn btn-gray btn-sm" onclick="tapSyncUndo()"><i class="fas fa-rotate-left"></i> Mundur 1</button>
+            <button class="btn btn-gray btn-sm" onclick="tapSyncRestart()"><i class="fas fa-backward-fast"></i> Ulang dari Awal</button>
             <button class="btn btn-danger-tinted btn-sm" onclick="cancelTapSync()">Batal</button>
           </div>
         </div>
@@ -1100,6 +1096,129 @@
     </div>
   </div>
 
+  <!-- Gudang: upload -->
+  <div class="backdrop center-md" id="sheetDocUpload" onclick="if(event.target===this) cancelDocUpload()">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="cancelDocUpload()">Batal</button>
+        <div class="sh-title" id="docUploadTitle">Upload File</div>
+        <button class="btn-plain sh-right" id="docUploadBtn" style="font-weight:600" onclick="saveDocUpload()">Upload</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <div class="list" id="docUploadList" style="box-shadow:none"></div>
+        <div>
+          <div class="form-list">
+            <div class="fl-row"><span class="fl-label">Kategori</span><input type="text" id="docFolderInput" list="docFolderList" placeholder="Mis. Materi BRI" oninput="renderDocFolderSuggest()"></div>
+            <div class="fl-row"><span class="fl-label">Simpan di</span><select id="docStoreSelect" class="store-select"></select></div>
+          </div>
+          <datalist id="docFolderList"></datalist>
+          <div class="chips wrap mt-8" id="docFolderSuggest" style="overflow:visible"></div>
+          <div class="section-foot" id="docFolderHint">Nama kategori yang sama otomatis masuk ke kelompok yang sama.</div>
+        </div>
+        <div class="progress hidden" id="docUploadProgress"><div style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Galeri: editor (putar & potong) -->
+  <div class="backdrop" id="sheetPhotoEdit">
+    <div class="sheet" style="max-width:820px; height:96%; background:#111; color:#fff">
+      <div class="sheet-head" style="color:#fff">
+        <button class="btn-plain sh-left" style="color:#fff" onclick="closePhotoEditor()">Batal</button>
+        <div class="sh-title">Edit Foto</div>
+        <button class="btn-plain sh-right" id="peSaveBtn" style="font-weight:600; color:#FFD60A" onclick="savePhotoEdit()">Simpan</button>
+      </div>
+      <div class="pe-stage" id="peStage"><canvas id="peCanvas"></canvas><div class="pe-crop" id="peCrop"><span class="pe-h tl"></span><span class="pe-h tr"></span><span class="pe-h bl"></span><span class="pe-h br"></span><span class="pe-grid"></span></div></div>
+      <div class="pe-tools">
+        <div class="chips no-scrollbar" id="peAspect" style="justify-content:center">
+          <button class="chip active" data-a="free">Bebas</button><button class="chip" data-a="1">1:1</button><button class="chip" data-a="1.3333">4:3</button><button class="chip" data-a="0.75">3:4</button><button class="chip" data-a="1.7778">16:9</button><button class="chip" data-a="0.5625">9:16</button>
+        </div>
+        <div class="flex justify-center gap-12 mt-8">
+          <button class="gv-btn" onclick="peRotate(-90)" title="Putar kiri"><i class="fas fa-rotate-left"></i></button>
+          <button class="gv-btn" onclick="peRotate(90)" title="Putar kanan"><i class="fas fa-rotate-right"></i></button>
+          <button class="gv-btn" onclick="peReset()" title="Reset"><i class="fas fa-arrows-rotate"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Galeri Tersembunyi: viewer -->
+  <div class="gviewer vault-viewer" id="vaultViewer">
+    <div class="gv-top">
+      <button class="gv-btn" onclick="closeVaultViewer()"><i class="fas fa-chevron-left"></i></button>
+      <div class="gv-title"><div class="semibold"><i class="fas fa-lock" style="font-size:12px"></i> Tersembunyi</div><div id="vvDate" class="t-cap" style="opacity:.75"></div></div>
+      <button class="gv-btn" onclick="openVaultItemActions()"><i class="fas fa-ellipsis"></i></button>
+    </div>
+    <div class="gv-stage" id="vvStage"><img id="vvImg" alt=""><span class="spinner" id="vvSpin"></span></div>
+    <div class="gv-bottom">
+      <button class="gv-btn" onclick="shareVaultItem()"><i class="fas fa-arrow-up-from-bracket"></i></button>
+      <button class="gv-btn" onclick="unhideVaultItems([vaultViewerId])" title="Tampilkan lagi"><i class="fas fa-eye"></i></button>
+      <button class="gv-btn" onclick="deleteVaultItems([vaultViewerId])"><i class="far fa-trash-can"></i></button>
+    </div>
+  </div>
+
+  <!-- Wallet: tambah / edit kartu -->
+  <div class="backdrop center-md" id="sheetWalletEdit" onclick="if(event.target===this) closeSheet('sheetWalletEdit')">
+    <div class="sheet">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeSheet('sheetWalletEdit')">Batal</button>
+        <div class="sh-title" id="walletEditTitle">Kartu Baru</div>
+        <button class="btn-plain sh-right" id="walletSaveBtn" style="font-weight:600" onclick="saveWalletCard()">Simpan</button>
+      </div>
+      <div class="sheet-body stack-16">
+        <input type="hidden" id="wcId">
+        <div id="wcPreview"></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Nama kartu *</span><input type="text" id="wcName" placeholder="Mis. Member Indomaret" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Penerbit</span><input type="text" id="wcIssuer" placeholder="Mis. Indomaret, Gramedia" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Nomor</span><input type="text" id="wcNumber" placeholder="Nomor member / kartu" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Atas nama</span><input type="text" id="wcHolder" placeholder="Nama di kartu" oninput="renderWalletPreview()"></div>
+        </div>
+        <div><div class="section-label" style="padding:0 4px 8px">Warna kartu</div><div class="chips wrap" id="wcColors" style="overflow:visible"></div></div>
+        <div class="form-list">
+          <div class="fl-row"><span class="fl-label">Jenis kode</span><select id="wcCodeType" onchange="renderWalletPreview()"><option value="qr">QR Code</option><option value="code128">Barcode (Code 128)</option><option value="ean13">Barcode EAN-13</option><option value="none">Tanpa kode</option></select></div>
+          <div class="fl-row"><span class="fl-label">Isi kode</span><input type="text" id="wcCode" placeholder="Teks / angka di QR atau barcode" oninput="renderWalletPreview()"></div>
+        </div>
+        <div class="grid-2">
+          <button class="btn btn-gray btn-sm" type="button" onclick="$('wcCode').value = $('wcNumber').value; renderWalletPreview()"><i class="fas fa-copy"></i> Pakai nomor kartu</button>
+          <button class="btn btn-tinted btn-sm" type="button" onclick="$('wcScanInput').click()"><i class="fas fa-qrcode"></i> Baca QR dari foto</button>
+        </div>
+        <input type="file" id="wcScanInput" accept="image/*" class="hidden" onchange="scanQrFromPhoto(event)">
+        <div class="form-list">
+          <input type="file" id="wcFrontInput" accept="image/*" class="hidden" onchange="pickWalletImage(event, 'front')">
+          <input type="file" id="wcBackInput" accept="image/*" class="hidden" onchange="pickWalletImage(event, 'back')">
+          <button type="button" class="fl-row" style="width:100%" onclick="$('wcFrontInput').click()"><span class="icon-tile bg-blue"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcFrontLabel" style="text-align:left">Foto sisi depan (opsional)</span><i class="fas fa-camera chev"></i></button>
+          <button type="button" class="fl-row" style="width:100%" onclick="$('wcBackInput').click()"><span class="icon-tile bg-gray"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcBackLabel" style="text-align:left">Foto sisi belakang (opsional)</span><i class="fas fa-camera chev"></i></button>
+          <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="wcNote" placeholder="Opsional"></div>
+        </div>
+        <button class="btn btn-danger-tinted btn-block hidden" id="wcDeleteBtn" onclick="deleteWalletCard($('wcId').value)">Hapus Kartu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wallet: detail kartu -->
+  <div class="backdrop center-md" id="sheetWalletCard" onclick="if(event.target===this) closeWalletCard()">
+    <div class="sheet" style="background:#F2F2F7">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <button class="btn-plain sh-left" onclick="closeWalletCard()">Tutup</button>
+        <div class="sh-title" id="wdTitle">Kartu</div>
+        <button class="btn-plain sh-right" onclick="openWalletEditor(walletOpenId)">Edit</button>
+      </div>
+      <div class="sheet-body stack-16" id="wdBody"></div>
+    </div>
+  </div>
+
+  <!-- Wallet: mode scan (layar putih, kode besar) -->
+  <div class="wallet-scan hidden" id="walletScan" onclick="closeWalletScan()">
+    <div class="ws-name" id="wsName"></div>
+    <div class="ws-code" id="wsCode"></div>
+    <div class="ws-text" id="wsText"></div>
+    <div class="ws-hint"><i class="fas fa-sun"></i> Naikkan kecerahan layar agar mudah di-scan · tap untuk menutup</div>
+  </div>
+
   <!-- Panduan penyimpanan -->
   <div class="backdrop center-md" id="sheetGuide" onclick="if(event.target===this) closeSheet('sheetGuide')">
     <div class="sheet">
@@ -1126,6 +1245,7 @@
       <button class="gv-btn" onclick="shareGalleryPhotos([galleryViewerId])"><i class="fas fa-arrow-up-from-bracket"></i></button>
       <button class="gv-btn" id="gvFav" onclick="toggleGalleryFav(galleryViewerId)"><i class="far fa-heart"></i></button>
       <button class="gv-btn" id="gvInfoBtn" onclick="toggleGalleryInfo()"><i class="fas fa-circle-info"></i></button>
+      <button class="gv-btn" onclick="openPhotoEditor(galleryViewerId)" title="Edit"><i class="fas fa-crop-simple"></i></button>
       <button class="gv-btn" onclick="deleteGalleryPhotos([galleryViewerId])"><i class="far fa-trash-can"></i></button>
     </div>
   </div>

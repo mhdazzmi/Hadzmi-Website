@@ -232,19 +232,16 @@ function renderPhotoGallery() {
     box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada foto ' + esc(L('work.photos'))}</div><div class="e-sub">Foto KTP, buku tabungan, atau bukti kas nasabah dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
     return;
   }
-  const groups = {};
-  list.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt)
-    .forEach(p => (groups[p.date] = groups[p.date] || []).push(p));
+  const sorted = list.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt);
   box.className = photoSelecting ? 'selecting' : '';
-  box.innerHTML = Object.keys(groups).sort().reverse().map(d => `
-    <div class="photo-day"><span>${esc(relativeDayLabel(d))}</span><span class="t-foot muted" style="font-weight:500">${groups[d].length} foto</span></div>
-    <div class="photo-grid">${groups[d].map(p => `
-      <button class="photo-cell ${selectedPhotos.has(p.id) ? 'sel' : ''}" data-id="${esc(p.id)}" title="${esc((p.label || p.type) + ' · ' + p.type)}">
+  box.innerHTML = `<div class="photo-day"><span>${sorted.length} foto</span><span class="t-foot muted" style="font-weight:500">terbaru di atas</span></div>
+    <div class="photo-grid">${sorted.map(p => `
+      <button class="photo-cell ${selectedPhotos.has(p.id) ? 'sel' : ''}" data-id="${esc(p.id)}" title="${esc((p.label || p.type) + ' · ' + p.type + ' · ' + prettyDate(p.date))}">
         <span class="ph-load"><span class="spinner dark"></span></span>
         <img alt="" data-file="${esc(p.thumbId || p.fileId)}">
         <span class="ph-tag">${esc(p.label || p.type)}</span>
         <span class="ph-check"><i class="fas fa-check"></i></span>
-      </button>`).join('')}</div>`).join('');
+      </button>`).join('')}</div>`;
   box.querySelectorAll('.photo-cell').forEach(cell => {
     cell.onclick = () => photoSelecting ? togglePhotoPick(cell.dataset.id, cell) : openPhotoViewer(cell.dataset.id);
     queueThumb(cell.querySelector('img'));
@@ -276,12 +273,12 @@ async function openPhotoViewer(id) {
   $('viewerBody').innerHTML = '<span class="spinner dark"></span>';
   $('viewerMeta').innerHTML = `${esc(p.type)} · ${esc(prettyDate(p.date, true))}${p.time ? ' · ' + esc(p.time) : ''} · ${formatBytes(p.size)}${p.note ? `<br>${esc(p.note)}` : ''}`;
   $('viewerActions').innerHTML = `
-    <button class="btn btn-tinted btn-sm" onclick="sharePhotos(['${esc(p.id)}'])"><i class="fas fa-envelope"></i> Kirim</button>
+    <button class="btn btn-tinted btn-sm" onclick="sharePhotos(['${esc(p.id)}'])"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
     <button class="btn btn-gray btn-sm" onclick="downloadPhotos(['${esc(p.id)}'])"><i class="fas fa-download"></i> Unduh</button>
     <button class="btn btn-danger-tinted btn-sm" onclick="deletePhotos(['${esc(p.id)}'])"><i class="fas fa-trash"></i> Hapus</button>`;
   $('viewerMore').onclick = () => openActionSheet({ title: p.label || p.type, actions: [
     { text: 'Ubah Keterangan', icon: 'fas fa-pen', onClick: () => editPhotoMeta(p.id) },
-    { text: 'Kirim / Bagikan', icon: 'fas fa-envelope', onClick: () => sharePhotos([p.id]) },
+    { text: 'Bagikan', icon: 'fas fa-arrow-up-from-bracket', onClick: () => sharePhotos([p.id]) },
     { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deletePhotos([p.id]) }
   ] });
   openSheet('sheetViewer');
@@ -297,7 +294,7 @@ async function editPhotoMeta(id) {
   if ($('sheetViewer').classList.contains('open')) $('viewerTitle').textContent = p.label || p.type;
 }
 
-/** Bagikan foto sebagai lampiran (pilih Gmail di menu Bagikan). */
+/** Bagikan foto sebagai lampiran (pilih WhatsApp / Gmail / Files di menu Bagikan). */
 async function sharePhotos(ids) {
   const items = ids.map(photoById).filter(Boolean);
   if (!items.length) return showToast('Pilih foto dulu.', false);
@@ -314,9 +311,9 @@ async function sharePhotos(ids) {
     try { await navigator.share({ files, title: subject, text }); return; }
     catch (err) { if (err && err.name === 'AbortError') return; }
   }
-  // Cadangan: unduh lalu buka Gmail (lampirkan file yang terunduh secara manual)
+  // Cadangan: perangkat tidak mendukung bagikan file → unduh
   files.forEach((f, i) => setTimeout(() => downloadBlob(f, f.name), i * 400));
-  setTimeout(() => openShareSheet(subject, text + '\n\n(Lampirkan foto yang baru saja terunduh)'), files.length * 400 + 300);
+  showToast('Perangkat tidak mendukung bagikan file — foto diunduh.');
 }
 async function downloadPhotos(ids) {
   const items = ids.map(photoById).filter(Boolean); if (!items.length) return showToast('Pilih foto dulu.', false);
@@ -350,46 +347,81 @@ async function applyPhotoRetention() {
 
 // ---------------- GUDANG FILE ----------------
 let docFolderFilter = 'Semua';
+let pendingDocs = [];
+function docFolders() {
+  const map = {};
+  (appState.workDocs || []).forEach(d => { const f = (d.folder || 'Umum').trim(); map[f.toLowerCase()] = map[f.toLowerCase()] || { name: f, n: 0 }; map[f.toLowerCase()].n++; });
+  return Object.values(map).sort((a, b) => b.n - a.n);
+}
+// Nama kategori sama (abaikan huruf besar/kecil & spasi) → masuk kelompok yang sama
+function canonicalFolder(name) {
+  const clean = String(name || '').trim().replace(/\s+/g, ' ');
+  if (!clean) return 'Umum';
+  const hit = docFolders().find(f => f.name.toLowerCase() === clean.toLowerCase());
+  return hit ? hit.name : clean;
+}
+// Tebak kategori dari nama file (mis. "SOP Teller 2025.pdf" → kategori "SOP")
+function guessFolderFor(fileNames) {
+  const words = fileNames.join(' ').toLowerCase().replace(/[_\-.()]+/g, ' ');
+  return docFolders().find(f => f.name.toLowerCase().split(/\s+/).every(w => w.length > 1 && words.includes(w)));
+}
 function onDocsPicked(e) { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) uploadDocFiles(files); }
-async function uploadDocFiles(files) {
-  const big = files.filter(f => f.size > FILE_MAX_BYTES);
-  if (big.length) showToast(`${big.length} file > 25 MB dilewati (${big[0].name})`, false);
-  files = files.filter(f => f.size <= FILE_MAX_BYTES);
-  if (!files.length) return;
-  const folders = Array.from(new Set((appState.workDocs || []).map(d => d.folder).filter(Boolean)));
-  const folder = await iosAlert({
-    title: `Simpan ${files.length} file`, message: 'Masukkan ke folder apa?' + (folders.length ? `\nFolder yang ada: ${folders.slice(0, 6).join(', ')}` : ''),
-    input: { placeholder: 'Mis. Materi BRI, SOP, Formulir', value: docFolderFilter !== 'Semua' ? docFolderFilter : (readLS('app_last_doc_folder', '') || '') },
-    actions: [{ text: 'Batal', value: false }, { text: 'Upload', value: true, bold: true }]
-  });
-  if (folder === null) return;
-  const fname = (folder || '').trim() || 'Umum';
-  writeLS('app_last_doc_folder', fname);
+function uploadDocFiles(files) {
+  if (!pushConfig) return showToast('Penyimpanan cloud belum terhubung (cek internet).', false);
+  pendingDocs = files;
+  $('docUploadTitle').textContent = files.length > 1 ? `Upload ${files.length} File` : 'Upload File';
+  $('docUploadList').innerHTML = files.map(f => { const [ic, bg] = fileIconFor(f.type, f.name); return `<div class="row"><span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span><div class="flex-1"><div class="row-title truncate">${esc(f.name)}</div><div class="row-sub">${formatBytes(f.size)}</div></div></div>`; }).join('');
+  const guess = guessFolderFor(files.map(f => f.name));
+  $('docFolderInput').value = docFolderFilter !== 'Semua' ? docFolderFilter : guess ? guess.name : (readLS('app_last_doc_folder', '') || '');
+  $('docFolderList').innerHTML = docFolders().map(f => `<option value="${esc(f.name)}">`).join('');
+  $('docUploadProgress').classList.add('hidden');
+  fillStoreSelects();
+  renderDocFolderSuggest();
+  openSheet('sheetDocUpload');
+}
+function renderDocFolderSuggest() {
+  const q = $('docFolderInput').value.trim().toLowerCase();
+  const list = docFolders().filter(f => !q || f.name.toLowerCase().includes(q)).slice(0, 8);
+  $('docFolderSuggest').innerHTML = list.map(f => `<button type="button" class="chip ${f.name.toLowerCase() === q ? 'active blue' : ''}" data-f="${esc(f.name)}"><i class="fas fa-folder"></i> ${esc(f.name)} <span class="muted">${f.n}</span></button>`).join('');
+  $('docFolderSuggest').querySelectorAll('button').forEach(b => b.onclick = () => { $('docFolderInput').value = b.dataset.f; renderDocFolderSuggest(); });
+  const exists = q && docFolders().some(f => f.name.toLowerCase() === q);
+  $('docFolderHint').textContent = !q ? 'Pilih kategori yang ada atau ketik nama baru.' : exists ? `✓ Masuk ke kategori yang sudah ada: "${canonicalFolder(q)}"` : `Kategori baru "${$('docFolderInput').value.trim()}" akan dibuat.`;
+}
+function cancelDocUpload() { if ($('docUploadBtn').disabled) return; pendingDocs = []; closeSheet('sheetDocUpload'); }
+async function saveDocUpload() {
+  const files = pendingDocs; if (!files.length) return;
+  const folder = canonicalFolder($('docFolderInput').value);
+  const store = $('docStoreSelect').value || getDefaultStore();
+  writeLS('app_last_doc_folder', folder);
+  const btn = $('docUploadBtn'), bar = $('docUploadProgress'), fill = bar.firstElementChild;
+  btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>'; bar.classList.remove('hidden');
   let ok = 0;
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     try {
-      const up = await apiUploadFile(f, f.name, p => showToast(`Upload ${i + 1}/${files.length}: ${f.name} — ${Math.round(p * 100)}%`));
+      const up = await apiUploadFile(f, f.name, p => { fill.style.width = Math.round(((i + p) / files.length) * 100) + '%'; }, store);
       appState.workDocs = appState.workDocs || [];
-      appState.workDocs.unshift({ id: 'doc_' + Date.now() + '_' + i, fileId: up.id, name: f.name, type: f.type || '', size: f.size, folder: fname, createdAt: Date.now() });
+      appState.workDocs.unshift({ id: 'doc_' + Date.now() + '_' + i, fileId: up.id, name: f.name, type: f.type || '', size: f.size, folder, createdAt: Date.now() });
       ok++;
     } catch (err) { showToast(`Gagal: ${err.message}`, false); }
   }
-  if (ok) { saveStateToLocal(); renderDocs(); renderStoragePanel(); showToast(`${ok} file tersimpan di Gudang "${fname}"`); }
+  btn.disabled = false; btn.textContent = 'Upload';
+  if (ok) { saveStateToLocal(); docFolderFilter = folder; renderDocs(); renderStoragePanel(); showToast(`${ok} file tersimpan di "${folder}" (${STORE_NAMES[store]})`); }
+  if (ok === files.length) { pendingDocs = []; closeSheet('sheetDocUpload'); }
 }
 function docById(id) { return (appState.workDocs || []).find(d => d.id === id); }
 function renderDocs() {
   const list = $('docList'); if (!list) return;
   const all = appState.workDocs || [];
-  const folders = Array.from(new Set(all.map(d => d.folder || 'Umum'))).sort();
-  if (docFolderFilter !== 'Semua' && !folders.includes(docFolderFilter)) docFolderFilter = 'Semua';
+  const folders = docFolders().map(f => f.name);
+  if (docFolderFilter !== 'Semua' && !folders.some(f => f.toLowerCase() === docFolderFilter.toLowerCase())) docFolderFilter = 'Semua';
   const chips = $('docFolderChips');
   if (chips) {
     chips.innerHTML = ['Semua', ...folders].map(f => `<button class="chip ${docFolderFilter === f ? 'active blue' : ''}" data-f="${esc(f)}"><i class="fas ${f === 'Semua' ? 'fa-layer-group' : 'fa-folder'}"></i> ${esc(f)}</button>`).join('');
     chips.querySelectorAll('button').forEach(b => b.onclick = () => { docFolderFilter = b.dataset.f; renderDocs(); });
   }
   const q = ($('docSearch') ? $('docSearch').value : '').toLowerCase();
-  const rows = all.filter(d => (docFolderFilter === 'Semua' || (d.folder || 'Umum') === docFolderFilter) && (d.name + ' ' + (d.folder || '')).toLowerCase().includes(q));
+  const rows = all.filter(d => (docFolderFilter === 'Semua' || (d.folder || 'Umum').toLowerCase() === docFolderFilter.toLowerCase()) && (d.name + ' ' + (d.folder || '')).toLowerCase().includes(q));
   if ($('docCountBadge')) $('docCountBadge').textContent = `${all.length} file · ${formatBytes(all.reduce((n, d) => n + (d.size || 0), 0))}`;
   if (!rows.length) { list.innerHTML = `<div class="empty"><i class="fas fa-box-open"></i><div class="e-title">${all.length ? 'Tidak ada file yang cocok' : 'Gudang masih kosong'}</div><div class="e-sub">Upload materi, SOP, PDF, gambar, atau dokumen kerja.</div></div>`; return; }
   list.innerHTML = rows.map(d => {
@@ -397,6 +429,7 @@ function renderDocs() {
     return `<div class="row tappable" onclick="openDocViewer('${esc(d.id)}')">
       <span class="icon-tile ${bg}"><i class="fas ${ic}"></i></span>
       <div class="flex-1"><div class="row-title truncate">${esc(d.name)}</div><div class="row-sub truncate"><i class="fas fa-folder" style="font-size:10px"></i> ${esc(d.folder || 'Umum')} · ${formatBytes(d.size)} · ${esc(new Date(d.createdAt).toLocaleDateString('id-ID'))}</div></div>
+      <button class="icon-btn sm green" onclick="event.stopPropagation(); shareDoc('${esc(d.id)}')" title="Share ke WhatsApp"><i class="fab fa-whatsapp"></i></button>
       <button class="icon-btn sm clear" style="color:var(--label2)" onclick="event.stopPropagation(); openDocActions('${esc(d.id)}')"><i class="fas fa-ellipsis"></i></button>
     </div>`;
   }).join('');
@@ -406,20 +439,22 @@ async function openDocViewer(id) {
   const d = docById(id); if (!d) return;
   $('viewerTitle').textContent = d.name;
   $('viewerMeta').textContent = `${d.folder || 'Umum'} · ${formatBytes(d.size)} · ${new Date(d.createdAt).toLocaleString('id-ID')}`;
+  $('viewerBody').classList.remove('pdf-pages');
   $('viewerBody').innerHTML = '<span class="spinner dark"></span>';
   $('viewerActions').innerHTML = `
-    <button class="btn btn-tinted btn-sm" onclick="openDocInTab('${esc(d.id)}')"><i class="fas fa-up-right-from-square"></i> Buka</button>
-    <button class="btn btn-gray btn-sm" onclick="downloadDoc('${esc(d.id)}')"><i class="fas fa-download"></i> Unduh</button>
-    <button class="btn btn-gray btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fas fa-envelope"></i> Kirim</button>`;
+    <button class="btn btn-green btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+    <button class="btn btn-tinted btn-sm" onclick="shareDoc('${esc(d.id)}')"><i class="fas fa-arrow-up-from-bracket"></i> Bagikan</button>
+    <button class="btn btn-gray btn-sm" onclick="downloadDoc('${esc(d.id)}')"><i class="fas fa-download"></i> Unduh</button>`;
   $('viewerMore').onclick = () => openDocActions(d.id);
   openSheet('sheetViewer');
   try {
     const blob = await apiFetchBlob(d.fileId);
-    const url = await fileObjectUrl(d.fileId);
-    if (/^image\//.test(d.type)) $('viewerBody').innerHTML = `<img src="${url}" alt="">`;
-    else if (/pdf/.test(d.type) || /\.pdf$/i.test(d.name)) $('viewerBody').innerHTML = `<iframe src="${url}" title="${esc(d.name)}"></iframe>`;
+    if (/^image\//.test(d.type)) $('viewerBody').innerHTML = `<img src="${await fileObjectUrl(d.fileId)}" alt="">`;
+    else if (/pdf/.test(d.type) || /\.pdf$/i.test(d.name)) await renderPdfInto($('viewerBody'), blob);
+    else if (/^audio\//.test(d.type)) $('viewerBody').innerHTML = `<audio controls src="${await fileObjectUrl(d.fileId)}" style="width:90%"></audio>`;
+    else if (/^video\//.test(d.type)) $('viewerBody').innerHTML = `<video controls playsinline src="${await fileObjectUrl(d.fileId)}" style="max-width:100%; max-height:70vh"></video>`;
     else if (isTextDoc(d)) { const t = await blob.text(); $('viewerBody').innerHTML = `<pre>${esc(t.slice(0, 200000))}</pre>`; }
-    else $('viewerBody').innerHTML = `<div class="empty"><i class="fas ${fileIconFor(d.type, d.name)[0]}"></i><div class="e-sub">Pratinjau tidak tersedia untuk jenis file ini.<br>Tap <b>Buka</b> atau <b>Unduh</b>.</div></div>`;
+    else $('viewerBody').innerHTML = `<div class="empty"><i class="fas ${fileIconFor(d.type, d.name)[0]}"></i><div class="e-sub">Pratinjau belum tersedia untuk jenis file ini (mis. Word/Excel).<br>Tap <b>Bagikan</b> → buka di aplikasi lain, atau <b>Unduh</b>.</div></div>`;
   } catch (err) { $('viewerBody').innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i><div class="e-sub">${esc(err.message)}</div></div>`; }
 }
 async function openDocInTab(id) {
@@ -431,22 +466,18 @@ async function openDocInTab(id) {
 async function downloadDoc(id) { const d = docById(id); if (!d) return; try { downloadBlob(await apiFetchBlob(d.fileId), d.name); } catch (err) { showToast(err.message, false); } }
 async function shareDoc(id) {
   const d = docById(id); if (!d) return;
-  if (!fileBlobCache.has(d.fileId)) { showToast('Menyiapkan file… tap Kirim sekali lagi.'); apiFetchBlob(d.fileId).catch(() => {}); return; }
-  const file = new File([fileBlobCache.get(d.fileId)], d.name, { type: d.type || 'application/octet-stream' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: d.name }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
-  }
-  downloadBlob(file, d.name);
-  setTimeout(() => openShareSheet(`[File] ${d.name}`, `File: ${d.name}\nFolder: ${d.folder || 'Umum'}\n\n(Lampirkan file yang baru saja terunduh)`), 500);
+  if (!fileBlobCache.has(d.fileId)) { showToast('Menyiapkan file… tap sekali lagi untuk membagikan.'); apiFetchBlob(d.fileId).catch(err => showToast(err.message, false)); return; }
+  shareBlobFile(fileBlobCache.get(d.fileId), d.name, d.type);
 }
 function openDocActions(id) {
   const d = docById(id); if (!d) return;
   openActionSheet({ title: d.name, message: `${d.folder || 'Umum'} · ${formatBytes(d.size)}`, actions: [
-    { text: 'Buka', icon: 'fas fa-up-right-from-square', onClick: () => openDocInTab(id) },
+    { text: 'Lihat', icon: 'fas fa-eye', onClick: () => openDocViewer(id) },
+    { text: 'Share ke WhatsApp', icon: 'fab fa-whatsapp', onClick: () => shareDoc(id) },
     { text: 'Unduh', icon: 'fas fa-download', onClick: () => downloadDoc(id) },
-    { text: 'Kirim / Bagikan', icon: 'fas fa-envelope', onClick: () => shareDoc(id) },
+    { text: 'Buka di Tab Baru', icon: 'fas fa-up-right-from-square', onClick: () => openDocInTab(id) },
     { text: 'Ganti Nama', icon: 'fas fa-pen', onClick: () => renameDoc(id) },
-    { text: 'Pindah Folder', icon: 'fas fa-folder', onClick: () => moveDoc(id) },
+    { text: 'Pindah Kategori', icon: 'fas fa-folder', onClick: () => moveDoc(id) },
     { text: 'Hapus', icon: 'fas fa-trash', destructive: true, onClick: () => deleteDoc(id) }
   ] });
 }
@@ -458,9 +489,9 @@ async function renameDoc(id) {
 }
 async function moveDoc(id) {
   const d = docById(id); if (!d) return;
-  const v = await iosAlert({ title: 'Pindah ke folder', input: { value: d.folder || '' , placeholder: 'Nama folder' }, actions: [{ text: 'Batal', value: false }, { text: 'Pindah', value: true, bold: true }] });
+  const v = await iosAlert({ title: 'Pindah ke kategori', message: docFolders().length ? 'Kategori: ' + docFolders().map(f => f.name).slice(0, 6).join(', ') : '', input: { value: d.folder || '', placeholder: 'Nama kategori' }, actions: [{ text: 'Batal', value: false }, { text: 'Pindah', value: true, bold: true }] });
   if (v === null) return;
-  d.folder = v.trim() || 'Umum'; saveStateToLocal(); renderDocs(); showToast(`Dipindah ke "${d.folder}"`);
+  d.folder = canonicalFolder(v); saveStateToLocal(); renderDocs(); showToast(`Dipindah ke "${d.folder}"`);
 }
 async function deleteDoc(id) {
   const d = docById(id); if (!d) return;
@@ -526,7 +557,7 @@ function renderStoragePanel(fromRefresh) {
     html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', used, u.r2.limit, null, 'peringatan di 7 GB & 8,5 GB · upload berhenti di 9 GB (aman dari tagihan)');
   }
   else html += `<div class="divider"></div><div class="t-foot muted semibold">CLOUDFLARE R2</div><div class="t-sub muted">Belum aktif — <a href="#" onclick="openStorageGuide('r2'); return false">lihat langkah</a></div>`;
-  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Hub: ${formatBytes(u.drive.folderBytes || 0)}`);
+  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Assistant: ${formatBytes(u.drive.folderBytes || 0)}`);
   else if (u.drive && u.drive.error) html += `<div class="divider"></div><div class="t-foot muted semibold">GOOGLE DRIVE</div><div class="t-sub c-red">${esc(u.drive.error)}</div>`;
   if (u.kv && u.kv.count) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE KV (LAMA)', u.kv.bytes, u.kv.limit, null, `${u.kv.count} file`);
   const off = typeof offlineTotalBytes === 'function' ? offlineTotalBytes() : 0;
@@ -541,8 +572,8 @@ function renderStoragePanel(fromRefresh) {
 }
 
 // ---------------- PANDUAN PENYIMPANAN ----------------
-const APPS_SCRIPT_CODE = `/** Hadzmi Hub — Penyimpanan Google Drive */
-const FOLDER_NAME = 'Hadzmi Hub';
+const APPS_SCRIPT_CODE = `/** Hadzmi Assistant — Penyimpanan Google Drive */
+const FOLDER_NAME = 'Hadzmi Assistant';
 function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
 function folder_() { const it = DriveApp.getFoldersByName(FOLDER_NAME); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME); }
 function inFolder_(file) { const p = file.getParents(); const fid = folder_().getId(); while (p.hasNext()) if (p.next().getId() === fid) return true; return false; }
@@ -581,9 +612,9 @@ function openStorageGuide(kind) {
   } else {
     $('guideTitle').textContent = 'Sambungkan Google Drive';
     $('guideBody').innerHTML = `
-      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Hub"</div></div></div></div>
+      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Assistant"</div></div></div></div>
       ${guideSteps([
-        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Hub Drive".',
+        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Assistant Drive".',
         'Hapus isi editor, lalu tap <b>Salin Kode</b> di bawah ini dan tempel ke editor → tap 💾 <b>Save</b>.',
         'Tap ⚙️ <b>Project Settings</b> → <b>Script Properties</b> → <b>Add script property</b>: Property <code>SECRET</code>, Value: kata rahasia panjang buatanmu (mis. 30 huruf/angka acak) → Save.',
         'Tap <b>Deploy → New deployment</b> → ⚙️ pilih <b>Web app</b> → Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → <b>Deploy</b> → izinkan akses (Authorize) → salin <b>Web app URL</b>.',

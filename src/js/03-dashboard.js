@@ -78,6 +78,12 @@ function renderDashboardUpcoming() {
   const today = wibDateStr();
   const items = (appState.countdowns || []).filter(c => !c.isArchived && c.tanggal >= today)
     .sort((a, b) => (a.tanggal + (a.jam || '')).localeCompare(b.tanggal + (b.jam || ''))).slice(0, 3);
+  // Ada event → kartu pindah ke atas (di bawah Menu Cepat); tidak ada → kembali ke grid widget
+  const card = $('dashUpcomingCard'), top = $('dashUpcomingTop'), slot = $('dashUpcomingSlot');
+  if (card && top && slot) {
+    if (items.length && card.parentElement !== top) { top.appendChild(card); top.classList.remove('hidden'); }
+    else if (!items.length && card.parentElement === top) { slot.parentElement.insertBefore(card, slot); top.classList.add('hidden'); }
+  }
   if (!items.length) { box.innerHTML = `<div class="empty" style="padding:18px 8px"><i class="fas fa-calendar-plus"></i><div class="e-sub">Belum ada event mendatang.</div></div>`; return; }
   box.innerHTML = items.map(c => {
     const rel = formatRelativeTime(c.tanggal);

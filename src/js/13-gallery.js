@@ -203,7 +203,7 @@ async function addPhotosToAlbum(ids) {
 function addSelectedToAlbum() { const ids = gallerySelectedIds(); if (!ids.length) return showToast('Pilih foto dulu.', false); addPhotosToAlbum(ids); }
 
 // ---------- Render ----------
-function setGalleryView(v) { galleryView = v; galleryAlbumOpen = null; galleryPlaceOpen = null; galleryCoverPick = false; renderGallery(); }
+function setGalleryView(v) { if (galleryView === 'hidden' && v !== 'hidden' && typeof lockVault === 'function' && vaultKey) lockVault(); if (v === 'hidden') exitGallerySelect(); galleryView = v; galleryAlbumOpen = null; galleryPlaceOpen = null; galleryCoverPick = false; renderGallery(); }
 function filteredGalleryPhotos() {
   const q = ($('gallerySearch') ? $('gallerySearch').value : '').toLowerCase().trim();
   let list = gPhotos().slice().sort((a, b) => (b.takenAt || 0) - (a.takenAt || 0));
@@ -256,6 +256,7 @@ function renderGallery() {
   if (seg) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === galleryView));
   const ctx = $('galleryContext');
   const all = gPhotos();
+  if (galleryView === 'hidden') { ctx.classList.add('hidden'); ctx.innerHTML = ''; return renderVault(body); }
   // Bar konteks (album / tempat terbuka)
   if (galleryAlbumOpen || galleryPlaceOpen) {
     const a = galleryAlbumOpen && gAlbum(galleryAlbumOpen);

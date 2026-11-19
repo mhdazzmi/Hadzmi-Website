@@ -1,11 +1,11 @@
 /**
- * Hadzmi Hub — Penyimpanan Google Drive (untuk Galeri, Lagu, Bukti Kas, Gudang File)
- * Semua file disimpan di folder "Hadzmi Hub" di Google Drive-mu.
- * Hanya server Hadzmi Hub (Cloudflare Worker) yang tahu SECRET, jadi orang lain tidak bisa mengakses.
+ * Hadzmi Assistant — Penyimpanan Google Drive (untuk Galeri, Lagu, Bukti Kas, Gudang File)
+ * Semua file disimpan di folder "Hadzmi Assistant" di Google Drive-mu.
+ * Hanya server Hadzmi Assistant (Cloudflare Worker) yang tahu SECRET, jadi orang lain tidak bisa mengakses.
  *
  * Cara pasang: lihat Settings → Penyimpanan → Google Drive di website.
  */
-const FOLDER_NAME = 'Hadzmi Hub';
+const FOLDER_NAME = 'Hadzmi Assistant';
 
 function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
 function folder_() {

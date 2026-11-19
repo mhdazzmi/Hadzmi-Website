@@ -67,12 +67,12 @@ function renderNoteCards(coll, container, search, emptyIcon) {
           <span class="t-cap muted">${esc(note.date || '')}</span>
         </div>
         ${note.title ? `<div class="n-title">${esc(note.title)}</div>` : ''}
-        <div class="n-body">${esc(isLong ? note.content.slice(0, 180) + '…' : note.content)}</div>
+        <div class="n-body">${linkify(isLong ? note.content.slice(0, 180) + '…' : note.content)}</div>
         <div class="n-foot" onclick="event.stopPropagation()">
           <button onclick="togglePinNote('${id}'${c})" class="icon-btn sm ${note.isPinned ? '' : 'clear'}" style="${note.isPinned ? 'color:#C08A00; background:rgba(255,204,0,.2)' : 'color:var(--label2)'}" title="Pin"><i class="fas fa-thumbtack"></i></button>
           <div class="flex gap-4">
             <button onclick="copyNoteText('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Salin"><i class="far fa-copy"></i></button>
-            <button onclick="shareNote('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Gmail"><i class="far fa-envelope"></i></button>
+            <button onclick="pdfNote('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="PDF"><i class="far fa-file-pdf"></i></button>
             <button onclick="editNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--label2)" title="Edit"><i class="fas fa-pen"></i></button>
             <button onclick="deleteNoteRecord('${id}'${c})" class="icon-btn sm clear" style="color:var(--red)" title="Hapus"><i class="far fa-trash-can"></i></button>
           </div>
@@ -96,10 +96,10 @@ function viewNote(id, coll) {
   $('noteViewBody').innerHTML = `
     <div class="flex items-center gap-8 wrap" style="margin-bottom:10px">${note.isPinned ? '<span class="badge tint-yellow"><i class="fas fa-thumbtack"></i> Pinned</span>' : ''}${note.tag ? `<span class="badge tint-yellow">${esc(note.tag)}</span>` : ''}<span class="t-cap muted">${esc(note.date || '')}</span></div>
     ${note.title ? `<h2 class="t-title2" style="margin-bottom:10px">${esc(note.title)}</h2>` : ''}
-    <div class="t-callout pre" style="line-height:1.55">${esc(note.content)}</div>
+    <div class="t-callout pre" style="line-height:1.55">${linkify(note.content)}</div>
     <div class="grid-2 mt-28">
       <button class="btn btn-gray btn-sm" onclick="editNoteRecord('${sid}'${c})"><i class="fas fa-pen"></i> Edit</button>
-      <button class="btn btn-tinted btn-sm" onclick="shareNote('${sid}'${c})"><i class="fas fa-envelope"></i> Gmail</button>
+      <button class="btn btn-tinted btn-sm" onclick="pdfNote('${sid}'${c})"><i class="fas fa-file-pdf"></i> PDF</button>
     </div>`;
   $('noteViewMore').onclick = () => openActionSheet({
     title: note.title || 'Catatan', actions: [
@@ -185,7 +185,6 @@ function openBookmarkActions(id) {
   openActionSheet({ title: link.title, actions: [
     { text: 'Edit', icon: 'fas fa-pen', onClick: () => editLinkRecord(id) },
     { text: 'Salin Link', icon: 'far fa-copy', onClick: () => { copyText((link.urls || [link.url]).join('\n')); showToast('Link disalin!'); } },
-    { text: 'Kirim ke Gmail', icon: 'fas fa-envelope', onClick: () => shareBookmark(id) },
     { text: 'Hapus', icon: 'far fa-trash-can', destructive: true, onClick: () => deleteLinkRecord(id) }
   ] });
 }
@@ -280,11 +279,11 @@ function renderCountDownLog() {
           <div class="col gap-6" onclick="event.stopPropagation()">
             <button onclick="editCountDown('${id}')" class="icon-btn sm blue" title="Edit"><i class="fas fa-pen"></i></button>
             <button onclick="toggleArchiveCountDown('${id}')" class="icon-btn sm" title="${item.isArchived ? 'Pulihkan' : 'Arsipkan'}"><i class="fas ${item.isArchived ? 'fa-box-open' : 'fa-box-archive'}"></i></button>
-            <button onclick="shareCountdown('${id}')" class="icon-btn sm" title="Gmail"><i class="far fa-envelope"></i></button>
+            <button onclick="pdfCountdown('${id}')" class="icon-btn sm" title="PDF"><i class="far fa-file-pdf"></i></button>
             ${countdownEditMode ? `<button onclick="deleteCountDown('${id}')" class="icon-btn sm red" title="Hapus"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         </div>
-        ${hasNote && isExpanded ? `<div class="cd-note"><span class="t-cap2 bold c-blue" style="display:block; margin-bottom:4px; letter-spacing:.04em">DESKRIPSI / CATATAN</span>${esc(item.catatan)}</div>` : ''}
+        ${hasNote && isExpanded ? `<div class="cd-note"><span class="t-cap2 bold c-blue" style="display:block; margin-bottom:4px; letter-spacing:.04em">DESKRIPSI / CATATAN</span>${linkify(item.catatan)}</div>` : ''}
       </div>`;
   }).join('');
 }
