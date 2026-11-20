@@ -13,6 +13,8 @@
      VAPID_PRIVATE_JWK    (opsional, secret) — jika kosong, kunci dibuat otomatis & disimpan di KV
    ========================================================= */
 
+import { healthcareAi } from './healthcare.js';
+
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const MAX_EVENTS = 400;
 const OUTBOX_MAX = 60;
@@ -53,7 +55,7 @@ async function handleApi(request, env, url) {
     const ready = isConfigured(env);
     let vapidPublicKey = null;
     if (ready.ok) { try { const v = await getVapid(env, false); vapidPublicKey = v ? v.publicKey : null; } catch (e) { console.error('vapid', e && e.stack || e); } }
-    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV }, ai: { ready: !!env.GEMINI_API_KEY, model: geminiModel(env) } });
+    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, gemini: !!env.GEMINI_API_KEY, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV }, ai: { ready: !!env.GEMINI_API_KEY, model: geminiModel(env) } });
   }
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
@@ -89,6 +91,9 @@ async function handleApi(request, env, url) {
   // ---- Semua route di bawah ini wajib login (Firebase ID token milik OWNER_UID) ----
   const user = await requireAuth(request, env);
   requireKV(env);
+
+  // ---- Nexa Health: analisis gizi dengan Gemini ----
+  if (path === '/api/healthcare/ai' && method === 'POST') return healthcareAi(request, env);
 
   // ---- Penyimpanan file (R2 / Google Drive / KV lama) ----
   if (path === '/api/files' && method === 'POST') return uploadFile(request, env, url);
@@ -312,7 +317,23 @@ async function requireAuth(request, env) {
 }
 
 // ---------------- NEXA AI (Gemini) ----------------
-function geminiModel(env) { return String(env.GEMINI_MODEL || 'gemini-2.5-flash').replace(/[^a-z0-9.\-]/gi, ''); }
+// Sama seperti Nexa Health: coba ulang saat sibuk, model cadangan, dan cari model yang tersedia untuk kunci ini.
+const GEMINI_FALLBACKS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+const GEMINI_MODEL_RE = /^gemini-[a-z0-9.\-]{2,60}$/i;
+function geminiModel(env) { return GEMINI_MODEL_RE.test(String(env.GEMINI_MODEL || '')) ? String(env.GEMINI_MODEL) : 'gemini-flash-latest'; }
+function geminiBase(env) { return String(env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com').replace(/\/+$/, '') + '/v1beta/models'; }
+async function listGeminiModels(env) {
+  try {
+    const res = await fetch(geminiBase(env) + '?pageSize=200', { headers: { 'x-goog-api-key': env.GEMINI_API_KEY } });
+    if (!res.ok) return [];
+    const rank = n => /pro/.test(n) ? 2 : /lite/.test(n) ? 1 : 0;
+    return ((await res.json()).models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => String(m.name || '').replace(/^models\//, ''))
+      .filter(n => /^gemini-[\d.]+-(flash|flash-lite|pro)$|^gemini-(flash|flash-lite|pro)-latest$/.test(n))
+      .sort((x, y) => rank(x) - rank(y) || y.localeCompare(x, undefined, { numeric: true }));
+  } catch (e) { return []; }
+}
 async function askGemini(body, env) {
   if (!env.GEMINI_API_KEY) throw httpError(503, 'Nexa AI belum aktif: tambahkan secret GEMINI_API_KEY di Cloudflare.');
   const contents = Array.isArray(body.contents) ? body.contents.slice(-40) : null;
@@ -320,22 +341,50 @@ async function askGemini(body, env) {
   const req = { contents };
   if (body.systemInstruction && typeof body.systemInstruction === 'object') req.systemInstruction = body.systemInstruction;
   if (Array.isArray(body.tools)) req.tools = body.tools.slice(0, 4);
-  req.generationConfig = Object.assign({ temperature: 0.6, maxOutputTokens: 4096 }, body.generationConfig && typeof body.generationConfig === 'object' ? body.generationConfig : {});
-  const model = geminiModel(env);
-  const res = await fetch(`${String(env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com').replace(/\/+$/, '')}/v1beta/models/${model}:generateContent`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(req)
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = (data.error && data.error.message) || ('HTTP ' + res.status);
-    if (res.status === 429) throw httpError(429, 'Kuota gratis Gemini sedang habis. Coba lagi beberapa saat lagi.');
-    if (res.status === 404) throw httpError(502, `Model "${model}" tidak ditemukan. Ganti variabel GEMINI_MODEL di Cloudflare.`);
-    if (res.status === 400 && /API key/i.test(msg)) throw httpError(502, 'GEMINI_API_KEY tidak valid. Periksa lagi di Cloudflare.');
-    throw httpError(502, 'Gemini: ' + msg.slice(0, 300));
+  req.generationConfig = { temperature: 0.6, maxOutputTokens: 4096 };
+  const payload = JSON.stringify(req);
+  // Lanjutan percakapan alat (tool) memakai model yang sama dengan langkah sebelumnya bila ada
+  const preferred = GEMINI_MODEL_RE.test(String(body.model || '')) ? String(body.model) : null;
+  const tried = new Set(), log = []; let busy = false, quota = false;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  async function tryModel(m) {
+    tried.add(m);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let res, data;
+      try {
+        res = await fetch(`${geminiBase(env)}/${encodeURIComponent(m)}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: payload });
+        data = await res.json().catch(() => ({}));
+      } catch (e) { log.push(m + ': koneksi terputus'); return null; }
+      const msg = String((data.error && data.error.message) || '');
+      if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
+      if ([429, 500, 503, 504].includes(res.status)) {
+        if (res.status === 429) quota = true; else busy = true;
+        if (attempt === 0 && res.status !== 429) { await wait(1200); continue; }
+        log.push(m + (res.status === 429 ? ': batas kuota' : ': sibuk')); return null;
+      }
+      if (!res.ok) {
+        if (/API key|API_KEY|PERMISSION_DENIED|unregistered callers/i.test(msg) || res.status === 401 || res.status === 403)
+          throw httpError(502, 'Kunci Gemini ditolak Google. Periksa GEMINI_API_KEY di Cloudflare.');
+        log.push(m + ': error ' + res.status + (msg ? ' (' + msg.slice(0, 120) + ')' : '')); return null;
+      }
+      const cand = (data.candidates || [])[0] || {};
+      const parts = (cand.content && cand.content.parts) || [];
+      return { parts, finishReason: cand.finishReason || null, model: m, usage: data.usageMetadata || null, blocked: (data.promptFeedback && data.promptFeedback.blockReason) || null };
+    }
+    return null;
   }
-  const cand = (data.candidates || [])[0] || {};
-  const parts = (cand.content && cand.content.parts) || [];
-  return { parts, finishReason: cand.finishReason || null, model, usage: data.usageMetadata || null, blocked: data.promptFeedback && data.promptFeedback.blockReason || null };
+  for (const m of [preferred, geminiModel(env)].concat(GEMINI_FALLBACKS)) {
+    if (!m || tried.has(m)) continue;
+    const r = await tryModel(m); if (r) return r;
+  }
+  for (const m of (await listGeminiModels(env)).slice(0, 5)) {
+    if (tried.has(m)) continue;
+    const r = await tryModel(m); if (r) return r;
+  }
+  const detail = log.length ? ' (' + log.join('; ') + ')' : '';
+  if (busy) throw httpError(503, 'Server Gemini sedang sibuk. Tunggu 1–2 menit lalu coba lagi.' + detail);
+  if (quota) throw httpError(429, 'Batas pemakaian gratis Gemini tercapai untuk sementara. Coba lagi beberapa menit lagi.' + detail);
+  throw httpError(502, 'Nexa AI belum bisa menghubungi Gemini.' + detail);
 }
 
 // ---------------- HELPERS ----------------

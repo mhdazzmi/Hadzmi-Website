@@ -10,7 +10,7 @@ const AI_LS_KEY = 'nexa_ai_chat_v1';
 const AI_MAX_TURNS_SENT = 30;
 let aiHistory = readLS(AI_LS_KEY, []);     // format "contents" Gemini: [{role:'user'|'model', parts:[...]}]
 let aiActions = readLS(AI_LS_KEY + '_act', {}); // hasil aksi per indeks pesan, untuk chip "Urungkan"
-let aiBusy = false, aiRecog = null;
+let aiBusy = false, aiRecog = null, aiTurnModel = null;
 
 const AI_SUGGESTIONS = [
   'Ringkas agenda & tugasku hari ini',
@@ -158,10 +158,11 @@ async function sendAiMessage(text) {
   if (!aiReady()) { renderAiChat(); return showToast('Nexa AI belum diaktifkan. Lihat panduan di layar.', false); }
   $('aiInput').value = ''; autoGrowAi();
   aiHistory.push({ role: 'user', parts: [{ text }] }); saveAiHistory();
-  aiBusy = true; renderAiChat(); scrollAiBottom();
+  aiBusy = true; aiTurnModel = null; renderAiChat(); scrollAiBottom();
   try {
     for (let step = 0; step < 5; step++) {
-      const res = await authFetch('/ai', { method: 'POST', body: JSON.stringify({ contents: aiHistory.slice(-AI_MAX_TURNS_SENT).filter((m, i, arr) => !(i === 0 && m.role !== 'user')), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS }) });
+      const res = await authFetch('/ai', { method: 'POST', body: JSON.stringify({ contents: aiHistory.slice(-AI_MAX_TURNS_SENT).filter((m, i, arr) => !(i === 0 && m.role !== 'user')), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS, model: aiTurnModel }) });
+      if (res.model) aiTurnModel = res.model;
       const parts = (res.parts || []).filter(p => p && (p.text != null || p.functionCall || p.thoughtSignature));
       if (!parts.length) {
         aiHistory.push({ role: 'model', parts: [{ text: res.blocked ? 'Maaf, pertanyaan ini tidak bisa aku jawab.' : 'Maaf, aku belum bisa menjawab itu. Coba tanyakan dengan kalimat lain ya.' }] });

@@ -1157,6 +1157,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
               <button class="app-icon" onclick="openAiChat()"><span class="icon-tile" style="background:linear-gradient(145deg,#1D3D80,#070F26)"><i class="fas fa-wand-magic-sparkles" style="color:#F6C96A"></i></span><span class="app-label">Nexa AI</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-wallet', 'Wallet')"><span class="icon-tile" style="background:linear-gradient(160deg,#1C1C1E,#3A3A3C)"><i class="fas fa-wallet"></i></span><span class="app-label" data-label="hub.wallet">Wallet</span></button>
+              <a class="app-icon" href="healthcare/" style="color:inherit"><span class="icon-tile" style="background:linear-gradient(145deg,#34C759,#00C7BE)"><i class="fas fa-leaf"></i></span><span class="app-label">Nexa Health</span></a>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukti Kas')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Bukti Kas</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Selisih Kas')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Selisih Kas</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label" data-label="work.notes">Catatan Kerja</span></button>
@@ -8108,7 +8109,7 @@ const AI_LS_KEY = 'nexa_ai_chat_v1';
 const AI_MAX_TURNS_SENT = 30;
 let aiHistory = readLS(AI_LS_KEY, []);     // format "contents" Gemini: [{role:'user'|'model', parts:[...]}]
 let aiActions = readLS(AI_LS_KEY + '_act', {}); // hasil aksi per indeks pesan, untuk chip "Urungkan"
-let aiBusy = false, aiRecog = null;
+let aiBusy = false, aiRecog = null, aiTurnModel = null;
 
 const AI_SUGGESTIONS = [
   'Ringkas agenda & tugasku hari ini',
@@ -8256,10 +8257,11 @@ async function sendAiMessage(text) {
   if (!aiReady()) { renderAiChat(); return showToast('Nexa AI belum diaktifkan. Lihat panduan di layar.', false); }
   $('aiInput').value = ''; autoGrowAi();
   aiHistory.push({ role: 'user', parts: [{ text }] }); saveAiHistory();
-  aiBusy = true; renderAiChat(); scrollAiBottom();
+  aiBusy = true; aiTurnModel = null; renderAiChat(); scrollAiBottom();
   try {
     for (let step = 0; step < 5; step++) {
-      const res = await authFetch('/ai', { method: 'POST', body: JSON.stringify({ contents: aiHistory.slice(-AI_MAX_TURNS_SENT).filter((m, i, arr) => !(i === 0 && m.role !== 'user')), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS }) });
+      const res = await authFetch('/ai', { method: 'POST', body: JSON.stringify({ contents: aiHistory.slice(-AI_MAX_TURNS_SENT).filter((m, i, arr) => !(i === 0 && m.role !== 'user')), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS, model: aiTurnModel }) });
+      if (res.model) aiTurnModel = res.model;
       const parts = (res.parts || []).filter(p => p && (p.text != null || p.functionCall || p.thoughtSignature));
       if (!parts.length) {
         aiHistory.push({ role: 'model', parts: [{ text: res.blocked ? 'Maaf, pertanyaan ini tidak bisa aku jawab.' : 'Maaf, aku belum bisa menjawab itu. Coba tanyakan dengan kalimat lain ya.' }] });
