@@ -76,14 +76,14 @@ function showAuth(step = 'name', data = {}) {
     authEl.innerHTML = `<div class="auth-card" style="max-width:400px"><h1 style="font-size:26px">Buat Akun</h1><p class="lead" style="margin-bottom:4px">Pilih avatar yang paling kamu banget.</p>
       <div id="av-prev" style="cursor:pointer">${authState.photoUrl ? `<span class="av" style="--s:96px"><img src="${authState.photoUrl}"></span>` : avatar({ avatar: av }, 96)}</div>
       <button class="btn sm tint" id="a-photo"><i class="fa-solid fa-camera"></i> ${authState.photoUrl ? 'Ganti foto' : 'Pakai foto'}</button>
-      <div class="emoji-grid" id="a-emojis" style="width:100%;margin-top:8px">${EMOJIS.map(e => `<button class="${!authState.photoUrl && av.emoji === e ? 'on' : ''}">${e}</button>`).join('')}</div>
+      <div class="emoji-grid" id="a-emojis" style="width:100%;margin-top:8px">${EMOJIS.map(e => `<button data-e="${e}" class="${!authState.photoUrl && av.emoji === e ? 'on' : ''}">${e}</button>`).join('')}</div>
       <div class="color-row" id="a-colors" style="margin:6px 0 8px">${COLORS.map(c => `<button style="background:${c}" class="${av.color === c ? 'on' : ''}" data-c="${c}"></button>`).join('')}</div>
       <input class="field" id="a-name" placeholder="Nama" maxlength="24" value="${esc(authState.name || '')}">
       ${authState.needInvite ? `<input class="field" id="a-inv" placeholder="Kode undangan" autocapitalize="none" value="${esc(authState.invite || '')}">` : ''}
       <div class="err" id="a-err"></div>
       <button class="btn block" id="a-next">Lanjut</button><button class="link" id="a-back" style="font-size:15px">Sudah punya akun? Masuk</button></div>`;
     const refreshPrev = () => { $('#av-prev').innerHTML = authState.photoUrl ? `<span class="av" style="--s:96px"><img src="${authState.photoUrl}"></span>` : avatar({ avatar: authState.avatar }, 96); };
-    $('#a-emojis').onclick = e => { const b = e.target.closest('button'); if (!b) return; authState.photoFile = null; authState.photoUrl = null; authState.avatar.emoji = b.textContent; $$('#a-emojis button').forEach(x => x.classList.toggle('on', x === b)); refreshPrev(); };
+    $('#a-emojis').onclick = e => { const b = e.target.closest('button'); if (!b) return; authState.photoFile = null; authState.photoUrl = null; authState.avatar.emoji = b.dataset.e; $$('#a-emojis button').forEach(x => x.classList.toggle('on', x === b)); refreshPrev(); };
     $('#a-colors').onclick = e => { const b = e.target.closest('button'); if (!b) return; authState.avatar.color = b.dataset.c; $$('#a-colors button').forEach(x => x.classList.toggle('on', x === b)); refreshPrev(); };
     const choosePhoto = async () => { const f = await pickFile(); if (!f) return; authState.photoFile = f; authState.photoUrl = URL.createObjectURL(f); showAuth('create', { name: $('#a-name').value }); };
     $('#a-photo').onclick = choosePhoto; $('#av-prev').onclick = choosePhoto;
@@ -292,10 +292,10 @@ function editProfile() {
       <button class="btn sm tint" id="p-photo"><i class="fa-solid fa-camera"></i> ${photoUrl ? 'Ganti foto' : 'Pakai foto'}</button></div>
       <div class="list"><div class="row"><div class="main"><div class="t">Nama</div></div><input class="inline" id="p-name" maxlength="24" value="${esc(me.name)}"></div></div>
       <div class="section-h">Atau pakai emoji</div>
-      <div class="emoji-grid" id="p-emojis">${EMOJIS.map(e => `<button class="${!photoUrl && av.emoji === e ? 'on' : ''}">${e}</button>`).join('')}</div>
+      <div class="emoji-grid" id="p-emojis">${EMOJIS.map(e => `<button data-e="${e}" class="${!photoUrl && av.emoji === e ? 'on' : ''}">${e}</button>`).join('')}</div>
       <div class="color-row" id="p-colors" style="margin-top:14px">${COLORS.map(c => `<button style="background:${c}" class="${av.color === c ? 'on' : ''}" data-c="${c}"></button>`).join('')}</div>`;
     $('#p-photo', sh.body).onclick = async () => { const f = await pickFile(); if (!f) return; photoFile = f; photoUrl = URL.createObjectURL(f); const n = $('#p-name', sh.body).value; paint(); $('#p-name', sh.body).value = n; };
-    $('#p-emojis', sh.body).onclick = e => { const b = e.target.closest('button'); if (!b) return; av = { emoji: b.textContent, color: av.color || COLORS[0] }; photoFile = null; photoUrl = null; const n = $('#p-name', sh.body).value; paint(); $('#p-name', sh.body).value = n; };
+    $('#p-emojis', sh.body).onclick = e => { const b = e.target.closest('button'); if (!b) return; av = { emoji: b.dataset.e, color: av.color || COLORS[0] }; photoFile = null; photoUrl = null; const n = $('#p-name', sh.body).value; paint(); $('#p-name', sh.body).value = n; };
     $('#p-colors', sh.body).onclick = e => { const b = e.target.closest('button'); if (!b) return; av = { emoji: av.emoji || '😎', color: b.dataset.c }; photoFile = null; photoUrl = null; const n = $('#p-name', sh.body).value; paint(); $('#p-name', sh.body).value = n; };
   };
   paint();

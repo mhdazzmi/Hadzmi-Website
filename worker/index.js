@@ -32,7 +32,13 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) {
-      return env.ASSETS ? env.ASSETS.fetch(request) : new Response('Not found', { status: 404 });
+      if (!env.ASSETS) return new Response('Not found', { status: 404 });
+      const res = await env.ASSETS.fetch(request);
+      // Link preview (WhatsApp/Telegram/iMessage) butuh URL gambar absolut
+      if (/^\/games\/?(index\.html)?$/.test(url.pathname) && (res.headers.get('Content-Type') || '').includes('text/html')) {
+        return new HTMLRewriter().on('meta[data-abs]', { element(e) { const v = e.getAttribute('content') || ''; if (v.startsWith('/')) e.setAttribute('content', url.origin + v); } }).transform(res);
+      }
+      return res;
     }
     try {
       return await handleApi(request, env, url, ctx);

@@ -224,7 +224,7 @@ function renderMsgs(stick, force) {
     const mine = m.from === me;
     const cls = ['mrow', mine ? 'me' : '', !sameAsPrev ? 'first' : '', !sameAsNext ? 'last' : ''].join(' ');
     const emojiOnly = !m.img && !m.del && isEmojiOnly(m.text);
-    const bcls = ['bubble', m.img ? 'img' : '', emojiOnly ? 'emoji-only' : '', !m.seq ? (m.failed ? 'failed' : 'pending') : '', m.del ? 'deleted' : ''].join(' ');
+    const bcls = ['bubble', m.img ? 'img' : '', m.link && !m.img && !m.del ? 'has-link' : '', emojiOnly ? 'emoji-only' : '', !m.seq ? (m.failed ? 'failed' : 'pending') : '', m.del ? 'deleted' : ''].join(' ');
     let inner = '';
     if (m.del) inner = '<i class="fa-solid fa-ban"></i> Pesan dihapus';
     else {
@@ -234,6 +234,10 @@ function renderMsgs(stick, force) {
         const ratio = m.img.w && m.img.h ? `aspect-ratio:${m.img.w}/${m.img.h};` : '';
         inner += `<img src="${esc(src)}" alt="Foto" style="${ratio}" loading="lazy" decoding="async">`;
         if (m.text) inner += `<div class="cap">${linkify(m.text)}</div>`;
+      } else if (m.link) {
+        const onlyUrl = m.text.trim() === m.link.url;
+        if (!onlyUrl) inner += `<div class="txt">${linkify(m.text)}</div>`;
+        inner += linkCard(m.link);
       } else inner += linkify(m.text);
     }
     const reacts = Object.entries(m.react || {}).filter(([, l]) => l.length);
@@ -255,6 +259,10 @@ function renderMsgs(stick, force) {
   if (stick && wasBottom) requestAnimationFrame(() => { const b = $('#c-body'); if (b) b.scrollTop = b.scrollHeight; });
   // Gambar yang selesai dimuat dapat menggeser posisi — tetap di bawah
   if (stick && wasBottom) $$('img', box).forEach(img => { if (!img.complete) img.addEventListener('load', () => { const b = $('#c-body'); if (b && b.scrollHeight - b.scrollTop - b.clientHeight < 400) b.scrollTop = b.scrollHeight; }, { once: true }); });
+}
+function linkCard(l) {
+  let host = ''; try { host = new URL(l.url).hostname.replace(/^www\./, ''); } catch (e) {}
+  return `<a class="lp" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${l.image ? `<img class="lp-img" src="${esc(l.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<div class="lp-t"><b>${esc(l.title || host)}</b><span>${esc(l.site && l.site !== host ? l.site + ' · ' + host : host)}</span></div></a>`;
 }
 function renderTyping(silent) {
   const el = $('#c-typing'); if (!el || !cur) return;

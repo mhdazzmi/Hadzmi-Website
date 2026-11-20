@@ -345,3 +345,61 @@ export function confetti() {
 }
 export function haptic(ms = 10) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
 export function linkify(s) { return esc(s).replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'); }
+
+// ---------- Emoji ala iOS di semua perangkat ----------
+// iPhone/iPad/Mac sudah memakai emoji Apple. Di Windows/Android, emoji diganti gambar emoji Apple.
+const APPLE_EMOJI = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+const EMOJI_CDN = 'https://cdn.jsdelivr.net/npm/emoji-datasource-apple@16.0.0/img/apple/64/';
+const EMO_TEST = /[\p{Emoji_Presentation}\p{Regional_Indicator}️]/u;
+const isEmojiG = g => /\p{Emoji_Presentation}|\p{Regional_Indicator}/u.test(g) || (g.includes('️') && /\p{Extended_Pictographic}/u.test(g));
+const segmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter() : null;
+const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'OPTION', 'TITLE']);
+const badCodes = new Set();
+function emojiImg(g) {
+  const code = [...g].map(c => c.codePointAt(0).toString(16)).join('-');
+  const cands = [...new Set([code, code.replace(/-fe0f/g, ''), code.includes('-') ? code.replace(/-200d/g, '-fe0f-200d') : code + '-fe0f'])].filter(c => !badCodes.has(c));
+  if (!cands.length) return document.createTextNode(g);
+  const img = document.createElement('img');
+  img.className = 'emj'; img.alt = g; img.draggable = false; img.decoding = 'async';
+  let i = 0;
+  img.onerror = () => { badCodes.add(cands[i]); i++; if (i < cands.length) img.src = EMOJI_CDN + cands[i] + '.png'; else img.replaceWith(document.createTextNode(g)); };
+  img.src = EMOJI_CDN + cands[0] + '.png';
+  return img;
+}
+function emojifyText(node) {
+  const t = node.nodeValue;
+  if (!t || !EMO_TEST.test(t)) return;
+  const p = node.parentNode;
+  if (!p || SKIP_TAGS.has(p.nodeName) || (p.closest && p.closest('.no-emj,[contenteditable]'))) return;
+  const frag = document.createDocumentFragment();
+  let buf = '', changed = false;
+  for (const { segment } of segmenter.segment(t)) {
+    if (isEmojiG(segment)) { if (buf) frag.appendChild(document.createTextNode(buf)); buf = ''; frag.appendChild(emojiImg(segment)); changed = true; }
+    else buf += segment;
+  }
+  if (!changed) return;
+  if (buf) frag.appendChild(document.createTextNode(buf));
+  p.replaceChild(frag, node);
+}
+function emojifyTree(root) {
+  if (root.nodeType === 3) return emojifyText(root);
+  if (root.nodeType !== 1 || SKIP_TAGS.has(root.nodeName)) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const list = []; let n;
+  while ((n = w.nextNode())) if (EMO_TEST.test(n.nodeValue)) list.push(n);
+  list.forEach(emojifyText);
+}
+// Teks untuk tooltip/salin: gambar emoji dikembalikan ke karakter aslinya
+export function plainText(el) { const c = el.cloneNode(true); c.querySelectorAll('img.emj').forEach(i => i.replaceWith(i.alt)); return c.textContent; }
+if (!APPLE_EMOJI && segmenter && typeof MutationObserver !== 'undefined') {
+  const start = () => {
+    emojifyTree(document.body);
+    new MutationObserver(muts => {
+      for (const m of muts) {
+        if (m.type === 'characterData') emojifyText(m.target);
+        else m.addedNodes.forEach(emojifyTree);
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+}

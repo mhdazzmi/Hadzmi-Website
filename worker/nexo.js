@@ -366,6 +366,8 @@ export class NexoHub extends DurableObject {
         this.push(members.filter(x => x !== uid), {
           title: isGroup ? `${me.name} · Grup Nexo` : me.name, body, tag: 'chat-' + c.id, url: './?chat=' + encodeURIComponent(c.id), kind: 'chat'
         }).catch(e => console.warn('push', e));
+        const link = !img && text.match(/https?:\/\/[^\s<>"']+/i);
+        if (link) this.attachPreview(c.id, msg.seq, link[0].replace(/[.,;:!?)\]]+$/, '')).catch(e => console.warn('preview', e));
         return { seq: msg.seq, conv: c.id };
       }
       case 'chat.read': {
@@ -495,6 +497,53 @@ export class NexoHub extends DurableObject {
     }
   }
 
+  // ---------- Link preview (Open Graph) ----------
+  async attachPreview(conv, seq, url) {
+    const data = await this.unfurl(url);
+    if (!data) return;
+    const k = msgKey(conv, seq), msg = await this.ctx.storage.get(k);
+    if (!msg || msg.del) return;
+    msg.link = data;
+    await this.ctx.storage.put(k, msg);
+    const c = this.convs[conv]; if (!c) return;
+    this.toUsers(this.members(c), { t: 'msgUpdate', conv, msg, meta: c });
+  }
+  async unfurl(url) {
+    let u; try { u = new URL(url); } catch (e) { return null; }
+    if (!/^https?:$/.test(u.protocol) || /^(localhost|127\.|10\.|192\.168\.|169\.254\.)/.test(u.hostname)) return null;
+    const key = 'uf:' + await sha256hex(u.href);
+    const cached = await this.ctx.storage.get(key);
+    if (cached && Date.now() - cached.at < 7 * 86400000) return cached.data;
+    let data = null;
+    try {
+      const res = await fetch(u.href, { redirect: 'follow', signal: AbortSignal.timeout(6000),
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NexoLinkPreview/1.0; +https://github.com)', Accept: 'text/html,application/xhtml+xml,image/*;q=0.8,*/*;q=0.5', 'Accept-Language': 'id,en;q=0.8' } });
+      const ct = (res.headers.get('content-type') || '').toLowerCase();
+      const final = res.url || u.href;
+      const host = new URL(final).hostname.replace(/^www\./, '');
+      if (res.ok && ct.startsWith('image/') && final.startsWith('https:')) { data = { url: u.href, image: final, title: '', site: host }; try { res.body && res.body.cancel(); } catch (e) {} }
+      else if (res.ok && ct.includes('html')) {
+        const meta = {}; let title = '';
+        const rw = new HTMLRewriter()
+          .on('meta', { element(e) { const k = (e.getAttribute('property') || e.getAttribute('name') || e.getAttribute('itemprop') || '').toLowerCase(); const v = e.getAttribute('content'); if (k && v && !(k in meta)) meta[k] = v; } })
+          .on('title', { text(t) { if (title.length < 300) title += t.text; } });
+        await rw.transform(new Response(res.body, { headers: { 'Content-Type': 'text/html' } })).arrayBuffer();
+        const abs = x => { try { const r = new URL(decodeEntities(x), final).href; return r.startsWith('https:') ? r : null; } catch (e) { return null; } };
+        const img = meta['og:image:secure_url'] || meta['og:image'] || meta['og:image:url'] || meta['twitter:image'] || meta['twitter:image:src'] || meta['image'] || '';
+        data = {
+          url: u.href,
+          title: decodeEntities(meta['og:title'] || meta['twitter:title'] || title || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+          desc: decodeEntities(meta['og:description'] || meta['twitter:description'] || meta['description'] || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+          image: img ? abs(img) : null,
+          site: decodeEntities(meta['og:site_name'] || '').slice(0, 60) || host
+        };
+        if (!data.title && !data.image) data = null;
+      } else { try { res.body && res.body.cancel(); } catch (e) {} }
+    } catch (e) { data = null; }
+    await this.ctx.storage.put(key, { at: Date.now(), data });
+    return data;
+  }
+
   // ---------- Chat helpers ----------
   conv(uid, id, create) {
     id = String(id || '');
@@ -601,6 +650,13 @@ export class NexoHub extends DurableObject {
   }
 }
 
+function decodeEntities(s) {
+  return String(s || '').replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|#39|nbsp);/gi, (m, e) => {
+    const l = e.toLowerCase();
+    if (l[0] === '#') { const n = l[1] === 'x' ? parseInt(l.slice(2), 16) : parseInt(l.slice(1), 10); try { return String.fromCodePoint(n); } catch (er) { return m; } }
+    return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[l] || m;
+  });
+}
 function msgKey(conv, seq) { return `m:${conv}:${String(seq).padStart(9, '0')}`; }
 function dmId(a, b) { return 'dm:' + [a, b].sort().join(':'); }
 function bearer(request) { const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || ''); return m ? m[1].trim() : null; }

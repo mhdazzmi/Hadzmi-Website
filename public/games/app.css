@@ -487,3 +487,19 @@ html[data-theme="dark"] .mrow:not(.me) .quote { background: rgba(255,255,255,.08
 @media (min-width: 700px) {
   .tabbar { justify-content: center; gap: 40px; }
 }
+/* Emoji Apple (Windows/Android) */
+img.emj { display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -.22em; margin: 0 .02em; object-fit: contain; -webkit-user-drag: none; user-select: none; }
+.av > img.emj { width: 1.15em; height: 1.15em; border-radius: 0; object-fit: contain; vertical-align: 0; }
+.bubble.emoji-only img.emj { width: 1.1em; height: 1.1em; }
+
+/* Link preview di chat (gaya iMessage) */
+.bubble.has-link { padding: 0; overflow: hidden; width: min(270px, 68vw); }
+.bubble.has-link .txt { padding: 8px 13px; }
+.lp { display: block; color: inherit !important; text-decoration: none !important; background: var(--fill2); }
+.mrow.me .lp { background: rgba(255,255,255,.14); }
+.lp img.lp-img { width: 100%; aspect-ratio: 1.91 / 1; object-fit: cover; background: var(--fill); }
+.lp .lp-t { padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 1px; }
+.lp .lp-t b { font-size: 14px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
+.lp .lp-t span { font-size: 12.5px; opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bubble.has-link .txt + .lp { border-top: .5px solid rgba(127,127,127,.25); }
+.bubble.has-link .quote { margin: 8px 8px 0; }

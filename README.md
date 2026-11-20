@@ -67,6 +67,8 @@ Web terpisah untuk kamu dan teman-teman (tidak memakai PIN pemilik Nexa). Buka `
 | **Chat** | Gaya iMessage: **Grup Nexo** (semua teman) + **pesan pribadi** 1 lawan 1 (bisa dibuka dari dalam game). Kirim **foto** (otomatis dikompres), balas pesan, reaksi ❤️👍😂 (tekan lama / klik kanan), hapus pesan, "Dibaca"/"Terkirim", indikator sedang mengetik, status online. |
 | **Notifikasi** | Push saat ada chat, giliran main, ajakan main, tawaran, colekan, dan game selesai, walau web ditutup. Kalau web sedang dibuka, muncul banner ala iOS. |
 | **Tema** | Terang (default), Gelap, atau Otomatis ikut sistem (Saya → Tampilan). |
+| **Emoji iOS** | Di iPhone/Mac memakai emoji Apple bawaan. Di Windows & Android, emoji otomatis diganti gambar emoji Apple (paket `emoji-datasource-apple` dari jsDelivr), termasuk bendera 🇮🇩. |
+| **Link preview** | Link yang dikirim di chat otomatis jadi kartu (gambar + judul + situs) seperti iMessage; server membaca tag Open Graph dan menyimpan hasilnya 7 hari. Link `/games/` yang dibagikan ke WhatsApp/Telegram/iMessage juga tampil sebagai kartu bergambar (`public/games/og.jpg`). |
 
 ### Setup (sekali saja)
 1. **Deploy seperti biasa** (`git push` → Cloudflare). `wrangler.jsonc` sudah berisi Durable Object `NEXO` (class `NexoHub`, SQLite) dan migrasi `nexo-v1`. Keduanya dibuat otomatis saat deploy. Durable Object SQLite termasuk **paket gratis** Workers.
