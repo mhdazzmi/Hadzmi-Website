@@ -55,7 +55,7 @@ async function handleApi(request, env, url, ctx) {
     const ready = isConfigured(env);
     let vapidPublicKey = null;
     if (ready.ok) { try { const v = await getVapid(env, false); vapidPublicKey = v ? v.publicKey : null; } catch (e) { console.error('vapid', e && e.stack || e); } }
-    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, gemini: !!env.GEMINI_API_KEY, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV }, ai: { ready: !!env.GEMINI_API_KEY, model: geminiModel(env) } });
+    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, gemini: !!env.GEMINI_API_KEY, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV } });
   }
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
@@ -117,8 +117,6 @@ async function handleApi(request, env, url, ctx) {
     return new Response(res.body, { headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream', 'Cache-Control': 'private, no-store' } });
   }
 
-  // Nexa AI: proxy ke Gemini. API key hanya ada di server (secret GEMINI_API_KEY).
-  if (path === '/api/ai' && method === 'POST') return aiHeartbeatResponse(await readJson(request), env, ctx);
 
   if (path === '/api/setup-vapid' && method === 'POST') {
     const v = await getVapid(env, true);
@@ -314,156 +312,6 @@ async function requireAuth(request, env) {
   if (user.uid !== env.OWNER_UID) throw httpError(403, 'Not the owner');
   if (!cfg.ok && cfg.missing.includes('HUB_KV')) throw httpError(503, 'KV belum diatur');
   return user;
-}
-
-// ---------------- NEXA AI (Gemini) ----------------
-// Balas SEGERA lalu kirim spasi tiap 3 detik sampai jawaban Gemini siap, supaya koneksi HP (4G/iOS)
-// tidak diputus karena menganggur. Spasi di depan JSON tetap JSON yang valid.
-function aiHeartbeatResponse(body, env, ctx) {
-  // Balasan berupa baris-baris JSON (NDJSON): {"d":"potongan teks"} … lalu {"done":true,…} atau {"error":…}.
-  // Baris kosong dikirim tiap 3 detik sebagai "detak" agar koneksi HP tidak diputus saat menunggu.
-  const { readable, writable } = new TransformStream();
-  const w = writable.getWriter(), enc = new TextEncoder(), t0 = Date.now();
-  let closed = false;
-  const send = (obj) => closed ? Promise.resolve() : w.write(enc.encode((obj ? JSON.stringify(obj) : '') + '\n')).catch(() => { closed = true; });
-  send(null);
-  const beat = setInterval(() => send(null), 3000);
-  const job = (async () => {
-    try { const out = await askGemini(body, env, d => send({ d })); out.done = true; out.ms = Date.now() - t0; await send(out); }
-    catch (e) { await send({ error: (e && e.message) || 'Error', status: (e && e.status) || 500 }); if (!e || !e.status || e.status >= 500) console.error('AI error', e && e.stack || e); }
-    clearInterval(beat);
-    try { await w.close(); } catch (e) {}
-  })();
-  if (ctx && ctx.waitUntil) ctx.waitUntil(job);
-  return new Response(readable, { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store, no-transform' } });
-}
-
-// Sama seperti Nexa Health: coba ulang saat sibuk, model cadangan, dan cari model yang tersedia untuk kunci ini.
-const GEMINI_FALLBACKS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
-const GEMINI_MODEL_RE = /^gemini-[a-z0-9.\-]{2,60}$/i;
-function geminiModel(env) { return GEMINI_MODEL_RE.test(String(env.GEMINI_MODEL || '')) ? String(env.GEMINI_MODEL) : 'gemini-flash-latest'; }
-function geminiBase(env) { return String(env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com').replace(/\/+$/, '') + '/v1beta/models'; }
-async function listGeminiModels(env) {
-  try {
-    const res = await fetch(geminiBase(env) + '?pageSize=200', { headers: { 'x-goog-api-key': env.GEMINI_API_KEY } });
-    if (!res.ok) return [];
-    const rank = n => /pro/.test(n) ? 2 : /lite/.test(n) ? 1 : 0;
-    return ((await res.json()).models || [])
-      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-      .map(m => String(m.name || '').replace(/^models\//, ''))
-      .filter(n => /^gemini-[\d.]+-(flash|flash-lite|pro)$|^gemini-(flash|flash-lite|pro)-latest$/.test(n))
-      .sort((x, y) => rank(x) - rank(y) || y.localeCompare(x, undefined, { numeric: true }));
-  } catch (e) { return []; }
-}
-/** Hanya kirim field yang dikenal Gemini: role user/model dan part text / functionCall / functionResponse / thoughtSignature. */
-function cleanGeminiContents(list) {
-  if (!Array.isArray(list)) return [];
-  const out = [];
-  for (const c of list.slice(-40)) {
-    if (!c || typeof c !== 'object' || !Array.isArray(c.parts)) continue;
-    const parts = [];
-    for (const p of c.parts) {
-      if (!p || typeof p !== 'object') continue;
-      const q = {};
-      if (typeof p.text === 'string') q.text = p.text.slice(0, 30000);
-      if (p.functionCall && typeof p.functionCall === 'object') q.functionCall = { name: String(p.functionCall.name || ''), args: p.functionCall.args && typeof p.functionCall.args === 'object' ? p.functionCall.args : {} };
-      if (p.functionResponse && typeof p.functionResponse === 'object') q.functionResponse = { name: String(p.functionResponse.name || ''), response: p.functionResponse.response && typeof p.functionResponse.response === 'object' ? p.functionResponse.response : {} };
-      if (typeof p.thoughtSignature === 'string') q.thoughtSignature = p.thoughtSignature;
-      if (p.thought === true) q.thought = true;
-      if (Object.keys(q).length && !(q.thought && !q.text && !q.thoughtSignature)) parts.push(q);
-    }
-    if (parts.length) out.push({ role: c.role === 'model' ? 'model' : 'user', parts });
-  }
-  while (out.length && out[0].role !== 'user') out.shift();
-  return out;
-}
-async function askGemini(body, env, onDelta) {
-  if (!env.GEMINI_API_KEY) throw httpError(503, 'Nexa AI belum aktif: tambahkan secret GEMINI_API_KEY di Cloudflare.');
-  const contents = cleanGeminiContents(body.contents);
-  if (!contents.length) throw httpError(400, 'contents kosong');
-  const base = { contents };
-  if (body.systemInstruction && typeof body.systemInstruction === 'object') base.systemInstruction = body.systemInstruction;
-  if (Array.isArray(body.tools)) base.tools = body.tools.slice(0, 4);
-  // Batasi "berpikir" agar cepat; bila model tidak menerima pengaturan ini, ulangi tanpa itu.
-  const withThink = JSON.stringify(Object.assign({}, base, { generationConfig: { temperature: 0.6, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 512 } } }));
-  const noThink = JSON.stringify(Object.assign({}, base, { generationConfig: { temperature: 0.6, maxOutputTokens: 4096 } }));
-  const preferred = GEMINI_MODEL_RE.test(String(body.model || '')) ? String(body.model) : null;
-  const tried = new Set(), log = []; let busy = false, quota = false;
-  const wait = ms => new Promise(r => setTimeout(r, ms));
-  async function tryModel(m) {
-    tried.add(m);
-    let payload = withThink;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      let res;
-      try {
-        res = await fetch(`${geminiBase(env)}/${encodeURIComponent(m)}:streamGenerateContent?alt=sse`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: payload });
-      } catch (e) { log.push(m + ': koneksi terputus'); return null; }
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg = String((data.error && data.error.message) || '');
-        if (res.status === 400 && payload === withThink && /thinking/i.test(msg)) { payload = noThink; continue; }
-        if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg) && !/Invalid JSON payload|Unknown name/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
-        if (res.status === 400 && /Invalid JSON payload|Unknown name|INVALID_ARGUMENT|contents/i.test(msg) && !/API key/i.test(msg)) throw httpError(400, 'Format percakapan ditolak Gemini (' + msg.slice(0, 160) + '). Hapus percakapan (ikon tong sampah) lalu coba lagi.');
-        if ([429, 500, 503, 504].includes(res.status)) {
-          if (res.status === 429) quota = true; else busy = true;
-          if (attempt === 0 && res.status !== 429) { await wait(1200); continue; }
-          log.push(m + (res.status === 429 ? ': batas kuota' : ': sibuk')); return null;
-        }
-        if (/API key|API_KEY|PERMISSION_DENIED|unregistered callers/i.test(msg) || res.status === 401 || res.status === 403)
-          throw httpError(502, 'Kunci Gemini ditolak Google. Periksa GEMINI_API_KEY di Cloudflare.');
-        log.push(m + ': error ' + res.status + (msg ? ' (' + msg.slice(0, 120) + ')' : '')); return null;
-      }
-      return await readGeminiStream(res, m, onDelta);
-    }
-    return null;
-  }
-  for (const m of [preferred, geminiModel(env)].concat(GEMINI_FALLBACKS)) {
-    if (!m || tried.has(m)) continue;
-    const r = await tryModel(m); if (r) return r;
-  }
-  for (const m of (await listGeminiModels(env)).slice(0, 5)) {
-    if (tried.has(m)) continue;
-    const r = await tryModel(m); if (r) return r;
-  }
-  const detail = log.length ? ' (' + log.join('; ') + ')' : '';
-  if (busy) throw httpError(503, 'Server Gemini sedang sibuk. Tunggu 1–2 menit lalu coba lagi.' + detail);
-  if (quota) throw httpError(429, 'Batas pemakaian gratis Gemini tercapai untuk sementara. Coba lagi beberapa menit lagi.' + detail);
-  throw httpError(502, 'Nexa AI belum bisa menghubungi Gemini.' + detail);
-}
-/** Baca SSE Gemini: teneruskan potongan teks ke onDelta, kumpulkan part lengkap (teks, functionCall, thoughtSignature). */
-async function readGeminiStream(res, model, onDelta) {
-  const reader = res.body.getReader(), dec = new TextDecoder();
-  const parts = []; let buf = '', textPart = null, finishReason = null, usage = null, blocked = null;
-  const handle = (data) => {
-    if (data.promptFeedback && data.promptFeedback.blockReason) blocked = data.promptFeedback.blockReason;
-    if (data.usageMetadata) usage = data.usageMetadata;
-    const cand = (data.candidates || [])[0]; if (!cand) return;
-    if (cand.finishReason) finishReason = cand.finishReason;
-    for (const p of ((cand.content && cand.content.parts) || [])) {
-      if (p.thought) continue;
-      if (p.functionCall) { parts.push(p); textPart = null; continue; }
-      if (typeof p.text === 'string') {
-        if (!textPart) { textPart = { text: '' }; parts.push(textPart); }
-        textPart.text += p.text;
-        if (p.thoughtSignature) textPart.thoughtSignature = p.thoughtSignature;
-        if (p.text) onDelta(p.text);
-      } else if (p.thoughtSignature) {
-        if (textPart) textPart.thoughtSignature = p.thoughtSignature; else parts.push({ text: '', thoughtSignature: p.thoughtSignature });
-      }
-    }
-  };
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (value) buf += dec.decode(value, { stream: true });
-    let k;
-    while ((k = buf.indexOf('\n')) >= 0) {
-      const line = buf.slice(0, k).trim(); buf = buf.slice(k + 1);
-      if (line.startsWith('data:')) { try { handle(JSON.parse(line.slice(5).trim())); } catch (e) {} }
-    }
-    if (done) break;
-  }
-  if (buf.trim().startsWith('data:')) { try { handle(JSON.parse(buf.trim().slice(5).trim())); } catch (e) {} }
-  return { parts, finishReason, model, usage, blocked };
 }
 
 // ---------------- HELPERS ----------------

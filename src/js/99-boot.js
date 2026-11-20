@@ -21,8 +21,8 @@ function startApp() {
   initAudioEngine();
   initDropzone();
   initViewerZoom();
-  initAiChat();
   setInterval(updateRealtimeClock, 1000);
+  setInterval(() => { try { renderDashboardUpcoming(); } catch (e) {} }, 10 * 60 * 1000); // event otomatis naik saat masuk H-7
 
   let lastTab = null;
   try { lastTab = sessionStorage.getItem('hz_last_tab'); } catch (e) {}
@@ -33,7 +33,7 @@ function startApp() {
   initNotifications();
   sessionWatchTimer = setInterval(checkSessionExpiry, 20000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); pullServerInbox(); updateDashboardGreeting(); renderDashboardTodayAgenda(); }
+    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); pullServerInbox(); updateDashboardGreeting(); renderDashboardTodayAgenda(); renderDashboardUpcoming(); }
   });
 }
 
