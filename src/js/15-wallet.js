@@ -10,8 +10,11 @@ let walletOpenId = null, walletPending = { front: null, back: null }, walletColo
 
 function wCards() { return appState.walletCards || (appState.walletCards = []); }
 function wCard(id) { return wCards().find(c => c.id === id); }
-function maskNum(n) { const s = String(n || '').replace(/\s+/g, ''); if (s.length <= 4) return s; return '•••• ' + s.slice(-4); }
-function groupNum(n) { return String(n || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
+// Nomor kartu (angka saja, ≥8 digit) diformat per 4 & disamarkan; selain itu (plat nomor, kode member huruf) tampil apa adanya.
+function isCardNum(n) { return /^\d{8,}$/.test(String(n || '').replace(/[\s-]+/g, '')); }
+function cleanNum(n) { return String(n || '').trim().replace(/\s+/g, ' '); }
+function maskNum(n) { if (!isCardNum(n)) return cleanNum(n); const s = String(n).replace(/[\s-]+/g, ''); return '•••• ' + s.slice(-4); }
+function groupNum(n) { if (!isCardNum(n)) return cleanNum(n); return String(n).replace(/[\s-]+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
 function wCardHTML(c, opts = {}) {
   const img = c.frontId ? signedUrlSync(c.frontId) : (opts.frontPreview || '');
   const hasPhoto = !!(c.frontId || opts.frontPreview);
@@ -26,7 +29,7 @@ function wCardHTML(c, opts = {}) {
   return `<div class="wcard ${hasPhoto ? 'has-img text-over' : ''}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
     ${img ? `<img class="wc-bg" src="${esc(img)}" alt=""><div class="wc-shade"></div>` : ''}
     <div class="wc-top"><div class="wc-plate"><div class="wc-issuer">${esc(c.issuer || '')}</div><div class="wc-name">${esc(c.name || 'Kartu')}</div></div>${codeIcon ? `<span class="wc-icon">${codeIcon}</span>` : ''}</div>
-    <div class="wc-plate"><div class="wc-chip"></div><div class="wc-num" style="margin-top:10px">${esc(num)}</div>
+    <div class="wc-plate">${isCardNum(c.number) ? '<div class="wc-chip"></div>' : ''}<div class="wc-num" style="margin-top:10px">${esc(num)}</div>
       <div class="flex justify-between items-end gap-12"><div class="wc-holder truncate">${esc(c.holder || '')}</div>${c.expiry ? `<div class="wc-exp"><small>VALID THRU</small>${esc(c.expiry)}</div>` : ''}</div></div>
   </div>`;
 }
