@@ -165,21 +165,54 @@ function aiContentsForSend() {
   return out;
 }
 function aiNetworkError(err) { return err && (err.name === 'AbortError' || /load failed|failed to fetch|networkerror|network connection|internet/i.test(err.message || '')); }
+let aiLiveText = '', aiStartedAt = 0, aiTick = null;
+/** Kirim ke /api/ai dan baca jawaban sebagai aliran (NDJSON): teks tampil sedikit demi sedikit. */
+async function aiStreamOnce(body, signal) {
+  const user = firebaseAuth && firebaseAuth.currentUser;
+  if (!user) throw new Error('Belum login ke Firebase');
+  const res = await fetch(PUSH_API + '/ai', { method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await user.getIdToken() }, body });
+  if (!res.ok) { let msg = 'HTTP ' + res.status; try { msg = (await res.json()).error || msg; } catch (e) {} throw new Error(msg); }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', final = null;
+  const line = (ln) => {
+    ln = ln.trim(); if (!ln) return;
+    let o; try { o = JSON.parse(ln); } catch (e) { return; }
+    if (o.d) { aiLiveText += o.d; updateAiLive(); }
+    else if (o.error) { const e = new Error(o.error); e.status = o.status; e.server = true; throw e; }
+    else if (o.done) final = o;
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) { buf += dec.decode(value, { stream: true }); let k; while ((k = buf.indexOf('\n')) >= 0) { const ln = buf.slice(0, k); buf = buf.slice(k + 1); line(ln); } }
+    if (done) break;
+  }
+  line(buf);
+  if (!final) { const e = new Error('Load failed'); throw e; }
+  return final;
+}
 async function aiRequest() {
   const body = JSON.stringify({ contents: aiContentsForSend(), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS, model: aiTurnModel });
   for (let attempt = 0; ; attempt++) {
     const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 120000);
+    aiLiveText = ''; updateAiLive();
     try {
-      const res = await authFetch('/ai', { method: 'POST', body, signal: ctrl.signal });
-      if (res && res.error) { const e = new Error(res.error); e.status = res.status; throw e; }
-      return res;
+      return await aiStreamOnce(body, ctrl.signal);
     } catch (err) {
-      if (attempt === 0 && aiNetworkError(err) && document.visibilityState === 'visible') { await new Promise(r => setTimeout(r, 1500)); continue; } // coba ulang otomatis 1×
+      if (err.server) throw err;
+      // Coba ulang otomatis 1× bila koneksi putus sebelum ada teks yang tampil
+      if (attempt === 0 && !aiLiveText && aiNetworkError(err) && document.visibilityState === 'visible') { await new Promise(r => setTimeout(r, 1500)); continue; }
       if (err.name === 'AbortError') throw new Error('Nexa terlalu lama menjawab (lebih dari 2 menit). Coba lagi atau persingkat pertanyaanmu.');
       if (aiNetworkError(err)) throw new Error('Koneksi terputus sebelum Nexa selesai menjawab. Pastikan internet stabil dan aplikasi tetap terbuka saat menunggu.');
       throw err;
     } finally { clearTimeout(timer); }
   }
+}
+/** Perbarui gelembung jawaban yang sedang ditulis (tanpa render ulang seluruh chat). */
+function updateAiLive() {
+  const el = $('aiLive'); if (!el) return;
+  if (aiLiveText) { el.classList.remove('ai-typing-wrap'); el.innerHTML = aiMarkdown(aiLiveText) + '<span class="ai-caret"></span>'; }
+  else { const sec = aiStartedAt ? Math.floor((Date.now() - aiStartedAt) / 1000) : 0; el.innerHTML = `<span class="ai-typing"><span></span><span></span><span></span></span>${sec >= 3 ? `<span class="ai-wait">Nexa sedang berpikir… ${sec} dtk</span>` : ''}`; }
+  const b = $('aiMessages'); if (b && b.scrollHeight - b.scrollTop - b.clientHeight < 160) b.scrollTop = b.scrollHeight;
 }
 async function sendAiMessage(text) {
   text = String(text == null ? $('aiInput').value : text).trim();
@@ -198,7 +231,8 @@ async function retryAi() {
   await runAiTurn();
 }
 async function runAiTurn() {
-  aiBusy = true; aiTurnModel = null; renderAiChat(); scrollAiBottom();
+  aiBusy = true; aiTurnModel = null; aiLiveText = ''; aiStartedAt = Date.now(); renderAiChat(); scrollAiBottom();
+  clearInterval(aiTick); aiTick = setInterval(() => { if (!aiLiveText) updateAiLive(); }, 1000);
   try {
     for (let step = 0; step < 5; step++) {
       const res = await aiRequest();
@@ -224,6 +258,7 @@ async function runAiTurn() {
   } catch (err) {
     aiHistory.push({ role: 'model', parts: [{ text: '⚠️ ' + (err.message || 'Gagal menghubungi Nexa AI') }], error: true });
   }
+  clearInterval(aiTick); aiLiveText = '';
   aiBusy = false; saveAiHistory(); renderAiChat(); scrollAiBottom();
 }
 
@@ -288,8 +323,9 @@ function renderAiChat() {
         ${a.open ? `<button onclick="openAiMenu('${esc(a.open)}')">Buka</button>` : ''}${a.undo && !a.undone ? `<button onclick="undoAiAction(${idx}, ${k})">Urungkan</button>` : ''}</div>`;
     });
   });
-  if (aiBusy) html += `<div class="ai-msg bot"><div class="ai-bubble ai-typing"><span></span><span></span><span></span></div></div>`;
+  if (aiBusy) html += `<div class="ai-msg bot"><div class="ai-bubble" id="aiLive"></div></div>`;
   box.innerHTML = html;
+  if (aiBusy) updateAiLive();
   $('aiSendBtn').disabled = aiBusy;
 }
 function aiSetupHTML() {
