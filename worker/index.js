@@ -352,10 +352,32 @@ async function listGeminiModels(env) {
       .sort((x, y) => rank(x) - rank(y) || y.localeCompare(x, undefined, { numeric: true }));
   } catch (e) { return []; }
 }
+/** Hanya kirim field yang dikenal Gemini: role user/model dan part text / functionCall / functionResponse / thoughtSignature. */
+function cleanGeminiContents(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const c of list.slice(-40)) {
+    if (!c || typeof c !== 'object' || !Array.isArray(c.parts)) continue;
+    const parts = [];
+    for (const p of c.parts) {
+      if (!p || typeof p !== 'object') continue;
+      const q = {};
+      if (typeof p.text === 'string') q.text = p.text.slice(0, 30000);
+      if (p.functionCall && typeof p.functionCall === 'object') q.functionCall = { name: String(p.functionCall.name || ''), args: p.functionCall.args && typeof p.functionCall.args === 'object' ? p.functionCall.args : {} };
+      if (p.functionResponse && typeof p.functionResponse === 'object') q.functionResponse = { name: String(p.functionResponse.name || ''), response: p.functionResponse.response && typeof p.functionResponse.response === 'object' ? p.functionResponse.response : {} };
+      if (typeof p.thoughtSignature === 'string') q.thoughtSignature = p.thoughtSignature;
+      if (p.thought === true) q.thought = true;
+      if (Object.keys(q).length && !(q.thought && !q.text && !q.thoughtSignature)) parts.push(q);
+    }
+    if (parts.length) out.push({ role: c.role === 'model' ? 'model' : 'user', parts });
+  }
+  while (out.length && out[0].role !== 'user') out.shift();
+  return out;
+}
 async function askGemini(body, env) {
   if (!env.GEMINI_API_KEY) throw httpError(503, 'Nexa AI belum aktif: tambahkan secret GEMINI_API_KEY di Cloudflare.');
-  const contents = Array.isArray(body.contents) ? body.contents.slice(-40) : null;
-  if (!contents || !contents.length) throw httpError(400, 'contents kosong');
+  const contents = cleanGeminiContents(body.contents);
+  if (!contents.length) throw httpError(400, 'contents kosong');
   const req = { contents };
   if (body.systemInstruction && typeof body.systemInstruction === 'object') req.systemInstruction = body.systemInstruction;
   if (Array.isArray(body.tools)) req.tools = body.tools.slice(0, 4);
@@ -374,7 +396,9 @@ async function askGemini(body, env) {
         data = await res.json().catch(() => ({}));
       } catch (e) { log.push(m + ': koneksi terputus'); return null; }
       const msg = String((data.error && data.error.message) || '');
-      if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
+      if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg) && !/Invalid JSON payload|Unknown name/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
+      // Kesalahan format permintaan: model lain pasti menolak juga → berhenti, jangan coba semua model
+      if (res.status === 400 && /Invalid JSON payload|Unknown name|INVALID_ARGUMENT|contents/i.test(msg) && !/API key/i.test(msg)) throw httpError(400, 'Format percakapan ditolak Gemini (' + msg.slice(0, 160) + '). Hapus percakapan (ikon tong sampah) lalu coba lagi.');
       if ([429, 500, 503, 504].includes(res.status)) {
         if (res.status === 429) quota = true; else busy = true;
         if (attempt === 0 && res.status !== 429) { await wait(1200); continue; }
