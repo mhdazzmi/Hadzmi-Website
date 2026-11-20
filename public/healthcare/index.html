@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F2F2F7">
+  <meta name="color-scheme" content="light only">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Nexa Health">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Nexa Health</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="../icons/icon-192.png">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="healthcare.css">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+
+<!-- =================== LOCK =================== -->
+<div id="lock" class="lock hidden">
+  <div class="lock-card" id="lockCard">
+    <div class="lock-logo"><i class="fas fa-leaf"></i></div>
+    <div class="t-title3 b">Nexa Health</div>
+    <div class="t-sub muted" id="lockHint">Masukkan PIN yang sama dengan Hadzmi Assistant</div>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad">
+      <button data-d="1">1</button><button data-d="2">2<small>ABC</small></button><button data-d="3">3<small>DEF</small></button>
+      <button data-d="4">4<small>GHI</small></button><button data-d="5">5<small>JKL</small></button><button data-d="6">6<small>MNO</small></button>
+      <button data-d="7">7<small>PQRS</small></button><button data-d="8">8<small>TUV</small></button><button data-d="9">9<small>WXYZ</small></button>
+      <span></span><button data-d="0">0</button><button data-del="1" aria-label="Hapus"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <div class="lock-err" id="lockErr"></div>
+    <a class="lock-back" href="../"><i class="fas fa-chevron-left"></i> Kembali ke Hadzmi Assistant</a>
+  </div>
+</div>
+
+<!-- =================== APP =================== -->
+<div id="app" class="hidden">
+  <header class="nav" id="nav">
+    <a class="nav-back" href="../" aria-label="Kembali ke Assistant"><i class="fas fa-chevron-left"></i><span>Assistant</span></a>
+    <div class="nav-title" id="navTitle">Hari Ini</div>
+    <div class="nav-right">
+      <button class="sync-pill" id="syncPill" data-action="explainSync"><span class="dot"></span><span id="syncText">Sync</span></button>
+      <button class="nav-btn" data-action="openSettings" aria-label="Pengaturan"><i class="fas fa-gear"></i></button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ============ HARI INI ============ -->
+    <section class="tab" id="tab-today">
+      <div class="large-title-row">
+        <div>
+          <div class="eyebrow" id="todayEyebrow"></div>
+          <h1 class="large-title" id="todayTitle">Hari Ini</h1>
+        </div>
+        <div class="date-nav">
+          <button data-action="dayShift" data-n="-1" aria-label="Hari sebelumnya"><i class="fas fa-chevron-left"></i></button>
+          <label class="date-pick" aria-label="Pilih tanggal"><i class="far fa-calendar"></i><input type="date" id="dayPicker"></label>
+          <button data-action="dayShift" data-n="1" id="dayNextBtn" aria-label="Hari berikutnya"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <div id="alertStrip"></div>
+
+      <!-- Ring kalori -->
+      <div class="card hero-card">
+        <div class="ring-wrap" id="kcalRing"></div>
+        <div class="hero-side">
+          <div class="hero-row"><span class="dotc" style="background:var(--blue)"></span><div><div class="t-foot muted">Target</div><div class="hero-num" id="heroTarget">0</div></div></div>
+          <div class="hero-row"><span class="dotc" style="background:var(--orange)"></span><div><div class="t-foot muted">Dimakan</div><div class="hero-num" id="heroEaten">0</div></div></div>
+          <div class="hero-row"><span class="dotc" id="heroStatusDot"></span><div><div class="t-foot muted">Status</div><div class="hero-num sm" id="heroStatus">—</div></div></div>
+        </div>
+      </div>
+
+      <!-- Panel penyakit -->
+      <div class="section-head"><h2>Asam Urat & Lemak</h2><span class="t-foot muted">khusus kondisimu</span></div>
+      <div class="nutri-grid" id="focusGrid"></div>
+
+      <div class="section-head"><h2>Nutrisi Lain</h2></div>
+      <div class="card list" id="nutriList"></div>
+
+      <!-- Air -->
+      <div class="card water-card">
+        <div class="water-info">
+          <span class="icon-tile bg-cyan"><i class="fas fa-glass-water"></i></span>
+          <div><div class="b">Air Putih</div><div class="t-foot muted" id="waterText">0 / 10 gelas</div></div>
+        </div>
+        <div class="water-glasses" id="waterGlasses"></div>
+        <div class="stepper">
+          <button data-action="water" data-n="-1" aria-label="Kurangi"><i class="fas fa-minus"></i></button>
+          <button data-action="water" data-n="1" aria-label="Tambah"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+
+      <!-- Makanan per kategori -->
+      <div id="mealSections"></div>
+
+      <div class="btn-col">
+        <button class="btn btn-tinted" data-action="aiDay"><i class="fas fa-wand-magic-sparkles"></i> Ringkasan AI hari ini</button>
+        <div id="dayNote"></div>
+        <button class="btn btn-gray" data-action="tab" data-tab="progress"><i class="fas fa-chart-line"></i> Lihat Progres</button>
+      </div>
+    </section>
+
+    <!-- ============ PROGRES ============ -->
+    <section class="tab hidden" id="tab-progress">
+      <div class="large-title-row"><div><div class="eyebrow">Statistik & riwayat</div><h1 class="large-title">Progres</h1></div></div>
+      <div class="segmented" id="rangeSeg">
+        <button data-range="7" class="on">7 Hari</button><button data-range="30">30 Hari</button><button data-range="90">90 Hari</button>
+      </div>
+      <div class="stat-grid" id="progStats"></div>
+      <div class="card chart-card"><div class="chart-head"><div><div class="b">Kalori harian</div><div class="t-foot muted" id="kcalChartSub"></div></div></div><div class="chart" id="chartKcal"></div></div>
+      <div class="card chart-card"><div class="chart-head"><div><div class="b">Purin harian</div><div class="t-foot muted" id="purChartSub"></div></div></div><div class="chart" id="chartPurine"></div></div>
+      <div class="card chart-card"><div class="chart-head"><div><div class="b">Protein harian</div><div class="t-foot muted" id="proChartSub"></div></div></div><div class="chart" id="chartProtein"></div></div>
+      <div class="card chart-card"><div class="chart-head"><div><div class="b">Berat badan</div><div class="t-foot muted" id="wChartSub"></div></div></div><div class="chart" id="chartWeight2"></div></div>
+      <button class="btn btn-tinted" data-action="aiPeriod"><i class="fas fa-wand-magic-sparkles"></i> Analisis AI periode ini</button>
+      <div id="periodNote"></div>
+      <div class="section-head"><h2>Riwayat Harian</h2><span class="t-foot muted">tap untuk membuka</span></div>
+      <div class="card list" id="historyList"></div>
+    </section>
+
+    <!-- ============ TUBUH ============ -->
+    <section class="tab hidden" id="tab-body">
+      <div class="large-title-row"><div><div class="eyebrow">Timbangan & lab</div><h1 class="large-title">Tubuh</h1></div></div>
+      <div class="segmented" id="bodySeg"><button data-body="weight" class="on">Berat Badan</button><button data-body="uric">Asam Urat</button></div>
+
+      <div id="bodyWeight">
+        <div class="stat-grid" id="bodyStats"></div>
+        <div class="card form-card">
+          <div class="form-title"><i class="fas fa-weight-scale c-blue"></i> Catat hasil timbangan</div>
+          <div class="grid2">
+            <label class="fld"><span>Tanggal</span><input type="date" id="wDate"></label>
+            <label class="fld"><span>Jam</span><input type="time" id="wTime"></label>
+          </div>
+          <label class="fld big"><span>Berat badan (kg)</span><input type="number" inputmode="decimal" step="0.1" id="wKg" placeholder="0,0"></label>
+          <details class="more">
+            <summary>Data timbangan pintar (opsional)</summary>
+            <div class="grid2">
+              <label class="fld"><span>Lemak tubuh (%)</span><input type="number" inputmode="decimal" step="0.1" id="wFat"></label>
+              <label class="fld"><span>Lemak visceral (level)</span><input type="number" inputmode="decimal" step="0.5" id="wVisc"></label>
+              <label class="fld"><span>Massa otot (kg)</span><input type="number" inputmode="decimal" step="0.1" id="wMuscle"></label>
+              <label class="fld"><span>Lingkar pinggang (cm)</span><input type="number" inputmode="decimal" step="0.5" id="wWaist"></label>
+            </div>
+          </details>
+          <label class="fld"><span>Catatan</span><input type="text" id="wNote" placeholder="mis. pagi setelah bangun, sebelum makan"></label>
+          <button class="btn btn-filled" data-action="saveWeight"><i class="fas fa-check"></i> Simpan</button>
+        </div>
+        <div class="card chart-card"><div class="chart-head"><div><div class="b">Grafik berat badan</div><div class="t-foot muted" id="wChartSub1"></div></div></div><div class="chart" id="chartWeight"></div></div>
+        <div class="card chart-card hidden" id="viscCard"><div class="chart-head"><div><div class="b">Lemak visceral</div><div class="t-foot muted">target ≤ 9 (level timbangan)</div></div></div><div class="chart" id="chartVisc"></div></div>
+        <div class="section-head"><h2>Catatan Analisis AI</h2><button class="link" data-action="aiWeight"><i class="fas fa-rotate"></i> Analisis ulang</button></div>
+        <div id="weightAi"></div>
+        <div class="section-head"><h2>Riwayat</h2></div>
+        <div class="card list" id="weightList"></div>
+      </div>
+
+      <div id="bodyUric" class="hidden">
+        <div class="card form-card">
+          <div class="form-title"><i class="fas fa-vial c-purple"></i> Catat hasil cek asam urat</div>
+          <div class="grid2">
+            <label class="fld"><span>Tanggal</span><input type="date" id="uDate"></label>
+            <label class="fld"><span>Jam</span><input type="time" id="uTime"></label>
+          </div>
+          <label class="fld big"><span>Kadar asam urat (mg/dL)</span><input type="number" inputmode="decimal" step="0.1" id="uVal" placeholder="0,0"></label>
+          <label class="fld"><span>Catatan</span><input type="text" id="uNote" placeholder="mis. alat cek di rumah / lab, ada nyeri sendi?"></label>
+          <button class="btn btn-filled" data-action="saveUric"><i class="fas fa-check"></i> Simpan</button>
+          <div class="t-foot muted">Target untuk penderita gout: <b>&lt; 6 mg/dL</b>. Normal pria 3,4–7,0 mg/dL.</div>
+        </div>
+        <div class="card chart-card"><div class="chart-head"><div><div class="b">Grafik asam urat</div><div class="t-foot muted">garis putus-putus = target 6 mg/dL</div></div></div><div class="chart" id="chartUric"></div></div>
+        <div class="section-head"><h2>Riwayat</h2></div>
+        <div class="card list" id="uricList"></div>
+      </div>
+    </section>
+
+    <!-- ============ PANDUAN ============ -->
+    <section class="tab hidden" id="tab-guide">
+      <div class="large-title-row"><div><div class="eyebrow">Untuk asam urat & lemak visceral</div><h1 class="large-title">Panduan</h1></div></div>
+      <div class="card form-card">
+        <div class="form-title"><i class="fas fa-magnifying-glass c-green"></i> Cek Makanan</div>
+        <div class="t-foot muted">Tanya AI: boleh dimakan atau tidak, dan berapa porsinya.</div>
+        <div class="input-row">
+          <input type="text" id="askInput" placeholder="mis. durian, sate kambing, kopi susu gula aren" autocomplete="off">
+          <button class="btn-icon" data-action="askAi" aria-label="Cek"><i class="fas fa-arrow-up"></i></button>
+        </div>
+        <div class="suggest" id="askSuggest"></div>
+        <div id="askResult"></div>
+      </div>
+      <div class="segmented" id="guideSeg"><button data-g="aman" class="on">Aman</button><button data-g="batasi">Batasi</button><button data-g="hindari">Hindari</button></div>
+      <div class="search"><i class="fas fa-magnifying-glass"></i><input type="search" id="guideSearch" placeholder="Cari di daftar"></div>
+      <div class="card list" id="guideList"></div>
+      <div class="card tip-card" id="tipsCard"></div>
+    </section>
+  </main>
+
+  <!-- Tab bar -->
+  <nav class="tabbar" id="tabbar">
+    <button data-tab="today" class="on"><i class="fas fa-house-medical"></i><span>Hari Ini</span></button>
+    <button data-tab="progress"><i class="fas fa-chart-simple"></i><span>Progres</span></button>
+    <button class="tab-add" data-action="openLog" aria-label="Catat makanan"><i class="fas fa-plus"></i></button>
+    <button data-tab="body"><i class="fas fa-weight-scale"></i><span>Tubuh</span></button>
+    <button data-tab="guide"><i class="fas fa-book-medical"></i><span>Panduan</span></button>
+  </nav>
+</div>
+
+<!-- =================== SHEET: CATAT MAKANAN =================== -->
+<div class="backdrop hidden" id="sheetLog">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <button class="link" data-action="closeSheet">Batal</button>
+      <div class="b" id="logTitle">Catat Makanan</div>
+      <button class="link b" data-action="saveMeal" id="logSaveTop" disabled>Simpan</button>
+    </div>
+    <div class="sheet-body">
+      <div class="segmented" id="catSeg"></div>
+      <div class="grid2">
+        <label class="fld"><span>Tanggal</span><input type="date" id="logDate"></label>
+        <label class="fld"><span>Jam</span><input type="time" id="logTime"></label>
+      </div>
+
+      <div class="capture-row">
+        <button class="capture-btn" data-action="openCamera"><span class="icon-tile bg-blue"><i class="fas fa-camera"></i></span><span>Kamera</span></button>
+        <button class="capture-btn" data-action="pickPhoto"><span class="icon-tile bg-purple"><i class="fas fa-image"></i></span><span>Galeri</span></button>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+      </div>
+      <div class="photo-preview hidden" id="photoPreview"><img id="photoImg" alt="Foto makanan"><button class="photo-x" data-action="clearPhoto" aria-label="Hapus foto"><i class="fas fa-xmark"></i></button></div>
+
+      <label class="fld"><span id="textLabel">Tulis makanan (pisahkan dengan koma)</span>
+        <textarea id="logText" rows="2" placeholder="mis. nasi merah, ayam bakar dada, tumis buncis, teh tawar" autocomplete="off"></textarea>
+      </label>
+      <div class="suggest" id="logSuggest"></div>
+
+      <button class="btn btn-filled" data-action="analyze" id="analyzeBtn"><i class="fas fa-wand-magic-sparkles"></i> Analisis dengan AI</button>
+      <div id="logResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== SHEET: DETAIL MAKANAN =================== -->
+<div class="backdrop hidden" id="sheetMeal">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <button class="link" data-action="closeSheet">Tutup</button>
+      <div class="b">Detail</div>
+      <button class="link c-red" data-action="deleteMeal">Hapus</button>
+    </div>
+    <div class="sheet-body" id="mealDetail"></div>
+  </div>
+</div>
+
+<!-- =================== SHEET: PENGATURAN =================== -->
+<div class="backdrop hidden" id="sheetSettings">
+  <div class="sheet tall">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <span></span>
+      <div class="b">Pengaturan</div>
+      <button class="link b" data-action="closeSheet">Selesai</button>
+    </div>
+    <div class="sheet-body" id="settingsBody"></div>
+  </div>
+</div>
+
+<!-- =================== KAMERA =================== -->
+<div class="camera hidden" id="camera">
+  <video id="camVideo" playsinline autoplay muted></video>
+  <div class="cam-top"><button data-action="closeCamera" aria-label="Tutup"><i class="fas fa-xmark"></i></button><span>Foto tidak disimpan ke galeri</span><button data-action="flipCamera" aria-label="Balik kamera"><i class="fas fa-camera-rotate"></i></button></div>
+  <div class="cam-bottom"><button class="shutter" data-action="shoot" aria-label="Ambil foto"><span></span></button></div>
+</div>
+
+<!-- Banner & alert -->
+<div class="banner" id="banner"></div>
+<div class="alert-wrap hidden" id="alertWrap"><div class="alert"><div class="alert-body"><div class="b" id="alertTitle"></div><div class="t-sub" id="alertMsg"></div></div><div class="alert-btns" id="alertBtns"></div></div></div>
+<div class="tooltip hidden" id="tooltip"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

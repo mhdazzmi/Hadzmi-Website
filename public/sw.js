@@ -53,8 +53,14 @@ self.addEventListener('push', (event) => event.waitUntil(handlePush(event)));
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const action = event.notification.data && event.notification.data.action;
+  const url = event.notification.data && event.notification.data.url;
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (url) {
+      const same = all.find(c => c.url && c.url.indexOf(url) !== -1 && 'focus' in c);
+      if (same) return same.focus();
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    }
     for (const c of all) {
       if ('focus' in c) { await c.focus(); if (action) c.postMessage({ type: 'hz-navigate', action }); return; }
     }

@@ -13,6 +13,8 @@
      VAPID_PRIVATE_JWK    (opsional, secret) — jika kosong, kunci dibuat otomatis & disimpan di KV
    ========================================================= */
 
+import { healthcareAi } from './healthcare.js';
+
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const MAX_EVENTS = 400;
 const OUTBOX_MAX = 60;
@@ -53,7 +55,7 @@ async function handleApi(request, env, url) {
     const ready = isConfigured(env);
     let vapidPublicKey = null;
     if (ready.ok) { try { const v = await getVapid(env, false); vapidPublicKey = v ? v.publicKey : null; } catch (e) { console.error('vapid', e && e.stack || e); } }
-    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV } });
+    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, gemini: !!env.GEMINI_API_KEY, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV } });
   }
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
@@ -89,6 +91,9 @@ async function handleApi(request, env, url) {
   // ---- Semua route di bawah ini wajib login (Firebase ID token milik OWNER_UID) ----
   const user = await requireAuth(request, env);
   requireKV(env);
+
+  // ---- Nexa Health: analisis gizi dengan Gemini ----
+  if (path === '/api/healthcare/ai' && method === 'POST') return healthcareAi(request, env);
 
   // ---- Penyimpanan file (R2 / Google Drive / KV lama) ----
   if (path === '/api/files' && method === 'POST') return uploadFile(request, env, url);

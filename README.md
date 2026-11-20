@@ -52,6 +52,36 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 
 ---
 
+## 🥗 Nexa Health — halaman baru `/healthcare/` (kontrol makan)
+
+Web terpisah (tidak mengubah tampilan Assistant), dibuka dari ikon **Nexa Health** di Menu Cepat atau langsung `https://<domainmu>/healthcare/`. Bisa ditambahkan ke Layar Utama sebagai app sendiri. Login **memakai PIN & sesi yang sama** dengan Assistant (cukup login sekali).
+
+| Menu | Isi |
+|---|---|
+| **Hari Ini** | Ring sisa kalori, panel **Asam Urat & Lemak** (purin, lemak jenuh, gula, lemak total) + protein, serat, karbo, natrium dengan label **Aman / Hampir batas / Berlebih (merah) / Kurang / Cukup**, air putih, makanan per **Sarapan / Makan Siang / Makan Malam / Camilan**, ringkasan AI harian. Otomatis ganti hari jam 00:00 WIB; panah ‹ › / kalender untuk lihat hari sebelumnya. |
+| **+ Catat** | **Kamera** langsung di app (foto hanya di memori, tidak masuk galeri), **Galeri**, atau **ketik** (pisahkan koma). Analisis AI instan per item: porsi, gram, kcal, protein, karbo, lemak, lemak jenuh, gula, serat, natrium, **purin**; nilai 1–10, Baik/Batasi/Hindari, catatan asam urat & lemak visceral, saran & alternatif. Porsi bisa diubah ×½–×2. **Auto-suggest** dari riwayat; makanan yang pernah dicatat dihitung instan tanpa AI. |
+| **Progres** | 7/30/90 hari: rata-rata kalori/purin/protein, hari sesuai target, streak, perubahan berat, grafik kalori/purin/protein/berat, analisis AI periode, riwayat harian. |
+| **Tubuh** | Catat timbangan (tanggal & jam otomatis hari ini; opsional % lemak, lemak visceral, otot, pinggang) → riwayat + grafik + **catatan analisis AI**. Tab **Asam Urat** (mg/dL, target < 6). |
+| **Panduan** | **Cek Makanan** (tanya AI boleh/tidak), daftar Aman/Batasi/Hindari untuk gout + lemak visceral. |
+| **Pengaturan ⚙️** | Target kalori (bisa dihitung otomatis), protein, purin, gula, natrium, serat, % lemak; profil; peringatan berlebih & pengingat jam makan; AI; ekspor JSON. |
+
+### Penyimpanan
+| Data | Tempat | Catatan |
+|---|---|---|
+| Teks (makanan, gizi, timbangan, asam urat, pengaturan, kamus) | **Firebase RTDB**, node `hadzmi_healthcare_data` | ±1 KB per makanan → 1 GB cukup untuk ratusan ribu catatan. Terpisah dari `hadzmi_assistant_data` supaya tidak saling menimpa. |
+| Thumbnail 120 px | Firebase (±3 KB) | Agar daftar tampil cepat di semua perangkat |
+| Foto makanan (900 px) | **Cloudflare R2** (10 GB gratis) | Sama dengan Galeri; bisa dimatikan di Pengaturan |
+| Cache offline | localStorage perangkat | Otomatis dikirim saat online |
+
+### ⚠️ Setup wajib (2 langkah)
+1. **Firebase Rules**: tempel ulang `database.rules.json` (sekarang ada blok `hadzmi_healthcare_data`), ganti `GANTI_DENGAN_UID_KAMU` (2 blok) → **Publish**. Tanpa ini status menjadi "Ditolak" dan data hanya tersimpan di perangkat.
+2. **Kunci Gemini** (gratis): buat di **aistudio.google.com/apikey** → Cloudflare Worker → Settings → Variables and Secrets → tambah **Secret** `GEMINI_API_KEY` → deploy ulang. Opsional: variabel `GEMINI_MODEL` (default `gemini-flash-latest`, otomatis turun ke `gemini-2.5-flash`).
+   Cadangan: kunci bisa diisi di Pengaturan → AI (tersimpan hanya di perangkat itu, dipakai jika server belum aktif).
+
+Kode: `public/healthcare/` (index.html, healthcare.css, app.js, ai-core.js) dan `worker/healthcare.js` (endpoint `POST /api/healthcare/ai`). Tidak perlu build untuk halaman ini.
+
+---
+
 ## Fitur yang ditambahkan
 
 ### 🏦 Menu Kerja (Work Space)
