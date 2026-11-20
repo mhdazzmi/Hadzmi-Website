@@ -1,5 +1,5 @@
 /* =========================================================
-   07 · WORK & FINANCE — Contacts WA, Upload log, Cash Ledger, Focus/Sleep
+   07 · WORK & FINANCE — Contacts WA, Upload log, Over/Short, Focus/Sleep
    ========================================================= */
 
 // ---------------- CONTACTS & WA ----------------
@@ -218,7 +218,7 @@ function saveKasRecord(e) {
   appState.kas.unshift({ id: 'kas_' + Date.now(), tanggal: tgl, jam: jam || '', jenis, jumlah, keterangan: ket });
   saveStateToLocal(); renderKasData(); renderDashboardStats();
   $('tellerKasForm').reset(); setKasJenis('Kurang'); $('kasTanggal').value = wibDateStr();
-  showToast(`Selisih ${jenis.toLowerCase()} ${rupiah(jumlah)} tersimpan & tersinkron!`);
+  showToast(`${jenis === 'Lebih' ? 'Over' : 'Short'} ${rupiah(jumlah)} tersimpan & tersinkron!`);
 }
 function getFilteredKas() {
   const a = $('kasFilterAwal') ? $('kasFilterAwal').value : '', b = $('kasFilterAkhir') ? $('kasFilterAkhir').value : '';
@@ -230,12 +230,12 @@ function renderKasData() {
   const filtered = getFilteredKas();
   filtered.forEach(k => { if (k.jenis === 'Lebih') totalLebih += k.jumlah; else totalKurang += k.jumlah; });
   list.innerHTML = filtered.length === 0
-    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan selisih${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
+    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan over/short${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
     : filtered.map(k => {
       const plus = k.jenis === 'Lebih';
       return `<div class="row">
         <span class="icon-tile ${plus ? 'bg-green' : 'bg-red'}"><i class="fas ${plus ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i></span>
-        <div class="flex-1"><div class="row-title truncate">${esc(k.keterangan || (plus ? 'Kelebihan kas' : 'Kekurangan kas'))}</div><div class="row-sub">${esc(prettyDate(k.tanggal, true))}${k.jam ? ' · ' + esc(k.jam) : ''} · ${esc(k.jenis)}</div></div>
+        <div class="flex-1"><div class="row-title truncate">${esc(k.keterangan || (plus ? 'Over (uang lebih)' : 'Short (uang kurang)'))}</div><div class="row-sub">${esc(prettyDate(k.tanggal, true))}${k.jam ? ' · ' + esc(k.jam) : ''} · ${esc(k.jenis)}</div></div>
         <span class="money ${plus ? 'c-green' : 'c-red'}">${plus ? '+' : '−'}${esc(rupiah(k.jumlah))}</span>
         <button onclick="deleteKasRecord('${esc(k.id)}')" class="icon-btn sm clear" style="color:var(--label3)" title="Hapus"><i class="fas fa-xmark"></i></button>
       </div>`;
@@ -247,7 +247,7 @@ function renderKasData() {
 }
 async function deleteKasRecord(id) {
   const k = appState.kas.find(x => x.id === id); if (!k) return;
-  if (!(await iosConfirm('Hapus entri kas?', `${k.jenis} ${rupiah(k.jumlah)} · ${k.tanggal}`, 'Hapus', true))) return;
+  if (!(await iosConfirm('Hapus entri ini?', `${k.jenis} ${rupiah(k.jumlah)} · ${k.tanggal}`, 'Hapus', true))) return;
   appState.kas = appState.kas.filter(x => x.id !== id);
   saveStateToLocal(); renderKasData(); renderDashboardStats(); showToast('Ledger entry deleted.');
 }

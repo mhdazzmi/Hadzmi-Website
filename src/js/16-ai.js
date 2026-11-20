@@ -3,7 +3,7 @@
    - API key Gemini hanya ada di server (Cloudflare secret GEMINI_API_KEY); web memanggil /api/ai.
    - Nexa membaca ringkasan datamu (tugas, catatan, kas, tidur, dll) untuk menjawab & menganalisis.
    - TIDAK pernah dikirim: Galeri Tersembunyi, nomor lengkap & CVV kartu Wallet, nomor HP kontak,
-     nama nasabah di Bukti Kas, PIN.
+     nama nasabah di Foto Bukti, PIN.
    - Riwayat chat disimpan di perangkat ini saja (localStorage).
    ========================================================= */
 const AI_LS_KEY = 'nexa_ai_chat_v1';
@@ -14,7 +14,7 @@ let aiBusy = false, aiRecog = null, aiTurnModel = null;
 
 const AI_SUGGESTIONS = [
   'Ringkas agenda & tugasku hari ini',
-  'Analisis selisih kas bulan ini',
+  'Analisis over/short bulan ini',
   'Bagaimana pola tidurku 7 hari terakhir?',
   'Event apa saja dalam 30 hari ke depan?',
   'Ingatkan aku bayar listrik tanggal 20 jam 8 pagi',
@@ -43,7 +43,7 @@ function buildAiContext() {
   out.push(`MIND DUMP (catatan pribadi):\n` + JSON.stringify(notes('notes')));
   out.push(`CATATAN KERJA:\n` + JSON.stringify(notes('workNotes')));
   const kas = (S.kas || []).slice(0, 300).map(k => ({ tanggal: k.tanggal, jam: k.jam || undefined, jenis: k.jenis, nominal: k.jumlah, ket: aiClip(k.keterangan, 80) || undefined }));
-  out.push(`SELISIH KAS teller (jenis "Kurang" = uang kurang, "Lebih" = uang lebih; nominal dalam Rupiah) (${kas.length}):\n` + JSON.stringify(kas));
+  out.push(`OVER/SHORT teller — menu "Over/Short" (jenis "Lebih" = over/uang lebih, "Kurang" = short/uang kurang; nominal dalam Rupiah) (${kas.length}):\n` + JSON.stringify(kas));
   const focus = (S.focusHistory || []).slice(0, 120).map(f => ({ tanggal: f.date, mulai: f.startTime, selesai: f.endTime, mode: f.mode, menit: Math.round((f.durationSeconds || 0) / 60), status: f.status || undefined }));
   out.push(`RIWAYAT FOCUS & TIDUR (mode "Sleep" = tidur) (${focus.length}):\n` + JSON.stringify(focus));
   const links = (S.links || []).slice(0, 60).map(l => ({ judul: aiClip(l.title, 80), url: l.url, kategori: l.category || undefined }));
@@ -54,7 +54,7 @@ function buildAiContext() {
   out.push(`FILE DI GUDANG FILE:\n` + JSON.stringify(docs));
   const songs = (S.musicLibrary || []);
   out.push(`MUSIK: ${songs.length} lagu. Contoh judul: ` + JSON.stringify(songs.slice(0, 40).map(s => `${s.title} – ${s.artist || s.category || ''}`)));
-  out.push(`GALERI: ${(S.galleryPhotos || []).length} foto, ${(S.galleryAlbums || []).length} album. Bukti Kas: ${(S.workPhotos || []).length} foto. Kontak WA: ${(S.contacts || []).length} kontak.`);
+  out.push(`GALERI: ${(S.galleryPhotos || []).length} foto, ${(S.galleryAlbums || []).length} album. Foto Bukti: ${(S.workPhotos || []).length} foto. Kontak WA: ${(S.contacts || []).length} kontak.`);
   try { const st = streakStats(); out.push(`STREAK membuka Nexa: ${st.cur} hari berturut-turut (rekor ${st.best}).`); } catch (e) {}
   return out.join('\n\n');
 }

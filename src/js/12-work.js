@@ -3,7 +3,14 @@
    File disimpan di Cloudflare (Worker /api/files, wajib login). Metadata disinkronkan via Firebase.
    ========================================================= */
 const FILE_MAX_BYTES = 25 * 1024 * 1024;
-const PHOTO_TYPES = ['KTP', 'Buku Tabungan', 'Bukti Kas', 'Slip / Formulir', 'Lainnya'];
+const PHOTO_TYPES = ['KTP', 'Buku Tabungan', 'Bukti Transaksi', 'Slip / Formulir', 'Lainnya'];
+/** Sekali saja: kategori lama "Bukti Kas" → "Bukti Transaksi". */
+function migratePhotoTypes() {
+  const old = (appState.workPhotos || []).filter(p => p.type === 'Bukti Kas');
+  if (!old.length) return;
+  old.forEach(p => { p.type = 'Bukti Transaksi'; });
+  saveStateToLocal();
+}
 const fileBlobCache = new Map();   // fileId -> Blob (hanya di memori, hilang saat dikunci/reload)
 const fileUrlCache = new Map();    // fileId -> objectURL
 
@@ -218,6 +225,7 @@ function filteredPhotos() {
 }
 function renderPhotoGallery() {
   const box = $('photoGallery'); if (!box) return;
+  migratePhotoTypes();
   const all = appState.workPhotos || [];
   const chips = $('photoTypeChips');
   if (chips) {
@@ -667,7 +675,7 @@ function openStorageGuide(kind) {
     $('guideTitle').textContent = 'Aktifkan Cloudflare R2';
     $('guideBody').innerHTML = `
       <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:#F38020"><i class="fas fa-cloud"></i></span><div><div class="t-headline">Status: ${st.r2 ? '<span class="c-green">Aktif ✓</span>' : '<span class="c-orange">Belum aktif</span>'}</div><div class="t-foot muted">Gratis 10 GB/bulan · upload otomatis berhenti di 9 GB</div></div></div></div>
-      ${st.r2 ? `<div class="list"><div class="row" style="padding:16px"><span class="icon-tile bg-green"><i class="fas fa-check"></i></span><div class="flex-1 t-sub" style="line-height:1.45"><b>R2 sudah aktif — tidak perlu langkah apa pun lagi.</b><br>Semua upload baru (lagu, Galeri, Bukti Kas, Gudang File) otomatis masuk R2. Kamu akan dapat notifikasi di 7 GB & 8,5 GB, dan upload berhenti otomatis di 9 GB supaya tetap gratis.</div></div></div>` : guideSteps([
+      ${st.r2 ? `<div class="list"><div class="row" style="padding:16px"><span class="icon-tile bg-green"><i class="fas fa-check"></i></span><div class="flex-1 t-sub" style="line-height:1.45"><b>R2 sudah aktif — tidak perlu langkah apa pun lagi.</b><br>Semua upload baru (lagu, Galeri, Foto Bukti, Gudang File) otomatis masuk R2. Kamu akan dapat notifikasi di 7 GB & 8,5 GB, dan upload berhenti otomatis di 9 GB supaya tetap gratis.</div></div></div>` : guideSteps([
         'Buka <b>dash.cloudflare.com</b> → menu kiri <b>Storage & Databases → R2 Object Storage</b>.',
         'Tap <b>Purchase R2 Plan</b> / <b>Add payment method</b> → masukkan kartu debit/kredit atau PayPal → pilih paket <b>Free</b>. Tidak ada tagihan selama di bawah 10 GB.',
         'Buka GitHub repo <b>Hadzmi-Website</b> → file <b>wrangler.jsonc</b> → tap ✏️ (Edit).',

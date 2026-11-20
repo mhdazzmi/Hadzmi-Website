@@ -174,14 +174,14 @@ function pdfCountdown(id) {
 }
 function pdfKasReport() {
   const list = getFilteredKas();
-  if (!list.length) return showToast('Tidak ada catatan selisih pada periode ini.', false);
+  if (!list.length) return showToast('Tidak ada catatan over/short pada periode ini.', false);
   let lebih = 0, kurang = 0; list.forEach(k => { if (k.jenis === 'Lebih') lebih += k.jumlah; else kurang += k.jumlah; });
   const a = $('kasFilterAwal').value, b = $('kasFilterAkhir').value;
   const period = a || b ? `${a ? prettyDate(a) : 'awal'} s/d ${b ? prettyDate(b) : 'sekarang'}` : 'Semua periode';
   makeAndShowPdf({
-    title: 'Laporan Selisih Kas', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-selisih-kas-' + wibDateStr()),
+    title: 'Laporan Over/Short', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-over-short-' + wibDateStr()),
     blocks: [
-      { stats: [['Total Lebih', rupiah(lebih), [228, 247, 234]], ['Total Kurang', rupiah(kurang), [253, 232, 232]], ['Net Selisih', rupiah(lebih - kurang), [229, 238, 255]]] },
+      { stats: [['Total Over', rupiah(lebih), [228, 247, 234]], ['Total Short', rupiah(kurang), [253, 232, 232]], ['Net Over/Short', rupiah(lebih - kurang), [229, 238, 255]]] },
       { heading: 'Rincian' },
       { table: { cols: [{ h: 'Tanggal', w: 26 }, { h: 'Jam', w: 11 }, { h: 'Jenis', w: 13 }, { h: 'Nominal', w: 22, align: 'right' }, { h: 'Keterangan', w: 40 }],
         rows: list.map(k => [prettyDate(k.tanggal), k.jam || '-', k.jenis, (k.jenis === 'Lebih' ? '+' : '-') + rupiah(k.jumlah), k.keterangan || '-']) } }
