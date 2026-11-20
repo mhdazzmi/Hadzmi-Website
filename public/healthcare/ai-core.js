@@ -5,7 +5,8 @@
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const DEFAULT_MODEL = 'gemini-flash-latest';
-const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+const BUSY = new Set([429, 500, 503, 504]); // model penuh / kuota per menit → coba model lain
 const MAX_IMAGE_B64 = 6 * 1024 * 1024; // ±4.5 MB gambar
 const MODEL_RE = /^gemini-[a-z0-9.\-]{2,60}$/i;
 
@@ -136,29 +137,39 @@ function aiError(status, message) { const e = new Error(message); e.status = sta
 /** Panggil Gemini dengan fallback model. fetchFn = fetch. Return {result, model}. */
 export async function callGemini({ key, mode, text, image, context, model, fetchFn }) {
   const f = fetchFn || fetch;
-  const payload = buildGeminiPayload(mode, text, image, context);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const payload = JSON.stringify(buildGeminiPayload(mode, text, image, context));
   const wanted = MODEL_RE.test(String(model || '')) ? String(model) : DEFAULT_MODEL;
   const models = [wanted].concat(FALLBACK_MODELS.filter(m => m !== wanted));
-  let lastErr = 'Gagal menghubungi Gemini';
+  let busy = false, quota = false, lastErr = 'Gagal menghubungi Gemini';
   for (const m of models) {
-    const res = await f(GEMINI_BASE + encodeURIComponent(m) + ':generateContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json().catch(() => ({}));
-    const errText = JSON.stringify(data.error || '');
-    if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available/i.test(errText))) { lastErr = 'Model ' + m + ' tidak tersedia'; continue; }
-    if (!res.ok) {
-      if (res.status === 429) throw aiError(429, 'Kuota Gemini habis / terlalu sering. Coba lagi sebentar.');
-      if (res.status === 400 && /API key/i.test(errText)) throw aiError(401, 'Kunci Gemini tidak valid');
-      throw aiError(502, (data.error && data.error.message) || ('Gemini error ' + res.status));
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let res, data;
+      try {
+        res = await f(GEMINI_BASE + encodeURIComponent(m) + ':generateContent', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: payload
+        });
+        data = await res.json().catch(() => ({}));
+      } catch (e) { lastErr = 'Koneksi ke Gemini terputus'; break; }
+      const errText = JSON.stringify(data.error || '');
+      if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available/i.test(errText))) { lastErr = 'Model ' + m + ' tidak tersedia'; break; }
+      if (BUSY.has(res.status)) {
+        if (res.status === 429) quota = true; else busy = true;
+        if (attempt === 0 && res.status !== 429) { await wait(1200); continue; } // coba sekali lagi
+        break; // pindah ke model berikutnya
+      }
+      if (!res.ok) {
+        if (/API key|API_KEY/i.test(errText) || res.status === 401 || res.status === 403) throw aiError(401, 'Kunci Gemini tidak valid atau tidak punya akses. Periksa GEMINI_API_KEY di Cloudflare.');
+        throw aiError(502, (data.error && data.error.message) || ('Gemini error ' + res.status));
+      }
+      const cand = (data.candidates || [])[0] || {};
+      if (cand.finishReason === 'SAFETY') throw aiError(422, 'AI menolak menganalisis gambar ini');
+      const raw = ((cand.content || {}).parts || []).map(x => x.text || '').join('');
+      try { return { result: JSON.parse(raw), model: m }; }
+      catch (e) { lastErr = 'Jawaban AI tidak terbaca'; break; }
     }
-    const cand = (data.candidates || [])[0] || {};
-    if (cand.finishReason === 'SAFETY') throw aiError(422, 'AI menolak menganalisis gambar ini');
-    const raw = ((cand.content || {}).parts || []).map(x => x.text || '').join('');
-    try { return { result: JSON.parse(raw), model: m }; }
-    catch (e) { throw aiError(502, 'Jawaban AI tidak terbaca, coba lagi'); }
   }
-  throw aiError(502, lastErr);
+  if (busy) throw aiError(503, 'Server Gemini sedang sibuk (banyak pengguna). Tunggu 1–2 menit lalu tap Coba lagi.');
+  if (quota) throw aiError(429, 'Batas pemakaian gratis Gemini tercapai untuk sementara. Coba lagi beberapa menit lagi.');
+  throw aiError(502, lastErr + '. Coba lagi.');
 }
