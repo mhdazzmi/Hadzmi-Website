@@ -19,6 +19,7 @@ const OUTBOX_MAX = 25;
 const MAX_UPLOAD = 8 * 1024 * 1024;
 const MEDIA_RE = /^[a-z0-9-]{20,80}$/;
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const AUDIO_TYPES = ['audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/ogg', 'audio/aac', 'audio/x-m4a', 'audio/wav'];
 
 const enc = new TextEncoder();
 const jsonRes = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, headers) });
@@ -44,9 +45,18 @@ export async function handleNexo(request, env, url) {
   const media = /^\/api\/nexo\/media\/([a-z0-9-]+)$/.exec(path);
   if (media && request.method === 'GET') {
     if (!MEDIA_RE.test(media[1]) || !env.FILES) return new Response('Not found', { status: 404 });
-    const obj = await env.FILES.get('nexo/' + media[1]);
+    // Mendukung Range (wajib agar voice note bisa diputar di Safari iPhone)
+    const rh = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('Range') || '');
+    let range;
+    if (rh) { const head = await env.FILES.head('nexo/' + media[1]); if (!head) return new Response('Not found', { status: 404 });
+      const size = head.size, start = rh[1] === '' ? Math.max(0, size - Number(rh[2])) : Number(rh[1]), end = rh[1] !== '' && rh[2] !== '' ? Math.min(size - 1, Number(rh[2])) : size - 1;
+      if (start >= size || start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+      range = { offset: start, length: end - start + 1, size }; }
+    const obj = await env.FILES.get('nexo/' + media[1], range ? { range: { offset: range.offset, length: range.length } } : undefined);
     if (!obj) return new Response('Not found', { status: 404 });
-    return new Response(obj.body, { headers: { 'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', ETag: obj.httpEtag } });
+    const headers = { 'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', ETag: obj.httpEtag, 'Accept-Ranges': 'bytes' };
+    if (range) return new Response(obj.body, { status: 206, headers: Object.assign(headers, { 'Content-Range': `bytes ${range.offset}-${range.offset + range.length - 1}/${range.size}`, 'Content-Length': String(range.length) }) });
+    return new Response(obj.body, { headers: Object.assign(headers, { 'Content-Length': String(obj.size) }) });
   }
   if (!env.NEXO) return jsonRes({ error: 'Durable Object NEXO belum diatur (lihat README Nexo Games).' }, 503);
   const stub = env.NEXO.get(env.NEXO.idFromName('nexo-hub'));
@@ -77,7 +87,7 @@ export class NexoHub extends DurableObject {
   saveIndex() { return this.ctx.storage.put('gindex', this.gindex); }
 
   pubUser(u) {
-    return { id: u.id, name: u.name, avatar: u.avatar, admin: !!u.admin, lastSeen: u.lastSeen || 0, createdAt: u.createdAt, stats: u.stats || { played: 0, wins: 0 } };
+    return { id: u.id, name: u.name, avatar: u.avatar, admin: !!u.admin, bio: u.bio || '', createdAt: u.createdAt, stats: u.stats || { played: 0, wins: 0 } };
   }
   findByName(name) { const k = nameKey(name); return Object.values(this.users).find(u => u.key === k) || null; }
 
@@ -172,7 +182,7 @@ export class NexoHub extends DurableObject {
   async upload(request, uid) {
     if (!this.env.FILES) fail(503, 'R2 (FILES) belum aktif.');
     const type = (request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
-    if (!IMG_TYPES.includes(type)) fail(415, 'Hanya gambar yang bisa dikirim.');
+    if (!IMG_TYPES.includes(type) && !AUDIO_TYPES.includes(type)) fail(415, 'Jenis file tidak didukung.');
     const buf = await request.arrayBuffer();
     if (!buf.byteLength) fail(400, 'File kosong.');
     if (buf.byteLength > MAX_UPLOAD) fail(413, 'Gambar terlalu besar (maks 8 MB).');
@@ -246,8 +256,10 @@ export class NexoHub extends DurableObject {
     const u = this.users[uid];
     u.lastSeen = Date.now();
     this.saveUsers();
-    if (!wasOnline) this.broadcast({ t: 'presence', uid, online: true, lastSeen: u.lastSeen }, uid);
+    if (!wasOnline) this.presence(uid, true);
     this.send(server, await this.initPayload(uid));
+    const pendingCall = this.calls && this.calls.get(uid);
+    if (pendingCall && Date.now() - pendingCall.ts < 45000) this.send(server, { t: 'call', from: pendingCall.from, data: pendingCall.data });
     return new Response(null, { status: 101, webSocket: client });
   }
   onlineIds() { return [...new Set(this.ctx.getWebSockets().map(ws => (ws.deserializeAttachment() || {}).uid).filter(Boolean))]; }
@@ -255,10 +267,15 @@ export class NexoHub extends DurableObject {
   async initPayload(uid) {
     const me = this.users[uid];
     return {
-      t: 'init', me: this.pubUser(me), users: Object.values(this.users).map(u => this.pubUser(u)), online: this.onlineIds(),
-      convs: this.myConvs(uid), games: Object.values(this.gindex), settings: { needInvite: !!this.settings.inviteCode, inviteCode: me.admin ? this.settings.inviteCode : undefined },
+      t: 'init', me: this.pubUser(me), users: Object.values(this.users).map(u => me.admin ? Object.assign(this.pubUser(u), { lastSeen: u.lastSeen || 0 }) : this.pubUser(u)), online: this.onlineIds(),
+      convs: this.myConvs(uid), games: Object.values(this.gindex), settings: { needInvite: !!this.settings.inviteCode, inviteCode: me.admin ? this.settings.inviteCode : undefined, photos: this.settings.photos || {} },
       vapidPublicKey: await this.vapidKey(), now: Date.now()
     };
+  }
+  // Status online terlihat semua; "terakhir online" hanya untuk admin
+  presence(uid, online) {
+    const ls = (this.users[uid] || {}).lastSeen || Date.now();
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (!a || a.uid === uid) continue; this.send(ws, (this.users[a.uid] || {}).admin ? { t: 'presence', uid, online, lastSeen: ls } : { t: 'presence', uid, online }); }
   }
   send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch (e) {} }
   broadcast(obj, exceptUid) { const s = JSON.stringify(obj); for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.uid !== exceptUid) try { ws.send(s); } catch (e) {} } }
@@ -284,7 +301,7 @@ export class NexoHub extends DurableObject {
     const still = this.ctx.getWebSockets(a.uid).filter(x => x !== ws && x.readyState === 1).length;
     if (!still && this.users[a.uid]) {
       this.users[a.uid].lastSeen = Date.now(); this.saveUsers();
-      this.broadcast({ t: 'presence', uid: a.uid, online: false, lastSeen: Date.now() }, a.uid);
+      this.presence(a.uid, false);
     }
   }
 
@@ -304,6 +321,7 @@ export class NexoHub extends DurableObject {
           me.name = name; me.key = nameKey(name);
         }
         if (m.avatar !== undefined) { const av = cleanAvatar(m.avatar); if (av) me.avatar = av; }
+        if (m.bio !== undefined) me.bio = String(m.bio || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 140);
         await this.saveUsers();
         // perbarui nama di game yang sedang berjalan
         for (const gi of Object.values(this.gindex)) if (gi.players.includes(uid) && gi.status !== 'ended') {
@@ -318,6 +336,16 @@ export class NexoHub extends DurableObject {
         me.salt = randId(12); me.pin = await hashPin(m.pin, me.salt);
         await this.saveUsers();
         return true;
+      }
+      case 'photo.set': {
+        if (!me.admin) fail(403, 'Hanya admin yang bisa mengganti foto kota.');
+        const key = String(m.key || '').slice(0, 30);
+        if (!E.SPACES.some(sp => sp.key === key)) fail(400, 'Kota tidak dikenal.');
+        this.settings.photos = this.settings.photos || {};
+        if (m.media && MEDIA_RE.test(m.media)) this.settings.photos[key] = m.media; else delete this.settings.photos[key];
+        await this.ctx.storage.put('settings', this.settings);
+        this.broadcast({ t: 'photos', photos: this.settings.photos });
+        return { photos: this.settings.photos };
       }
       case 'invite.set': {
         if (!me.admin) fail(403, 'Hanya admin.');
@@ -347,22 +375,23 @@ export class NexoHub extends DurableObject {
         const c = this.conv(uid, m.conv, true);
         const text = String(m.text || '').replace(/\r/g, '').slice(0, MAX_MSG).trim();
         const img = m.img && MEDIA_RE.test(m.img.id) ? { id: m.img.id, w: Math.round(Number(m.img.w) || 0), h: Math.round(Number(m.img.h) || 0) } : null;
-        if (!text && !img) fail(400, 'Pesan kosong.');
+        const voice = !img && m.voice && MEDIA_RE.test(m.voice.id) ? { id: m.voice.id, dur: Math.max(0, Math.min(600, Math.round(Number(m.voice.dur) || 0))), peaks: Array.isArray(m.voice.peaks) ? m.voice.peaks.slice(0, 40).map(v => Math.max(0, Math.min(1, Math.round(Number(v) * 100) / 100))) : null } : null;
+        if (!text && !img && !voice) fail(400, 'Pesan kosong.');
         let reply = null;
         if (m.reply) {
           const r = await this.ctx.storage.get(msgKey(c.id, m.reply));
           if (r) reply = { seq: r.seq, from: r.from, text: r.del ? 'Pesan dihapus' : (r.text || (r.img ? '📷 Foto' : '')).slice(0, 120), img: !!r.img };
         }
         c.seq++;
-        const msg = { seq: c.seq, from: uid, text, img, reply, ts: Date.now(), react: {}, cid: String(m.cid || '').slice(0, 40) || undefined };
+        const msg = { seq: c.seq, from: uid, text, img, voice, reply, ts: Date.now(), react: {}, cid: String(m.cid || '').slice(0, 40) || undefined };
         await this.ctx.storage.put(msgKey(c.id, c.seq), msg);
-        c.last = { seq: c.seq, from: uid, text: text.slice(0, 140), img: !!img, ts: msg.ts };
+        c.last = { seq: c.seq, from: uid, text: text.slice(0, 140), img: !!img, voice: !!voice, ts: msg.ts };
         c.reads[uid] = c.seq;
         await this.saveConvs();
         const members = this.members(c);
         this.toUsers(members, { t: 'msg', conv: c.id, msg, meta: c });
         const isGroup = c.id === 'group';
-        const body = text ? text.slice(0, 160) : '📷 Mengirim foto';
+        const body = text ? text.slice(0, 160) : voice ? '🎤 Pesan suara' : '📷 Mengirim foto';
         this.push(members.filter(x => x !== uid), {
           title: isGroup ? `${me.name} · Grup Nexo` : me.name, body, tag: 'chat-' + c.id, url: './?chat=' + encodeURIComponent(c.id), kind: 'chat'
         }).catch(e => console.warn('push', e));
@@ -376,6 +405,37 @@ export class NexoHub extends DurableObject {
         if ((c.reads[uid] || 0) < seq) { c.reads[uid] = seq; await this.saveConvs(); this.toUsers(this.members(c), { t: 'read', conv: c.id, uid, seq }); }
         return null;
       }
+      case 'chat.edit': {
+        const c = this.conv(uid, m.conv, false); if (!c) fail(404, 'Chat tidak ada.');
+        const k = msgKey(c.id, m.seq), msg = await this.ctx.storage.get(k);
+        if (!msg || msg.del) fail(404, 'Pesan tidak ada.');
+        if (msg.from !== uid) fail(403, 'Hanya bisa mengedit pesanmu sendiri.');
+        if (msg.voice) fail(400, 'Pesan suara tidak bisa diedit.');
+        if (Date.now() - msg.ts > 24 * 3600000) fail(400, 'Pesan lebih dari 24 jam tidak bisa diedit.');
+        const text = String(m.text || '').replace(/\r/g, '').slice(0, MAX_MSG).trim();
+        if (!text && !msg.img) fail(400, 'Pesan tidak boleh kosong.');
+        if (text === msg.text) return null;
+        msg.text = text; msg.edited = Date.now();
+        const hadLink = msg.link; delete msg.link;
+        await this.ctx.storage.put(k, msg);
+        if (c.last && c.last.seq === msg.seq) { c.last.text = text.slice(0, 140); await this.saveConvs(); }
+        this.toUsers(this.members(c), { t: 'msgUpdate', conv: c.id, msg, meta: c });
+        const link = !msg.img && text.match(/https?:\/\/[^\s<>"']+/i);
+        if (link) this.attachPreview(c.id, msg.seq, link[0].replace(/[.,;:!?)\]]+$/, '')).catch(() => {});
+        return null;
+      }
+      case 'chat.media': {
+        const c = this.conv(uid, m.conv, false); if (!c) return { media: [], links: [], voice: [] };
+        const all = await this.ctx.storage.list({ prefix: `m:${c.id}:`, reverse: true, limit: 3000 });
+        const media = [], links = [], voice = [];
+        for (const msg of all.values()) {
+          if (msg.del) continue;
+          if (msg.img && media.length < 300) media.push({ seq: msg.seq, from: msg.from, ts: msg.ts, img: msg.img });
+          if (msg.voice && voice.length < 200) voice.push({ seq: msg.seq, from: msg.from, ts: msg.ts, voice: msg.voice });
+          if (msg.text && links.length < 300) { const found = msg.text.match(/https?:\/\/[^\s<>"']+/gi); if (found) found.forEach(u => links.push({ seq: msg.seq, from: msg.from, ts: msg.ts, url: u.replace(/[.,;:!?)\]]+$/, ''), link: msg.link && msg.link.url === u.replace(/[.,;:!?)\]]+$/, '') ? msg.link : null })); }
+        }
+        return { media, links, voice };
+      }
       case 'chat.react': case 'chat.delete': {
         const c = this.conv(uid, m.conv, false); if (!c) fail(404, 'Chat tidak ada.');
         const k = msgKey(c.id, m.seq), msg = await this.ctx.storage.get(k);
@@ -386,7 +446,7 @@ export class NexoHub extends DurableObject {
           if (!m.remove) (msg.react[emo] = msg.react[emo] || []).push(uid);
         } else {
           if (msg.from !== uid) fail(403, 'Hanya bisa menghapus pesanmu sendiri.');
-          msg.del = true; msg.text = ''; msg.img = null; msg.react = {};
+          msg.del = true; msg.text = ''; msg.img = null; msg.voice = null; msg.link = null; msg.react = {};
           if (c.last && c.last.seq === msg.seq) { c.last.text = 'Pesan dihapus'; c.last.img = false; await this.saveConvs(); }
         }
         await this.ctx.storage.put(k, msg);
@@ -399,17 +459,110 @@ export class NexoHub extends DurableObject {
         return null;
       }
 
+      // ----- Sosial: feed & story -----
+      case 'feed.list': {
+        const opts = { prefix: 'p:', reverse: true, limit: m.uid ? 600 : 21 };
+        if (m.before) opts.end = postKey(m.before);
+        let list = [...(await this.ctx.storage.list(opts)).values()];
+        if (m.uid) list = list.filter(x => x.uid === m.uid).slice(0, 61);
+        return { posts: list.slice(0, 20), more: list.length > 20 };
+      }
+      case 'post.create': {
+        const text = String(m.text || '').replace(/\r/g, '').slice(0, 2000).trim();
+        const img = m.img && MEDIA_RE.test(m.img.id) ? { id: m.img.id, w: Math.round(Number(m.img.w) || 0), h: Math.round(Number(m.img.h) || 0) } : null;
+        if (!text && !img) fail(400, 'Postingan kosong.');
+        this.settings.postSeq = (this.settings.postSeq || 0) + 1;
+        await this.ctx.storage.put('settings', this.settings);
+        const post = { seq: this.settings.postSeq, uid, text, img, ts: Date.now(), likes: [], comments: [] };
+        await this.ctx.storage.put(postKey(post.seq), post);
+        this.broadcast({ t: 'post', post });
+        return post;
+      }
+      case 'post.like': case 'post.comment': case 'post.delete': case 'post.uncomment': {
+        const k = postKey(m.seq), post = await this.ctx.storage.get(k);
+        if (!post) fail(404, 'Postingan sudah dihapus.');
+        if (m.t === 'post.delete') {
+          if (post.uid !== uid && !me.admin) fail(403, 'Bukan postinganmu.');
+          await this.ctx.storage.delete(k);
+          this.broadcast({ t: 'postGone', seq: post.seq });
+          return true;
+        }
+        if (m.t === 'post.like') {
+          const had = post.likes.includes(uid);
+          post.likes = had ? post.likes.filter(x => x !== uid) : post.likes.concat(uid);
+          if (!had && post.uid !== uid) this.push([post.uid], { title: `❤️ ${me.name} menyukai postinganmu`, body: (post.text || '📷 Foto').slice(0, 100), tag: 'post-' + post.seq, url: './?post=' + post.seq, kind: 'social' }).catch(() => {});
+        } else if (m.t === 'post.comment') {
+          const text = String(m.text || '').replace(/\r/g, '').slice(0, 1000).trim();
+          if (!text) fail(400, 'Komentar kosong.');
+          if (post.comments.length >= 300) fail(400, 'Komentar sudah terlalu banyak.');
+          post.comments.push({ id: randId(8), uid, text, ts: Date.now() });
+          const notify = [...new Set([post.uid, ...post.comments.map(c => c.uid)])].filter(x => x !== uid);
+          this.push(notify, { title: `💬 ${me.name} berkomentar`, body: text.slice(0, 120), tag: 'post-' + post.seq, url: './?post=' + post.seq, kind: 'social' }).catch(() => {});
+        } else {
+          const c = post.comments.find(x => x.id === m.cid);
+          if (!c) fail(404, 'Komentar tidak ada.');
+          if (c.uid !== uid && post.uid !== uid && !me.admin) fail(403, 'Tidak bisa menghapus komentar ini.');
+          post.comments = post.comments.filter(x => x !== c);
+        }
+        await this.ctx.storage.put(k, post);
+        this.broadcast({ t: 'postUpdate', post });
+        return post;
+      }
+      case 'story.list': return { stories: await this.activeStories() };
+      case 'story.create': {
+        const img = m.img && MEDIA_RE.test(m.img.id) ? { id: m.img.id, w: Math.round(Number(m.img.w) || 0), h: Math.round(Number(m.img.h) || 0) } : null;
+        const text = String(m.text || '').slice(0, 200).trim();
+        if (!img && !text) fail(400, 'Story kosong.');
+        const bg = /^#[0-9a-f]{6}$/i.test(m.bg || '') ? m.bg : '#007AFF';
+        const list = await this.activeStories();
+        if (list.filter(x => x.uid === uid).length >= 20) fail(400, 'Maksimal 20 story per hari.');
+        list.push({ id: randId(10), uid, img, text, bg, ts: Date.now(), views: [] });
+        await this.ctx.storage.put('stories', list);
+        this.broadcast({ t: 'stories', stories: list });
+        return true;
+      }
+      case 'story.view': case 'story.delete': {
+        const list = await this.activeStories();
+        const st = list.find(x => x.id === m.id); if (!st) return null;
+        if (m.t === 'story.view') { if (st.uid === uid || st.views.includes(uid)) return null; st.views.push(uid); await this.ctx.storage.put('stories', list); this.toUsers([st.uid], { t: 'stories', stories: list }); return null; }
+        if (st.uid !== uid && !me.admin) fail(403, 'Bukan story-mu.');
+        const next = list.filter(x => x !== st);
+        await this.ctx.storage.put('stories', next);
+        this.broadcast({ t: 'stories', stories: next });
+        return true;
+      }
+
+      // ----- Telepon (sinyal WebRTC) -----
+      case 'call.signal': {
+        const to = String(m.to || '');
+        if (!this.users[to] || to === uid) fail(400, 'Teman tidak ditemukan.');
+        const data = m.data || {};
+        const type = String(data.type || '');
+        if (!['invite', 'answer', 'ice', 'end', 'decline', 'busy', 'ringing'].includes(type)) fail(400, 'Sinyal tidak valid.');
+        if (JSON.stringify(data).length > 60000) fail(400, 'Sinyal terlalu besar.');
+        this.calls = this.calls || new Map();
+        if (type === 'invite') this.calls.set(to, { from: uid, data, ts: Date.now() });
+        if (['answer', 'end', 'decline', 'busy'].includes(type)) { this.calls.delete(uid); this.calls.delete(to); }
+        const online = this.ctx.getWebSockets(to).length > 0;
+        this.toUsers([to], { t: 'call', from: uid, data });
+        if (type === 'invite') this.push([to], { title: `${data.video ? '📹' : '📞'} ${me.name} menelepon kamu`, body: 'Tap untuk menjawab.', tag: 'call-' + uid, url: './?call=' + uid, kind: 'call' }, true).catch(() => {});
+        return { online };
+      }
+
       // ----- Game -----
       case 'game.create': {
         const open = Object.values(this.gindex).filter(gi => gi.host === uid && gi.status !== 'ended').length;
         if (open >= 5) fail(400, 'Kamu sudah punya 5 room aktif.');
         const s = m.settings || {};
         const settings = {
-          startCash: [1000, 1500, 2000, 2500].includes(Number(s.startCash) / 10000) ? Number(s.startCash) : 15000000,
-          maxPlayers: Number(s.maxPlayers) || 6, freeParking: !!s.freeParking, auction: s.auction !== false,
+          startCash: [10, 15, 20, 30].includes(Number(s.startCash) / 1000000) ? Number(s.startCash) : 20000000,
+          maxPlayers: Number(s.maxPlayers) || 6, monopolyWin: s.monopolyWin !== false,
           turnSec: Number(s.turnSec) || 60, timeLimitMin: [0, 30, 45, 60, 90, 120].includes(Number(s.timeLimitMin)) ? Number(s.timeLimitMin) : 0
         };
         const g = E.newGame({ id: 'g' + randId(8), name: cleanName(m.name) || `Room ${me.name}`, host: uid, hostName: me.name, mode: m.mode, settings, now: Date.now() });
+        if (m.color) { try { E.setColor(g, uid, m.color); } catch (e) {} }
+        const nb = Math.max(0, Math.min(g.settings.maxPlayers - 1, Number(m.bots) || 0));
+        for (let k = 0; k < nb; k++) this.addBot(g);
         await this.saveGame(g);
         const inv = (m.invite || []).filter(x => this.users[x] && x !== uid);
         if (inv.length) this.invitePush(g, me, inv);
@@ -422,10 +575,13 @@ export class NexoHub extends DurableObject {
         return this.pubGame(g);
       }
       case 'game.unwatch': att.watch = null; ws.serializeAttachment(att); return null;
-      case 'game.join': case 'game.leave': case 'game.start': case 'game.delete': case 'game.end': case 'game.kick': case 'game.settings': {
+      case 'game.join': case 'game.leave': case 'game.start': case 'game.delete': case 'game.end': case 'game.kick': case 'game.settings': case 'game.color': case 'game.addbot': {
         const g = await this.getGame(m.id); if (!g) fail(404, 'Room tidak ditemukan.');
         const isHost = g.host === uid || me.admin;
-        if (m.t === 'game.join') { try { E.addPlayer(g, uid, me.name); } catch (e) { fail(400, e.message); } }
+        if (g.engine !== E.ENGINE && !['game.delete', 'game.leave'].includes(m.t)) fail(400, 'Room ini versi lama. Hapus lalu buat room baru ya.');
+        if (m.t === 'game.join') { try { E.addPlayer(g, uid, me.name, m.color); } catch (e) { fail(400, e.message); } }
+        else if (m.t === 'game.color') { try { E.setColor(g, uid, m.color); } catch (e) { fail(400, e.message); } }
+        else if (m.t === 'game.addbot') { if (!isHost || g.status !== 'lobby') fail(403, 'Hanya host di lobi.'); if (g.players.length >= g.settings.maxPlayers) fail(400, 'Room sudah penuh.'); this.addBot(g); }
         else if (m.t === 'game.leave') {
           if (g.status !== 'lobby') fail(400, 'Game sudah berjalan. Pakai "Menyerah".');
           if (g.host === uid) fail(400, 'Host tidak bisa keluar. Hapus room saja.');
@@ -453,7 +609,7 @@ export class NexoHub extends DurableObject {
           return this.pubGame(g);
         } else if (m.t === 'game.delete') {
           if (!isHost) fail(403, 'Hanya host.');
-          if (g.status === 'playing') fail(400, 'Akhiri game dulu sebelum menghapus.');
+          if (g.status === 'playing' && g.engine === E.ENGINE) fail(400, 'Akhiri game dulu sebelum menghapus.');
           await this.deleteGame(g.id);
           return true;
         }
@@ -544,6 +700,12 @@ export class NexoHub extends DurableObject {
     return data;
   }
 
+  async activeStories() {
+    const now = Date.now();
+    const list = ((await this.ctx.storage.get('stories')) || []).filter(x => now - x.ts < 24 * 3600000);
+    return list;
+  }
+
   // ---------- Chat helpers ----------
   conv(uid, id, create) {
     id = String(id || '');
@@ -574,14 +736,19 @@ export class NexoHub extends DurableObject {
     if (g) this.games.set(id, g);
     return g || null;
   }
+  addBot(g) {
+    const used = new Set(g.players.map(p => String(p.name).replace(' 🤖', '')));
+    const name = E.BOT_NAMES.find(n => !used.has(n)) || 'Bot ' + (g.players.length + 1);
+    E.addPlayer(g, 'bot_' + randId(6), name + ' 🤖');
+  }
   pubGame(g) {
     const out = Object.assign({}, g);
-    delete out.decks; delete out._notify; delete out._now;
+    delete out.decks; delete out.deck; delete out._notify; delete out._now;
     return out;
   }
   indexEntry(g) {
     return { id: g.id, name: g.name, mode: g.mode, status: g.status, host: g.host, players: g.players.map(p => p.id), max: g.settings.maxPlayers,
-      waiting: E.waitingFor(g), phase: g.phase, updatedAt: g.updatedAt, createdAt: g.createdAt, deadline: g.deadline, winner: g.winner, alive: g.players.filter(p => !p.bankrupt).map(p => p.id) };
+      waiting: E.waitingFor(g), phase: g.phase, botAt: g.status === 'playing' && E.waitingFor(g).some(x => String(x).startsWith('bot_')) ? Date.now() + 1600 : null, updatedAt: g.updatedAt, createdAt: g.createdAt, deadline: g.deadline, winner: g.winner, alive: g.players.filter(p => !p.bankrupt).map(p => p.id) };
   }
   toWatchers(g, obj) {
     const ids = new Set(g.players.map(p => p.id));
@@ -628,15 +795,32 @@ export class NexoHub extends DurableObject {
     for (const n of Object.values(by)) this.push([n.to], { title: n.title, body: n.body, tag: n.tag || 'game-' + g.id, url: './?game=' + g.id, kind: 'game' }).catch(() => {});
   }
   async scheduleAlarm() {
-    const ds = Object.values(this.gindex).filter(g => g.status === 'playing' && g.deadline).map(g => g.deadline);
+    const ds = Object.values(this.gindex).filter(g => g.status === 'playing' && (g.deadline || g.botAt)).map(g => Math.min(g.deadline || Infinity, g.botAt || Infinity));
     if (!ds.length) return;
     const next = Math.max(Date.now() + 500, Math.min(...ds));
     const cur = await this.ctx.storage.getAlarm();
     if (!cur || cur > next || cur < Date.now() - 5000) await this.ctx.storage.setAlarm(next);
   }
+  async runBot(id, now) {
+    const g0 = await this.getGame(id); if (!g0 || g0.engine !== E.ENGINE || g0.status !== 'playing') return;
+    const bot = E.waitingFor(g0).find(x => String(x).startsWith('bot_'));
+    if (!bot) { this.gindex[id].botAt = null; await this.saveIndex(); return; }
+    const g = structuredClone(g0);
+    try {
+      const a = E.botAction(g, bot, rng);
+      if (!a) throw new Error('no action');
+      const notes = E.act(g, bot, a, { now, rng });
+      await this.saveGame(g); this.sendNotifs(g, notes);
+    } catch (e) {
+      console.warn('bot', id, e && e.message);
+      const g2 = structuredClone(g0);
+      try { E.act(g2, bot, { type: 'resign' }, { now, rng }); await this.saveGame(g2); } catch (er) { this.gindex[id].botAt = null; await this.saveIndex(); }
+    }
+  }
   async alarm() {
     const now = Date.now();
     for (const gi of Object.values(this.gindex)) {
+      if (gi.status === 'playing' && gi.botAt && gi.botAt <= now) { await this.runBot(gi.id, now); continue; }
       if (gi.status !== 'playing' || !gi.deadline || gi.deadline > now) continue;
       const g0 = await this.getGame(gi.id); if (!g0) continue;
       const g = structuredClone(g0);
@@ -657,6 +841,7 @@ function decodeEntities(s) {
     return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[l] || m;
   });
 }
+function postKey(seq) { return 'p:' + String(seq).padStart(9, '0'); }
 function msgKey(conv, seq) { return `m:${conv}:${String(seq).padStart(9, '0')}`; }
 function dmId(a, b) { return 'dm:' + [a, b].sort().join(':'); }
 function bearer(request) { const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || ''); return m ? m[1].trim() : null; }

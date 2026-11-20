@@ -1,10 +1,11 @@
 /* Nexo Games — Chat ala iMessage: grup + pesan pribadi, foto, balas, reaksi, dibaca, mengetik */
-import { $, $$, esc, S, on, emit, call, fire, avatar, user, hm, dayLabel, listTime, lastSeen, pushScreen, popScreen, topScreen, setView,
+import { startCall } from './call.js';
+import { $, $$, esc, S, LS, on, emit, call, fire, avatar, user, hm, dayLabel, listTime, lastSeen, pushScreen, popScreen, topScreen, setView,
   toast, sheet, banner, popMenu, viewer, compressImage, uploadImage, pickFile, mediaUrl, linkify, confirmBox, haptic } from './core.js';
 
 const scr = $('#scr-chat');
 let cur = null;           // id percakapan yang sedang dibuka
-let replyTo = null;
+let replyTo = null, editing = null;
 let showTimeFor = null;
 const REACTS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 const isTouch = matchMedia('(pointer: coarse)').matches;
@@ -73,7 +74,7 @@ export function renderChatList(el) {
   const friends = Object.values(S.users).filter(u => u.id !== me.id).sort((a, b) => (S.online.has(b.id) - S.online.has(a.id)) || ((b.lastSeen || 0) - (a.lastSeen || 0)));
   const row = c => {
     const n = unreadCount(c), l = c.last;
-    let prev = l ? (l.from === 'sys' ? l.text : (l.from === me.id ? 'Kamu: ' : c.id === 'group' ? user(l.from).name + ': ' : '') + (l.img && !l.text ? '📷 Foto' : l.text)) : (c.id === 'group' ? 'Ngobrol bareng semua teman di sini 👋' : '');
+    let prev = l ? (l.from === 'sys' ? l.text : (l.from === me.id ? 'Kamu: ' : c.id === 'group' ? user(l.from).name + ': ' : '') + (l.voice ? '🎤 Pesan suara' : l.img && !l.text ? '📷 Foto' : l.text)) : (c.id === 'group' ? 'Ngobrol bareng semua teman di sini 👋' : '');
     return `<button class="chat-row" data-conv="${esc(c.id)}">${convAvatar(c.id, 52)}<div class="main"><div class="top"><span class="name ell">${esc(convTitle(c.id))}</span><span class="time">${l ? listTime(l.ts) : ''}</span></div>
       <div style="display:flex;gap:8px;align-items:center"><div class="prev" style="flex:1">${esc(prev)}</div>${n ? `<span class="ubadge">${n > 99 ? '99+' : n}</span>` : ''}</div></div></button>`;
   };
@@ -142,21 +143,25 @@ function markRead() {
 
 function buildScreen() {
   scr.innerHTML = `<div class="nav conv-nav"><div class="nav-row"><button class="back" id="c-back"><i class="fa-solid fa-chevron-left"></i><span id="c-bl"></span></button>
-    <div class="who" id="c-who"></div><span style="min-width:70px;display:flex;justify-content:flex-end"><button class="icon-btn" id="c-info" aria-label="Info"><i class="fa-solid fa-circle-info"></i></button></span></div></div>
+    <div class="who" id="c-who"></div><span style="min-width:70px;display:flex;justify-content:flex-end;gap:2px">${cur && cur !== 'group' ? '<button class="icon-btn" id="c-vcall" aria-label="Video call"><i class="fa-solid fa-video"></i></button><button class="icon-btn" id="c-call" aria-label="Telepon"><i class="fa-solid fa-phone"></i></button>' : ''}<button class="icon-btn" id="c-info" aria-label="Info"><i class="fa-solid fa-circle-info"></i></button></span></div></div>
     <div class="screen-body" id="c-body"><div class="msgs" id="c-msgs"></div></div>
     <div class="composer"><div id="c-reply"></div><div class="bar"><button class="plus" id="c-plus" aria-label="Kirim foto"><i class="fa-solid fa-image"></i></button>
-      <div class="input-wrap"><textarea id="c-text" rows="1" placeholder="Pesan" enterkeyhint="${isTouch ? 'enter' : 'send'}"></textarea><button class="send" id="c-send" disabled aria-label="Kirim"><i class="fa-solid fa-arrow-up"></i></button></div></div></div>`;
+      <div class="input-wrap"><button class="emo-btn" id="c-emo" aria-label="Emoji"><i class="fa-regular fa-face-smile"></i></button><textarea id="c-text" rows="1" placeholder="Pesan" enterkeyhint="${isTouch ? 'enter' : 'send'}"></textarea><button class="send hidden" id="c-send" aria-label="Kirim"><i class="fa-solid fa-arrow-up"></i></button><button class="mic" id="c-mic" aria-label="Rekam suara"><i class="fa-solid fa-microphone"></i></button></div></div><div id="c-rec"></div><div id="c-emojis"></div></div>`;
   renderHead(); renderBackLabel(); renderReply();
   $('#c-back').onclick = () => popScreen();
   $('#c-info').onclick = convInfo;
+  if ($('#c-call')) { $('#c-call').onclick = () => startCall(otherOf(cur), false); $('#c-vcall').onclick = () => startCall(otherOf(cur), true); }
   const ta = $('#c-text'), send = $('#c-send');
   let lastTyping = 0;
-  const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(128, ta.scrollHeight) + 'px'; send.disabled = !ta.value.trim(); };
+  const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(128, ta.scrollHeight) + 'px'; const has = !!ta.value.trim(); send.classList.toggle('hidden', !has && !editing); $('#c-mic').classList.toggle('hidden', has || !!editing); };
   ta.oninput = () => { grow(); if (Date.now() - lastTyping > 2500 && ta.value.trim()) { lastTyping = Date.now(); fire('typing', { conv: cur }); } };
   ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !isTouch && !e.isComposing) { e.preventDefault(); sendText(); } };
   ta.onpaste = e => { const f = [...(e.clipboardData && e.clipboardData.files || [])].find(x => x.type.startsWith('image/')); if (f) { e.preventDefault(); sendImage(f); } };
   send.onclick = () => { sendText(); if (isTouch) ta.focus(); };
   $('#c-plus').onclick = async () => { const f = await pickFile('image/*'); if (f) sendImage(f); };
+  $('#c-mic').onclick = startRecording;
+  $('#c-emo').onclick = () => toggleEmojiPanel();
+  ta.onfocus = () => { if (isTouch) toggleEmojiPanel(false); };
   const body = $('#c-body');
   body.onscroll = () => { if (body.scrollTop < 80) loadOlder(); if (nearBottom()) markRead(); };
   const msgs = $('#c-msgs');
@@ -174,6 +179,7 @@ function buildScreen() {
     if (lpFired) { lpFired = false; return; }
     const older = e.target.closest('.older'); if (older) return loadOlder();
     const img = e.target.closest('.bubble.img img'); if (img) return viewer(img.dataset.full || img.src);
+    const vp = e.target.closest('[data-play]'); if (vp) return playVoice(vp.dataset.play, vp.closest('.bubble'));
     const fail = e.target.closest('.bubble.failed'); if (fail) return retry(fail.dataset.cid);
     const q = e.target.closest('.quote[data-ref]'); if (q) { const t = $(`.bubble[data-seq="${q.dataset.ref}"]`, msgs); if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.add('lift'); setTimeout(() => t.classList.remove('lift'), 600); } return; }
     const b = e.target.closest('.bubble[data-seq]'); if (b && !e.target.closest('a')) { showTimeFor = showTimeFor === +b.dataset.seq ? null : +b.dataset.seq; renderMsgs(false); }
@@ -198,6 +204,11 @@ function renderBackLabel() {
 }
 function renderReply() {
   const el = $('#c-reply'); if (!el) return;
+  if (editing) {
+    el.innerHTML = `<div class="replying"><i class="fa-solid fa-pen c-blue"></i><div class="q"><b>Mengedit pesan</b><div class="ell muted">${esc(editing.text)}</div></div><button class="icon-btn" id="c-rx"><i class="fa-solid fa-circle-xmark" style="color:var(--label3)"></i></button></div>`;
+    $('#c-rx').onclick = () => { editing = null; const ta = $('#c-text'); ta.value = ''; ta.dispatchEvent(new Event('input')); renderReply(); };
+    return;
+  }
   if (!replyTo) { el.innerHTML = ''; return; }
   el.innerHTML = `<div class="replying"><i class="fa-solid fa-reply c-blue"></i><div class="q"><b>${esc(replyTo.from === S.me.id ? 'Kamu' : user(replyTo.from).name)}</b><div class="ell muted">${esc(replyTo.text || '📷 Foto')}</div></div><button class="icon-btn" id="c-rx"><i class="fa-solid fa-circle-xmark" style="color:var(--label3)"></i></button></div>`;
   $('#c-rx').onclick = () => { replyTo = null; renderReply(); };
@@ -224,7 +235,7 @@ function renderMsgs(stick, force) {
     const mine = m.from === me;
     const cls = ['mrow', mine ? 'me' : '', !sameAsPrev ? 'first' : '', !sameAsNext ? 'last' : ''].join(' ');
     const emojiOnly = !m.img && !m.del && isEmojiOnly(m.text);
-    const bcls = ['bubble', m.img ? 'img' : '', m.link && !m.img && !m.del ? 'has-link' : '', emojiOnly ? 'emoji-only' : '', !m.seq ? (m.failed ? 'failed' : 'pending') : '', m.del ? 'deleted' : ''].join(' ');
+    const bcls = ['bubble', m.img ? 'img' : '', m.voice && !m.del ? 'voice' : '', m.link && !m.img && !m.del ? 'has-link' : '', emojiOnly ? 'emoji-only' : '', !m.seq ? (m.failed ? 'failed' : 'pending') : '', m.del ? 'deleted' : ''].join(' ');
     let inner = '';
     if (m.del) inner = '<i class="fa-solid fa-ban"></i> Pesan dihapus';
     else {
@@ -234,6 +245,8 @@ function renderMsgs(stick, force) {
         const ratio = m.img.w && m.img.h ? `aspect-ratio:${m.img.w}/${m.img.h};` : '';
         inner += `<img src="${esc(src)}" alt="Foto" style="${ratio}" loading="lazy" decoding="async">`;
         if (m.text) inner += `<div class="cap">${linkify(m.text)}</div>`;
+      } else if (m.voice) {
+        inner += voiceHtml(m);
       } else if (m.link) {
         const onlyUrl = m.text.trim() === m.link.url;
         if (!onlyUrl) inner += `<div class="txt">${linkify(m.text)}</div>`;
@@ -244,7 +257,8 @@ function renderMsgs(stick, force) {
     const rp = reacts.length ? `<div class="reacts-pill">${reacts.map(([e]) => e).join('')}${reacts.reduce((n, [, l]) => n + l.length, 0) > 1 ? `<small>${reacts.reduce((n, [, l]) => n + l.length, 0)}</small>` : ''}</div>` : '';
     let meta = '';
     if (!m.seq && m.failed) meta = `<div class="mmeta c-red">Gagal terkirim. Tap untuk coba lagi.</div>`;
-    else if (showTimeFor && m.seq === showTimeFor) meta = `<div class="mmeta">${hm(m.ts)}</div>`;
+    else if (showTimeFor && m.seq === showTimeFor) meta = `<div class="mmeta">${hm(m.ts)}${m.edited ? ' · Diedit' : ''}</div>`;
+    else if (m.edited && !m.del) meta = `<div class="mmeta">Diedit</div>`;
     if (mine && i === lastMineIdx && m.seq && i === list.length - 1) {
       const readers = Object.entries(c.reads || {}).filter(([u, s]) => u !== me && s >= m.seq).map(([u]) => u);
       meta = `<div class="mmeta">${isGroup ? (readers.length ? `Dibaca oleh ${readers.length === Object.keys(S.users).length - 1 ? 'semua' : readers.length}` : 'Terkirim') : (readers.length ? 'Dibaca' : 'Terkirim')}</div>`;
@@ -276,8 +290,15 @@ function renderTyping(silent) {
 // ---------- Kirim ----------
 const newCid = () => Math.random().toString(36).slice(2, 12);
 async function sendText() {
-  const ta = $('#c-text'); const text = ta.value.trim(); if (!text) return;
-  ta.value = ''; ta.style.height = 'auto'; $('#c-send').disabled = true;
+  const ta = $('#c-text'); const text = ta.value.trim();
+  if (editing) {
+    const ed = editing; editing = null; renderReply();
+    ta.value = ''; ta.dispatchEvent(new Event('input'));
+    if (text && text !== ed.text) call('chat.edit', { conv: cur, seq: ed.seq, text }).catch(e => toast(e.message));
+    return;
+  }
+  if (!text) return;
+  ta.value = ''; ta.dispatchEvent(new Event('input'));
   await doSend({ text });
 }
 async function sendImage(file) {
@@ -285,12 +306,12 @@ async function sendImage(file) {
   try { prep = await compressImage(file); } catch (e) { toast(e.message); return; }
   const local = URL.createObjectURL(prep.blob);
   const caption = ($('#c-text').value || '').trim();
-  if (caption) { $('#c-text').value = ''; $('#c-send').disabled = true; }
+  if (caption) { $('#c-text').value = ''; $('#c-text').dispatchEvent(new Event('input')); }
   await doSend({ text: caption, img: { local, w: prep.w, h: prep.h }, blob: prep.blob });
 }
 async function doSend(p, existing) {
   const conv = cur, st = store(conv);
-  const m = existing || { cid: newCid(), from: S.me.id, text: p.text || '', img: p.img || null, ts: Date.now() + S.serverSkew, react: {},
+  const m = existing || { cid: newCid(), from: S.me.id, text: p.text || '', img: p.img || null, voice: p.voice || null, ts: Date.now() + S.serverSkew, react: {},
     reply: replyTo ? { seq: replyTo.seq, from: replyTo.from, text: replyTo.text || '📷 Foto' } : null, _blob: p.blob, _reply: replyTo ? replyTo.seq : null };
   m.failed = false;
   if (!existing) st.list.push(m);
@@ -302,7 +323,12 @@ async function doSend(p, existing) {
       if (!m.img.id) { const up = await uploadImage(m._blob); m.img.id = up.id; }
       img = { id: m.img.id, w: m.img.w, h: m.img.h };
     }
-    await call('chat.send', { conv, text: m.text, img, reply: m._reply, cid: m.cid });
+    let voice = null;
+    if (m.voice) {
+      if (!m.voice.id) { const up = await uploadImage(m._blob); m.voice.id = up.id; }
+      voice = { id: m.voice.id, dur: m.voice.dur, peaks: m.voice.peaks };
+    }
+    await call('chat.send', { conv, text: m.text, img, voice, reply: m._reply, cid: m.cid });
   } catch (e) {
     m.failed = true; if (cur === conv) renderMsgs(false); toast(e.message);
   }
@@ -318,6 +344,7 @@ function msgMenu(b) {
   b.classList.add('lift');
   const html = `<div class="reacts">${REACTS.map(e => `<button data-r="${e}" class="${myReact && myReact[0] === e ? 'on' : ''}">${e}</button>`).join('')}</div>
     <button class="mi" data-a="reply">Balas <i class="fa-solid fa-reply"></i></button>
+    ${mine && m.text && !m.voice && Date.now() - m.ts < 24 * 3600000 ? `<button class="mi" data-a="edit">Edit <i class="fa-solid fa-pen"></i></button>` : ''}
     ${m.text ? `<button class="mi" data-a="copy">Salin <i class="fa-regular fa-copy"></i></button>` : ''}
     ${m.img ? `<button class="mi" data-a="view">Lihat foto <i class="fa-regular fa-image"></i></button>` : ''}
     ${Object.keys(m.react || {}).length ? `<button class="mi" data-a="who">Lihat reaksi <i class="fa-regular fa-face-smile"></i></button>` : ''}
@@ -331,6 +358,7 @@ function msgMenu(b) {
       if (r) { const remove = myReact && myReact[0] === r.dataset.r; call('chat.react', { conv: cur, seq, emoji: r.dataset.r, remove }).catch(er => toast(er.message)); haptic(10); return; }
       const act = a.dataset.a;
       if (act === 'reply') { replyTo = { seq, from: m.from, text: m.text || (m.img ? '📷 Foto' : '') }; renderReply(); $('#c-text').focus(); }
+      if (act === 'edit') { editing = { seq, text: m.text }; replyTo = null; const ta = $('#c-text'); ta.value = m.text; ta.dispatchEvent(new Event('input')); renderReply(); ta.focus(); }
       if (act === 'copy') { try { await navigator.clipboard.writeText(m.text); toast('Disalin', 'fa-copy'); } catch (er) { toast('Gagal menyalin'); } }
       if (act === 'view') viewer(mediaUrl(m.img.id));
       if (act === 'who') sheet({ title: 'Reaksi', body: `<div class="list">${Object.entries(m.react).flatMap(([e, l]) => l.map(u => `<div class="row has-avatar">${avatar(u, 36)}<div class="main"><div class="t">${esc(user(u).name)}</div></div><span style="font-size:24px">${e}</span></div>`)).join('')}</div>` });
@@ -346,13 +374,156 @@ function convInfo() {
   if (cur === 'group') {
     const members = Object.values(S.users).sort((a, b) => (S.online.has(b.id) - S.online.has(a.id)) || a.name.localeCompare(b.name));
     const sh = sheet({ title: 'Grup Nexo', body: `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0 4px">${convAvatar('group', 80)}<div class="b" style="font-size:22px">Grup Nexo</div><div class="muted small">${members.length} anggota</div></div>
+      <div class="list" style="margin-top:14px"><button class="row has-icon tap" id="ci-media"><span class="ico bg-blue"><i class="fa-solid fa-photo-film"></i></span><div class="main"><div class="t">Media, Link & Suara</div></div><i class="fa-solid fa-chevron-right chev"></i></button></div>
       <div class="section-h">Anggota</div><div class="list">${members.map(u => `<button class="row has-avatar tap" data-u="${u.id}">${avatar(u, 40, { dot: true })}<div class="main"><div class="t">${esc(u.name)}${u.id === S.me.id ? ' (kamu)' : ''}</div><div class="s">${esc(lastSeen(u.id))}</div></div>${u.id !== S.me.id ? '<i class="fa-solid fa-comment c-blue"></i>' : ''}</button>`).join('')}</div>` });
-    sh.body.onclick = e => { const b = e.target.closest('[data-u]'); if (!b || b.dataset.u === S.me.id) return; sh.close(); openConv(dmId(S.me.id, b.dataset.u)); };
+    sh.body.onclick = e => { if (e.target.closest('#ci-media')) { mediaSheet(cur, 'Grup Nexo'); return; } const b = e.target.closest('[data-u]'); if (!b || b.dataset.u === S.me.id) return; sh.close(); openConv(dmId(S.me.id, b.dataset.u)); };
   } else {
     const o = otherOf(cur), u = user(o), st = u.stats || { played: 0, wins: 0 };
-    const sh = sheet({ title: '', body: `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0 4px">${avatar(u, 90, { dot: true })}<div class="b" style="font-size:24px">${esc(u.name)}</div><div class="muted small">${esc(lastSeen(o))}</div></div>
+    const sh = sheet({ title: '', body: `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0 4px">${avatar(u, 90, { dot: true })}<div class="b" style="font-size:24px">${esc(u.name)}</div>${u.bio ? `<div class="small" style="text-align:center;max-width:280px">${esc(u.bio)}</div>` : ''}<div class="muted small">${esc(lastSeen(o))}</div></div>
+      <div class="list" style="margin-top:16px"><button class="row has-icon tap" id="ci-media"><span class="ico bg-blue"><i class="fa-solid fa-photo-film"></i></span><div class="main"><div class="t">Media, Link & Suara</div></div><i class="fa-solid fa-chevron-right chev"></i></button></div>
       <div class="list" style="margin-top:16px"><div class="row"><div class="main"><div class="t">🏆 Menang</div></div><span class="val">${st.wins}</span></div><div class="row"><div class="main"><div class="t">🎲 Total main</div></div><span class="val">${st.played}</span></div></div>
       <div style="margin-top:16px"><button class="btn block tint" id="ci-play"><i class="fa-solid fa-dice"></i> Ajak main</button></div>` });
     $('#ci-play', sh.body).onclick = () => { sh.close(); emit('create-room', { invite: [o] }); };
+    $('#ci-media', sh.body).onclick = () => mediaSheet(cur, u.name);
   }
+}
+
+// ================= Voice note =================
+const fmtDur = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function voiceHtml(m) {
+  const peaks = m.voice.peaks && m.voice.peaks.length ? m.voice.peaks : Array.from({ length: 28 }, (_, i) => 0.3 + 0.5 * Math.abs(Math.sin(i * 1.7)));
+  const src = m.voice.local || (m.voice.id ? mediaUrl(m.voice.id) : '');
+  return `<div class="vn"><button class="vplay" data-play="${esc(src)}" aria-label="Putar"><i class="fa-solid fa-play"></i></button><div class="vbars">${peaks.map(p => `<i style="height:${Math.max(12, Math.round(p * 100))}%"></i>`).join('')}</div><span class="vdur">${fmtDur(m.voice.dur || 0)}</span></div>`;
+}
+let audioEl = null, playingBubble = null;
+function playVoice(src, bubble) {
+  if (!src) return;
+  if (!audioEl) {
+    audioEl = new Audio(); audioEl.preload = 'auto';
+    audioEl.ontimeupdate = () => { if (playingBubble && audioEl.duration) playingBubble.style.setProperty('--vp', (audioEl.currentTime / audioEl.duration * 100) + '%'); const d = playingBubble && playingBubble.querySelector('.vdur'); if (d) d.textContent = fmtDur(audioEl.currentTime); };
+    audioEl.onended = () => stopVoiceUi();
+    audioEl.onerror = () => { stopVoiceUi(); toast('Pesan suara tidak bisa diputar di perangkat ini'); };
+  }
+  if (playingBubble === bubble && !audioEl.paused) { audioEl.pause(); stopVoiceUi(true); return; }
+  stopVoiceUi();
+  playingBubble = bubble; bubble.classList.add('playing');
+  const ic = bubble.querySelector('.vplay i'); if (ic) ic.className = 'fa-solid fa-pause';
+  if (audioEl.src !== new URL(src, location.href).href) audioEl.src = src;
+  audioEl.play().catch(() => { stopVoiceUi(); toast('Gagal memutar suara'); });
+}
+function stopVoiceUi(keep) {
+  if (!playingBubble) return;
+  const ic = playingBubble.querySelector('.vplay i'); if (ic) ic.className = 'fa-solid fa-play';
+  playingBubble.classList.remove('playing');
+  if (!keep) { playingBubble.style.removeProperty('--vp'); playingBubble = null; }
+}
+let rec = null;
+async function startRecording() {
+  if (rec) return;
+  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Browser ini belum bisa merekam suara'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { toast('Izinkan akses mikrofon untuk mengirim pesan suara'); return; }
+  const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+  const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+  const chunks = [], peaks = [];
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = AC ? new AC() : null; let an = null, buf = null;
+  if (ac) { const src = ac.createMediaStreamSource(stream); an = ac.createAnalyser(); an.fftSize = 512; buf = new Uint8Array(an.fftSize); src.connect(an); }
+  rec = { mr, stream, chunks, peaks, t0: Date.now(), cancel: false, ac };
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop()); if (ac) ac.close().catch(() => {});
+    const r = rec; rec = null; clearInterval(r.timer); renderRec();
+    if (r.cancel) return;
+    const dur = Math.round((Date.now() - r.t0) / 1000);
+    if (dur < 1) { toast('Terlalu singkat'); return; }
+    const mime = (mr.mimeType || type || 'audio/webm').split(';')[0];
+    const blob = new Blob(chunks, { type: mime });
+    const n = 32, step = Math.max(1, Math.floor(peaks.length / n));
+    const ds = []; for (let i = 0; i < peaks.length && ds.length < n; i += step) ds.push(Math.max(...peaks.slice(i, i + step)));
+    const max = Math.max(0.05, ...ds);
+    await doSend({ voice: { local: URL.createObjectURL(blob), dur, peaks: ds.map(v => Math.round(v / max * 100) / 100) }, blob });
+  };
+  mr.start(250);
+  rec.timer = setInterval(() => {
+    if (an) { an.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); peaks.push(m / 128); }
+    renderRec();
+    if (Date.now() - rec.t0 > 5 * 60000) stopRecording(false);
+  }, 100);
+  haptic(15); renderRec();
+}
+function stopRecording(cancel) { if (!rec) return; rec.cancel = cancel; try { rec.mr.stop(); } catch (e) {} }
+function renderRec() {
+  const el = $('#c-rec'); if (!el) return;
+  const bar = el.closest('.composer') && el.closest('.composer').querySelector('.bar');
+  if (!rec) { el.innerHTML = ''; if (bar) bar.classList.remove('hidden'); return; }
+  if (bar) bar.classList.add('hidden');
+  const secs = (Date.now() - rec.t0) / 1000;
+  const last = rec.peaks.slice(-30);
+  el.innerHTML = `<div class="rec-bar"><button class="rec-x" id="rec-x" aria-label="Batal"><i class="fa-solid fa-trash"></i></button><span class="rec-dot"></span><span class="rec-t">${fmtDur(secs)}</span>
+    <div class="rec-bars">${last.map(v => `<i style="height:${Math.max(10, Math.min(100, v * 160))}%"></i>`).join('')}</div><button class="send" id="rec-send" aria-label="Kirim"><i class="fa-solid fa-arrow-up"></i></button></div>`;
+  $('#rec-x').onclick = () => stopRecording(true);
+  $('#rec-send').onclick = () => stopRecording(false);
+}
+
+// ================= Emoji picker (gaya iOS) =================
+const EMOJI_CATS = [
+  ['fa-regular fa-clock', 'Terakhir', null],
+  ['fa-regular fa-face-smile', 'Smiley & Orang', '😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 😮‍💨 🤥 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🥵 🥶 🥴 😵 🤯 🤠 🥳 🥸 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 🥹 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 💩 🤡 👻 👽 🤖 😺 😸 😹 😻 😼 😽 🙀 😿 😾 👋 🤚 🖐️ ✋ 🖖 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 🫶 👐 🤲 🤝 🙏 💪 🫡 🫣 🫠 🙈 🙉 🙊 💋 💌 💘 💝 💖 💗 💓 💞 💕 💟 ❣️ 💔 ❤️ 🧡 💛 💚 💙 💜 🤎 🖤 🤍 💯 💢 💥 💫 💦 💨 💬 💭 💤'],
+  ['fa-solid fa-paw', 'Hewan & Alam', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐢 🐍 🦖 🐙 🦑 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🐘 🦒 🐪 🐫 🦘 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🐐 🦌 🐕 🐈 🐓 🦃 🦚 🦜 🕊️ 🐇 🦝 🦔 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍀 🍁 🍂 🍃 🌸 🌺 🌻 🌹 🌷 🌼 💐 🍄 🌎 🌙 ⭐ 🌟 ✨ ⚡ 🔥 🌈 ☀️ ⛅ ☁️ 🌧️ ⛈️ ❄️ ☃️ 🌊'],
+  ['fa-solid fa-burger', 'Makanan', '🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🍆 🥔 🥕 🌽 🌶️ 🥒 🥬 🥦 🧄 🧅 🍞 🥐 🥖 🧀 🥚 🍳 🥞 🧇 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🌮 🌯 🥗 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🍤 🍙 🍚 🍘 🍥 🥮 🍢 🍡 🍧 🍨 🍦 🥧 🧁 🍰 🎂 🍮 🍭 🍬 🍫 🍿 🍩 🍪 🥜 🍯 🥛 ☕ 🍵 🧋 🥤 🍺 🍻 🥂 🍷 🍹 🧉 🧊'],
+  ['fa-solid fa-futbol', 'Aktivitas', '⚽ 🏀 🏈 ⚾ 🎾 🏐 🏉 🎱 🏓 🏸 🥅 🏒 🏏 ⛳ 🏹 🎣 🥊 🥋 🛹 ⛸️ 🎿 🏂 🏋️ 🤸 ⛹️ 🤺 🏊 🚴 🏆 🥇 🥈 🥉 🏅 🎖️ 🎗️ 🎫 🎟️ 🎪 🎭 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🎷 🎺 🎸 🎻 🎲 ♟️ 🎯 🎳 🎮 🕹️ 🧩'],
+  ['fa-solid fa-plane', 'Perjalanan', '🚗 🚕 🚙 🚌 🏎️ 🚓 🚑 🚒 🚚 🛵 🏍️ 🚲 🛴 🚨 🚃 🚄 🚅 🚇 ✈️ 🛫 🛬 🚀 🛸 🚁 ⛵ 🚤 🛳️ 🚢 ⚓ 🗺️ 🗽 🗼 🏰 🏯 🏟️ 🎡 🎢 🎠 ⛲ 🏖️ 🏝️ 🏜️ 🌋 ⛰️ 🏔️ 🗻 🏕️ 🏠 🏡 🏢 🏬 🏨 🏦 🏥 🏫 🕌 🛕 ⛪ 🕋 🌇 🌆 🌃 🌉 🌌 🎆 🎇'],
+  ['fa-regular fa-lightbulb', 'Benda', '⌚ 📱 💻 ⌨️ 🖥️ 🖨️ 🖱️ 💾 📷 📸 📹 🎥 📞 ☎️ 📺 📻 ⏰ ⌛ 🔋 🔌 💡 🔦 🕯️ 💸 💵 💴 💶 💷 💰 💳 💎 ⚖️ 🔧 🔨 🛠️ 🔩 ⚙️ 🧲 🔫 💣 🔪 🛡️ 🔮 💊 💉 🧬 🧪 🌡️ 🧹 🧺 🧻 🧼 🛁 🔑 🗝️ 🚪 🛋️ 🛏️ 🧸 🎁 🎈 🎀 🎊 🎉 🪄 ✉️ 📦 📝 📌 📎 ✂️ 📚 📖 🔒 🔓'],
+  ['fa-solid fa-heart', 'Simbol', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 ❣️ 💕 ☮️ ✝️ ☪️ 🕉️ ☯️ ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ ⛎ 🆗 🆒 🆕 🆓 🆙 🔝 🔙 ✅ ☑️ ✔️ ❌ ❎ ➕ ➖ ➗ ✖️ ♾️ ‼️ ⁉️ ❓ ❔ ❗ ❕ 〰️ 💲 ©️ ®️ ™️ 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🟥 🟧 🟨 🟩 🟦 🟪 ⬛ ⬜ 🔶 🔷 🔺 🔻 💠 🔘 🔳 🔲 🏁 🚩'],
+  ['fa-regular fa-flag', 'Bendera', '🇮🇩 🇲🇾 🇸🇬 🇹🇭 🇵🇭 🇻🇳 🇯🇵 🇰🇷 🇨🇳 🇭🇰 🇹🇼 🇮🇳 🇸🇦 🇦🇪 🇹🇷 🇪🇬 🇬🇧 🇫🇷 🇩🇪 🇮🇹 🇪🇸 🇳🇱 🇵🇹 🇺🇸 🇨🇦 🇧🇷 🇦🇷 🇲🇽 🇦🇺 🇳🇿 🇷🇺 🇿🇦 🏳️‍🌈 🏴‍☠️']
+];
+let emoCat = 1;
+function toggleEmojiPanel(force) {
+  const el = $('#c-emojis'); if (!el) return;
+  const open = force === undefined ? !el.classList.contains('on') : force;
+  el.classList.toggle('on', open);
+  if (!open) { el.innerHTML = ''; return; }
+  const recent = LS.get('nexo.emoRecent', []);
+  if (!recent.length && emoCat === 0) emoCat = 1;
+  const list = emoCat === 0 ? recent : EMOJI_CATS[emoCat][2].split(' ');
+  el.innerHTML = `<div class="emo-panel"><div class="emo-title">${EMOJI_CATS[emoCat][1]}</div><div class="emo-grid">${list.map(e => `<button data-emo="${e}">${e}</button>`).join('') || '<p class="small muted" style="grid-column:1/-1;padding:10px">Belum ada emoji yang dipakai.</p>'}</div>
+    <div class="emo-tabs">${EMOJI_CATS.map((c, i) => `<button data-cat="${i}" class="${i === emoCat ? 'on' : ''}" aria-label="${c[1]}"><i class="${c[0]}"></i></button>`).join('')}<button data-bksp aria-label="Hapus"><i class="fa-solid fa-delete-left"></i></button></div></div>`;
+  el.onclick = e => {
+    const b = e.target.closest('[data-emo]'), c = e.target.closest('[data-cat]');
+    const ta = $('#c-text');
+    if (c) { emoCat = +c.dataset.cat; toggleEmojiPanel(true); return; }
+    if (e.target.closest('[data-bksp]')) { const v = [...ta.value]; v.pop(); ta.value = v.join(''); ta.dispatchEvent(new Event('input')); return; }
+    if (!b) return;
+    const em = b.dataset.emo, st = ta.selectionStart ?? ta.value.length, en = ta.selectionEnd ?? ta.value.length;
+    ta.value = ta.value.slice(0, st) + em + ta.value.slice(en);
+    try { ta.selectionStart = ta.selectionEnd = st + em.length; } catch (er) {}
+    ta.dispatchEvent(new Event('input'));
+    LS.set('nexo.emoRecent', [em, ...LS.get('nexo.emoRecent', []).filter(x => x !== em)].slice(0, 32));
+    haptic(5);
+  };
+  if (isTouch) $('#c-text').blur();
+}
+
+// ================= Media, Link & Suara =================
+async function mediaSheet(conv, title) {
+  const sh = sheet({ title: title || 'Media', tall: true, body: '<div class="empty"><span class="spin"></span></div>' });
+  let data;
+  try { data = await call('chat.media', { conv }); } catch (e) { sh.body.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  let tab = 'media';
+  const paint = () => {
+    const seg = `<div class="seg" style="margin:4px 0 12px">${[['media', 'Media', data.media.length], ['links', 'Link', data.links.length], ['voice', 'Suara', data.voice.length]].map(([k, t, n]) => `<button data-t="${k}" class="${tab === k ? 'on' : ''}">${t} (${n})</button>`).join('')}</div>`;
+    let body = '';
+    if (tab === 'media') body = data.media.length ? `<div class="media-grid">${data.media.map(x => `<button data-img="${esc(x.img.id)}" style="background-image:url('${mediaUrl(x.img.id)}')"></button>`).join('')}</div>` : '<div class="empty"><i class="fa-regular fa-image"></i>Belum ada foto.</div>';
+    else if (tab === 'links') body = data.links.length ? `<div class="list">${data.links.map(x => { let host = ''; try { host = new URL(x.url).hostname.replace(/^www\./, ''); } catch (e) {} return `<a class="row has-icon tap link-row" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${x.link && x.link.image ? `<span class="lr-img" style="background-image:url('${esc(x.link.image)}')"></span>` : '<span class="ico bg-gray"><i class="fa-solid fa-link"></i></span>'}<div class="main"><div class="t ell">${esc((x.link && x.link.title) || host)}</div><div class="s ell">${esc(x.url)}</div><div class="s">${esc(user(x.from).name)} · ${dayLabel(x.ts)}</div></div></a>`; }).join('')}</div>` : '<div class="empty"><i class="fa-solid fa-link"></i>Belum ada link.</div>';
+    else body = data.voice.length ? `<div class="list">${data.voice.map(x => `<div class="row has-avatar">${avatar(x.from, 34)}<div class="main"><div class="t">${esc(user(x.from).name)}</div><div class="s">${dayLabel(x.ts)} ${hm(x.ts)} · ${fmtDur(x.voice.dur)}</div></div><button class="btn sm tint vplay-row" data-src="${mediaUrl(x.voice.id)}"><i class="fa-solid fa-play"></i></button></div>`).join('')}</div>` : '<div class="empty"><i class="fa-solid fa-microphone"></i>Belum ada pesan suara.</div>';
+    sh.body.innerHTML = seg + body + '<div style="height:16px"></div>';
+  };
+  paint();
+  sh.body.onclick = e => {
+    const t = e.target.closest('[data-t]'); if (t) { tab = t.dataset.t; paint(); return; }
+    const im = e.target.closest('[data-img]'); if (im) return viewer(mediaUrl(im.dataset.img));
+    const v = e.target.closest('.vplay-row'); if (v) { const a = new Audio(v.dataset.src); a.play().catch(() => toast('Gagal memutar')); }
+  };
 }
