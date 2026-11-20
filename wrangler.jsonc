@@ -7,7 +7,7 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/games", "/games/", "/games/index.html"]
   },
   // Cek pengingat tiap menit lalu kirim push
   "triggers": { "crons": ["* * * * *"] },
@@ -16,6 +16,13 @@
   // === CLOUDFLARE R2 (10 GB gratis, aktif) — bucket dibuat otomatis saat deploy ===
   "r2_buckets": [
     { "binding": "FILES", "bucket_name": "hadzmi-hub-files" }
+  ],
+  // === NEXO GAMES: server realtime (chat + game) — Durable Object SQLite, termasuk paket gratis ===
+  "durable_objects": {
+    "bindings": [{ "name": "NEXO", "class_name": "NexoHub" }]
+  },
+  "migrations": [
+    { "tag": "nexo-v1", "new_sqlite_classes": ["NexoHub"] }
   ],
   "vars": {
     "FIREBASE_PROJECT_ID": "web-hadzmi-new"
