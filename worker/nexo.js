@@ -575,12 +575,18 @@ export class NexoHub extends DurableObject {
         return this.pubGame(g);
       }
       case 'game.unwatch': att.watch = null; ws.serializeAttachment(att); return null;
-      case 'game.join': case 'game.leave': case 'game.start': case 'game.delete': case 'game.end': case 'game.kick': case 'game.settings': case 'game.color': case 'game.addbot': {
+      case 'game.join': case 'game.leave': case 'game.start': case 'game.delete': case 'game.end': case 'game.kick': case 'game.settings': case 'game.color': case 'game.addbot': case 'game.botedit': {
         const g = await this.getGame(m.id); if (!g) fail(404, 'Room tidak ditemukan.');
         const isHost = g.host === uid || me.admin;
         if (g.engine !== E.ENGINE && !['game.delete', 'game.leave'].includes(m.t)) fail(400, 'Room ini versi lama. Hapus lalu buat room baru ya.');
         if (m.t === 'game.join') { try { E.addPlayer(g, uid, me.name, m.color); } catch (e) { fail(400, e.message); } }
         else if (m.t === 'game.color') { try { E.setColor(g, uid, m.color); } catch (e) { fail(400, e.message); } }
+        else if (m.t === 'game.botedit') {
+          if (!isHost) fail(403, 'Hanya host yang bisa mengubah bot.');
+          const bp = E.player(g, m.uid); if (!bp || !String(bp.id).startsWith('bot_')) fail(404, 'Bot tidak ditemukan.');
+          const nm = cleanName(m.name); if (nm.length >= 2) bp.name = nm;
+          const av = cleanAvatar(m.avatar); if (av) bp.avatar = av;
+        }
         else if (m.t === 'game.addbot') { if (!isHost || g.status !== 'lobby') fail(403, 'Hanya host di lobi.'); if (g.players.length >= g.settings.maxPlayers) fail(400, 'Room sudah penuh.'); this.addBot(g); }
         else if (m.t === 'game.leave') {
           if (g.status !== 'lobby') fail(400, 'Game sudah berjalan. Pakai "Menyerah".');
