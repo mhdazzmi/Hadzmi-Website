@@ -19,6 +19,7 @@ const OUTBOX_MAX = 25;
 const MAX_UPLOAD = 8 * 1024 * 1024;
 const MEDIA_RE = /^[a-z0-9-]{20,80}$/;
 const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const AUDIO_TYPES = ['audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/ogg', 'audio/aac', 'audio/x-m4a', 'audio/wav'];
 
 const enc = new TextEncoder();
 const jsonRes = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, headers) });
@@ -44,9 +45,18 @@ export async function handleNexo(request, env, url) {
   const media = /^\/api\/nexo\/media\/([a-z0-9-]+)$/.exec(path);
   if (media && request.method === 'GET') {
     if (!MEDIA_RE.test(media[1]) || !env.FILES) return new Response('Not found', { status: 404 });
-    const obj = await env.FILES.get('nexo/' + media[1]);
+    // Mendukung Range (wajib agar voice note bisa diputar di Safari iPhone)
+    const rh = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('Range') || '');
+    let range;
+    if (rh) { const head = await env.FILES.head('nexo/' + media[1]); if (!head) return new Response('Not found', { status: 404 });
+      const size = head.size, start = rh[1] === '' ? Math.max(0, size - Number(rh[2])) : Number(rh[1]), end = rh[1] !== '' && rh[2] !== '' ? Math.min(size - 1, Number(rh[2])) : size - 1;
+      if (start >= size || start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
+      range = { offset: start, length: end - start + 1, size }; }
+    const obj = await env.FILES.get('nexo/' + media[1], range ? { range: { offset: range.offset, length: range.length } } : undefined);
     if (!obj) return new Response('Not found', { status: 404 });
-    return new Response(obj.body, { headers: { 'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', ETag: obj.httpEtag } });
+    const headers = { 'Content-Type': (obj.httpMetadata && obj.httpMetadata.contentType) || 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', ETag: obj.httpEtag, 'Accept-Ranges': 'bytes' };
+    if (range) return new Response(obj.body, { status: 206, headers: Object.assign(headers, { 'Content-Range': `bytes ${range.offset}-${range.offset + range.length - 1}/${range.size}`, 'Content-Length': String(range.length) }) });
+    return new Response(obj.body, { headers: Object.assign(headers, { 'Content-Length': String(obj.size) }) });
   }
   if (!env.NEXO) return jsonRes({ error: 'Durable Object NEXO belum diatur (lihat README Nexo Games).' }, 503);
   const stub = env.NEXO.get(env.NEXO.idFromName('nexo-hub'));
@@ -77,7 +87,7 @@ export class NexoHub extends DurableObject {
   saveIndex() { return this.ctx.storage.put('gindex', this.gindex); }
 
   pubUser(u) {
-    return { id: u.id, name: u.name, avatar: u.avatar, admin: !!u.admin, lastSeen: u.lastSeen || 0, createdAt: u.createdAt, stats: u.stats || { played: 0, wins: 0 } };
+    return { id: u.id, name: u.name, avatar: u.avatar, admin: !!u.admin, bio: u.bio || '', createdAt: u.createdAt, stats: u.stats || { played: 0, wins: 0 } };
   }
   findByName(name) { const k = nameKey(name); return Object.values(this.users).find(u => u.key === k) || null; }
 
@@ -172,7 +182,7 @@ export class NexoHub extends DurableObject {
   async upload(request, uid) {
     if (!this.env.FILES) fail(503, 'R2 (FILES) belum aktif.');
     const type = (request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
-    if (!IMG_TYPES.includes(type)) fail(415, 'Hanya gambar yang bisa dikirim.');
+    if (!IMG_TYPES.includes(type) && !AUDIO_TYPES.includes(type)) fail(415, 'Jenis file tidak didukung.');
     const buf = await request.arrayBuffer();
     if (!buf.byteLength) fail(400, 'File kosong.');
     if (buf.byteLength > MAX_UPLOAD) fail(413, 'Gambar terlalu besar (maks 8 MB).');
@@ -246,7 +256,7 @@ export class NexoHub extends DurableObject {
     const u = this.users[uid];
     u.lastSeen = Date.now();
     this.saveUsers();
-    if (!wasOnline) this.broadcast({ t: 'presence', uid, online: true, lastSeen: u.lastSeen }, uid);
+    if (!wasOnline) this.presence(uid, true);
     this.send(server, await this.initPayload(uid));
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -255,10 +265,15 @@ export class NexoHub extends DurableObject {
   async initPayload(uid) {
     const me = this.users[uid];
     return {
-      t: 'init', me: this.pubUser(me), users: Object.values(this.users).map(u => this.pubUser(u)), online: this.onlineIds(),
+      t: 'init', me: this.pubUser(me), users: Object.values(this.users).map(u => me.admin ? Object.assign(this.pubUser(u), { lastSeen: u.lastSeen || 0 }) : this.pubUser(u)), online: this.onlineIds(),
       convs: this.myConvs(uid), games: Object.values(this.gindex), settings: { needInvite: !!this.settings.inviteCode, inviteCode: me.admin ? this.settings.inviteCode : undefined, photos: this.settings.photos || {} },
       vapidPublicKey: await this.vapidKey(), now: Date.now()
     };
+  }
+  // Status online terlihat semua; "terakhir online" hanya untuk admin
+  presence(uid, online) {
+    const ls = (this.users[uid] || {}).lastSeen || Date.now();
+    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (!a || a.uid === uid) continue; this.send(ws, (this.users[a.uid] || {}).admin ? { t: 'presence', uid, online, lastSeen: ls } : { t: 'presence', uid, online }); }
   }
   send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch (e) {} }
   broadcast(obj, exceptUid) { const s = JSON.stringify(obj); for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && a.uid !== exceptUid) try { ws.send(s); } catch (e) {} } }
@@ -284,7 +299,7 @@ export class NexoHub extends DurableObject {
     const still = this.ctx.getWebSockets(a.uid).filter(x => x !== ws && x.readyState === 1).length;
     if (!still && this.users[a.uid]) {
       this.users[a.uid].lastSeen = Date.now(); this.saveUsers();
-      this.broadcast({ t: 'presence', uid: a.uid, online: false, lastSeen: Date.now() }, a.uid);
+      this.presence(a.uid, false);
     }
   }
 
@@ -304,6 +319,7 @@ export class NexoHub extends DurableObject {
           me.name = name; me.key = nameKey(name);
         }
         if (m.avatar !== undefined) { const av = cleanAvatar(m.avatar); if (av) me.avatar = av; }
+        if (m.bio !== undefined) me.bio = String(m.bio || '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, 140);
         await this.saveUsers();
         // perbarui nama di game yang sedang berjalan
         for (const gi of Object.values(this.gindex)) if (gi.players.includes(uid) && gi.status !== 'ended') {
@@ -357,22 +373,23 @@ export class NexoHub extends DurableObject {
         const c = this.conv(uid, m.conv, true);
         const text = String(m.text || '').replace(/\r/g, '').slice(0, MAX_MSG).trim();
         const img = m.img && MEDIA_RE.test(m.img.id) ? { id: m.img.id, w: Math.round(Number(m.img.w) || 0), h: Math.round(Number(m.img.h) || 0) } : null;
-        if (!text && !img) fail(400, 'Pesan kosong.');
+        const voice = !img && m.voice && MEDIA_RE.test(m.voice.id) ? { id: m.voice.id, dur: Math.max(0, Math.min(600, Math.round(Number(m.voice.dur) || 0))), peaks: Array.isArray(m.voice.peaks) ? m.voice.peaks.slice(0, 40).map(v => Math.max(0, Math.min(1, Math.round(Number(v) * 100) / 100))) : null } : null;
+        if (!text && !img && !voice) fail(400, 'Pesan kosong.');
         let reply = null;
         if (m.reply) {
           const r = await this.ctx.storage.get(msgKey(c.id, m.reply));
           if (r) reply = { seq: r.seq, from: r.from, text: r.del ? 'Pesan dihapus' : (r.text || (r.img ? '📷 Foto' : '')).slice(0, 120), img: !!r.img };
         }
         c.seq++;
-        const msg = { seq: c.seq, from: uid, text, img, reply, ts: Date.now(), react: {}, cid: String(m.cid || '').slice(0, 40) || undefined };
+        const msg = { seq: c.seq, from: uid, text, img, voice, reply, ts: Date.now(), react: {}, cid: String(m.cid || '').slice(0, 40) || undefined };
         await this.ctx.storage.put(msgKey(c.id, c.seq), msg);
-        c.last = { seq: c.seq, from: uid, text: text.slice(0, 140), img: !!img, ts: msg.ts };
+        c.last = { seq: c.seq, from: uid, text: text.slice(0, 140), img: !!img, voice: !!voice, ts: msg.ts };
         c.reads[uid] = c.seq;
         await this.saveConvs();
         const members = this.members(c);
         this.toUsers(members, { t: 'msg', conv: c.id, msg, meta: c });
         const isGroup = c.id === 'group';
-        const body = text ? text.slice(0, 160) : '📷 Mengirim foto';
+        const body = text ? text.slice(0, 160) : voice ? '🎤 Pesan suara' : '📷 Mengirim foto';
         this.push(members.filter(x => x !== uid), {
           title: isGroup ? `${me.name} · Grup Nexo` : me.name, body, tag: 'chat-' + c.id, url: './?chat=' + encodeURIComponent(c.id), kind: 'chat'
         }).catch(e => console.warn('push', e));
@@ -386,6 +403,37 @@ export class NexoHub extends DurableObject {
         if ((c.reads[uid] || 0) < seq) { c.reads[uid] = seq; await this.saveConvs(); this.toUsers(this.members(c), { t: 'read', conv: c.id, uid, seq }); }
         return null;
       }
+      case 'chat.edit': {
+        const c = this.conv(uid, m.conv, false); if (!c) fail(404, 'Chat tidak ada.');
+        const k = msgKey(c.id, m.seq), msg = await this.ctx.storage.get(k);
+        if (!msg || msg.del) fail(404, 'Pesan tidak ada.');
+        if (msg.from !== uid) fail(403, 'Hanya bisa mengedit pesanmu sendiri.');
+        if (msg.voice) fail(400, 'Pesan suara tidak bisa diedit.');
+        if (Date.now() - msg.ts > 24 * 3600000) fail(400, 'Pesan lebih dari 24 jam tidak bisa diedit.');
+        const text = String(m.text || '').replace(/\r/g, '').slice(0, MAX_MSG).trim();
+        if (!text && !msg.img) fail(400, 'Pesan tidak boleh kosong.');
+        if (text === msg.text) return null;
+        msg.text = text; msg.edited = Date.now();
+        const hadLink = msg.link; delete msg.link;
+        await this.ctx.storage.put(k, msg);
+        if (c.last && c.last.seq === msg.seq) { c.last.text = text.slice(0, 140); await this.saveConvs(); }
+        this.toUsers(this.members(c), { t: 'msgUpdate', conv: c.id, msg, meta: c });
+        const link = !msg.img && text.match(/https?:\/\/[^\s<>"']+/i);
+        if (link) this.attachPreview(c.id, msg.seq, link[0].replace(/[.,;:!?)\]]+$/, '')).catch(() => {});
+        return null;
+      }
+      case 'chat.media': {
+        const c = this.conv(uid, m.conv, false); if (!c) return { media: [], links: [], voice: [] };
+        const all = await this.ctx.storage.list({ prefix: `m:${c.id}:`, reverse: true, limit: 3000 });
+        const media = [], links = [], voice = [];
+        for (const msg of all.values()) {
+          if (msg.del) continue;
+          if (msg.img && media.length < 300) media.push({ seq: msg.seq, from: msg.from, ts: msg.ts, img: msg.img });
+          if (msg.voice && voice.length < 200) voice.push({ seq: msg.seq, from: msg.from, ts: msg.ts, voice: msg.voice });
+          if (msg.text && links.length < 300) { const found = msg.text.match(/https?:\/\/[^\s<>"']+/gi); if (found) found.forEach(u => links.push({ seq: msg.seq, from: msg.from, ts: msg.ts, url: u.replace(/[.,;:!?)\]]+$/, ''), link: msg.link && msg.link.url === u.replace(/[.,;:!?)\]]+$/, '') ? msg.link : null })); }
+        }
+        return { media, links, voice };
+      }
       case 'chat.react': case 'chat.delete': {
         const c = this.conv(uid, m.conv, false); if (!c) fail(404, 'Chat tidak ada.');
         const k = msgKey(c.id, m.seq), msg = await this.ctx.storage.get(k);
@@ -396,7 +444,7 @@ export class NexoHub extends DurableObject {
           if (!m.remove) (msg.react[emo] = msg.react[emo] || []).push(uid);
         } else {
           if (msg.from !== uid) fail(403, 'Hanya bisa menghapus pesanmu sendiri.');
-          msg.del = true; msg.text = ''; msg.img = null; msg.react = {};
+          msg.del = true; msg.text = ''; msg.img = null; msg.voice = null; msg.link = null; msg.react = {};
           if (c.last && c.last.seq === msg.seq) { c.last.text = 'Pesan dihapus'; c.last.img = false; await this.saveConvs(); }
         }
         await this.ctx.storage.put(k, msg);

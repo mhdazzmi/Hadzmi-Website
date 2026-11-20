@@ -145,7 +145,7 @@ export function listTime(ts) {
 }
 export function lastSeen(uid) {
   if (S.online.has(uid)) return 'Online';
-  const ts = user(uid).lastSeen; if (!ts) return 'Offline';
+  const ts = user(uid).lastSeen; if (!ts) return '';   // hanya admin yang menerima data "terakhir online"
   const m = Math.round((Date.now() - ts) / 60000);
   if (m < 1) return 'Baru saja online'; if (m < 60) return `Online ${m} mnt lalu`;
   const h = Math.round(m / 60); if (h < 24) return `Online ${h} jam lalu`;
@@ -358,11 +358,16 @@ const badCodes = new Set();
 function emojiImg(g) {
   const code = [...g].map(c => c.codePointAt(0).toString(16)).join('-');
   const cands = [...new Set([code, code.replace(/-fe0f/g, ''), code.includes('-') ? code.replace(/-200d/g, '-fe0f-200d') : code + '-fe0f'])].filter(c => !badCodes.has(c));
-  if (!cands.length) return document.createTextNode(g);
+  if (!cands.length) return null;
   const img = document.createElement('img');
   img.className = 'emj'; img.alt = g; img.draggable = false; img.decoding = 'async';
   let i = 0;
-  img.onerror = () => { badCodes.add(cands[i]); i++; if (i < cands.length) img.src = EMOJI_CDN + cands[i] + '.png'; else img.replaceWith(document.createTextNode(g)); };
+  img.onerror = () => {
+    badCodes.add(cands[i]); i++;
+    if (i < cands.length) { img.src = EMOJI_CDN + cands[i] + '.png'; return; }
+    // gagal semua: kembalikan ke teks biasa (dibungkus agar tidak diproses ulang)
+    const sp = document.createElement('span'); sp.className = 'no-emj'; sp.textContent = g; img.replaceWith(sp);
+  };
   img.src = EMOJI_CDN + cands[0] + '.png';
   return img;
 }
@@ -374,7 +379,8 @@ function emojifyText(node) {
   const frag = document.createDocumentFragment();
   let buf = '', changed = false;
   for (const { segment } of segmenter.segment(t)) {
-    if (isEmojiG(segment)) { if (buf) frag.appendChild(document.createTextNode(buf)); buf = ''; frag.appendChild(emojiImg(segment)); changed = true; }
+    const img = isEmojiG(segment) ? emojiImg(segment) : null;
+    if (img) { if (buf) frag.appendChild(document.createTextNode(buf)); buf = ''; frag.appendChild(img); changed = true; }
     else buf += segment;
   }
   if (!changed) return;
@@ -402,4 +408,56 @@ if (!APPLE_EMOJI && segmenter && typeof MutationObserver !== 'undefined') {
     }).observe(document.body, { childList: true, subtree: true, characterData: true });
   };
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+}
+
+// ---------- Crop foto profil (geser + cubit/slider untuk zoom) ----------
+export function cropImage(file, size = 512) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    let done = false;
+    const sh = sheet({ title: 'Sesuaikan Foto', left: 'Batal', right: 'Pakai',
+      body: `<div class="crop-stage"><img class="crop-img" alt="" draggable="false"><div class="crop-mask"></div></div>
+        <div class="crop-zoom"><i class="fa-solid fa-minus"></i><input type="range" min="1" max="4" step="0.01" value="1"><i class="fa-solid fa-plus"></i></div>
+        <p class="small muted" style="text-align:center;margin-top:6px">Geser foto & cubit / slider untuk zoom</p>`,
+      onClose: () => { if (!done) resolve(null); setTimeout(() => URL.revokeObjectURL(url), 2000); } });
+    const stage = sh.body.querySelector('.crop-stage'), im = stage.querySelector('img'), slider = sh.body.querySelector('input');
+    const img = new Image();
+    img.onload = () => {
+      im.src = url;
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      let z = 1, x = 0, y = 0;
+      const S0 = () => stage.clientWidth;
+      const base = () => Math.max(S0() / iw, S0() / ih);
+      const paint = () => {
+        const w = iw * base() * z, h = ih * base() * z, mx = (w - S0()) / 2, my = (h - S0()) / 2;
+        x = Math.max(-mx, Math.min(mx, x)); y = Math.max(-my, Math.min(my, y));
+        im.style.width = w + 'px'; im.style.height = h + 'px';
+        im.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+        slider.value = z;
+      };
+      paint();
+      const pts = new Map(); let pinch0 = null;
+      stage.addEventListener('pointerdown', e => { stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), z }; } });
+      stage.addEventListener('pointermove', e => {
+        const prev = pts.get(e.pointerId); if (!prev) return;
+        const cur = { x: e.clientX, y: e.clientY }; pts.set(e.pointerId, cur);
+        if (pts.size === 1) { x += cur.x - prev.x; y += cur.y - prev.y; }
+        else if (pts.size === 2 && pinch0) { const [a, b] = [...pts.values()]; z = Math.max(1, Math.min(4, pinch0.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch0.d)); }
+        paint();
+      });
+      const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = null; };
+      stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+      stage.addEventListener('wheel', e => { e.preventDefault(); z = Math.max(1, Math.min(4, z * (e.deltaY < 0 ? 1.08 : 0.93))); paint(); }, { passive: false });
+      slider.oninput = () => { z = Number(slider.value); paint(); };
+      sh.onRight = () => {
+        const w = iw * base() * z, k = iw / w, left = S0() / 2 + x - w / 2, top = S0() / 2 + y - (ih * base() * z) / 2;
+        const c = document.createElement('canvas'); c.width = c.height = size;
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, -left * k, -top * k, S0() * k, S0() * k, 0, 0, size, size);
+        c.toBlob(b => { done = true; sh.close(); resolve(b); }, 'image/jpeg', 0.88);
+      };
+    };
+    img.onerror = () => { toast('Foto tidak bisa dibuka'); sh.close(); };
+    img.src = url;
+  });
 }
