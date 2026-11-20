@@ -534,7 +534,6 @@ const SEARCH_MAP = [
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
-  { label: 'Nexa AI', icon: 'fa-wand-magic-sparkles', color: 'bg-indigo', keys: ['ai', 'nexa', 'tanya', 'asisten', 'analisis', 'gemini', 'chat'], action: () => openAiChat() },
   { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
   { key: 'work.kas', label: 'Plus Minus', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['plus', 'minus', 'over', 'short', 'kas', 'cash', 'selisih', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
   { key: 'work.photos', label: 'Foto Bukti', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
@@ -544,10 +543,36 @@ const SEARCH_MAP = [
   { key: 'work.contacts', label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
   { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'pin'], action: () => switchTab('tab-backup') }
 ];
+/** Semua yang bisa dicari: menu bawaan (dengan kata kunci), setiap shortcut di Menu Cepat, dan Web Shortcuts. */
+function searchIndex() {
+  const items = SEARCH_MAP.map(it => ({ label: it.key ? L(it.key) : it.label, alt: it.label, keys: it.keys, tile: `<span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span>`, action: it.action }));
+  const seen = new Set(items.map(i => i.label.toLowerCase()));
+  // Shortcut Menu Cepat yang belum ada di daftar (mis. menu yang ditambahkan belakangan seperti Nexa Health)
+  document.querySelectorAll('#tab-dashboard .app-grid .app-icon').forEach(el => {
+    const lbl = (el.querySelector('.app-label') || {}).textContent || '';
+    if (!lbl.trim() || seen.has(lbl.trim().toLowerCase())) return;
+    seen.add(lbl.trim().toLowerCase());
+    const tile = el.querySelector('.icon-tile');
+    items.push({ label: lbl.trim(), alt: '', keys: [], tile: tile ? tile.outerHTML : '', action: () => el.click() });
+  });
+  // Web Shortcuts buatan sendiri
+  (appState.customWebLinks || []).forEach(l => {
+    if (!l || !l.name) return;
+    let host = ''; try { host = new URL(l.url).hostname.replace(/^www\./, ''); } catch (e) {}
+    items.push({ label: l.name, alt: host, keys: [host.toLowerCase(), 'web', 'link', 'shortcut'].filter(Boolean), web: true,
+      tile: `<span class="icon-tile" style="background:${colorFor(l.name)}"><i class="fas fa-globe"></i></span>`, action: () => window.open(l.url, '_blank', 'noopener') });
+  });
+  return items;
+}
 function searchMatches(query) {
   const q = (query || '').toLowerCase().trim();
   if (!q) return [];
-  return SEARCH_MAP.filter(item => (item.key ? L(item.key) : item.label).toLowerCase().includes(q) || item.label.toLowerCase().includes(q) || item.keys.some(k => k.includes(q) || q.includes(k)));
+  const score = it => {
+    const l = it.label.toLowerCase();
+    if (l === q) return 0; if (l.startsWith(q)) return 1; if (l.includes(q) || (it.alt || '').toLowerCase().includes(q)) return 2;
+    if (it.keys.some(k => k.startsWith(q))) return 3; if (it.keys.some(k => k.includes(q) || (q.length > 2 && k.length > 2 && q.includes(k)))) return 4; return 9;
+  };
+  return searchIndex().map(it => [score(it), it]).filter(([sc]) => sc < 9).sort((a, b) => a[0] - b[0]).map(([, it]) => it).slice(0, 10);
 }
 function filterTabs(query) {
   const found = searchMatches(query)[0];
@@ -556,8 +581,12 @@ function filterTabs(query) {
 function renderSearchSuggestions(query) {
   const box = $('searchSuggest'); if (!box) return;
   const items = searchMatches(query);
-  if (!items.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}"><span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span><span class="flex-1 row-title">${esc(it.key ? L(it.key) : it.label)}</span><i class="fas fa-chevron-right chev"></i></button>`).join('');
+  if (!items.length) {
+    if ((query || '').trim()) { box.innerHTML = `<div class="row"><span class="flex-1 row-sub">Tidak ada menu "${esc(query.trim())}"</span></div>`; box.classList.remove('hidden'); }
+    else { box.classList.add('hidden'); box.innerHTML = ''; }
+    return;
+  }
+  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}">${it.tile}<span class="flex-1 row-title">${esc(it.label)}${it.web ? ` <span class="t-cap muted">${esc(it.alt)}</span>` : ''}</span><i class="fas ${it.web ? 'fa-arrow-up-right-from-square' : 'fa-chevron-right'} chev"></i></button>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => { items[+b.dataset.i].action(); $('globalMenuSearch').value = ''; box.classList.add('hidden'); });
   box.classList.remove('hidden');
 }

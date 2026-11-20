@@ -76,13 +76,17 @@ function renderDashboardTodayAgenda() {
 function renderDashboardUpcoming() {
   const box = $('dashUpcomingEvents'); if (!box) return;
   const today = wibDateStr();
-  const items = (appState.countdowns || []).filter(c => !c.isArchived && c.tanggal >= today)
-    .sort((a, b) => (a.tanggal + (a.jam || '')).localeCompare(b.tanggal + (b.jam || ''))).slice(0, 3);
-  // Ada event → kartu pindah ke atas (di bawah Menu Cepat); tidak ada → kembali ke grid widget
+  const all = (appState.countdowns || []).filter(c => !c.isArchived && c.tanggal >= today)
+    .sort((a, b) => (a.tanggal + (a.jam || '')).localeCompare(b.tanggal + (b.jam || '')));
+  // Event H-7 atau lebih dekat → kartu otomatis pindah ke atas (di bawah sapaan, di atas kolom cari)
+  // dan hanya menampilkan event ≤ 7 hari. Selain itu kartu tetap di grid widget (3 event berikutnya).
+  const soon = all.filter(c => daysUntil(c.tanggal) <= 7);
+  const atTop = soon.length > 0;
+  const items = (atTop ? soon : all).slice(0, atTop ? 5 : 3);
   const card = $('dashUpcomingCard'), top = $('dashUpcomingTop'), slot = $('dashUpcomingSlot');
   if (card && top && slot) {
-    if (items.length && card.parentElement !== top) { top.appendChild(card); top.classList.remove('hidden'); }
-    else if (!items.length && card.parentElement === top) { slot.parentElement.insertBefore(card, slot); top.classList.add('hidden'); }
+    if (atTop && card.parentElement !== top) { top.appendChild(card); top.classList.remove('hidden'); }
+    else if (!atTop && card.parentElement === top) { slot.parentElement.insertBefore(card, slot); top.classList.add('hidden'); }
   }
   if (!items.length) { box.innerHTML = `<div class="empty" style="padding:18px 8px"><i class="fas fa-calendar-plus"></i><div class="e-sub">Belum ada event mendatang.</div></div>`; return; }
   box.innerHTML = items.map(c => {

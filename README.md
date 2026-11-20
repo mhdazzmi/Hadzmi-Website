@@ -214,16 +214,6 @@ Smart list (To Do, Hari Ini, In Progress, Terlambat, Selesai, Semua), pengelompo
 | **Streak** | Ikon 🔥 di samping notifikasi = berapa hari berturut-turut web dibuka. |
 | Lainnya | Link di catatan otomatis biru & bisa diklik · Event Terdekat pindah ke bawah Menu Cepat bila ada · hapus riwayat focus/sleep per item · logo navy baru · tombol kecepatan & ubah nama menu dihapus. |
 
-### ✨ Nexa AI (Google Gemini)
-Chat asisten di Home (**Tanya Nexa**) / Menu Cepat: tanya apa saja, analisis data (kas, tidur, tugas, event), dan perintah seperti "ingatkan bayar listrik tgl 20 jam 8" (langsung jadi To-Do, bisa **Urungkan**). Input suara (bahasa Indonesia) bila browser mendukung.
-
-**Aktifkan (1×):**
-1. **aistudio.google.com** → Get API key → Create API key → salin.
-2. Cloudflare → Workers & Pages → `hadzmi-website-utama` → Settings → Variables and Secrets → Add → Type **Secret**, Name `GEMINI_API_KEY`, Value = key → Deploy.
-3. (Opsional) Variabel `GEMINI_MODEL` (default `gemini-flash-latest`). Bila model sibuk/kuota habis/tidak tersedia, Nexa otomatis mencoba model Flash lain. Secret yang sama juga dipakai Nexa Health.
-
-**Privasi:** API key hanya di server. Yang dikirim ke Gemini: ringkasan To-Do, Countdown, catatan, kas, focus/tidur, bookmark, nama kartu Wallet, nama file Gudang. **Tidak pernah dikirim:** Galeri Tersembunyi, nomor & CVV kartu, nomor HP kontak, nama nasabah Foto Bukti, PIN. Riwayat chat hanya tersimpan di perangkat. Catatan: pada tier gratis, Google dapat memakai data prompt untuk meningkatkan layanannya.
-
 ## 💡 Rekomendasi platform (gratis, jangka panjang, siap API)
 
 **Ringkasnya: tetap pakai Firebase untuk data, pindahkan hosting dari Blogspot.**

@@ -997,62 +997,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .viewer-zoom button { border: 0; background: transparent; color: #fff; width: 40px; height: 36px; border-radius: 999px; font-size: 14px; cursor: pointer; font-family: var(--font); }
 .viewer-zoom .vz-val { width: 58px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* ===== Nexa AI ===== */
-.ai-entry { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-radius: 20px; cursor: pointer; text-align: left; font-family: var(--font);
-  background: linear-gradient(135deg, #102554, #1D3D80 60%, #2B4FA0); color: #fff; box-shadow: 0 8px 24px rgba(16,37,84,.28); }
-.ai-entry-icon { width: 40px; height: 40px; border-radius: 12px; overflow: hidden; flex: none; box-shadow: 0 0 0 1px rgba(255,255,255,.2); }
-.ai-entry-icon img { width: 100%; height: 100%; display: block; }
-.ai-entry-title { display: block; font-weight: 700; font-size: 16px; }
-.ai-entry-sub { display: block; font-size: 13px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ai-entry-go { width: 32px; height: 32px; border-radius: 50%; background: #F6C96A; color: #102554; display: flex; align-items: center; justify-content: center; flex: none; font-size: 14px; }
-.ai-sheet { height: 94%; }
-@media (min-width: 760px) { .ai-sheet { height: 86%; } }
-.ai-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 14px 12px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 10px; }
-.ai-hello { text-align: center; padding: 18px 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.ai-hello img { width: 64px; height: 64px; border-radius: 18px; box-shadow: 0 8px 22px rgba(16,37,84,.3); margin-bottom: 4px; }
-.ai-suggest { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 4px 0 8px; }
-.ai-suggest .chip { white-space: normal; text-align: left; }
-.ai-setup ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.45; }
-.ai-setup code { background: var(--fill3); padding: 1px 6px; border-radius: 6px; font-size: 13px; }
-.ai-msg { display: flex; align-items: flex-end; gap: 6px; max-width: 100%; }
-.ai-msg.me { justify-content: flex-end; }
-.ai-bubble { max-width: 86%; padding: 10px 14px; border-radius: 20px; font-size: 15px; line-height: 1.45; word-wrap: break-word; overflow-wrap: anywhere; }
-.ai-msg.me .ai-bubble { background: var(--blue); color: #fff; border-bottom-right-radius: 6px; }
-.ai-msg.bot .ai-bubble { background: var(--fill3); color: var(--label); border-bottom-left-radius: 6px; }
-.ai-msg.err .ai-bubble { background: rgba(255,59,48,.1); color: #C4281C; }
-.ai-bubble p { margin: 0; } .ai-bubble p + p { margin-top: 4px; }
-.ai-bubble ul, .ai-bubble ol { margin: 4px 0; padding-left: 20px; } .ai-bubble li { margin: 2px 0; }
-.ai-bubble .ai-h { font-weight: 700; margin: 6px 0 2px; }
-.ai-bubble .ai-gap { height: 6px; }
-.ai-bubble code { background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
-.ai-bubble pre { background: rgba(0,0,0,.06); padding: 8px 10px; border-radius: 10px; overflow-x: auto; font-size: 13px; margin: 4px 0; white-space: pre-wrap; }
-.ai-table { overflow-x: auto; margin: 6px 0; }
-.ai-table table { border-collapse: collapse; font-size: 13px; min-width: 100%; }
-.ai-table th, .ai-table td { border: .5px solid rgba(60,60,67,.25); padding: 5px 8px; text-align: left; white-space: nowrap; }
-.ai-table th { background: rgba(0,0,0,.04); font-weight: 600; }
-.ai-copy { border: 0; background: transparent; color: #8E8E93; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; flex: none; }
-.ai-action { display: flex; align-items: center; gap: 10px; align-self: flex-start; max-width: 92%; padding: 8px 10px 8px 12px; border-radius: 14px; background: rgba(52,199,89,.12); color: #1E7A36; font-size: 14px; font-weight: 500; }
-.ai-action.undone { background: var(--fill3); color: #8E8E93; text-decoration: line-through; }
-.ai-action button { border: 0; background: #fff; color: var(--blue); font-weight: 600; font-size: 13px; padding: 5px 10px; border-radius: 999px; cursor: pointer; font-family: var(--font); flex: none; }
-.ai-typing { display: inline-flex; gap: 4px; padding: 4px 2px; }
-.ai-typing span { width: 7px; height: 7px; border-radius: 50%; background: #8E8E93; animation: aiDot 1.2s infinite ease-in-out; }
-.ai-typing span:nth-child(2) { animation-delay: .15s; } .ai-typing span:nth-child(3) { animation-delay: .3s; }
-@keyframes aiDot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
-.ai-composer { display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px calc(var(--safe-b) + 10px); border-top: .5px solid rgba(60,60,67,.18); background: rgba(255,255,255,.92); flex: none; }
-.ai-composer textarea { flex: 1; resize: none; border: 0; outline: none; background: var(--fill3); border-radius: 20px; padding: 9px 14px; font-size: 16px; font-family: var(--font); line-height: 1.35; max-height: 140px; color: var(--label); }
-.ai-mic, .ai-send { width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer; flex: none; font-size: 15px; }
-.ai-mic { background: var(--fill3); color: var(--label); }
-.ai-mic.rec { background: #FF3B30; color: #fff; animation: aiPulse 1.2s infinite; }
-@keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,.5); } 50% { box-shadow: 0 0 0 8px rgba(255,59,48,0); } }
-.ai-send { background: var(--blue); color: #fff; }
-.ai-send:disabled { opacity: .45; cursor: default; }
-
 /* Galeri: tombol terkunci hanya ikon gembok */
 .seg button.seg-icon { flex: 0 0 52px; font-size: 14px; }
-.ai-retry { margin-top: 8px; border: 0; background: #fff; color: var(--blue); font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer; font-family: var(--font); }
-.ai-wait { display: block; font-size: 12px; color: #8E8E93; margin-top: 4px; }
-.ai-caret { display: inline-block; width: 7px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--blue); border-radius: 2px; animation: aiBlink 1s steps(2) infinite; }
-@keyframes aiBlink { 50% { opacity: 0; } }
 
   </style>
 </head>
@@ -1132,17 +1078,13 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
         </div>
 
-        <!-- Nexa AI -->
-        <button class="ai-entry" onclick="openAiChat()">
-          <span class="ai-entry-icon"><img src="icons/icon-192.png?v=4" alt=""></span>
-          <span class="flex-1"><span class="ai-entry-title">Tanya Nexa</span><span class="ai-entry-sub">Tanya apa saja, analisis data, atau bikin pengingat…</span></span>
-          <i class="fas fa-arrow-up ai-entry-go"></i>
-        </button>
+        <!-- Event terdekat (H-7) muncul di sini otomatis -->
+        <div id="dashUpcomingTop" class="hidden"></div>
 
         <!-- Search -->
         <div class="search-bar" style="position:relative">
           <i class="fas fa-magnifying-glass"></i>
-          <input type="text" id="globalMenuSearch" class="field" placeholder="Cari fitur… (todo, foto, lagu, tidur)" oninput="renderSearchSuggestions(this.value)" onkeydown="if(event.key==='Enter'){filterTabs(this.value); this.value=''; renderSearchSuggestions('');}">
+          <input type="text" id="globalMenuSearch" class="field" placeholder="Cari menu atau shortcut… (todo, foto, lagu)" oninput="renderSearchSuggestions(this.value)" onkeydown="if(event.key==='Enter'){filterTabs(this.value); this.value=''; renderSearchSuggestions('');}">
           <div id="searchSuggest" class="list hidden" style="position:absolute; left:0; right:0; top:52px; z-index:30"></div>
         </div>
 
@@ -1150,7 +1092,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
         <div>
           <div class="flex justify-between items-center" style="padding:0 4px 12px">
             <h2 class="section-title" style="padding:0">Menu Cepat</h2>
-            <span class="t-foot muted" id="quickNavCurrentLabel">18 shortcut</span>
+            <span class="t-foot muted" id="quickNavCurrentLabel">17 shortcut</span>
           </div>
           <div class="card card-pad">
             <div class="app-grid">
@@ -1162,7 +1104,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-links', 'Bookmarks')"><span class="icon-tile bg-indigo"><i class="fas fa-bookmark"></i></span><span class="app-label" data-label="hub.links">Bookmarks</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-countdown', 'Countdown')"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><span class="app-label" data-label="hub.countdown">Countdown</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
-              <button class="app-icon" onclick="openAiChat()"><span class="icon-tile" style="background:linear-gradient(145deg,#1D3D80,#070F26)"><i class="fas fa-wand-magic-sparkles" style="color:#F6C96A"></i></span><span class="app-label">Nexa AI</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-wallet', 'Wallet')"><span class="icon-tile" style="background:linear-gradient(160deg,#1C1C1E,#3A3A3C)"><i class="fas fa-wallet"></i></span><span class="app-label" data-label="hub.wallet">Wallet</span></button>
               <a class="app-icon" href="healthcare/" style="color:inherit"><span class="icon-tile" style="background:linear-gradient(145deg,#34C759,#00C7BE)"><i class="fas fa-leaf"></i></span><span class="app-label">Nexa Health</span></a>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Foto Bukti')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Foto Bukti</span></button>
@@ -1176,7 +1117,15 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
         </div>
 
-        <div id="dashUpcomingTop" class="hidden"></div>
+
+        <!-- Web Shortcuts -->
+        <div class="card card-pad">
+          <div class="card-head">
+            <div class="widget-title c-blue"><i class="fas fa-globe"></i> Web Shortcuts</div>
+            <button onclick="switchTab('tab-backup')" class="link-btn t-foot">Atur</button>
+          </div>
+          <div id="dashShortcutsGrid" class="grid-2"></div>
+        </div>
 
         <!-- Stats -->
         <div class="stat-grid">
@@ -1244,13 +1193,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             </div>
           </div>
 
-          <div class="card card-pad">
-            <div class="card-head">
-              <div class="widget-title c-blue"><i class="fas fa-globe"></i> Web Shortcuts</div>
-              <button onclick="switchTab('tab-backup')" class="link-btn t-foot">Atur</button>
-            </div>
-            <div id="dashShortcutsGrid" class="grid-2"></div>
-          </div>
         </div>
       </section>
 
@@ -1818,7 +1760,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
     <!-- TAB BAR -->
     <nav class="tabbar" id="mainTabBar">
       <div onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="ios-tab-item active"><i class="fas fa-house"></i><span data-label="tab.home">Home</span></div>
-      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-circle-play"></i><span data-label="tab.music">Media</span></div>
+      <div onclick="switchTab('tab-music')" id="btn-tab-music" class="ios-tab-item"><i class="fas fa-images"></i><span data-label="tab.music">Media</span></div>
       <div onclick="switchTab('tab-hub')" id="btn-tab-hub" class="ios-tab-item"><i class="fas fa-square-check"></i><span data-label="tab.hub">Planner</span></div>
       <div onclick="switchTab('tab-workfin')" id="btn-tab-workfin" class="ios-tab-item"><i class="fas fa-building-columns"></i><span data-label="tab.work">Kerja</span></div>
       <div onclick="switchTab('tab-backup')" id="btn-tab-backup" class="ios-tab-item"><i class="fas fa-gear"></i><span data-label="tab.settings">Settings</span></div>
@@ -2247,24 +2189,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="wcNote" placeholder="Opsional"></div>
         </div>
         <button class="btn btn-danger-tinted btn-block hidden" id="wcDeleteBtn" onclick="deleteWalletCard($('wcId').value)">Hapus Kartu</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Nexa AI: chat -->
-  <div class="backdrop center-md" id="sheetAi" onclick="if(event.target===this) closeAiChat()">
-    <div class="sheet white ai-sheet">
-      <div class="sheet-grabber"></div>
-      <div class="sheet-head">
-        <button class="btn-plain sh-left" onclick="closeAiChat()">Tutup</button>
-        <div class="center"><div class="sh-title">Nexa AI ✨</div><div class="t-cap muted" id="aiModelLabel">—</div></div>
-        <button class="btn-plain sh-right" onclick="clearAiChat()" aria-label="Hapus percakapan"><i class="far fa-trash-can"></i></button>
-      </div>
-      <div class="ai-messages" id="aiMessages"></div>
-      <div class="ai-composer">
-        <button class="ai-mic" id="aiMicBtn" onclick="toggleAiVoice()" aria-label="Input suara"><i class="fas fa-microphone"></i></button>
-        <textarea id="aiInput" rows="1" placeholder="Tanya Nexa…" enterkeyhint="send"></textarea>
-        <button class="ai-send" id="aiSendBtn" onclick="sendAiMessage()" aria-label="Kirim"><i class="fas fa-arrow-up"></i></button>
       </div>
     </div>
   </div>
@@ -2902,7 +2826,6 @@ const SEARCH_MAP = [
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
-  { label: 'Nexa AI', icon: 'fa-wand-magic-sparkles', color: 'bg-indigo', keys: ['ai', 'nexa', 'tanya', 'asisten', 'analisis', 'gemini', 'chat'], action: () => openAiChat() },
   { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
   { key: 'work.kas', label: 'Plus Minus', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['plus', 'minus', 'over', 'short', 'kas', 'cash', 'selisih', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
   { key: 'work.photos', label: 'Foto Bukti', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
@@ -2912,10 +2835,36 @@ const SEARCH_MAP = [
   { key: 'work.contacts', label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
   { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'pin'], action: () => switchTab('tab-backup') }
 ];
+/** Semua yang bisa dicari: menu bawaan (dengan kata kunci), setiap shortcut di Menu Cepat, dan Web Shortcuts. */
+function searchIndex() {
+  const items = SEARCH_MAP.map(it => ({ label: it.key ? L(it.key) : it.label, alt: it.label, keys: it.keys, tile: `<span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span>`, action: it.action }));
+  const seen = new Set(items.map(i => i.label.toLowerCase()));
+  // Shortcut Menu Cepat yang belum ada di daftar (mis. menu yang ditambahkan belakangan seperti Nexa Health)
+  document.querySelectorAll('#tab-dashboard .app-grid .app-icon').forEach(el => {
+    const lbl = (el.querySelector('.app-label') || {}).textContent || '';
+    if (!lbl.trim() || seen.has(lbl.trim().toLowerCase())) return;
+    seen.add(lbl.trim().toLowerCase());
+    const tile = el.querySelector('.icon-tile');
+    items.push({ label: lbl.trim(), alt: '', keys: [], tile: tile ? tile.outerHTML : '', action: () => el.click() });
+  });
+  // Web Shortcuts buatan sendiri
+  (appState.customWebLinks || []).forEach(l => {
+    if (!l || !l.name) return;
+    let host = ''; try { host = new URL(l.url).hostname.replace(/^www\./, ''); } catch (e) {}
+    items.push({ label: l.name, alt: host, keys: [host.toLowerCase(), 'web', 'link', 'shortcut'].filter(Boolean), web: true,
+      tile: `<span class="icon-tile" style="background:${colorFor(l.name)}"><i class="fas fa-globe"></i></span>`, action: () => window.open(l.url, '_blank', 'noopener') });
+  });
+  return items;
+}
 function searchMatches(query) {
   const q = (query || '').toLowerCase().trim();
   if (!q) return [];
-  return SEARCH_MAP.filter(item => (item.key ? L(item.key) : item.label).toLowerCase().includes(q) || item.label.toLowerCase().includes(q) || item.keys.some(k => k.includes(q) || q.includes(k)));
+  const score = it => {
+    const l = it.label.toLowerCase();
+    if (l === q) return 0; if (l.startsWith(q)) return 1; if (l.includes(q) || (it.alt || '').toLowerCase().includes(q)) return 2;
+    if (it.keys.some(k => k.startsWith(q))) return 3; if (it.keys.some(k => k.includes(q) || (q.length > 2 && k.length > 2 && q.includes(k)))) return 4; return 9;
+  };
+  return searchIndex().map(it => [score(it), it]).filter(([sc]) => sc < 9).sort((a, b) => a[0] - b[0]).map(([, it]) => it).slice(0, 10);
 }
 function filterTabs(query) {
   const found = searchMatches(query)[0];
@@ -2924,8 +2873,12 @@ function filterTabs(query) {
 function renderSearchSuggestions(query) {
   const box = $('searchSuggest'); if (!box) return;
   const items = searchMatches(query);
-  if (!items.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}"><span class="icon-tile ${it.color}"><i class="fas ${it.icon}"></i></span><span class="flex-1 row-title">${esc(it.key ? L(it.key) : it.label)}</span><i class="fas fa-chevron-right chev"></i></button>`).join('');
+  if (!items.length) {
+    if ((query || '').trim()) { box.innerHTML = `<div class="row"><span class="flex-1 row-sub">Tidak ada menu "${esc(query.trim())}"</span></div>`; box.classList.remove('hidden'); }
+    else { box.classList.add('hidden'); box.innerHTML = ''; }
+    return;
+  }
+  box.innerHTML = items.map((it, i) => `<button class="row" data-i="${i}">${it.tile}<span class="flex-1 row-title">${esc(it.label)}${it.web ? ` <span class="t-cap muted">${esc(it.alt)}</span>` : ''}</span><i class="fas ${it.web ? 'fa-arrow-up-right-from-square' : 'fa-chevron-right'} chev"></i></button>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => { items[+b.dataset.i].action(); $('globalMenuSearch').value = ''; box.classList.add('hidden'); });
   box.classList.remove('hidden');
 }
@@ -3367,13 +3320,17 @@ function renderDashboardTodayAgenda() {
 function renderDashboardUpcoming() {
   const box = $('dashUpcomingEvents'); if (!box) return;
   const today = wibDateStr();
-  const items = (appState.countdowns || []).filter(c => !c.isArchived && c.tanggal >= today)
-    .sort((a, b) => (a.tanggal + (a.jam || '')).localeCompare(b.tanggal + (b.jam || ''))).slice(0, 3);
-  // Ada event → kartu pindah ke atas (di bawah Menu Cepat); tidak ada → kembali ke grid widget
+  const all = (appState.countdowns || []).filter(c => !c.isArchived && c.tanggal >= today)
+    .sort((a, b) => (a.tanggal + (a.jam || '')).localeCompare(b.tanggal + (b.jam || '')));
+  // Event H-7 atau lebih dekat → kartu otomatis pindah ke atas (di bawah sapaan, di atas kolom cari)
+  // dan hanya menampilkan event ≤ 7 hari. Selain itu kartu tetap di grid widget (3 event berikutnya).
+  const soon = all.filter(c => daysUntil(c.tanggal) <= 7);
+  const atTop = soon.length > 0;
+  const items = (atTop ? soon : all).slice(0, atTop ? 5 : 3);
   const card = $('dashUpcomingCard'), top = $('dashUpcomingTop'), slot = $('dashUpcomingSlot');
   if (card && top && slot) {
-    if (items.length && card.parentElement !== top) { top.appendChild(card); top.classList.remove('hidden'); }
-    else if (!items.length && card.parentElement === top) { slot.parentElement.insertBefore(card, slot); top.classList.add('hidden'); }
+    if (atTop && card.parentElement !== top) { top.appendChild(card); top.classList.remove('hidden'); }
+    else if (!atTop && card.parentElement === top) { slot.parentElement.insertBefore(card, slot); top.classList.add('hidden'); }
   }
   if (!items.length) { box.innerHTML = `<div class="empty" style="padding:18px 8px"><i class="fas fa-calendar-plus"></i><div class="e-sub">Belum ada event mendatang.</div></div>`; return; }
   box.innerHTML = items.map(c => {
@@ -8111,374 +8068,6 @@ async function deleteWalletCard(id) {
   saveStateToLocal(); closeSheet('sheetWalletEdit'); renderWallet(); showToast('Kartu dihapus.');
 }
 
-/* ---- 16-ai.js ---- */
-/* =========================================================
-   16 · NEXA AI — asisten tanya-jawab & analisis (Google Gemini)
-   - API key Gemini hanya ada di server (Cloudflare secret GEMINI_API_KEY); web memanggil /api/ai.
-   - Nexa membaca ringkasan datamu (tugas, catatan, kas, tidur, dll) untuk menjawab & menganalisis.
-   - TIDAK pernah dikirim: Galeri Tersembunyi, nomor lengkap & CVV kartu Wallet, nomor HP kontak,
-     nama nasabah di Foto Bukti, PIN.
-   - Riwayat chat disimpan di perangkat ini saja (localStorage).
-   ========================================================= */
-const AI_LS_KEY = 'nexa_ai_chat_v1';
-const AI_MAX_TURNS_SENT = 30;
-let aiHistory = readLS(AI_LS_KEY, []);     // format "contents" Gemini: [{role:'user'|'model', parts:[...]}]
-let aiActions = readLS(AI_LS_KEY + '_act', {}); // hasil aksi per indeks pesan, untuk chip "Urungkan"
-let aiBusy = false, aiRecog = null, aiTurnModel = null;
-
-const AI_SUGGESTIONS = [
-  'Ringkas agenda & tugasku hari ini',
-  'Analisis plus minus bulan ini',
-  'Bagaimana pola tidurku 7 hari terakhir?',
-  'Event apa saja dalam 30 hari ke depan?',
-  'Ingatkan aku bayar listrik tanggal 20 jam 8 pagi',
-  'Rangkum Mind Dump-ku jadi poin-poin penting'
-];
-
-function aiReady() { return !!(pushConfig && pushConfig.ai && pushConfig.ai.ready); }
-function saveAiHistory() {
-  if (aiHistory.length > 80) { const cut = aiHistory.length - 80; aiHistory = aiHistory.slice(cut); const a = {}; Object.keys(aiActions).forEach(k => { if (+k >= cut) a[+k - cut] = aiActions[k]; }); aiActions = a; }
-  writeLS(AI_LS_KEY, aiHistory); writeLS(AI_LS_KEY + '_act', aiActions);
-}
-
-// ---------- Konteks data (dibangun ulang setiap pertanyaan) ----------
-function aiClip(s, n) { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; }
-function buildAiContext() {
-  const now = getWIBDate(), today = wibDateStr(now);
-  const hari = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const jam = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-  const S = appState, out = [];
-  out.push(`Sekarang: ${hari}, pukul ${jam} WIB (tanggal ISO ${today}).`);
-  const todos = (S.todos || []).slice(0, 150).map(t => ({ id: t.id, judul: aiClip(t.title, 120), deadline: t.deadline || null, jam: t.time || null, status: t.status || 'Pending', prioritas: t.priority || 'Normal', catatan: aiClip(t.desc, 200) || undefined }));
-  out.push(`TO-DO (${todos.length}):\n` + JSON.stringify(todos));
-  const cds = (S.countdowns || []).slice(0, 80).map(c => ({ id: c.id, nama: aiClip(c.nama, 100), tanggal: c.tanggal, jam: c.jam || null, kategori: c.kategori || undefined, arsip: !!c.isArchived, catatan: aiClip(c.catatan, 160) || undefined }));
-  out.push(`COUNTDOWN / EVENT (${cds.length}):\n` + JSON.stringify(cds));
-  const notes = coll => (S[coll] || []).slice(0, 60).map(n => ({ judul: aiClip(n.title, 100) || undefined, isi: aiClip(n.content, 600), tag: n.tag || undefined, tanggal: n.date || undefined }));
-  out.push(`MIND DUMP (catatan pribadi):\n` + JSON.stringify(notes('notes')));
-  out.push(`CATATAN KERJA:\n` + JSON.stringify(notes('workNotes')));
-  const kas = (S.kas || []).slice(0, 300).map(k => ({ tanggal: k.tanggal, jam: k.jam || undefined, jenis: k.jenis, nominal: k.jumlah, ket: aiClip(k.keterangan, 80) || undefined }));
-  out.push(`PLUS MINUS — menu "Plus Minus" (jenis "Lebih" = plus/uang lebih, "Kurang" = minus/uang kurang; nominal dalam Rupiah) (${kas.length}):\n` + JSON.stringify(kas));
-  const focus = (S.focusHistory || []).slice(0, 120).map(f => ({ tanggal: f.date, mulai: f.startTime, selesai: f.endTime, mode: f.mode, menit: Math.round((f.durationSeconds || 0) / 60), status: f.status || undefined }));
-  out.push(`RIWAYAT FOCUS & TIDUR (mode "Sleep" = tidur) (${focus.length}):\n` + JSON.stringify(focus));
-  const links = (S.links || []).slice(0, 60).map(l => ({ judul: aiClip(l.title, 80), url: l.url, kategori: l.category || undefined }));
-  out.push(`BOOKMARKS:\n` + JSON.stringify(links));
-  const wallet = (S.walletCards || []).map(c => ({ nama: c.name, penerbit: c.issuer || undefined, berlaku_sampai: c.expiry || undefined, catatan: aiClip(c.note, 120) || undefined }));
-  out.push(`KARTU DI WALLET (nomor & CVV sengaja disembunyikan):\n` + JSON.stringify(wallet));
-  const docs = (S.workDocs || []).slice(0, 150).map(d => ({ nama: d.name, kategori: d.folder || 'Umum', ukuran_kb: Math.round((d.size || 0) / 1024), diupload: d.createdAt ? wibDateStr(new Date(d.createdAt)) : undefined }));
-  out.push(`FILE DI GUDANG FILE:\n` + JSON.stringify(docs));
-  const songs = (S.musicLibrary || []);
-  out.push(`MUSIK: ${songs.length} lagu. Contoh judul: ` + JSON.stringify(songs.slice(0, 40).map(s => `${s.title} – ${s.artist || s.category || ''}`)));
-  out.push(`GALERI: ${(S.galleryPhotos || []).length} foto, ${(S.galleryAlbums || []).length} album. Foto Bukti: ${(S.workPhotos || []).length} foto. Kontak WA: ${(S.contacts || []).length} kontak.`);
-  try { const st = streakStats(); out.push(`STREAK membuka Nexa: ${st.cur} hari berturut-turut (rekor ${st.best}).`); } catch (e) {}
-  return out.join('\n\n');
-}
-
-function aiSystemInstruction() {
-  const name = (typeof L === 'function' && L('user.name')) || 'Hadzmi';
-  return { parts: [{ text:
-`Kamu adalah Nexa, asisten pribadi milik ${name} di aplikasi web "Nexa". ${name} bekerja sebagai teller bank di Indonesia.
-Gaya: bahasa Indonesia santai tapi sopan, hangat, ringkas, langsung ke inti. Panggil dia "${name}" atau "kamu". Boleh pakai emoji secukupnya.
-Format jawaban dengan Markdown sederhana: **tebal**, daftar "-", tabel bila membandingkan angka. Nominal uang pakai format Rupiah (Rp 1.250.000). Tanggal pakai format Indonesia (Senin, 24 Nov 2026).
-
-Kemampuan:
-- Menjawab pertanyaan apa pun (umum maupun tentang datanya).
-- Menganalisis data di bawah: pola, tren, total, rata-rata, perbandingan, saran yang praktis. Hitung dengan teliti; jika data tidak cukup, katakan terus terang.
-- Membuat To-Do / pengingat, Countdown, catatan, menandai tugas selesai, dan membuka menu aplikasi memakai fungsi (tools) yang tersedia. Panggil fungsinya langsung bila permintaannya jelas; bila tanggal/jam ambigu, tanya dulu. Tanggal relatif ("besok", "Jumat depan", "tanggal 20") hitung dari tanggal hari ini. Setelah fungsi berhasil, konfirmasi singkat apa yang dibuat.
-- Jangan mengarang data yang tidak ada. Jangan pernah mengaku bisa mengirim pesan, email, atau melakukan transaksi.
-
-DATA ${name.toUpperCase()} SAAT INI:
-${buildAiContext()}` }] };
-}
-
-// ---------- Fungsi (tools) yang boleh dipakai Nexa ----------
-const AI_TOOLS = [{ functionDeclarations: [
-  { name: 'buat_todo', description: 'Membuat To-Do / pengingat baru. Pengingat notifikasi otomatis aktif bila ada tanggal (dan jam).',
-    parameters: { type: 'object', properties: {
-      judul: { type: 'string', description: 'Judul tugas singkat' },
-      tanggal: { type: 'string', description: 'Tanggal deadline format YYYY-MM-DD (opsional)' },
-      jam: { type: 'string', description: 'Jam format HH:MM 24 jam (opsional)' },
-      catatan: { type: 'string', description: 'Detail tambahan (opsional)' },
-      prioritas_tinggi: { type: 'boolean', description: 'true bila penting/mendesak' } }, required: ['judul'] } },
-  { name: 'buat_countdown', description: 'Membuat event Countdown (hitung mundur) untuk tanggal penting.',
-    parameters: { type: 'object', properties: {
-      nama: { type: 'string' }, tanggal: { type: 'string', description: 'YYYY-MM-DD' },
-      jam: { type: 'string', description: 'HH:MM (opsional)' }, catatan: { type: 'string' } }, required: ['nama', 'tanggal'] } },
-  { name: 'buat_catatan', description: 'Menyimpan catatan baru ke Mind Dump (pribadi) atau Catatan Kerja.',
-    parameters: { type: 'object', properties: {
-      judul: { type: 'string' }, isi: { type: 'string' },
-      jenis: { type: 'string', enum: ['mind_dump', 'kerja'], description: 'Default mind_dump' } }, required: ['isi'] } },
-  { name: 'tandai_todo_selesai', description: 'Menandai To-Do sebagai selesai berdasarkan id dari data.',
-    parameters: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
-  { name: 'buka_menu', description: 'Membuka menu/halaman tertentu di aplikasi Nexa untuk pengguna.',
-    parameters: { type: 'object', properties: { menu: { type: 'string', enum: ['home', 'todo', 'mind_dump', 'countdown', 'bookmarks', 'focus', 'wallet', 'music', 'galeri', 'bukti_kas', 'selisih_kas', 'catatan_kerja', 'gudang_file', 'kontak', 'settings'] } }, required: ['menu'] } }
-] }];
-
-const AI_MENU = {
-  home: () => switchTab('tab-dashboard'), todo: () => navigateFromQuickMenu('tab-hub', 'sub-todo'), mind_dump: () => navigateFromQuickMenu('tab-hub', 'sub-notes'),
-  countdown: () => navigateFromQuickMenu('tab-hub', 'sub-countdown'), bookmarks: () => navigateFromQuickMenu('tab-hub', 'sub-links'), focus: () => navigateFromQuickMenu('tab-hub', 'sub-focus'),
-  wallet: () => navigateFromQuickMenu('tab-hub', 'sub-wallet'), music: () => { switchTab('tab-music'); switchMediaSub('sub-music'); }, galeri: () => { switchTab('tab-music'); switchMediaSub('sub-gallery'); },
-  bukti_kas: () => navigateFromQuickMenu('tab-workfin', 'sub-photos'), selisih_kas: () => navigateFromQuickMenu('tab-workfin', 'sub-kas'), catatan_kerja: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes'),
-  gudang_file: () => navigateFromQuickMenu('tab-workfin', 'sub-docs'), kontak: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts'), settings: () => switchTab('tab-backup')
-};
-const isoDate = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? s : '';
-const hhmm = s => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s || '')) ? s : '';
-
-function runAiTool(name, a) {
-  a = a || {};
-  const refresh = () => { saveStateToLocal(); renderAllModules(); };
-  if (name === 'buat_todo') {
-    if (!a.judul) return { ok: false, error: 'judul kosong' };
-    const t = { id: 'td_' + Date.now() + Math.floor(Math.random() * 1000), title: aiClip(a.judul, 200), desc: String(a.catatan || '').slice(0, 2000), deadline: isoDate(a.tanggal), time: hhmm(a.jam), status: '', links: [], priority: a.prioritas_tinggi ? 'High' : 'Normal' };
-    appState.todos.unshift(t); refresh();
-    return { ok: true, undo: { coll: 'todos', id: t.id }, label: `To-Do dibuat: ${t.title}${t.deadline ? ' · ' + prettyDate(t.deadline, true) : ''}${t.time ? ' ' + t.time : ''}`, icon: 'fa-list-check' };
-  }
-  if (name === 'buat_countdown') {
-    if (!a.nama || !isoDate(a.tanggal)) return { ok: false, error: 'nama/tanggal tidak valid (YYYY-MM-DD)' };
-    const c = { id: 'cd_' + Date.now(), nama: aiClip(a.nama, 120), kategori: '', catatan: String(a.catatan || '').slice(0, 1000), tanggal: a.tanggal, jam: hhmm(a.jam), isArchived: false };
-    appState.countdowns.unshift(c); refresh();
-    return { ok: true, undo: { coll: 'countdowns', id: c.id }, label: `Countdown dibuat: ${c.nama} · ${prettyDate(c.tanggal, true)}`, icon: 'fa-hourglass-half' };
-  }
-  if (name === 'buat_catatan') {
-    if (!a.isi) return { ok: false, error: 'isi kosong' };
-    const coll = a.jenis === 'kerja' ? 'workNotes' : 'notes';
-    const n = { id: 'note_' + Date.now(), title: aiClip(a.judul || '', 120), content: String(a.isi).slice(0, 20000), tag: '', isPinned: false, date: new Date().toLocaleDateString('en-US') };
-    (appState[coll] || (appState[coll] = [])).unshift(n); refresh();
-    return { ok: true, undo: { coll, id: n.id }, label: `${coll === 'workNotes' ? 'Catatan Kerja' : 'Mind Dump'} disimpan${n.title ? ': ' + n.title : ''}`, icon: 'fa-note-sticky' };
-  }
-  if (name === 'tandai_todo_selesai') {
-    const t = (appState.todos || []).find(x => x.id === a.id); if (!t) return { ok: false, error: 'To-Do tidak ditemukan' };
-    const prev = t.status; t.status = 'Done'; refresh();
-    return { ok: true, undo: { coll: 'todos', id: t.id, restore: { status: prev } }, label: `Ditandai selesai: ${t.title}`, icon: 'fa-circle-check' };
-  }
-  if (name === 'buka_menu') {
-    const fn = AI_MENU[a.menu]; if (!fn) return { ok: false, error: 'menu tidak dikenal' };
-    return { ok: true, label: `Buka menu: ${a.menu.replace(/_/g, ' ')}`, icon: 'fa-arrow-up-right-from-square', open: a.menu };
-  }
-  return { ok: false, error: 'fungsi tidak dikenal' };
-}
-function undoAiAction(msgIdx, k) {
-  const act = (aiActions[msgIdx] || [])[k]; if (!act || !act.undo || act.undone) return;
-  const u = act.undo, list = appState[u.coll] || [];
-  if (u.restore) { const it = list.find(x => x.id === u.id); if (it) Object.assign(it, u.restore); }
-  else appState[u.coll] = list.filter(x => x.id !== u.id);
-  act.undone = true; saveAiHistory(); saveStateToLocal(); renderAllModules(); renderAiChat(); showToast('Dibatalkan.');
-}
-function openAiMenu(menu) { const fn = AI_MENU[menu]; if (fn) { closeAiChat(); fn(); } }
-
-// ---------- Kirim pertanyaan ----------
-/** Percakapan yang dikirim ke Gemini: tanpa pesan error, mulai dari pesan user, dan pesan user teks berturut-turut digabung. */
-function aiContentsForSend() {
-  const isText = m => (m.parts || []).every(p => typeof p.text === 'string');
-  const out = [];
-  aiHistory.filter(m => !m.error).slice(-AI_MAX_TURNS_SENT).forEach(m => {
-    const prev = out[out.length - 1];
-    if (prev && prev.role === 'user' && m.role === 'user' && isText(prev) && isText(m)) prev.parts = [{ text: prev.parts.map(p => p.text).concat(m.parts.map(p => p.text)).join('\n\n') }];
-    else out.push({ role: m.role, parts: m.parts });
-  });
-  while (out.length && (out[0].role !== 'user' || !isText(out[0]))) out.shift();
-  return out;
-}
-function aiNetworkError(err) { return err && (err.name === 'AbortError' || /load failed|failed to fetch|networkerror|network connection|internet/i.test(err.message || '')); }
-let aiLiveText = '', aiStartedAt = 0, aiTick = null;
-/** Kirim ke /api/ai dan baca jawaban sebagai aliran (NDJSON): teks tampil sedikit demi sedikit. */
-async function aiStreamOnce(body, signal) {
-  const user = firebaseAuth && firebaseAuth.currentUser;
-  if (!user) throw new Error('Belum login ke Firebase');
-  const res = await fetch(PUSH_API + '/ai', { method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await user.getIdToken() }, body });
-  if (!res.ok) { let msg = 'HTTP ' + res.status; try { msg = (await res.json()).error || msg; } catch (e) {} throw new Error(msg); }
-  const reader = res.body.getReader(), dec = new TextDecoder();
-  let buf = '', final = null;
-  const line = (ln) => {
-    ln = ln.trim(); if (!ln) return;
-    let o; try { o = JSON.parse(ln); } catch (e) { return; }
-    if (o.d) { aiLiveText += o.d; updateAiLive(); }
-    else if (o.error) { const e = new Error(o.error); e.status = o.status; e.server = true; throw e; }
-    else if (o.done) final = o;
-  };
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (value) { buf += dec.decode(value, { stream: true }); let k; while ((k = buf.indexOf('\n')) >= 0) { const ln = buf.slice(0, k); buf = buf.slice(k + 1); line(ln); } }
-    if (done) break;
-  }
-  line(buf);
-  if (!final) { const e = new Error('Load failed'); throw e; }
-  return final;
-}
-async function aiRequest() {
-  const body = JSON.stringify({ contents: aiContentsForSend(), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS, model: aiTurnModel });
-  for (let attempt = 0; ; attempt++) {
-    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 120000);
-    aiLiveText = ''; updateAiLive();
-    try {
-      return await aiStreamOnce(body, ctrl.signal);
-    } catch (err) {
-      if (err.server) throw err;
-      // Coba ulang otomatis 1× bila koneksi putus sebelum ada teks yang tampil
-      if (attempt === 0 && !aiLiveText && aiNetworkError(err) && document.visibilityState === 'visible') { await new Promise(r => setTimeout(r, 1500)); continue; }
-      if (err.name === 'AbortError') throw new Error('Nexa terlalu lama menjawab (lebih dari 2 menit). Coba lagi atau persingkat pertanyaanmu.');
-      if (aiNetworkError(err)) throw new Error('Koneksi terputus sebelum Nexa selesai menjawab. Pastikan internet stabil dan aplikasi tetap terbuka saat menunggu.');
-      throw err;
-    } finally { clearTimeout(timer); }
-  }
-}
-/** Perbarui gelembung jawaban yang sedang ditulis (tanpa render ulang seluruh chat). */
-function updateAiLive() {
-  const el = $('aiLive'); if (!el) return;
-  if (aiLiveText) { el.classList.remove('ai-typing-wrap'); el.innerHTML = aiMarkdown(aiLiveText) + '<span class="ai-caret"></span>'; }
-  else { const sec = aiStartedAt ? Math.floor((Date.now() - aiStartedAt) / 1000) : 0; el.innerHTML = `<span class="ai-typing"><span></span><span></span><span></span></span>${sec >= 3 ? `<span class="ai-wait">Nexa sedang berpikir… ${sec} dtk</span>` : ''}`; }
-  const b = $('aiMessages'); if (b && b.scrollHeight - b.scrollTop - b.clientHeight < 160) b.scrollTop = b.scrollHeight;
-}
-async function sendAiMessage(text) {
-  text = String(text == null ? $('aiInput').value : text).trim();
-  if (!text || aiBusy) return;
-  if (!aiReady()) { renderAiChat(); return showToast('Nexa AI belum diaktifkan. Lihat panduan di layar.', false); }
-  $('aiInput').value = ''; autoGrowAi();
-  aiHistory = aiHistory.filter(m => !m.error); // error lama tidak perlu disimpan
-  aiHistory.push({ role: 'user', parts: [{ text }] }); saveAiHistory();
-  await runAiTurn();
-}
-/** Ulangi pertanyaan terakhir setelah gagal (tanpa mengetik ulang). */
-async function retryAi() {
-  if (aiBusy) return;
-  aiHistory = aiHistory.filter(m => !m.error); saveAiHistory();
-  if (!aiHistory.length || aiHistory[aiHistory.length - 1].role !== 'user') return;
-  await runAiTurn();
-}
-async function runAiTurn() {
-  aiBusy = true; aiTurnModel = null; aiLiveText = ''; aiStartedAt = Date.now(); renderAiChat(); scrollAiBottom();
-  clearInterval(aiTick); aiTick = setInterval(() => { if (!aiLiveText) updateAiLive(); }, 1000);
-  try {
-    for (let step = 0; step < 5; step++) {
-      const res = await aiRequest();
-      if (res.model) aiTurnModel = res.model;
-      const parts = (res.parts || []).filter(p => p && (p.text != null || p.functionCall || p.thoughtSignature));
-      if (!parts.length) {
-        aiHistory.push({ role: 'model', parts: [{ text: res.blocked ? 'Maaf, pertanyaan ini tidak bisa aku jawab.' : 'Maaf, aku belum bisa menjawab itu. Coba tanyakan dengan kalimat lain ya.' }] });
-        break;
-      }
-      aiHistory.push({ role: 'model', parts });
-      const calls = parts.filter(p => p.functionCall);
-      if (!calls.length) break;
-      const results = [], acts = [];
-      for (const p of calls) {
-        let r; try { r = runAiTool(p.functionCall.name, p.functionCall.args); } catch (e) { r = { ok: false, error: e.message }; }
-        if (r.ok) acts.push({ label: r.label, icon: r.icon, undo: r.undo || null, open: r.open || null });
-        results.push({ functionResponse: { name: p.functionCall.name, response: r.ok ? { hasil: 'berhasil', keterangan: r.label } : { hasil: 'gagal', error: r.error } } });
-      }
-      if (acts.length) aiActions[aiHistory.length - 1] = acts;
-      aiHistory.push({ role: 'user', parts: results });
-      saveAiHistory(); renderAiChat(); scrollAiBottom();
-    }
-  } catch (err) {
-    aiHistory.push({ role: 'model', parts: [{ text: '⚠️ ' + (err.message || 'Gagal menghubungi Nexa AI') }], error: true });
-  }
-  clearInterval(aiTick); aiLiveText = '';
-  aiBusy = false; saveAiHistory(); renderAiChat(); scrollAiBottom();
-}
-
-// ---------- Markdown sederhana → HTML (aman: semua teks di-escape dulu) ----------
-function aiInline(s) {
-  return s.replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, '$1<i>$2</i>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="auto-link">$1</a>')
-    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener" class="auto-link">$2</a>');
-}
-function aiMarkdown(md) {
-  const lines = esc(md).split('\n'), out = [];
-  for (let i = 0; i < lines.length; i++) {
-    const ln = lines[i];
-    if (/^```/.test(ln)) { const buf = []; i++; while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]); out.push(`<pre>${buf.join('\n')}</pre>`); continue; }
-    if (/^\s*\|.*\|\s*$/.test(ln) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
-      const row = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => aiInline(c.trim()));
-      const head = row(ln); i += 2; const body = [];
-      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) body.push(row(lines[i++])); i--;
-      out.push(`<div class="ai-table"><table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`); continue;
-    }
-    if (/^\s*([-*•]|\d+[.)])\s+/.test(ln)) {
-      const ordered = /^\s*\d+[.)]/.test(ln), items = [];
-      while (i < lines.length && /^\s*([-*•]|\d+[.)])\s+/.test(lines[i])) items.push(aiInline(lines[i++].replace(/^\s*([-*•]|\d+[.)])\s+/, ''))); i--;
-      out.push(`<${ordered ? 'ol' : 'ul'}>${items.map(t => `<li>${t}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`); continue;
-    }
-    const h = /^(#{1,4})\s+(.*)$/.exec(ln); if (h) { out.push(`<div class="ai-h">${aiInline(h[2])}</div>`); continue; }
-    if (!ln.trim()) { out.push('<div class="ai-gap"></div>'); continue; }
-    out.push(`<p>${aiInline(ln)}</p>`);
-  }
-  return out.join('');
-}
-
-// ---------- Tampilan ----------
-function openAiChat(prefill) {
-  openSheet('sheetAi'); renderAiChat(); scrollAiBottom();
-  if (prefill) { $('aiInput').value = prefill; autoGrowAi(); }
-  if (!pushConfig) loadPushConfig().then(renderAiChat);
-  setTimeout(() => { if (window.innerWidth > 760) $('aiInput').focus(); }, 350);
-}
-function closeAiChat() { closeSheet('sheetAi'); stopAiVoice(); }
-function scrollAiBottom() { const b = $('aiMessages'); if (b) setTimeout(() => b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' }), 30); }
-function autoGrowAi() { const t = $('aiInput'); if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(140, t.scrollHeight) + 'px'; }
-function renderAiChat() {
-  const box = $('aiMessages'); if (!box) return;
-  if ($('aiModelLabel')) $('aiModelLabel').textContent = aiReady() ? 'Gemini · ' + (pushConfig.ai.model || '') : 'belum aktif';
-  if (!aiReady()) { box.innerHTML = aiSetupHTML(); return; }
-  const name = (typeof L === 'function' && L('user.name')) || 'Hadzmi';
-  let html = '';
-  if (!aiHistory.length) {
-    html = `<div class="ai-hello"><img src="icons/icon-192.png?v=4" alt=""><div class="t-title3">Hai ${esc(name)}, aku Nexa ✨</div>
-      <div class="t-foot muted">Tanya apa saja, minta analisis data kamu, atau suruh aku bikin pengingat.</div></div>
-      <div class="ai-suggest">${AI_SUGGESTIONS.map(s => `<button class="chip" onclick="sendAiMessage(${esc(JSON.stringify(s))})">${esc(s)}</button>`).join('')}</div>`;
-  }
-  aiHistory.forEach((m, idx) => {
-    const texts = (m.parts || []).filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('\n').trim();
-    if (m.role === 'user') { if (texts) html += `<div class="ai-msg me"><div class="ai-bubble">${esc(texts).replace(/\n/g, '<br>')}</div></div>`; return; }
-    if (texts) html += `<div class="ai-msg bot ${m.error ? 'err' : ''}"><div class="ai-bubble">${m.error ? esc(texts) + (idx === aiHistory.length - 1 && !aiBusy ? `<div><button class="ai-retry" onclick="retryAi()"><i class="fas fa-rotate-right"></i> Coba lagi</button></div>` : '') : aiMarkdown(texts)}</div>${!m.error ? `<button class="ai-copy" onclick="copyText(${esc(JSON.stringify(texts))}); showToast('Jawaban disalin')"><i class="far fa-copy"></i></button>` : ''}</div>`;
-    (aiActions[idx] || []).forEach((a, k) => {
-      html += `<div class="ai-action ${a.undone ? 'undone' : ''}"><i class="fas ${a.icon || 'fa-check'}"></i><span class="flex-1">${esc(a.label)}${a.undone ? ' (dibatalkan)' : ''}</span>
-        ${a.open ? `<button onclick="openAiMenu('${esc(a.open)}')">Buka</button>` : ''}${a.undo && !a.undone ? `<button onclick="undoAiAction(${idx}, ${k})">Urungkan</button>` : ''}</div>`;
-    });
-  });
-  if (aiBusy) html += `<div class="ai-msg bot"><div class="ai-bubble" id="aiLive"></div></div>`;
-  box.innerHTML = html;
-  if (aiBusy) updateAiLive();
-  $('aiSendBtn').disabled = aiBusy;
-}
-function aiSetupHTML() {
-  const offline = pushConfig === false;
-  return `<div class="ai-hello"><img src="icons/icon-192.png?v=4" alt=""><div class="t-title3">Aktifkan Nexa AI</div>
-    <div class="t-foot muted">${offline ? 'Server Nexa tidak terjangkau. Cek koneksi internet lalu buka lagi.' : 'Nexa AI memakai Google Gemini (gratis). Cukup 1× setup, ±5 menit:'}</div></div>
-    ${offline ? '' : `<div class="card card-pad ai-setup"><ol>
-      <li>Buka <b>aistudio.google.com</b> → login akun Google → <b>Get API key</b> → <b>Create API key</b> → salin.</li>
-      <li>Buka <b>dash.cloudflare.com</b> → Workers & Pages → <b>hadzmi-website-utama</b> → <b>Settings</b> → <b>Variables and Secrets</b> → <b>Add</b>.</li>
-      <li>Type: <b>Secret</b> · Name: <code>GEMINI_API_KEY</code> · Value: tempel API key → <b>Deploy</b>.</li>
-      <li>Tutup lalu buka lagi Nexa. Selesai ✨</li></ol>
-      <div class="t-cap muted mt-8">API key tersimpan aman di server, tidak terlihat dari web. Jangan kirim API key lewat chat ke siapa pun.</div></div>`}`;
-}
-function clearAiChat() {
-  iosConfirm('Hapus percakapan?', 'Riwayat chat Nexa di perangkat ini akan dihapus. Data yang sudah dibuat (To-Do, catatan) tidak ikut terhapus.', 'Hapus', true)
-    .then(ok => { if (!ok) return; aiHistory = []; aiActions = {}; saveAiHistory(); renderAiChat(); });
-}
-
-// ---------- Input suara ----------
-function aiVoiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
-function toggleAiVoice() {
-  if (aiRecog) return stopAiVoice();
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return showToast('Input suara tidak didukung di browser ini.', false);
-  const r = new SR(); r.lang = 'id-ID'; r.interimResults = true; r.continuous = false;
-  const base = $('aiInput').value ? $('aiInput').value.trim() + ' ' : '';
-  r.onresult = e => { let t = ''; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; $('aiInput').value = base + t; autoGrowAi(); };
-  r.onend = () => { aiRecog = null; $('aiMicBtn').classList.remove('rec'); };
-  r.onerror = e => { if (e.error === 'not-allowed') showToast('Izinkan akses mikrofon untuk input suara.', false); };
-  aiRecog = r; $('aiMicBtn').classList.add('rec'); r.start();
-}
-function stopAiVoice() { if (aiRecog) { try { aiRecog.stop(); } catch (e) {} aiRecog = null; } const b = $('aiMicBtn'); if (b) b.classList.remove('rec'); }
-function initAiChat() {
-  const t = $('aiInput'); if (!t || t.dataset.init) return; t.dataset.init = '1';
-  t.addEventListener('input', autoGrowAi);
-  t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 760) { e.preventDefault(); sendAiMessage(); } });
-  if (!aiVoiceSupported() && $('aiMicBtn')) $('aiMicBtn').classList.add('hidden');
-}
-
 /* ---- 99-boot.js ---- */
 /* =========================================================
    99 · BOOT
@@ -8503,8 +8092,8 @@ function startApp() {
   initAudioEngine();
   initDropzone();
   initViewerZoom();
-  initAiChat();
   setInterval(updateRealtimeClock, 1000);
+  setInterval(() => { try { renderDashboardUpcoming(); } catch (e) {} }, 10 * 60 * 1000); // event otomatis naik saat masuk H-7
 
   let lastTab = null;
   try { lastTab = sessionStorage.getItem('hz_last_tab'); } catch (e) {}
@@ -8515,7 +8104,7 @@ function startApp() {
   initNotifications();
   sessionWatchTimer = setInterval(checkSessionExpiry, 20000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); pullServerInbox(); updateDashboardGreeting(); renderDashboardTodayAgenda(); }
+    if (document.visibilityState === 'visible') { checkSessionExpiry(); checkReminders(); pullServerInbox(); updateDashboardGreeting(); renderDashboardTodayAgenda(); renderDashboardUpcoming(); }
   });
 }
 
