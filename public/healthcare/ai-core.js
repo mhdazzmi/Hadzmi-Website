@@ -161,10 +161,14 @@ async function listFlashModels(f, key) {
 }
 
 /** Panggil Gemini dengan coba ulang & model cadangan. Return {result, model}. */
-export async function callGemini({ key, mode, text, image, context, model, fetchFn }) {
+export async function callGemini({ key, mode, text, image, context, model, fetchFn, budgetMs }) {
   const f = fetchFn || fetch;
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const payload = JSON.stringify(buildGeminiPayload(mode, text, image, context));
+  // Disiapkan sekali (hemat CPU server gratis); dipakai ulang di setiap percobaan
+  const payload = new TextEncoder().encode(JSON.stringify(buildGeminiPayload(mode, text, image, context)));
+  const started = Date.now(), budget = budgetMs || 25000; // batas waktu total agar koneksi HP tidak putus
+  const left = () => budget - (Date.now() - started);
+  let timedOut = false;
   const wanted = MODEL_RE.test(String(model || '')) ? String(model) : DEFAULT_MODEL;
   const tried = new Set(), log = [];
   let busy = false, quota = false;
@@ -172,18 +176,22 @@ export async function callGemini({ key, mode, text, image, context, model, fetch
   async function tryModel(m) {
     tried.add(m);
     for (let attempt = 0; attempt < 2; attempt++) {
+      if (left() < 3000) { timedOut = true; return null; }
       let res, data;
       try {
-        res = await f(GEMINI_BASE + encodeURIComponent(m) + ':generateContent', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: payload
-        });
+        const opt = { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: payload };
+        if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) opt.signal = AbortSignal.timeout(Math.max(3000, left()));
+        res = await f(GEMINI_BASE + encodeURIComponent(m) + ':generateContent', opt);
         data = await res.json().catch(() => ({}));
-      } catch (e) { log.push(m + ': koneksi terputus'); return null; }
+      } catch (e) {
+        if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) { timedOut = true; log.push(m + ': terlalu lama'); return null; }
+        log.push(m + ': koneksi terputus'); return null;
+      }
       const msg = String((data.error && data.error.message) || '');
       if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
       if (BUSY.has(res.status)) {
         if (res.status === 429) quota = true; else busy = true;
-        if (attempt === 0 && res.status !== 429) { await wait(1200); continue; }
+        if (attempt === 0 && res.status !== 429 && left() > 6000) { await wait(800); continue; }
         log.push(m + (res.status === 429 ? ': batas kuota' : ': sibuk')); return null;
       }
       if (!res.ok) {
@@ -201,16 +209,16 @@ export async function callGemini({ key, mode, text, image, context, model, fetch
   }
 
   for (const m of [wanted].concat(FALLBACK_MODELS)) {
-    if (tried.has(m)) continue;
+    if (tried.has(m) || timedOut) continue;
     const r = await tryModel(m); if (r) return r;
   }
   // Semua nama bawaan gagal → tanya Google model flash apa yang tersedia untuk kunci ini
-  for (const m of (await listFlashModels(f, key)).slice(0, 5)) {
-    if (tried.has(m)) continue;
+  for (const m of (timedOut || left() < 5000 ? [] : await listFlashModels(f, key)).slice(0, 5)) {
+    if (tried.has(m) || timedOut) continue;
     const r = await tryModel(m); if (r) return r;
   }
   const detail = log.length ? ' Rincian: ' + log.join('; ') + '.' : '';
-  if (busy) throw aiError(503, 'Server Gemini sedang sibuk (banyak pengguna). Tunggu 1–2 menit lalu tap Coba lagi.' + detail);
+  if (busy || timedOut) throw aiError(503, 'Server Gemini sedang sibuk (banyak pengguna). Tunggu 1–2 menit lalu tap Coba lagi.' + detail);
   if (quota) throw aiError(429, 'Batas pemakaian gratis Gemini tercapai untuk sementara. Coba lagi beberapa menit lagi.' + detail);
   throw aiError(502, 'AI belum bisa dihubungi.' + detail);
 }
