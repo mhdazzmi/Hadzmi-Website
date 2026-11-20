@@ -136,7 +136,7 @@
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-wallet', 'Wallet')"><span class="icon-tile" style="background:linear-gradient(160deg,#1C1C1E,#3A3A3C)"><i class="fas fa-wallet"></i></span><span class="app-label" data-label="hub.wallet">Wallet</span></button>
               <a class="app-icon" href="healthcare/" style="color:inherit"><span class="icon-tile" style="background:linear-gradient(145deg,#34C759,#00C7BE)"><i class="fas fa-leaf"></i></span><span class="app-label">Nexa Health</span></a>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Foto Bukti')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Foto Bukti</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Over/Short')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Over/Short</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Plus Minus')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Plus Minus</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label" data-label="work.notes">Catatan Kerja</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-docs', 'Gudang File')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5E5CE6,#30B0C7)"><i class="fas fa-box-archive"></i></span><span class="app-label" data-label="work.docs">Gudang File</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload Drive')"><span class="icon-tile bg-green" style="background:linear-gradient(135deg,#34A853,#4285F4)"><i class="fab fa-google-drive"></i></span><span class="app-label" data-label="work.upload">Upload Drive</span></button>
@@ -153,7 +153,7 @@
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do')" style="text-align:left"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div><div class="num" id="dashStatTasks">0</div><div class="lbl">Tugas Pending</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do'); taSetFilter('today')" style="text-align:left"><span class="icon-tile bg-purple"><i class="fas fa-calendar-day"></i></span><div><div class="num" id="dashStatAgendaToday">0</div><div class="lbl">Agenda Hari Ini</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-notes','Mind Dump')" style="text-align:left"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><div><div class="num" id="dashStatNotes">0</div><div class="lbl">Catatan</div></div></button>
-          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Over/Short')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Over/Short</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Plus Minus')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Plus Minus</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-focus','Focus')" style="text-align:left"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div><div class="num sm" id="dashStatFocusTime">0 mins</div><div class="lbl">Total Fokus</div></div></button>
         </div>
 
@@ -497,13 +497,13 @@
         </div>
       </section>
 
-      <!-- ================= 4. KERJA (Meja Teller) ================= -->
+      <!-- ================= 4. KERJA ================= -->
       <section id="tab-workfin" class="tab-content hidden" data-title="Kerja">
         <div class="page-head"><div><div class="page-eyebrow" data-label="work.space">Work Space</div><h1 class="t-large" id="workTitle">Foto Bukti</h1></div></div>
         <div class="subnav">
           <div class="seg lg scroll no-scrollbar">
             <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos" class="active" data-label="work.photos">Foto Bukti</button>
-            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" data-label="work.kas">Over/Short</button>
+            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" data-label="work.kas">Plus Minus</button>
             <button onclick="switchWorkFinSubTab('sub-worknotes')" id="btn-sub-worknotes" data-label="work.notes">Catatan Kerja</button>
             <button onclick="switchWorkFinSubTab('sub-docs')" id="btn-sub-docs" data-label="work.docs">Gudang File</button>
             <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload" data-label="work.upload">Upload Drive</button>
@@ -520,7 +520,7 @@
             <button class="btn btn-tinted btn-lg" onclick="document.getElementById('photoGalleryInput').click()"><i class="fas fa-images"></i> Dari Galeri</button>
           </div>
           <div class="flex gap-8 items-center">
-            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="photoSearch" class="field" placeholder="Cari nama nasabah / keterangan…" oninput="renderPhotoGallery()"></div>
+            <div class="search-bar flex-1"><i class="fas fa-magnifying-glass"></i><input type="text" id="photoSearch" class="field" placeholder="Cari nama / keterangan…" oninput="renderPhotoGallery()"></div>
             <button class="btn btn-gray btn-sm" id="photoSelectBtn" onclick="togglePhotoSelect()">Pilih</button>
           </div>
           <div class="chips no-scrollbar" id="photoTypeChips"></div>
@@ -535,20 +535,20 @@
           </div>
         </div>
 
-        <!-- Over/Short -->
+        <!-- Plus Minus -->
         <div id="sub-kas" class="workfin-sub-content hidden stack-16">
           <div class="sum-tiles">
-            <div class="sum-tile tint-green"><div class="s-l">Total Lebih</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
-            <div class="sum-tile tint-red"><div class="s-l">Total Kurang</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
-            <div class="sum-tile tint-blue"><div class="s-l">Net Over/Short</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
+            <div class="sum-tile tint-green"><div class="s-l">Total Plus</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
+            <div class="sum-tile tint-red"><div class="s-l">Total Minus</div><div class="s-v" id="kasTotalKurang">Rp 0</div></div>
+            <div class="sum-tile tint-blue"><div class="s-l">Net</div><div class="s-v" id="kasTotalNet">Rp 0</div></div>
           </div>
           <div class="split">
             <div class="stack-16">
               <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
-                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span> Catat Over/Short</h3></div>
+                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span> Catat Plus Minus</h3></div>
                 <div class="seg lg" id="kasJenisSeg">
-                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Short (−)</button>
-                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Over (+)</button>
+                  <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Minus (−)</button>
+                  <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Plus (+)</button>
                 </div>
                 <input type="hidden" id="kasJenis" value="Kurang">
                 <div><label class="field-label">Nominal (Rp) *</label><input type="text" inputmode="numeric" id="kasJumlah" class="field" placeholder="50.000" oninput="formatRupiahInput(this)" required style="font-size:22px; font-weight:700"></div>
@@ -556,7 +556,7 @@
                   <div><label class="field-label">Tanggal *</label><input type="date" id="kasTanggal" class="field" required></div>
                   <div><label class="field-label">Jam (opsional)</label><input type="time" id="kasJam" class="field"></div>
                 </div>
-                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Mis. setoran nasabah kurang Rp50rb…"></div>
+                <div><label class="field-label">Keterangan</label><input type="text" id="kasKeterangan" class="field" placeholder="Opsional, mis. uang dari mana / untuk apa"></div>
                 <button type="submit" class="btn btn-filled btn-block"><i class="fas fa-check"></i> Simpan</button>
               </form>
               <div class="card card-pad stack">
@@ -569,7 +569,7 @@
               </div>
             </div>
             <div>
-              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Over/Short</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Plus Minus</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
               <div id="kasTableBody" class="list inset-icon"></div>
             </div>
           </div>
@@ -678,7 +678,7 @@
                 <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div class="flex-1 row-title">Deadline To-Do</div><label class="switch"><input type="checkbox" data-notif="tasks" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><div class="flex-1 row-title">Event Countdown</div><label class="switch"><input type="checkbox" data-notif="countdowns" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div class="flex-1 row-title">Focus & Sleep Timer</div><label class="switch"><input type="checkbox" data-notif="focus" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
-                <div class="row"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div class="flex-1"><div class="row-title">Pengingat Over/Short</div><div class="row-sub">Jam 20:00 jika hari ini belum ada entri</div></div><label class="switch"><input type="checkbox" data-notif="kas" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div class="flex-1"><div class="row-title">Pengingat Plus Minus</div><div class="row-sub">Jam 20:00 jika hari ini belum ada entri</div></div><label class="switch"><input type="checkbox" data-notif="kas" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-sun"></i></span><div class="flex-1"><div class="row-title">Ringkasan Pagi</div><div class="row-sub">Jumlah agenda hari ini (07:00)</div></div><label class="switch"><input type="checkbox" data-notif="digest" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-gray"><i class="fas fa-stopwatch-20"></i></span><div class="flex-1 row-title">Ingatkan sebelum</div>
                   <select class="select" id="notifLeadSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setNotifLead(this.value)">
@@ -715,7 +715,7 @@
             <div>
               <div class="section-label">Privasi Bukti Foto</div>
               <div class="list inset-icon">
-                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-clock-rotate-left"></i></span><div class="flex-1"><div class="row-title">Hapus otomatis foto lama</div><div class="row-sub">Foto nasabah dihapus setelah umur tertentu</div></div>
+                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-clock-rotate-left"></i></span><div class="flex-1"><div class="row-title">Hapus otomatis foto lama</div><div class="row-sub">Foto Bukti dihapus setelah umur tertentu</div></div>
                   <select class="select" id="photoRetentionSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setPhotoRetention(this.value)">
                     <option value="0">Tidak</option><option value="7">7 hari</option><option value="30">30 hari</option><option value="60">60 hari</option><option value="90">90 hari</option>
                   </select></div>
@@ -1058,7 +1058,7 @@
       <div class="sheet-body stack-16">
         <div class="photo-strip no-scrollbar" id="photoPickPreview"></div>
         <div class="form-list">
-          <div class="fl-row"><span class="fl-label">Nasabah</span><input type="text" id="photoLabel" placeholder="Nama nasabah / keterangan"></div>
+          <div class="fl-row"><span class="fl-label">Nama</span><input type="text" id="photoLabel" placeholder="Nama / keterangan"></div>
           <div class="fl-row"><span class="fl-label">Tanggal</span><input type="date" id="photoDate"></div>
           <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="photoNote" placeholder="Opsional"></div>
         </div>

@@ -237,7 +237,7 @@ function renderPhotoGallery() {
   }
   const list = filteredPhotos();
   if (!list.length) {
-    box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada foto ' + esc(L('work.photos'))}</div><div class="e-sub">Foto KTP, buku tabungan, atau bukti kas nasabah dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
+    box.innerHTML = `<div class="card"><div class="empty"><i class="fas fa-camera"></i><div class="e-title">${all.length ? 'Tidak ada foto yang cocok' : 'Belum ada foto ' + esc(L('work.photos'))}</div><div class="e-sub">Simpan foto KTP, struk, dokumen, atau bukti lainnya dengan tombol <b>Ambil Foto</b>.</div></div></div>`;
     return;
   }
   const sorted = list.slice().sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')) || b.createdAt - a.createdAt);
@@ -363,7 +363,7 @@ function initViewerZoom() {
 }
 async function editPhotoMeta(id) {
   const p = photoById(id); if (!p) return;
-  const v = await iosAlert({ title: 'Ubah keterangan', message: 'Nama nasabah / keterangan', input: { value: p.label || '' }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });
+  const v = await iosAlert({ title: 'Ubah keterangan', message: 'Nama / keterangan', input: { value: p.label || '' }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });
   if (v === null) return;
   p.label = v.trim(); saveStateToLocal(); renderPhotoGallery();
   if ($('sheetViewer').classList.contains('open')) $('viewerTitle').textContent = p.label || p.type;
@@ -435,7 +435,7 @@ function canonicalFolder(name) {
   const hit = docFolders().find(f => f.name.toLowerCase() === clean.toLowerCase());
   return hit ? hit.name : clean;
 }
-// Tebak kategori dari nama file (mis. "SOP Teller 2025.pdf" → kategori "SOP")
+// Tebak kategori dari nama file (mis. "SOP 2025.pdf" → kategori "SOP")
 function guessFolderFor(fileNames) {
   const words = fileNames.join(' ').toLowerCase().replace(/[_\-.()]+/g, ' ');
   return docFolders().find(f => f.name.toLowerCase().split(/\s+/).every(w => w.length > 1 && words.includes(w)));

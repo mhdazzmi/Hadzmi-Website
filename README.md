@@ -87,7 +87,7 @@ Kode: `public/healthcare/` (index.html, healthcare.css, app.js, ai-core.js) dan 
 ### 🏦 Menu Kerja (Work Space)
 | Sub-menu | Isi |
 |---|---|
-| **Over/Short** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan **PDF**. Data lama Cash Ledger tetap ada. |
+| **Plus Minus** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan **PDF**. Data lama Cash Ledger tetap ada. |
 | **Foto Bukti** (foto) | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Tampilan galeri (grid), filter jenis, cari nama nasabah, pilih banyak → **Bagikan** (menu Bagikan iOS) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
 | **Catatan** | Catatan khusus pekerjaan (terpisah dari Mind Dump). |
 | **Gudang File** | Upload banyak file sekaligus (PDF, gambar, dokumen, teks; maks 25 MB/file) ke folder (mis. "Materi BRI"); pratinjau PDF/gambar/teks, buka, unduh, kirim, ganti nama, pindah folder. |
@@ -135,7 +135,7 @@ Pusat notifikasi in-app (ikon lonceng) + banner gaya iOS + notifikasi sistem (se
 Semua bisa dinyalakan/dimatikan di **Settings → Notifikasi**. Dengan hosting Cloudflare + **Push** aktif, notifikasi tetap masuk walau website ditutup (lihat bagian Deploy ke Cloudflare). Di Blogspot, notifikasi hanya berjalan selama website terbuka.
 
 ### 📄 Ekspor PDF (pengganti Gmail)
-Mind Dump, Catatan Kerja, Countdown, daftar To-Do, laporan Focus/Sleep, dan laporan Over/Short bisa dijadikan **PDF** (header navy, tabel rapi). PDF langsung tampil sebagai preview → **WhatsApp** / **Bagikan** / **Unduh**.
+Mind Dump, Catatan Kerja, Countdown, daftar To-Do, laporan Focus/Sleep, dan laporan Plus Minus bisa dijadikan **PDF** (header navy, tabel rapi). PDF langsung tampil sebagai preview → **WhatsApp** / **Bagikan** / **Unduh**.
 
 ### 🎵 Music (dikembangkan)
 - **Now Playing** layar penuh (latar blur dari cover, swipe ke bawah untuk menutup)

@@ -14,7 +14,7 @@ let aiBusy = false, aiRecog = null, aiTurnModel = null;
 
 const AI_SUGGESTIONS = [
   'Ringkas agenda & tugasku hari ini',
-  'Analisis over/short bulan ini',
+  'Analisis plus minus bulan ini',
   'Bagaimana pola tidurku 7 hari terakhir?',
   'Event apa saja dalam 30 hari ke depan?',
   'Ingatkan aku bayar listrik tanggal 20 jam 8 pagi',
@@ -43,7 +43,7 @@ function buildAiContext() {
   out.push(`MIND DUMP (catatan pribadi):\n` + JSON.stringify(notes('notes')));
   out.push(`CATATAN KERJA:\n` + JSON.stringify(notes('workNotes')));
   const kas = (S.kas || []).slice(0, 300).map(k => ({ tanggal: k.tanggal, jam: k.jam || undefined, jenis: k.jenis, nominal: k.jumlah, ket: aiClip(k.keterangan, 80) || undefined }));
-  out.push(`OVER/SHORT teller — menu "Over/Short" (jenis "Lebih" = over/uang lebih, "Kurang" = short/uang kurang; nominal dalam Rupiah) (${kas.length}):\n` + JSON.stringify(kas));
+  out.push(`PLUS MINUS — menu "Plus Minus" (jenis "Lebih" = plus/uang lebih, "Kurang" = minus/uang kurang; nominal dalam Rupiah) (${kas.length}):\n` + JSON.stringify(kas));
   const focus = (S.focusHistory || []).slice(0, 120).map(f => ({ tanggal: f.date, mulai: f.startTime, selesai: f.endTime, mode: f.mode, menit: Math.round((f.durationSeconds || 0) / 60), status: f.status || undefined }));
   out.push(`RIWAYAT FOCUS & TIDUR (mode "Sleep" = tidur) (${focus.length}):\n` + JSON.stringify(focus));
   const links = (S.links || []).slice(0, 60).map(l => ({ judul: aiClip(l.title, 80), url: l.url, kategori: l.category || undefined }));
