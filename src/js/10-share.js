@@ -108,11 +108,12 @@ async function renderPdfInto(box, blob) {
     const lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
     const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
     box.innerHTML = ''; box.classList.add('pdf-pages');
-    const width = Math.max(280, box.clientWidth - 16), dpr = Math.min(2, window.devicePixelRatio || 1);
+    // Render 1.5× lebih tajam agar tetap jelas saat di-zoom / layar penuh
+    const width = Math.max(280, box.clientWidth - 16), dpr = Math.min(3, (window.devicePixelRatio || 1) * 1.5);
     for (let n = 1; n <= Math.min(pdf.numPages, 80); n++) {
       const page = await pdf.getPage(n);
       const vp1 = page.getViewport({ scale: 1 }), scale = width / vp1.width, vp = page.getViewport({ scale: scale * dpr });
-      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = width + 'px';
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = (viewerZoom * 100) + '%';
       box.appendChild(c);
       await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
     }

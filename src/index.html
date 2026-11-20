@@ -1066,10 +1066,18 @@
       <div class="sheet-head">
         <button class="btn-plain sh-left" onclick="closeViewer()">Tutup</button>
         <div class="sh-title truncate" id="viewerTitle">—</div>
-        <button class="btn-plain sh-right" id="viewerMore"><i class="fas fa-ellipsis"></i></button>
+        <div class="sh-right flex items-center gap-6">
+          <button class="btn-plain" id="viewerFsBtn" onclick="toggleViewerFullscreen()" aria-label="Layar penuh"><i class="fas fa-expand"></i></button>
+          <button class="btn-plain" id="viewerMore"><i class="fas fa-ellipsis"></i></button>
+        </div>
       </div>
-      <div class="sheet-body col" style="flex:1; min-height:0">
+      <div class="sheet-body col" style="flex:1; min-height:0; position:relative">
         <div id="viewerBody" class="viewer-body"></div>
+        <div class="viewer-zoom hidden" id="viewerZoom">
+          <button onclick="stepViewerZoom(-1)" aria-label="Perkecil"><i class="fas fa-minus"></i></button>
+          <button class="vz-val" id="viewerZoomVal" onclick="setViewerZoom(1)">100%</button>
+          <button onclick="stepViewerZoom(1)" aria-label="Perbesar"><i class="fas fa-plus"></i></button>
+        </div>
         <div id="viewerMeta" class="t-foot muted center mt-12"></div>
         <div class="grid-3 mt-12" id="viewerActions"></div>
       </div>

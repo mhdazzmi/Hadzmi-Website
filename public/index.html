@@ -978,6 +978,25 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .wsort-grip { width: 34px; height: 40px; display: flex; align-items: center; justify-content: center; color: #8E8E93; font-size: 18px; cursor: grab; touch-action: none; flex: none; }
 .min-w-0 { min-width: 0; }
 
+/* Viewer: layar penuh & zoom */
+#sheetViewer.fs { background: #000; }
+#sheetViewer.fs .sheet { max-width: none !important; max-height: none !important; height: 100% !important; width: 100%; border-radius: 0 !important; background: #fff; }
+#sheetViewer.fs .sheet-grabber, #sheetViewer.fs #viewerMeta, #sheetViewer.fs #viewerActions { display: none; }
+#sheetViewer.fs .sheet-head { padding-top: calc(var(--safe-t) + 8px); }
+#sheetViewer.fs .sheet-body { padding: 0; }
+#sheetViewer.fs .viewer-body { border-radius: 0; min-height: 0; }
+#sheetViewer.fs .viewer-body img { max-height: 100% !important; border-radius: 0; }
+#sheetViewer.fs .viewer-body iframe { height: 100%; border-radius: 0; }
+#sheetViewer.fs .viewer-body.pdf-pages { padding: 4px 0; }
+.viewer-body.zoomed { display: block !important; text-align: center; }
+.viewer-body.zoomed > img { display: inline-block; margin: 0 auto; border-radius: 0; max-width: none !important; max-height: none !important; }
+.viewer-body.pdf-pages canvas { width: 100%; }
+.viewer-body { touch-action: pan-x pan-y; }
+.viewer-zoom { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b) + 150px); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: rgba(28,28,30,.78); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+#sheetViewer.fs .viewer-zoom { bottom: calc(var(--safe-b) + 20px); }
+.viewer-zoom button { border: 0; background: transparent; color: #fff; width: 40px; height: 36px; border-radius: 999px; font-size: 14px; cursor: pointer; font-family: var(--font); }
+.viewer-zoom .vz-val { width: 58px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
   </style>
 </head>
 <body>
@@ -2020,10 +2039,18 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
       <div class="sheet-head">
         <button class="btn-plain sh-left" onclick="closeViewer()">Tutup</button>
         <div class="sh-title truncate" id="viewerTitle">—</div>
-        <button class="btn-plain sh-right" id="viewerMore"><i class="fas fa-ellipsis"></i></button>
+        <div class="sh-right flex items-center gap-6">
+          <button class="btn-plain" id="viewerFsBtn" onclick="toggleViewerFullscreen()" aria-label="Layar penuh"><i class="fas fa-expand"></i></button>
+          <button class="btn-plain" id="viewerMore"><i class="fas fa-ellipsis"></i></button>
+        </div>
       </div>
-      <div class="sheet-body col" style="flex:1; min-height:0">
+      <div class="sheet-body col" style="flex:1; min-height:0; position:relative">
         <div id="viewerBody" class="viewer-body"></div>
+        <div class="viewer-zoom hidden" id="viewerZoom">
+          <button onclick="stepViewerZoom(-1)" aria-label="Perkecil"><i class="fas fa-minus"></i></button>
+          <button class="vz-val" id="viewerZoomVal" onclick="setViewerZoom(1)">100%</button>
+          <button onclick="stepViewerZoom(1)" aria-label="Perbesar"><i class="fas fa-plus"></i></button>
+        </div>
         <div id="viewerMeta" class="t-foot muted center mt-12"></div>
         <div class="grid-3 mt-12" id="viewerActions"></div>
       </div>
@@ -5933,11 +5960,12 @@ async function renderPdfInto(box, blob) {
     const lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
     const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
     box.innerHTML = ''; box.classList.add('pdf-pages');
-    const width = Math.max(280, box.clientWidth - 16), dpr = Math.min(2, window.devicePixelRatio || 1);
+    // Render 1.5× lebih tajam agar tetap jelas saat di-zoom / layar penuh
+    const width = Math.max(280, box.clientWidth - 16), dpr = Math.min(3, (window.devicePixelRatio || 1) * 1.5);
     for (let n = 1; n <= Math.min(pdf.numPages, 80); n++) {
       const page = await pdf.getPage(n);
       const vp1 = page.getViewport({ scale: 1 }), scale = width / vp1.width, vp = page.getViewport({ scale: scale * dpr });
-      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = width + 'px';
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = (viewerZoom * 100) + '%';
       box.appendChild(c);
       await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
     }
@@ -6510,7 +6538,74 @@ async function openPhotoViewer(id) {
   try { const url = await fileObjectUrl(p.fileId); $('viewerBody').innerHTML = `<img src="${url}" alt="">`; }
   catch (err) { $('viewerBody').innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i><div class="e-sub">${esc(err.message)}</div></div>`; }
 }
-function closeViewer() { closeSheet('sheetViewer'); }
+function closeViewer() { closeSheet('sheetViewer'); setViewerFullscreen(false); }
+
+// ---------- Viewer: layar penuh + zoom (cubit, ketuk 2×, tombol −/+) ----------
+let viewerZoom = 1;
+const VIEWER_ZOOMS = [1, 1.5, 2, 3, 4];
+function setViewerFullscreen(on) {
+  const bd = $('sheetViewer'); if (!bd) return;
+  bd.classList.toggle('fs', on);
+  const i = $('viewerFsBtn') && $('viewerFsBtn').querySelector('i'); if (i) i.className = on ? 'fas fa-compress' : 'fas fa-expand';
+}
+function toggleViewerFullscreen() { setViewerFullscreen(!$('sheetViewer').classList.contains('fs')); }
+function viewerZoomTarget() { const b = $('viewerBody'); return b.querySelector(':scope > img') || (b.querySelector('canvas') ? b : null); }
+function setViewerZoom(z, anchor) {
+  const body = $('viewerBody'), tgt = viewerZoomTarget(); if (!tgt) return;
+  const old = viewerZoom; viewerZoom = Math.max(1, Math.min(4, z));
+  const fx = anchor ? (body.scrollLeft + anchor.x) / Math.max(1, body.scrollWidth) : 0.5;
+  const fy = anchor ? (body.scrollTop + anchor.y) / Math.max(1, body.scrollHeight) : (body.scrollTop + body.clientHeight / 2) / Math.max(1, body.scrollHeight);
+  body.classList.toggle('zoomed', viewerZoom > 1);
+  if (tgt.tagName === 'IMG') {
+    if (viewerZoom > 1) { tgt.style.width = (body.clientWidth * viewerZoom) + 'px'; tgt.style.maxWidth = 'none'; tgt.style.maxHeight = 'none'; }
+    else { tgt.style.width = ''; tgt.style.maxWidth = ''; tgt.style.maxHeight = ''; }
+  } else body.querySelectorAll('canvas').forEach(c => { c.style.width = (viewerZoom * 100) + '%'; c.style.maxWidth = viewerZoom > 1 ? 'none' : ''; });
+  if (old !== viewerZoom) {
+    body.scrollLeft = fx * body.scrollWidth - (anchor ? anchor.x : body.clientWidth / 2);
+    body.scrollTop = fy * body.scrollHeight - (anchor ? anchor.y : body.clientHeight / 2);
+  }
+  if ($('viewerZoomVal')) $('viewerZoomVal').textContent = Math.round(viewerZoom * 100) + '%';
+}
+function stepViewerZoom(dir) {
+  const i = VIEWER_ZOOMS.findIndex(z => z >= viewerZoom - 0.01);
+  const next = dir > 0 ? VIEWER_ZOOMS.find(z => z > viewerZoom + 0.01) : [...VIEWER_ZOOMS].reverse().find(z => z < viewerZoom - 0.01);
+  setViewerZoom(next || (dir > 0 ? 4 : 1));
+}
+function initViewerZoom() {
+  const body = $('viewerBody'); if (!body || body.dataset.zoomInit) return; body.dataset.zoomInit = '1';
+  // Konten baru → reset zoom & tampilkan kontrol hanya untuk gambar / PDF
+  let lastFirst = null;
+  new MutationObserver(() => {
+    const first = body.firstElementChild;
+    if (first && first === lastFirst) { // halaman PDF berikutnya selesai dirender → ikut zoom saat ini
+      body.querySelectorAll('canvas').forEach(c => { c.style.width = (viewerZoom * 100) + '%'; c.style.maxWidth = viewerZoom > 1 ? 'none' : ''; });
+      $('viewerZoom').classList.toggle('hidden', !viewerZoomTarget()); return;
+    }
+    lastFirst = first;
+    viewerZoom = 1; body.classList.remove('zoomed');
+    if ($('viewerZoomVal')) $('viewerZoomVal').textContent = '100%';
+    $('viewerZoom').classList.toggle('hidden', !viewerZoomTarget());
+  }).observe(body, { childList: true });
+  let pinch = null, lastTap = 0;
+  const pt = (t) => { const r = body.getBoundingClientRect(); return { x: (t[0].clientX + t[1].clientX) / 2 - r.left, y: (t[0].clientY + t[1].clientY) / 2 - r.top }; };
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  body.addEventListener('touchstart', e => {
+    if (!viewerZoomTarget()) return;
+    if (e.touches.length === 2) { pinch = { d: dist(e.touches), z: viewerZoom }; e.preventDefault(); }
+    else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - lastTap < 300) { const r = body.getBoundingClientRect(); setViewerZoom(viewerZoom > 1 ? 1 : 2.5, { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }); e.preventDefault(); lastTap = 0; }
+      else lastTap = now;
+    }
+  }, { passive: false });
+  body.addEventListener('touchmove', e => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault(); setViewerZoom(pinch.z * dist(e.touches) / pinch.d, pt(e.touches));
+  }, { passive: false });
+  body.addEventListener('touchend', e => { if (e.touches.length < 2) pinch = null; });
+  body.addEventListener('dblclick', e => { const r = body.getBoundingClientRect(); setViewerZoom(viewerZoom > 1 ? 1 : 2.5, { x: e.clientX - r.left, y: e.clientY - r.top }); });
+  body.addEventListener('wheel', e => { if (!e.ctrlKey || !viewerZoomTarget()) return; e.preventDefault(); const r = body.getBoundingClientRect(); setViewerZoom(viewerZoom * (e.deltaY < 0 ? 1.1 : 0.9), { x: e.clientX - r.left, y: e.clientY - r.top }); }, { passive: false });
+}
 async function editPhotoMeta(id) {
   const p = photoById(id); if (!p) return;
   const v = await iosAlert({ title: 'Ubah keterangan', message: 'Nama nasabah / keterangan', input: { value: p.label || '' }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });
@@ -7946,6 +8041,7 @@ function startApp() {
 
   initAudioEngine();
   initDropzone();
+  initViewerZoom();
   setInterval(updateRealtimeClock, 1000);
 
   let lastTab = null;

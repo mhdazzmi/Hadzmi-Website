@@ -285,7 +285,74 @@ async function openPhotoViewer(id) {
   try { const url = await fileObjectUrl(p.fileId); $('viewerBody').innerHTML = `<img src="${url}" alt="">`; }
   catch (err) { $('viewerBody').innerHTML = `<div class="empty"><i class="fas fa-triangle-exclamation"></i><div class="e-sub">${esc(err.message)}</div></div>`; }
 }
-function closeViewer() { closeSheet('sheetViewer'); }
+function closeViewer() { closeSheet('sheetViewer'); setViewerFullscreen(false); }
+
+// ---------- Viewer: layar penuh + zoom (cubit, ketuk 2×, tombol −/+) ----------
+let viewerZoom = 1;
+const VIEWER_ZOOMS = [1, 1.5, 2, 3, 4];
+function setViewerFullscreen(on) {
+  const bd = $('sheetViewer'); if (!bd) return;
+  bd.classList.toggle('fs', on);
+  const i = $('viewerFsBtn') && $('viewerFsBtn').querySelector('i'); if (i) i.className = on ? 'fas fa-compress' : 'fas fa-expand';
+}
+function toggleViewerFullscreen() { setViewerFullscreen(!$('sheetViewer').classList.contains('fs')); }
+function viewerZoomTarget() { const b = $('viewerBody'); return b.querySelector(':scope > img') || (b.querySelector('canvas') ? b : null); }
+function setViewerZoom(z, anchor) {
+  const body = $('viewerBody'), tgt = viewerZoomTarget(); if (!tgt) return;
+  const old = viewerZoom; viewerZoom = Math.max(1, Math.min(4, z));
+  const fx = anchor ? (body.scrollLeft + anchor.x) / Math.max(1, body.scrollWidth) : 0.5;
+  const fy = anchor ? (body.scrollTop + anchor.y) / Math.max(1, body.scrollHeight) : (body.scrollTop + body.clientHeight / 2) / Math.max(1, body.scrollHeight);
+  body.classList.toggle('zoomed', viewerZoom > 1);
+  if (tgt.tagName === 'IMG') {
+    if (viewerZoom > 1) { tgt.style.width = (body.clientWidth * viewerZoom) + 'px'; tgt.style.maxWidth = 'none'; tgt.style.maxHeight = 'none'; }
+    else { tgt.style.width = ''; tgt.style.maxWidth = ''; tgt.style.maxHeight = ''; }
+  } else body.querySelectorAll('canvas').forEach(c => { c.style.width = (viewerZoom * 100) + '%'; c.style.maxWidth = viewerZoom > 1 ? 'none' : ''; });
+  if (old !== viewerZoom) {
+    body.scrollLeft = fx * body.scrollWidth - (anchor ? anchor.x : body.clientWidth / 2);
+    body.scrollTop = fy * body.scrollHeight - (anchor ? anchor.y : body.clientHeight / 2);
+  }
+  if ($('viewerZoomVal')) $('viewerZoomVal').textContent = Math.round(viewerZoom * 100) + '%';
+}
+function stepViewerZoom(dir) {
+  const i = VIEWER_ZOOMS.findIndex(z => z >= viewerZoom - 0.01);
+  const next = dir > 0 ? VIEWER_ZOOMS.find(z => z > viewerZoom + 0.01) : [...VIEWER_ZOOMS].reverse().find(z => z < viewerZoom - 0.01);
+  setViewerZoom(next || (dir > 0 ? 4 : 1));
+}
+function initViewerZoom() {
+  const body = $('viewerBody'); if (!body || body.dataset.zoomInit) return; body.dataset.zoomInit = '1';
+  // Konten baru → reset zoom & tampilkan kontrol hanya untuk gambar / PDF
+  let lastFirst = null;
+  new MutationObserver(() => {
+    const first = body.firstElementChild;
+    if (first && first === lastFirst) { // halaman PDF berikutnya selesai dirender → ikut zoom saat ini
+      body.querySelectorAll('canvas').forEach(c => { c.style.width = (viewerZoom * 100) + '%'; c.style.maxWidth = viewerZoom > 1 ? 'none' : ''; });
+      $('viewerZoom').classList.toggle('hidden', !viewerZoomTarget()); return;
+    }
+    lastFirst = first;
+    viewerZoom = 1; body.classList.remove('zoomed');
+    if ($('viewerZoomVal')) $('viewerZoomVal').textContent = '100%';
+    $('viewerZoom').classList.toggle('hidden', !viewerZoomTarget());
+  }).observe(body, { childList: true });
+  let pinch = null, lastTap = 0;
+  const pt = (t) => { const r = body.getBoundingClientRect(); return { x: (t[0].clientX + t[1].clientX) / 2 - r.left, y: (t[0].clientY + t[1].clientY) / 2 - r.top }; };
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  body.addEventListener('touchstart', e => {
+    if (!viewerZoomTarget()) return;
+    if (e.touches.length === 2) { pinch = { d: dist(e.touches), z: viewerZoom }; e.preventDefault(); }
+    else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - lastTap < 300) { const r = body.getBoundingClientRect(); setViewerZoom(viewerZoom > 1 ? 1 : 2.5, { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }); e.preventDefault(); lastTap = 0; }
+      else lastTap = now;
+    }
+  }, { passive: false });
+  body.addEventListener('touchmove', e => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault(); setViewerZoom(pinch.z * dist(e.touches) / pinch.d, pt(e.touches));
+  }, { passive: false });
+  body.addEventListener('touchend', e => { if (e.touches.length < 2) pinch = null; });
+  body.addEventListener('dblclick', e => { const r = body.getBoundingClientRect(); setViewerZoom(viewerZoom > 1 ? 1 : 2.5, { x: e.clientX - r.left, y: e.clientY - r.top }); });
+  body.addEventListener('wheel', e => { if (!e.ctrlKey || !viewerZoomTarget()) return; e.preventDefault(); const r = body.getBoundingClientRect(); setViewerZoom(viewerZoom * (e.deltaY < 0 ? 1.1 : 0.9), { x: e.clientX - r.left, y: e.clientY - r.top }); }, { passive: false });
+}
 async function editPhotoMeta(id) {
   const p = photoById(id); if (!p) return;
   const v = await iosAlert({ title: 'Ubah keterangan', message: 'Nama nasabah / keterangan', input: { value: p.label || '' }, actions: [{ text: 'Batal', value: false }, { text: 'Simpan', value: true, bold: true }] });

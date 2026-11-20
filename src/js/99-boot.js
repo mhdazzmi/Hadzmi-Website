@@ -20,6 +20,7 @@ function startApp() {
 
   initAudioEngine();
   initDropzone();
+  initViewerZoom();
   setInterval(updateRealtimeClock, 1000);
 
   let lastTab = null;
