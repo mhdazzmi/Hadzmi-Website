@@ -240,7 +240,7 @@ function updateMediaSessionLockscreen() {
     const titleText = song.title || 'Unknown Track';
     const artistText = song.artist || song.category || 'Music Library';
     const cu = songCoverUrl(song);
-    const coverArt = cu && !/^blob:/.test(cu) ? new URL(cu, location.href).href : new URL('icons/icon-512.png?v=3', location.href).href;
+    const coverArt = cu && !/^blob:/.test(cu) ? new URL(cu, location.href).href : new URL('icons/icon-512.png?v=4', location.href).href;
     document.title = `${titleText} - ${artistText}`;
     if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
