@@ -11,7 +11,9 @@ public/                 ← isi website yang di-deploy
   index.html            ← FILE FINAL (hasil build; juga bisa ditempel ke Blogspot)
   sw.js                 ← service worker (Web Push + klik notifikasi)
   manifest.webmanifest, icons/  ← PWA (bisa "Tambah ke Layar Utama")
+public/games/           ← Nexo Games (game properti + chat bareng teman)
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
+worker/nexo.js          ← server realtime Nexo Games (Durable Object)
 wrangler.jsonc          ← konfigurasi Cloudflare
 src/                    ← kode sumber UI (styles.css, index.html, js/01..11)
 build.mjs               ← gabungkan src/ → public/index.html   (npm run build)
@@ -49,6 +51,41 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 - Lewat tengah malam, aplikasi terkunci sendiri (walaupun sedang terbuka) dan minta sandi sekali lagi.
 - Kalau mau 24 jam bergulir sejak login: `APP_AUTH.sessionMode = 'rolling24h'`.
 - Tombol **Kunci Sekarang** ada di Settings → Keamanan.
+
+---
+
+## 🎲 Nexo Games: halaman baru `/games/` (main & chat bareng teman)
+
+Web terpisah untuk kamu dan teman-teman (tidak memakai PIN pemilik Nexa). Buka `https://<domainmu>/games/`, lalu bagikan link-nya ke teman. Bisa dipasang ke Layar Utama sebagai app sendiri.
+
+| Fitur | Isi |
+|---|---|
+| **Akun teman** | Ketik nama. Kalau sudah ada, masuk dengan **PIN 4 angka**. Kalau belum, buat akun: pilih avatar (foto atau emoji + warna) lalu buat PIN. Akun pertama otomatis jadi **Admin**. Salah PIN 5x → dikunci 5 menit. |
+| **Nexo Kota Dunia** | Game properti 2–10 pemain: 22 kota dunia dengan ilustrasi landmark (Eiffel, Monas, Big Ben, Burj Khalifa, …), 4 bandara, 2 perusahaan, kartu Kesempatan & Dana Umum, penjara, rumah/hotel, gadai, **lelang**, **tukar-menukar** properti/uang/kartu, utang & bangkrut. Uang dalam **Rp** (mulai Rp 15 jt, lewat START +Rp 2 jt). |
+| **Mode Live / Santai** | **Live**: timer per giliran (30 dtk–2 mnt); kalau habis, giliran jalan otomatis. **Santai**: tanpa timer, cocok beda zona waktu. Pemain dapat notifikasi saat gilirannya. Tombol **👋 Colek** untuk mengingatkan teman. Opsi batas waktu game (yang terkaya menang), jackpot Parkir Bebas, lelang on/off. |
+| **Seru-seruan** | Lempar emoji di atas papan, papan juara (menang/main), riwayat game, "Main lagi" dengan pemain yang sama, confetti untuk pemenang. |
+| **Chat** | Gaya iMessage: **Grup Nexo** (semua teman) + **pesan pribadi** 1 lawan 1 (bisa dibuka dari dalam game). Kirim **foto** (otomatis dikompres), balas pesan, reaksi ❤️👍😂 (tekan lama / klik kanan), hapus pesan, "Dibaca"/"Terkirim", indikator sedang mengetik, status online. |
+| **Notifikasi** | Push saat ada chat, giliran main, ajakan main, tawaran, colekan, dan game selesai, walau web ditutup. Kalau web sedang dibuka, muncul banner ala iOS. |
+| **Tema** | Terang (default), Gelap, atau Otomatis ikut sistem (Saya → Tampilan). |
+
+### Setup (sekali saja)
+1. **Deploy seperti biasa** (`git push` → Cloudflare). `wrangler.jsonc` sudah berisi Durable Object `NEXO` (class `NexoHub`, SQLite) dan migrasi `nexo-v1`. Keduanya dibuat otomatis saat deploy. Durable Object SQLite termasuk **paket gratis** Workers.
+2. **R2 (`FILES`) & KV (`HUB_KV`)** sudah ada, dan dipakai juga untuk foto chat/avatar (prefix `nexo/`) serta kunci push (kunci VAPID yang sama dengan Nexa). Tidak perlu variabel baru.
+3. Buka `/games/` lalu buat akun pertamamu (otomatis jadi Admin). Opsional: **Saya → Admin → Kode undangan**, supaya hanya teman yang tahu kodenya yang bisa daftar.
+4. Bagikan link `https://<domainmu>/games/` ke teman (Saya → Bagikan link).
+   - **iPhone**: buka di Safari → Bagikan → **Tambah ke Layar Utama** → buka dari ikon → Saya → Notifikasi push → nyalakan (wajib untuk notifikasi iOS 16.4+).
+   - **Laptop Windows**: buka di Chrome/Edge → izinkan notifikasi (bisa juga "Install app" dari menu browser).
+
+### Cara kerja & penyimpanan
+| Data | Tempat |
+|---|---|
+| Akun, sesi login, chat, status game, langganan push | **Durable Object `NexoHub`** (satu instance, SQLite). Realtime lewat WebSocket (hibernation, hemat kuota). |
+| Foto chat & avatar | **Cloudflare R2** `nexo/<id>` (link acak yang tidak bisa ditebak) |
+| Tema, akun terakhir di perangkat | localStorage |
+
+- Semua aturan game dijalankan di server (`public/games/engine.js` dipakai bersama oleh server & browser), jadi dadu tidak bisa dicurangi dari HP.
+- Timer mode Live memakai **alarm** Durable Object. Push memakai Web Push VAPID tanpa payload, seperti Nexa.
+- Kode: `public/games/` (index.html, app.css, core.js, app.js, chat.js, game.js, engine.js, landmarks.js, sw.js) dan `worker/nexo.js`. Tidak perlu build.
 
 ---
 

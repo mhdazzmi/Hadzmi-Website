@@ -17,6 +17,13 @@
   "r2_buckets": [
     { "binding": "FILES", "bucket_name": "hadzmi-hub-files" }
   ],
+  // === NEXO GAMES: server realtime (chat + game) — Durable Object SQLite, termasuk paket gratis ===
+  "durable_objects": {
+    "bindings": [{ "name": "NEXO", "class_name": "NexoHub" }]
+  },
+  "migrations": [
+    { "tag": "nexo-v1", "new_sqlite_classes": ["NexoHub"] }
+  ],
   "vars": {
     "FIREBASE_PROJECT_ID": "web-hadzmi-new"
   },

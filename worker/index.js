@@ -14,6 +14,8 @@
    ========================================================= */
 
 import { healthcareAi } from './healthcare.js';
+import { handleNexo } from './nexo.js';
+export { NexoHub } from './nexo.js';
 
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const MAX_EVENTS = 400;
@@ -57,6 +59,9 @@ async function handleApi(request, env, url, ctx) {
     if (ready.ok) { try { const v = await getVapid(env, false); vapidPublicKey = v ? v.publicKey : null; } catch (e) { console.error('vapid', e && e.stack || e); } }
     return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, gemini: !!env.GEMINI_API_KEY, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV }, ai: { ready: !!env.GEMINI_API_KEY, model: geminiModel(env) } });
   }
+
+  // ---- Nexo Games (akun teman sendiri, tidak memakai login Firebase pemilik) ----
+  if (path.startsWith('/api/nexo/')) return handleNexo(request, env, url);
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
   if (path === '/api/pending' && method === 'GET') {
@@ -237,7 +242,7 @@ async function loadVapidJwk(env, create) {
   }
   return jwk;
 }
-async function getVapid(env, create) {
+export async function getVapid(env, create) {
   if (vapidCache && !env.VAPID_PRIVATE_JWK) return vapidCache;
   const jwk = await loadVapidJwk(env, create);
   if (!jwk) return null;
@@ -260,7 +265,7 @@ export async function vapidJwt(audience, env, vapid) {
   return header + '.' + payload + '.' + b64urlEncode(sig);
 }
 
-async function sendPush(sub, env, vapid) {
+export async function sendPush(sub, env, vapid) {
   const audience = new URL(sub.endpoint).origin;
   const jwt = await vapidJwt(audience, env, vapid);
   const res = await fetch(sub.endpoint, {

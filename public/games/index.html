@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#F2F2F7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Nexo Games">
+  <meta name="description" content="Main game properti kota dunia dan chat bareng teman.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Nexo Games</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="app.css?v=1">
+  <script>
+    (function () { try { var p = JSON.parse(localStorage.getItem('nexo.theme') || '"light"');
+      var t = p === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : p;
+      document.documentElement.dataset.theme = t; } catch (e) {} })();
+  </script>
+</head>
+<body>
+  <!-- Masuk / daftar -->
+  <div id="auth" class="auth hidden"></div>
+
+  <!-- Aplikasi -->
+  <div id="app" class="hidden">
+    <section class="view" id="v-games"></section>
+    <section class="view" id="v-chat"></section>
+    <section class="view" id="v-me"></section>
+    <nav class="tabbar" id="tabbar">
+      <button class="tab" data-tab="games"><i class="fa-solid fa-dice"></i>Games<span class="badge hidden" id="b-games"></span></button>
+      <button class="tab" data-tab="chat"><i class="fa-solid fa-comment"></i>Chat<span class="badge hidden" id="b-chat"></span></button>
+      <button class="tab" data-tab="me"><i class="fa-solid fa-circle-user"></i>Saya</button>
+    </nav>
+  </div>
+
+  <!-- Layar yang di-"push" -->
+  <div class="screen" id="scr-game"></div>
+  <div class="screen" id="scr-chat"></div>
+
+  <div class="conn" id="conn"><span class="spin"></span> Menyambungkan…</div>
+
+  <script type="module" src="app.js?v=1"></script>
+</body>
+</html>
