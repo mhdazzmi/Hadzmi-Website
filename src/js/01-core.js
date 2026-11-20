@@ -534,6 +534,7 @@ const SEARCH_MAP = [
   { label: 'Bookmarks', icon: 'fa-bookmark', color: 'bg-indigo', keys: ['bookmark', 'link', 'url'], action: () => navigateFromQuickMenu('tab-hub', 'sub-links') },
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
+  { label: 'Nexa AI', icon: 'fa-wand-magic-sparkles', color: 'bg-indigo', keys: ['ai', 'nexa', 'tanya', 'asisten', 'analisis', 'gemini', 'chat'], action: () => openAiChat() },
   { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
   { key: 'work.kas', label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
   { key: 'work.photos', label: 'Bukti Kas', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },

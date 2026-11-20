@@ -21,6 +21,7 @@ function startApp() {
   initAudioEngine();
   initDropzone();
   initViewerZoom();
+  initAiChat();
   setInterval(updateRealtimeClock, 1000);
 
   let lastTab = null;

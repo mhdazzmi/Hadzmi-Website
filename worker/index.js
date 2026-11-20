@@ -53,7 +53,7 @@ async function handleApi(request, env, url) {
     const ready = isConfigured(env);
     let vapidPublicKey = null;
     if (ready.ok) { try { const v = await getVapid(env, false); vapidPublicKey = v ? v.publicKey : null; } catch (e) { console.error('vapid', e && e.stack || e); } }
-    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV } });
+    return json({ pushReady: ready.ok, missing: ready.missing, vapidPublicKey, stores: { r2: !!env.FILES, drive: !!(env.DRIVE_SCRIPT_URL && env.DRIVE_SECRET), kv: !!env.HUB_KV }, ai: { ready: !!env.GEMINI_API_KEY, model: geminiModel(env) } });
   }
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
@@ -111,6 +111,9 @@ async function handleApi(request, env, url) {
     if (!res.ok) throw httpError(502, 'Sumber menolak (' + res.status + ')');
     return new Response(res.body, { headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream', 'Cache-Control': 'private, no-store' } });
   }
+
+  // Nexa AI: proxy ke Gemini. API key hanya ada di server (secret GEMINI_API_KEY).
+  if (path === '/api/ai' && method === 'POST') return json(await askGemini(await readJson(request), env));
 
   if (path === '/api/setup-vapid' && method === 'POST') {
     const v = await getVapid(env, true);
@@ -306,6 +309,33 @@ async function requireAuth(request, env) {
   if (user.uid !== env.OWNER_UID) throw httpError(403, 'Not the owner');
   if (!cfg.ok && cfg.missing.includes('HUB_KV')) throw httpError(503, 'KV belum diatur');
   return user;
+}
+
+// ---------------- NEXA AI (Gemini) ----------------
+function geminiModel(env) { return String(env.GEMINI_MODEL || 'gemini-2.5-flash').replace(/[^a-z0-9.\-]/gi, ''); }
+async function askGemini(body, env) {
+  if (!env.GEMINI_API_KEY) throw httpError(503, 'Nexa AI belum aktif: tambahkan secret GEMINI_API_KEY di Cloudflare.');
+  const contents = Array.isArray(body.contents) ? body.contents.slice(-40) : null;
+  if (!contents || !contents.length) throw httpError(400, 'contents kosong');
+  const req = { contents };
+  if (body.systemInstruction && typeof body.systemInstruction === 'object') req.systemInstruction = body.systemInstruction;
+  if (Array.isArray(body.tools)) req.tools = body.tools.slice(0, 4);
+  req.generationConfig = Object.assign({ temperature: 0.6, maxOutputTokens: 4096 }, body.generationConfig && typeof body.generationConfig === 'object' ? body.generationConfig : {});
+  const model = geminiModel(env);
+  const res = await fetch(`${String(env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com').replace(/\/+$/, '')}/v1beta/models/${model}:generateContent`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(req)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = (data.error && data.error.message) || ('HTTP ' + res.status);
+    if (res.status === 429) throw httpError(429, 'Kuota gratis Gemini sedang habis. Coba lagi beberapa saat lagi.');
+    if (res.status === 404) throw httpError(502, `Model "${model}" tidak ditemukan. Ganti variabel GEMINI_MODEL di Cloudflare.`);
+    if (res.status === 400 && /API key/i.test(msg)) throw httpError(502, 'GEMINI_API_KEY tidak valid. Periksa lagi di Cloudflare.');
+    throw httpError(502, 'Gemini: ' + msg.slice(0, 300));
+  }
+  const cand = (data.candidates || [])[0] || {};
+  const parts = (cand.content && cand.content.parts) || [];
+  return { parts, finishReason: cand.finishReason || null, model, usage: data.usageMetadata || null, blocked: data.promptFeedback && data.promptFeedback.blockReason || null };
 }
 
 // ---------------- HELPERS ----------------
