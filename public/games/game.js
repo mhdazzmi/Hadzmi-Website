@@ -235,7 +235,7 @@ function render(full) {
   if (G.engine !== E.ENGINE) { built = false; root.innerHTML = legacyHtml(); bindLegacy(); return; }
   if (G.status === 'lobby') { built = false; root.innerHTML = lobbyHtml(); bindLobby(); return; }
   if (!built || full) { root.innerHTML = shellHtml(); built = true; bindShell(); sizeBoard(); paintPhotos(); }
-  paintTiles(); placeTokens(); renderHud(); renderPanel();
+  paintTiles(); placeTokens(); renderHud(); renderPanel(); paintCorners();
   const myTurn = E.waitingFor(G).includes(me()) && G.status === 'playing';
   if (myTurn && !wasMyTurn) { sfx('turn', 0.2); haptic(30); }
   wasMyTurn = myTurn;
@@ -332,7 +332,9 @@ function shellHtml() {
       <div class="b3-center"><div class="b3-logo">NEXO</div><div class="b3-sub">KOTA DUNIA</div></div>
       ${E.SPACES.map(tileHtml).join('')}
       <div class="dice3" id="dice3"><div class="cube" id="cubeA">${[1, 2, 3, 4, 5, 6].map(faces).join('')}</div><div class="cube" id="cubeB">${[1, 2, 3, 4, 5, 6].map(faces).join('')}</div></div>
-      <div class="tokens" id="tokens"></div></div></div><div id="b3-over" class="b3-over"></div></div>
+      <div class="stack3" style="left:-14%;top:50%" data-st="0"></div><div class="stack3" style="left:50%;top:-14%" data-st="1"></div><div class="stack3" style="left:114%;top:50%" data-st="2"></div><div class="stack3" style="left:50%;top:114%" data-st="3"></div>
+      <div class="sign3"><div class="sign3-in"><div class="sign3-k" id="sign-k">Giliran</div><div class="sign3-v" id="sign-v">-</div></div></div>
+      <div class="tokens" id="tokens"></div></div></div><div class="corner-hud" id="corner-hud"></div><div id="b3-over" class="b3-over"></div></div>
       <div class="hud" id="hud"></div></div>
     <div class="g-side"><div class="g-panel"><div class="seg" id="p-seg">
       <button data-p="players">Pemain</button><button data-p="assets">Asetku</button><button data-p="log">Riwayat</button></div><div id="p-body"></div></div></div></div>`;
@@ -412,6 +414,35 @@ function placeTokens() {
     });
   }
   $$('.tk', box_).forEach(t => { if (!seen.has(t.dataset.uid)) t.remove(); });
+}
+
+// ---------- Panel sudut, tumpukan uang, papan tanda ----------
+function paintCorners() {
+  const el = $('#corner-hud'); if (!el || !G) return;
+  const order = (G.order.length ? G.order : G.players.map(p => p.id)).slice(0, 4);
+  const rank = G.players.filter(p => !p.bankrupt).map(p => p.id).sort((a, b) => E.netWorth(G, b) - E.netWorth(G, a));
+  const waiting = E.waitingFor(G);
+  el.innerHTML = order.map((id, k) => {
+    const p = pl(id), r = rank.indexOf(id) + 1;
+    return `<div class="ch p${k} ${waiting.includes(id) ? 'cur' : ''} ${p.bankrupt ? 'out' : ''}" style="--pc:${p.color}" data-pl="${id}">${r ? `<span class="ch-rank">${['1st', '2nd', '3rd'][r - 1] || r + 'th'}</span>` : ''}${pav(id, 30)}<div style="min-width:0"><div class="ch-n">${esc(p.name)}</div><div class="ch-c">${p.bankrupt ? 'Bangkrut' : rp(p.cash).replace('Rp ', '')}</div></div></div>`;
+  }).join('');
+  el.onclick = e => { const c = e.target.closest('[data-pl]'); if (c) playerSheet(c.dataset.pl); };
+  $$('.stack3').forEach(st => {
+    const k = +st.dataset.st, id = order[k], p = id && pl(id);
+    const n = !p || p.bankrupt ? 0 : Math.max(1, Math.min(12, Math.round(p.cash / 3000000)));
+    const sig = String(n);
+    if (st.dataset.sig === sig) return;
+    st.dataset.sig = sig;
+    let h = '';
+    for (let i = 0; i < n; i++) h += box(0.62, 0.32, 0.13, { x: (i % 2 ? 0.36 : -0.36), y: (i % 4 > 1 ? 0.4 : 0), z: Math.floor(i / 4) * 0.135 });
+    st.innerHTML = h;
+  });
+  const who = waiting.length === 1 ? pl(waiting[0]) : null;
+  const kk = $('#sign-k'), v = $('#sign-v');
+  if (kk && v) {
+    if (G.status === 'ended') { kk.textContent = 'Pemenang'; v.textContent = (pl(G.winner) || {}).name || '-'; }
+    else { kk.textContent = who ? (who.id === me() ? 'Giliranmu' : 'Giliran ' + who.name) : 'Menunggu'; v.textContent = who ? rp(who.cash).replace('Rp ', '') : '-'; }
+  }
 }
 
 // ---------- Dadu 3D ----------
