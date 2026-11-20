@@ -178,7 +178,7 @@ function buildReminderEvents(now, horizonDays) {
   }
 
   if (prefs.kas && !appState.kas.some(k => k.tanggal === today)) {
-    add({ key: 'kas_' + today, at: wibToEpoch(today, '20:00'), until: endOfWibDay(today), title: '💰 Catat kas hari ini', body: 'Belum ada entri Cash Ledger untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
+    add({ key: 'kas_' + today, at: wibToEpoch(today, '20:00'), until: endOfWibDay(today), title: '💰 Catat plus minus hari ini', body: 'Belum ada entri Plus Minus untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
   }
 
   if (prefs.digest) {

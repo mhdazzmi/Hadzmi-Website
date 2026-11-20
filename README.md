@@ -126,8 +126,8 @@ Kode: `public/healthcare/` (index.html, healthcare.css, app.js, ai-core.js) dan 
 ### 🏦 Menu Kerja (Work Space)
 | Sub-menu | Isi |
 |---|---|
-| **Selisih Kas** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan **PDF**. Data lama Cash Ledger tetap ada. |
-| **Bukti Kas** (foto) | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Tampilan galeri (grid), filter jenis, cari nama nasabah, pilih banyak → **Bagikan** (menu Bagikan iOS) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
+| **Plus Minus** | Catat kurang/lebih, nominal (otomatis berformat Rp), tanggal, **jam opsional**, keterangan; filter periode & laporan **PDF**. Data lama Cash Ledger tetap ada. |
+| **Foto Bukti** (foto) | Foto KTP / buku tabungan / bukti kas langsung dari kamera atau galeri → dikompres → disimpan privat di Cloudflare. Tampilan galeri (grid), filter jenis, cari nama nasabah, pilih banyak → **Bagikan** (menu Bagikan iOS) / **Unduh** / Hapus. Opsi hapus otomatis 7–90 hari (Settings). |
 | **Catatan** | Catatan khusus pekerjaan (terpisah dari Mind Dump). |
 | **Gudang File** | Upload banyak file sekaligus (PDF, gambar, dokumen, teks; maks 25 MB/file) ke folder (mis. "Materi BRI"); pratinjau PDF/gambar/teks, buka, unduh, kirim, ganti nama, pindah folder. |
 | **Upload Drive** | Uploader Google Drive dengan logika yang sama seperti uploader lama (Apps Script, multi-file, nama kustom `nama-1.ext`). |
@@ -141,7 +141,7 @@ Menampilkan pemakaian Firebase (data aplikasi, per kategori) dan Cloudflare (fot
 ### 🗄️ Penyimpanan File (Settings → Penyimpanan File)
 | Penyimpanan | Kapasitas gratis | Dipakai untuk | Cara aktifkan |
 |---|---|---|---|
-| **Cloudflare R2** (utama) | 10 GB | Lagu, cover, Galeri, Bukti Kas, Gudang File | Aktifkan R2 (tambah metode pembayaran, paket Free) → hapus `//` di blok `r2_buckets` pada `wrangler.jsonc`. Peringatan push otomatis di **7 GB (70%)** dan **8,5 GB (85%)**; upload otomatis berhenti di **9 GB** agar tidak kena tagihan. |
+| **Cloudflare R2** (utama) | 10 GB | Lagu, cover, Galeri, Foto Bukti, Gudang File | Aktifkan R2 (tambah metode pembayaran, paket Free) → hapus `//` di blok `r2_buckets` pada `wrangler.jsonc`. Peringatan push otomatis di **7 GB (70%)** dan **8,5 GB (85%)**; upload otomatis berhenti di **9 GB** agar tidak kena tagihan. |
 | **Google Drive** | 15 GB (akun Google) | Sama, pilih "Google Drive" saat upload | Pasang `apps-script/Code.gs` di script.google.com (Script Property `SECRET`) → deploy Web App → isi `DRIVE_SCRIPT_URL` (Text) & `DRIVE_SECRET` (Secret) di Cloudflare. |
 | Cloudflare KV (lama) | 1 GB | Cadangan otomatis bila R2 belum aktif | Sudah aktif |
 | Direct link | — | Lagu (.mp3/.m4a). Link YouTube tidak didukung | — |
@@ -174,7 +174,7 @@ Pusat notifikasi in-app (ikon lonceng) + banner gaya iOS + notifikasi sistem (se
 Semua bisa dinyalakan/dimatikan di **Settings → Notifikasi**. Dengan hosting Cloudflare + **Push** aktif, notifikasi tetap masuk walau website ditutup (lihat bagian Deploy ke Cloudflare). Di Blogspot, notifikasi hanya berjalan selama website terbuka.
 
 ### 📄 Ekspor PDF (pengganti Gmail)
-Mind Dump, Catatan Kerja, Countdown, daftar To-Do, laporan Focus/Sleep, dan laporan Selisih Kas bisa dijadikan **PDF** (header navy, tabel rapi). PDF langsung tampil sebagai preview → **WhatsApp** / **Bagikan** / **Unduh**.
+Mind Dump, Catatan Kerja, Countdown, daftar To-Do, laporan Focus/Sleep, dan laporan Plus Minus bisa dijadikan **PDF** (header navy, tabel rapi). PDF langsung tampil sebagai preview → **WhatsApp** / **Bagikan** / **Unduh**.
 
 ### 🎵 Music (dikembangkan)
 - **Now Playing** layar penuh (latar blur dari cover, swipe ke bawah untuk menutup)
@@ -219,7 +219,7 @@ Chat asisten di Home (**Tanya Nexa**) / Menu Cepat: tanya apa saja, analisis dat
 2. Cloudflare → Workers & Pages → `hadzmi-website-utama` → Settings → Variables and Secrets → Add → Type **Secret**, Name `GEMINI_API_KEY`, Value = key → Deploy.
 3. (Opsional) Variabel `GEMINI_MODEL` (default `gemini-flash-latest`). Bila model sibuk/kuota habis/tidak tersedia, Nexa otomatis mencoba model Flash lain. Secret yang sama juga dipakai Nexa Health.
 
-**Privasi:** API key hanya di server. Yang dikirim ke Gemini: ringkasan To-Do, Countdown, catatan, kas, focus/tidur, bookmark, nama kartu Wallet, nama file Gudang. **Tidak pernah dikirim:** Galeri Tersembunyi, nomor & CVV kartu, nomor HP kontak, nama nasabah Bukti Kas, PIN. Riwayat chat hanya tersimpan di perangkat. Catatan: pada tier gratis, Google dapat memakai data prompt untuk meningkatkan layanannya.
+**Privasi:** API key hanya di server. Yang dikirim ke Gemini: ringkasan To-Do, Countdown, catatan, kas, focus/tidur, bookmark, nama kartu Wallet, nama file Gudang. **Tidak pernah dikirim:** Galeri Tersembunyi, nomor & CVV kartu, nomor HP kontak, nama nasabah Foto Bukti, PIN. Riwayat chat hanya tersimpan di perangkat. Catatan: pada tier gratis, Google dapat memakai data prompt untuk meningkatkan layanannya.
 
 ## 💡 Rekomendasi platform (gratis, jangka panjang, siap API)
 

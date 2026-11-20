@@ -1009,7 +1009,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .ai-action { display: flex; align-items: center; gap: 10px; align-self: flex-start; max-width: 92%; padding: 8px 10px 8px 12px; border-radius: 14px; background: rgba(52,199,89,.12); color: #1E7A36; font-size: 14px; font-weight: 500; }
 .ai-action.undone { background: var(--fill3); color: #8E8E93; text-decoration: line-through; }
 .ai-action button { border: 0; background: #fff; color: var(--blue); font-weight: 600; font-size: 13px; padding: 5px 10px; border-radius: 999px; cursor: pointer; font-family: var(--font); flex: none; }
-.ai-typing { display: inline-flex; gap: 4px; padding: 14px 16px; }
+.ai-typing { display: inline-flex; gap: 4px; padding: 4px 2px; }
 .ai-typing span { width: 7px; height: 7px; border-radius: 50%; background: #8E8E93; animation: aiDot 1.2s infinite ease-in-out; }
 .ai-typing span:nth-child(2) { animation-delay: .15s; } .ai-typing span:nth-child(3) { animation-delay: .3s; }
 @keyframes aiDot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
@@ -1025,3 +1025,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 /* Galeri: tombol terkunci hanya ikon gembok */
 .seg button.seg-icon { flex: 0 0 52px; font-size: 14px; }
 .ai-retry { margin-top: 8px; border: 0; background: #fff; color: var(--blue); font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer; font-family: var(--font); }
+.ai-wait { display: block; font-size: 12px; color: #8E8E93; margin-top: 4px; }
+.ai-caret { display: inline-block; width: 7px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--blue); border-radius: 2px; animation: aiBlink 1s steps(2) infinite; }
+@keyframes aiBlink { 50% { opacity: 0; } }

@@ -331,19 +331,22 @@ async function requireAuth(request, env) {
 // Balas SEGERA lalu kirim spasi tiap 3 detik sampai jawaban Gemini siap, supaya koneksi HP (4G/iOS)
 // tidak diputus karena menganggur. Spasi di depan JSON tetap JSON yang valid.
 function aiHeartbeatResponse(body, env, ctx) {
+  // Balasan berupa baris-baris JSON (NDJSON): {"d":"potongan teks"} … lalu {"done":true,…} atau {"error":…}.
+  // Baris kosong dikirim tiap 3 detik sebagai "detak" agar koneksi HP tidak diputus saat menunggu.
   const { readable, writable } = new TransformStream();
   const w = writable.getWriter(), enc = new TextEncoder(), t0 = Date.now();
-  w.write(enc.encode(' ')).catch(() => {});
-  const beat = setInterval(() => { w.write(enc.encode(' ')).catch(() => {}); }, 3000);
+  let closed = false;
+  const send = (obj) => closed ? Promise.resolve() : w.write(enc.encode((obj ? JSON.stringify(obj) : '') + '\n')).catch(() => { closed = true; });
+  send(null);
+  const beat = setInterval(() => send(null), 3000);
   const job = (async () => {
-    let out;
-    try { out = await askGemini(body, env); out.ms = Date.now() - t0; }
-    catch (e) { out = { error: (e && e.message) || 'Error', status: (e && e.status) || 500 }; if (!e || !e.status || e.status >= 500) console.error('AI error', e && e.stack || e); }
+    try { const out = await askGemini(body, env, d => send({ d })); out.done = true; out.ms = Date.now() - t0; await send(out); }
+    catch (e) { await send({ error: (e && e.message) || 'Error', status: (e && e.status) || 500 }); if (!e || !e.status || e.status >= 500) console.error('AI error', e && e.stack || e); }
     clearInterval(beat);
-    try { await w.write(enc.encode(JSON.stringify(out))); await w.close(); } catch (e) {}
+    try { await w.close(); } catch (e) {}
   })();
   if (ctx && ctx.waitUntil) ctx.waitUntil(job);
-  return new Response(readable, { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store, no-transform' } });
+  return new Response(readable, { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store, no-transform' } });
 }
 
 // Sama seperti Nexa Health: coba ulang saat sibuk, model cadangan, dan cari model yang tersedia untuk kunci ini.
@@ -385,44 +388,43 @@ function cleanGeminiContents(list) {
   while (out.length && out[0].role !== 'user') out.shift();
   return out;
 }
-async function askGemini(body, env) {
+async function askGemini(body, env, onDelta) {
   if (!env.GEMINI_API_KEY) throw httpError(503, 'Nexa AI belum aktif: tambahkan secret GEMINI_API_KEY di Cloudflare.');
   const contents = cleanGeminiContents(body.contents);
   if (!contents.length) throw httpError(400, 'contents kosong');
-  const req = { contents };
-  if (body.systemInstruction && typeof body.systemInstruction === 'object') req.systemInstruction = body.systemInstruction;
-  if (Array.isArray(body.tools)) req.tools = body.tools.slice(0, 4);
-  req.generationConfig = { temperature: 0.6, maxOutputTokens: 4096 };
-  const payload = JSON.stringify(req);
-  // Lanjutan percakapan alat (tool) memakai model yang sama dengan langkah sebelumnya bila ada
+  const base = { contents };
+  if (body.systemInstruction && typeof body.systemInstruction === 'object') base.systemInstruction = body.systemInstruction;
+  if (Array.isArray(body.tools)) base.tools = body.tools.slice(0, 4);
+  // Batasi "berpikir" agar cepat; bila model tidak menerima pengaturan ini, ulangi tanpa itu.
+  const withThink = JSON.stringify(Object.assign({}, base, { generationConfig: { temperature: 0.6, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 512 } } }));
+  const noThink = JSON.stringify(Object.assign({}, base, { generationConfig: { temperature: 0.6, maxOutputTokens: 4096 } }));
   const preferred = GEMINI_MODEL_RE.test(String(body.model || '')) ? String(body.model) : null;
   const tried = new Set(), log = []; let busy = false, quota = false;
   const wait = ms => new Promise(r => setTimeout(r, ms));
   async function tryModel(m) {
     tried.add(m);
-    for (let attempt = 0; attempt < 2; attempt++) {
-      let res, data;
+    let payload = withThink;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let res;
       try {
-        res = await fetch(`${geminiBase(env)}/${encodeURIComponent(m)}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: payload });
-        data = await res.json().catch(() => ({}));
+        res = await fetch(`${geminiBase(env)}/${encodeURIComponent(m)}:streamGenerateContent?alt=sse`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: payload });
       } catch (e) { log.push(m + ': koneksi terputus'); return null; }
-      const msg = String((data.error && data.error.message) || '');
-      if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg) && !/Invalid JSON payload|Unknown name/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
-      // Kesalahan format permintaan: model lain pasti menolak juga → berhenti, jangan coba semua model
-      if (res.status === 400 && /Invalid JSON payload|Unknown name|INVALID_ARGUMENT|contents/i.test(msg) && !/API key/i.test(msg)) throw httpError(400, 'Format percakapan ditolak Gemini (' + msg.slice(0, 160) + '). Hapus percakapan (ikon tong sampah) lalu coba lagi.');
-      if ([429, 500, 503, 504].includes(res.status)) {
-        if (res.status === 429) quota = true; else busy = true;
-        if (attempt === 0 && res.status !== 429) { await wait(1200); continue; }
-        log.push(m + (res.status === 429 ? ': batas kuota' : ': sibuk')); return null;
-      }
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = String((data.error && data.error.message) || '');
+        if (res.status === 400 && payload === withThink && /thinking/i.test(msg)) { payload = noThink; continue; }
+        if (res.status === 404 || (res.status === 400 && /not found|not supported|is not available|no longer available/i.test(msg) && !/Invalid JSON payload|Unknown name/i.test(msg))) { log.push(m + ': tidak tersedia'); return null; }
+        if (res.status === 400 && /Invalid JSON payload|Unknown name|INVALID_ARGUMENT|contents/i.test(msg) && !/API key/i.test(msg)) throw httpError(400, 'Format percakapan ditolak Gemini (' + msg.slice(0, 160) + '). Hapus percakapan (ikon tong sampah) lalu coba lagi.');
+        if ([429, 500, 503, 504].includes(res.status)) {
+          if (res.status === 429) quota = true; else busy = true;
+          if (attempt === 0 && res.status !== 429) { await wait(1200); continue; }
+          log.push(m + (res.status === 429 ? ': batas kuota' : ': sibuk')); return null;
+        }
         if (/API key|API_KEY|PERMISSION_DENIED|unregistered callers/i.test(msg) || res.status === 401 || res.status === 403)
           throw httpError(502, 'Kunci Gemini ditolak Google. Periksa GEMINI_API_KEY di Cloudflare.');
         log.push(m + ': error ' + res.status + (msg ? ' (' + msg.slice(0, 120) + ')' : '')); return null;
       }
-      const cand = (data.candidates || [])[0] || {};
-      const parts = (cand.content && cand.content.parts) || [];
-      return { parts, finishReason: cand.finishReason || null, model: m, usage: data.usageMetadata || null, blocked: (data.promptFeedback && data.promptFeedback.blockReason) || null };
+      return await readGeminiStream(res, m, onDelta);
     }
     return null;
   }
@@ -438,6 +440,41 @@ async function askGemini(body, env) {
   if (busy) throw httpError(503, 'Server Gemini sedang sibuk. Tunggu 1–2 menit lalu coba lagi.' + detail);
   if (quota) throw httpError(429, 'Batas pemakaian gratis Gemini tercapai untuk sementara. Coba lagi beberapa menit lagi.' + detail);
   throw httpError(502, 'Nexa AI belum bisa menghubungi Gemini.' + detail);
+}
+/** Baca SSE Gemini: teneruskan potongan teks ke onDelta, kumpulkan part lengkap (teks, functionCall, thoughtSignature). */
+async function readGeminiStream(res, model, onDelta) {
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  const parts = []; let buf = '', textPart = null, finishReason = null, usage = null, blocked = null;
+  const handle = (data) => {
+    if (data.promptFeedback && data.promptFeedback.blockReason) blocked = data.promptFeedback.blockReason;
+    if (data.usageMetadata) usage = data.usageMetadata;
+    const cand = (data.candidates || [])[0]; if (!cand) return;
+    if (cand.finishReason) finishReason = cand.finishReason;
+    for (const p of ((cand.content && cand.content.parts) || [])) {
+      if (p.thought) continue;
+      if (p.functionCall) { parts.push(p); textPart = null; continue; }
+      if (typeof p.text === 'string') {
+        if (!textPart) { textPart = { text: '' }; parts.push(textPart); }
+        textPart.text += p.text;
+        if (p.thoughtSignature) textPart.thoughtSignature = p.thoughtSignature;
+        if (p.text) onDelta(p.text);
+      } else if (p.thoughtSignature) {
+        if (textPart) textPart.thoughtSignature = p.thoughtSignature; else parts.push({ text: '', thoughtSignature: p.thoughtSignature });
+      }
+    }
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) buf += dec.decode(value, { stream: true });
+    let k;
+    while ((k = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, k).trim(); buf = buf.slice(k + 1);
+      if (line.startsWith('data:')) { try { handle(JSON.parse(line.slice(5).trim())); } catch (e) {} }
+    }
+    if (done) break;
+  }
+  if (buf.trim().startsWith('data:')) { try { handle(JSON.parse(buf.trim().slice(5).trim())); } catch (e) {} }
+  return { parts, finishReason, model, usage, blocked };
 }
 
 // ---------------- HELPERS ----------------

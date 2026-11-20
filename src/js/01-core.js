@@ -409,7 +409,7 @@ const LABEL_GROUPS = [
   ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Planner'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
   ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
   ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus'], ['hub.wallet', 'Wallet']]],
-  ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Bukti Kas'], ['work.kas', 'Selisih Kas'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
+  ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Foto Bukti'], ['work.kas', 'Plus Minus'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
 ];
 const LABEL_DEFAULTS = {};
 LABEL_GROUPS.forEach(([, items]) => items.forEach(([k, d]) => { LABEL_DEFAULTS[k] = d; }));
@@ -536,8 +536,8 @@ const SEARCH_MAP = [
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
   { label: 'Nexa AI', icon: 'fa-wand-magic-sparkles', color: 'bg-indigo', keys: ['ai', 'nexa', 'tanya', 'asisten', 'analisis', 'gemini', 'chat'], action: () => openAiChat() },
   { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
-  { key: 'work.kas', label: 'Selisih Kas', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['kas', 'cash', 'selisih', 'uang', 'teller'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
-  { key: 'work.photos', label: 'Bukti Kas', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
+  { key: 'work.kas', label: 'Plus Minus', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['plus', 'minus', 'over', 'short', 'kas', 'cash', 'selisih', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
+  { key: 'work.photos', label: 'Foto Bukti', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
   { key: 'work.notes', label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
   { key: 'work.docs', label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
   { key: 'work.upload', label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
