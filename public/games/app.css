@@ -202,9 +202,9 @@ html[data-theme="dark"] .seg button.on { background: #636366; }
 
 /* ---------- Auth ---------- */
 .auth { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(var(--safe-t) + 24px) 24px calc(var(--safe-b) + 24px);
-  background: radial-gradient(110% 70% at 50% 0%, color-mix(in srgb, var(--indigo) 26%, transparent), transparent 62%), var(--bg); }
+  background: radial-gradient(110% 70% at 50% 0%, color-mix(in srgb, var(--blue) 24%, transparent), transparent 62%), var(--bg); }
 .auth-card { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
-.app-logo { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 14px 36px rgba(88,86,214,.38); margin-bottom: 8px; }
+.app-logo { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 14px 36px rgba(10,96,223,.38); margin-bottom: 8px; }
 .auth h1 { font-size: 30px; font-weight: 700; }
 .auth .lead { color: var(--label2); font-size: 16px; line-height: 1.4; margin-bottom: 14px; }
 .auth .field { text-align: center; font-size: 19px; height: 54px; }
@@ -232,7 +232,7 @@ html[data-theme="dark"] .seg button.on { background: #636366; }
 
 /* ---------- Games tab ---------- */
 .hero { position: relative; overflow: hidden; border-radius: 24px; padding: 20px; color: #fff; margin-top: 8px;
-  background: linear-gradient(140deg, #5856D6 0%, #7D5BE6 45%, #FF2D92 120%); box-shadow: 0 14px 34px rgba(88,86,214,.32); }
+  background: linear-gradient(140deg, #0A84FF 0%, #0060DF 55%, #003EB3 110%); box-shadow: 0 14px 34px rgba(10,96,223,.32); }
 .hero h2 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
 .hero p { font-size: 15px; opacity: .9; margin-top: 4px; max-width: 70%; line-height: 1.35; }
 .hero .btn { margin-top: 16px; }
