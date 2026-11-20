@@ -304,7 +304,7 @@ button.row:active, .row.tappable:active { background: #E5E5EA; }
 .form-list select option { direction: ltr; }
 .form-list input[type=date], .form-list input[type=time] { text-align: right; color: var(--blue); }
 .search-bar { position: relative; }
-.search-bar i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--label2); font-size: 14px; pointer-events: none; }
+.search-bar > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--label2); font-size: 14px; pointer-events: none; }
 .search-bar input { padding-left: 36px; border-radius: 12px; background: var(--fill); }
 .search-bar input:focus { background: var(--fill); box-shadow: none; }
 input[type=date].field, input[type=time].field { min-height: 46px; }

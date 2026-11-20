@@ -541,7 +541,7 @@ const SEARCH_MAP = [
   { key: 'work.docs', label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
   { key: 'work.upload', label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
   { key: 'work.contacts', label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
-  { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'gmail'], action: () => switchTab('tab-backup') }
+  { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'pin'], action: () => switchTab('tab-backup') }
 ];
 function searchMatches(query) {
   const q = (query || '').toLowerCase().trim();

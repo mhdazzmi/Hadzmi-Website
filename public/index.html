@@ -329,7 +329,7 @@ button.row:active, .row.tappable:active { background: #E5E5EA; }
 .form-list select option { direction: ltr; }
 .form-list input[type=date], .form-list input[type=time] { text-align: right; color: var(--blue); }
 .search-bar { position: relative; }
-.search-bar i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--label2); font-size: 14px; pointer-events: none; }
+.search-bar > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--label2); font-size: 14px; pointer-events: none; }
 .search-bar input { padding-left: 36px; border-radius: 12px; background: var(--fill); }
 .search-bar input:focus { background: var(--fill); box-shadow: none; }
 input[type=date].field, input[type=time].field { min-height: 46px; }
@@ -2798,7 +2798,7 @@ const SEARCH_MAP = [
   { key: 'work.docs', label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
   { key: 'work.upload', label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
   { key: 'work.contacts', label: 'Kontak WA', icon: 'fa-address-book', color: 'bg-green', keys: ['contact', 'kontak', 'wa', 'whatsapp'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-contacts') },
-  { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'gmail'], action: () => switchTab('tab-backup') }
+  { label: 'Settings & Backup', icon: 'fa-gear', color: 'bg-gray', keys: ['setting', 'backup', 'json', 'firebase', 'notif', 'pin'], action: () => switchTab('tab-backup') }
 ];
 function searchMatches(query) {
   const q = (query || '').toLowerCase().trim();
