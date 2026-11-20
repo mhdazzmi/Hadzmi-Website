@@ -33,7 +33,7 @@ export default {
       return env.ASSETS ? env.ASSETS.fetch(request) : new Response('Not found', { status: 404 });
     }
     try {
-      return await handleApi(request, env, url);
+      return await handleApi(request, env, url, ctx);
     } catch (err) {
       const status = err && err.status ? err.status : 500;
       if (status >= 500) console.error('API error', err && err.stack || err);
@@ -47,7 +47,7 @@ export default {
 };
 
 // ---------------- API ----------------
-async function handleApi(request, env, url) {
+async function handleApi(request, env, url, ctx) {
   const path = url.pathname.replace(/\/+$/, '');
   const method = request.method.toUpperCase();
 
@@ -118,7 +118,7 @@ async function handleApi(request, env, url) {
   }
 
   // Nexa AI: proxy ke Gemini. API key hanya ada di server (secret GEMINI_API_KEY).
-  if (path === '/api/ai' && method === 'POST') return json(await askGemini(await readJson(request), env));
+  if (path === '/api/ai' && method === 'POST') return aiHeartbeatResponse(await readJson(request), env, ctx);
 
   if (path === '/api/setup-vapid' && method === 'POST') {
     const v = await getVapid(env, true);
@@ -317,6 +317,24 @@ async function requireAuth(request, env) {
 }
 
 // ---------------- NEXA AI (Gemini) ----------------
+// Balas SEGERA lalu kirim spasi tiap 3 detik sampai jawaban Gemini siap, supaya koneksi HP (4G/iOS)
+// tidak diputus karena menganggur. Spasi di depan JSON tetap JSON yang valid.
+function aiHeartbeatResponse(body, env, ctx) {
+  const { readable, writable } = new TransformStream();
+  const w = writable.getWriter(), enc = new TextEncoder(), t0 = Date.now();
+  w.write(enc.encode(' ')).catch(() => {});
+  const beat = setInterval(() => { w.write(enc.encode(' ')).catch(() => {}); }, 3000);
+  const job = (async () => {
+    let out;
+    try { out = await askGemini(body, env); out.ms = Date.now() - t0; }
+    catch (e) { out = { error: (e && e.message) || 'Error', status: (e && e.status) || 500 }; if (!e || !e.status || e.status >= 500) console.error('AI error', e && e.stack || e); }
+    clearInterval(beat);
+    try { await w.write(enc.encode(JSON.stringify(out))); await w.close(); } catch (e) {}
+  })();
+  if (ctx && ctx.waitUntil) ctx.waitUntil(job);
+  return new Response(readable, { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store, no-transform' } });
+}
+
 // Sama seperti Nexa Health: coba ulang saat sibuk, model cadangan, dan cari model yang tersedia untuk kunci ini.
 const GEMINI_FALLBACKS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 const GEMINI_MODEL_RE = /^gemini-[a-z0-9.\-]{2,60}$/i;

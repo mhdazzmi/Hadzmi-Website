@@ -152,16 +152,56 @@ function undoAiAction(msgIdx, k) {
 function openAiMenu(menu) { const fn = AI_MENU[menu]; if (fn) { closeAiChat(); fn(); } }
 
 // ---------- Kirim pertanyaan ----------
+/** Percakapan yang dikirim ke Gemini: tanpa pesan error, mulai dari pesan user, dan pesan user teks berturut-turut digabung. */
+function aiContentsForSend() {
+  const isText = m => (m.parts || []).every(p => typeof p.text === 'string');
+  const out = [];
+  aiHistory.filter(m => !m.error).slice(-AI_MAX_TURNS_SENT).forEach(m => {
+    const prev = out[out.length - 1];
+    if (prev && prev.role === 'user' && m.role === 'user' && isText(prev) && isText(m)) prev.parts = [{ text: prev.parts.map(p => p.text).concat(m.parts.map(p => p.text)).join('\n\n') }];
+    else out.push({ role: m.role, parts: m.parts });
+  });
+  while (out.length && (out[0].role !== 'user' || !isText(out[0]))) out.shift();
+  return out;
+}
+function aiNetworkError(err) { return err && (err.name === 'AbortError' || /load failed|failed to fetch|networkerror|network connection|internet/i.test(err.message || '')); }
+async function aiRequest() {
+  const body = JSON.stringify({ contents: aiContentsForSend(), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS, model: aiTurnModel });
+  for (let attempt = 0; ; attempt++) {
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 120000);
+    try {
+      const res = await authFetch('/ai', { method: 'POST', body, signal: ctrl.signal });
+      if (res && res.error) { const e = new Error(res.error); e.status = res.status; throw e; }
+      return res;
+    } catch (err) {
+      if (attempt === 0 && aiNetworkError(err) && document.visibilityState === 'visible') { await new Promise(r => setTimeout(r, 1500)); continue; } // coba ulang otomatis 1×
+      if (err.name === 'AbortError') throw new Error('Nexa terlalu lama menjawab (lebih dari 2 menit). Coba lagi atau persingkat pertanyaanmu.');
+      if (aiNetworkError(err)) throw new Error('Koneksi terputus sebelum Nexa selesai menjawab. Pastikan internet stabil dan aplikasi tetap terbuka saat menunggu.');
+      throw err;
+    } finally { clearTimeout(timer); }
+  }
+}
 async function sendAiMessage(text) {
   text = String(text == null ? $('aiInput').value : text).trim();
   if (!text || aiBusy) return;
   if (!aiReady()) { renderAiChat(); return showToast('Nexa AI belum diaktifkan. Lihat panduan di layar.', false); }
   $('aiInput').value = ''; autoGrowAi();
+  aiHistory = aiHistory.filter(m => !m.error); // error lama tidak perlu disimpan
   aiHistory.push({ role: 'user', parts: [{ text }] }); saveAiHistory();
+  await runAiTurn();
+}
+/** Ulangi pertanyaan terakhir setelah gagal (tanpa mengetik ulang). */
+async function retryAi() {
+  if (aiBusy) return;
+  aiHistory = aiHistory.filter(m => !m.error); saveAiHistory();
+  if (!aiHistory.length || aiHistory[aiHistory.length - 1].role !== 'user') return;
+  await runAiTurn();
+}
+async function runAiTurn() {
   aiBusy = true; aiTurnModel = null; renderAiChat(); scrollAiBottom();
   try {
     for (let step = 0; step < 5; step++) {
-      const res = await authFetch('/ai', { method: 'POST', body: JSON.stringify({ contents: aiHistory.slice(-AI_MAX_TURNS_SENT).filter((m, i, arr) => !(i === 0 && m.role !== 'user')), systemInstruction: aiSystemInstruction(), tools: AI_TOOLS, model: aiTurnModel }) });
+      const res = await aiRequest();
       if (res.model) aiTurnModel = res.model;
       const parts = (res.parts || []).filter(p => p && (p.text != null || p.functionCall || p.thoughtSignature));
       if (!parts.length) {
@@ -242,7 +282,7 @@ function renderAiChat() {
   aiHistory.forEach((m, idx) => {
     const texts = (m.parts || []).filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('\n').trim();
     if (m.role === 'user') { if (texts) html += `<div class="ai-msg me"><div class="ai-bubble">${esc(texts).replace(/\n/g, '<br>')}</div></div>`; return; }
-    if (texts) html += `<div class="ai-msg bot ${m.error ? 'err' : ''}"><div class="ai-bubble">${m.error ? esc(texts) : aiMarkdown(texts)}</div>${!m.error ? `<button class="ai-copy" onclick="copyText(${esc(JSON.stringify(texts))}); showToast('Jawaban disalin')"><i class="far fa-copy"></i></button>` : ''}</div>`;
+    if (texts) html += `<div class="ai-msg bot ${m.error ? 'err' : ''}"><div class="ai-bubble">${m.error ? esc(texts) + (idx === aiHistory.length - 1 && !aiBusy ? `<div><button class="ai-retry" onclick="retryAi()"><i class="fas fa-rotate-right"></i> Coba lagi</button></div>` : '') : aiMarkdown(texts)}</div>${!m.error ? `<button class="ai-copy" onclick="copyText(${esc(JSON.stringify(texts))}); showToast('Jawaban disalin')"><i class="far fa-copy"></i></button>` : ''}</div>`;
     (aiActions[idx] || []).forEach((a, k) => {
       html += `<div class="ai-action ${a.undone ? 'undone' : ''}"><i class="fas ${a.icon || 'fa-check'}"></i><span class="flex-1">${esc(a.label)}${a.undone ? ' (dibatalkan)' : ''}</span>
         ${a.open ? `<button onclick="openAiMenu('${esc(a.open)}')">Buka</button>` : ''}${a.undo && !a.undone ? `<button onclick="undoAiAction(${idx}, ${k})">Urungkan</button>` : ''}</div>`;

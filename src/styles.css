@@ -1024,3 +1024,4 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 
 /* Galeri: tombol terkunci hanya ikon gembok */
 .seg button.seg-icon { flex: 0 0 52px; font-size: 14px; }
+.ai-retry { margin-top: 8px; border: 0; background: #fff; color: var(--blue); font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer; font-family: var(--font); }
