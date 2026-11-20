@@ -423,7 +423,10 @@
         <div id="sub-wallet" class="hub-sub-content hidden stack-16">
           <div class="flex justify-between items-center" style="padding:0 4px">
             <span class="t-foot muted" id="walletCount">0 kartu</span>
-            <button class="btn btn-filled btn-sm" onclick="openWalletEditor()"><i class="fas fa-plus"></i> Kartu</button>
+            <div class="flex gap-8" id="walletActions">
+              <button class="btn btn-gray btn-sm hidden" id="walletSortBtn" onclick="toggleWalletSort()"><i class="fas fa-arrow-up-wide-short"></i> Atur</button>
+              <button class="btn btn-filled btn-sm" id="walletAddBtn" onclick="openWalletEditor()"><i class="fas fa-plus"></i> Kartu</button>
+            </div>
           </div>
           <div id="walletStack" class="wallet-stack"></div>
         </div>

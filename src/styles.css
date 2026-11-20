@@ -940,3 +940,15 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .wcard.text-over .wc-icon { padding: 6px 8px; border-radius: 10px; background: rgba(0,0,0,.38); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 16px; }
 .wcard .wc-exp { font-size: 13px; font-weight: 600; letter-spacing: .06em; font-variant-numeric: tabular-nums; text-align: right; line-height: 1.1; }
 .wcard .wc-exp small { display: block; font-size: 8px; font-weight: 700; opacity: .75; letter-spacing: .1em; }
+
+/* Wallet: atur urutan */
+.wsort-list { max-width: 520px; }
+.wsort-row { gap: 10px; background: var(--card); transition: transform .18s var(--ease), box-shadow .18s; position: relative; }
+.wsort-row.dragging { transition: none; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,.18); border-radius: 12px; }
+.wsort-thumb { width: 64px; flex: none; pointer-events: none; }
+.wsort-thumb .wcard { width: 64px; padding: 0; border-radius: 7px; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.wsort-thumb .wcard > *:not(.wc-bg):not(.wc-shade):not(.wc-loading) { display: none; }
+.wsort-arrow { width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--fill3); color: var(--blue); flex: none; cursor: pointer; }
+.wsort-arrow:disabled { color: var(--label3, #C7C7CC); cursor: default; }
+.wsort-grip { width: 34px; height: 40px; display: flex; align-items: center; justify-content: center; color: #8E8E93; font-size: 18px; cursor: grab; touch-action: none; flex: none; }
+.min-w-0 { min-width: 0; }

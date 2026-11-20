@@ -37,14 +37,70 @@ function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, v + amt));
   return '#' + ((f(n >> 16) << 16) | (f((n >> 8) & 255) << 8) | f(n & 255)).toString(16).padStart(6, '0');
 }
+let walletSorting = false;
 function renderWallet() {
   const box = $('walletStack'); if (!box) return;
   const cards = wCards();
-  if ($('walletCount')) $('walletCount').textContent = `${cards.length} kartu`;
-  if (!cards.length) { box.innerHTML = `<div class="card w-full"><div class="empty"><i class="fas fa-wallet"></i><div class="e-title">Wallet masih kosong</div><div class="e-sub">Tambahkan kartu member, kartu anggota, voucher, dll. QR/barcode-nya bisa langsung di-scan dari layar HP.</div></div></div>`; return; }
+  if ($('walletCount')) $('walletCount').textContent = walletSorting ? 'Seret ≡ atau pakai panah untuk mengubah urutan' : `${cards.length} kartu`;
+  if ($('walletSortBtn')) {
+    $('walletSortBtn').classList.toggle('hidden', cards.length < 2);
+    $('walletSortBtn').className = `btn btn-sm ${walletSorting ? 'btn-filled' : 'btn-gray'} ${cards.length < 2 ? 'hidden' : ''}`;
+    $('walletSortBtn').innerHTML = walletSorting ? '<i class="fas fa-check"></i> Selesai' : '<i class="fas fa-arrow-up-wide-short"></i> Atur';
+  }
+  if ($('walletAddBtn')) $('walletAddBtn').classList.toggle('hidden', walletSorting);
+  if (!cards.length) { walletSorting = false; box.innerHTML = `<div class="card w-full"><div class="empty"><i class="fas fa-wallet"></i><div class="e-title">Wallet masih kosong</div><div class="e-sub">Tambahkan kartu member, kartu anggota, voucher, dll. QR/barcode-nya bisa langsung di-scan dari layar HP.</div></div></div>`; return; }
+  if (walletSorting) { renderWalletSortList(box, cards); return; }
   box.innerHTML = cards.map(c => `<div class="wc-slot">${wCardHTML(c, { onclick: `openWalletCard('${esc(c.id)}')` })}</div>`).join('');
   const missing = cards.map(c => c.frontId).filter(id => id && !signedUrlSync(id));
   if (missing.length && firebaseAuth && firebaseAuth.currentUser && pushConfig) signIds(missing).then(() => { if (missing.some(id => signedUrlSync(id))) renderWallet(); });
+}
+
+// ---------- Atur urutan kartu ----------
+function toggleWalletSort() {
+  walletSorting = !walletSorting;
+  if (!walletSorting) { saveStateToLocal(); showToast('Urutan kartu disimpan ✓'); }
+  renderWallet();
+}
+function renderWalletSortList(box, cards) {
+  box.innerHTML = `<div class="list wsort-list w-full">${cards.map((c, i) => `
+    <div class="row wsort-row" data-id="${esc(c.id)}">
+      <div class="wsort-thumb">${wCardHTML(c)}</div>
+      <div class="flex-1 min-w-0"><div class="row-title truncate">${esc(c.name)}</div><div class="row-sub truncate">${i === 0 ? 'Paling atas' : i === cards.length - 1 ? 'Paling bawah (tampil penuh)' : 'Posisi ' + (i + 1)}</div></div>
+      <button class="wsort-arrow" ${i === 0 ? 'disabled' : ''} onclick="moveWalletCard('${esc(c.id)}', -1)" aria-label="Naik"><i class="fas fa-chevron-up"></i></button>
+      <button class="wsort-arrow" ${i === cards.length - 1 ? 'disabled' : ''} onclick="moveWalletCard('${esc(c.id)}', 1)" aria-label="Turun"><i class="fas fa-chevron-down"></i></button>
+      <span class="wsort-grip" aria-label="Seret"><i class="fas fa-grip-lines"></i></span>
+    </div>`).join('')}</div>`;
+  box.querySelectorAll('.wsort-grip').forEach(g => bindWalletDrag(g));
+}
+function moveWalletCard(id, dir) {
+  const arr = wCards(), i = arr.findIndex(c => c.id === id), j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  saveStateToLocal(); renderWallet();
+}
+function bindWalletDrag(grip) {
+  grip.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const row = grip.closest('.wsort-row'), list = row.parentElement;
+    const rows = [...list.children], startY = e.clientY, h = row.offsetHeight;
+    const from = rows.indexOf(row); let to = from;
+    row.classList.add('dragging'); grip.setPointerCapture(e.pointerId);
+    const move = ev => {
+      const dy = ev.clientY - startY;
+      row.style.transform = `translateY(${dy}px)`;
+      to = Math.max(0, Math.min(rows.length - 1, from + Math.round(dy / h)));
+      rows.forEach((r, k) => { if (r === row) return;
+        const shift = (from < to && k > from && k <= to) ? -h : (from > to && k < from && k >= to) ? h : 0;
+        r.style.transform = shift ? `translateY(${shift}px)` : ''; });
+    };
+    const up = () => {
+      grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up);
+      rows.forEach(r => { r.style.transform = ''; }); row.classList.remove('dragging');
+      if (to !== from) { const arr = wCards(); const [m] = arr.splice(from, 1); arr.splice(to, 0, m); saveStateToLocal(); if (navigator.vibrate) navigator.vibrate(10); }
+      renderWallet();
+    };
+    grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
+  });
 }
 
 // ---------- Kode QR / barcode ----------
