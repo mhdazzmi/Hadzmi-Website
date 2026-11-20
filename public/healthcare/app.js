@@ -651,24 +651,31 @@ async function checkServer() {
 async function ai(mode, { text, image, context }) {
   const model = S.settings.aiModel || undefined;
   const note = t => document.querySelectorAll('.ai-wait').forEach(el => { el.textContent = t; });
-  let serverErr = '';
+  const sleep = async (sec, label) => { for (let s = sec; s > 0; s--) { note(`${label} ${s} detik…`); await new Promise(r => setTimeout(r, 1000)); } };
+  let serverErr = '', netFail = false;
   if (authed && auth && auth.currentUser) {
-    const waits = [4000, 8000]; // Gemini gratis sering "sibuk" sesaat → coba ulang otomatis
+    const waits = [4, 8]; // Gemini gratis sering "sibuk" sesaat → coba ulang otomatis
     for (let attempt = 0; ; attempt++) {
-      let res = null, data = null;
+      let res = null, data = null; netFail = false;
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 60000) : null;
       try {
-        res = await fetch('/api/healthcare/ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ mode, text, image, context, model }) });
+        res = await fetch('/api/healthcare/ai', { method: 'POST', signal: ctrl ? ctrl.signal : undefined, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ mode, text, image, context, model }) });
         data = await res.json().catch(() => null);
-      } catch (e) { serverErr = 'Server tidak terjangkau'; }
+      } catch (e) { netFail = true; }
+      finally { if (timer) clearTimeout(timer); }
       if (res && res.ok && data && data.result) return data.result;
       const noKey = res && res.status === 503 && data && data.code === 'NO_KEY';
-      if (res && (res.status === 503 || res.status === 429) && !noKey && attempt < waits.length) {
-        for (let s = Math.round(waits[attempt] / 1000); s > 0; s--) { note(`Gemini sedang sibuk, mencoba lagi dalam ${s} detik (${attempt + 2}/${waits.length + 1})…`); await new Promise(r => setTimeout(r, 1000)); }
-        note(`Mencoba lagi (${attempt + 2}/${waits.length + 1})…`);
+      const busy = res && (res.status === 503 || res.status === 429 || res.status >= 520) && !noKey;
+      if ((busy || netFail) && attempt < waits.length) {
+        await sleep(waits[attempt], netFail ? `Koneksi terputus, mencoba lagi (${attempt + 2}/3) dalam` : `Gemini sedang sibuk, mencoba lagi (${attempt + 2}/3) dalam`);
+        note(`Mencoba lagi (${attempt + 2}/3)…`);
         continue;
       }
+      if (netFail) throw new Error('Koneksi ke server terputus. Periksa sinyal internet lalu tap Coba lagi. Kalau terus terjadi, coba ketik nama makanannya.');
       if (res && data && data.error && !noKey && res.status !== 404 && res.status !== 405) throw new Error(data.error);
-      serverErr = serverErr || (data && data.error) || 'Server AI belum aktif';
+      if (res && !data && res.status >= 500) throw new Error('Server sedang bermasalah (' + res.status + '). Tunggu sebentar lalu tap Coba lagi.');
+      serverErr = (data && data.error) || 'Server AI belum aktif';
       break;
     }
   }
