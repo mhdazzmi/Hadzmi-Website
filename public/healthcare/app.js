@@ -1,5 +1,5 @@
 /* =========================================================
-   HADZMI HEALTHCARE — kontrol makan (kalori, purin, lemak) + AI Gemini
+   NEXA HEALTH — kontrol makan (kalori, purin, lemak) + AI Gemini
    Data teks : Firebase Realtime DB  → node "hadzmi_healthcare_data" (terpisah dari Assistant)
    Foto      : Cloudflare R2 (lewat /api/files, sama dengan Assistant) + thumbnail kecil di Firebase
    AI        : /api/healthcare/ai (kunci di server)  → cadangan: kunci Gemini di perangkat ini
@@ -281,7 +281,7 @@ function renderToday() {
   if (over.length) strip += `<div class="alert-strip"><i class="fas fa-triangle-exclamation"></i><div><b>Berlebih:</b> ${over.map(k => `${NUTR[k].label} ${fmt(tot[k])}/${fmt(t[k])} ${NUTR[k].unit}`).join(' · ')}.${over.includes('purine') ? ' Perbanyak air putih & hindari makanan tinggi purin sisa hari ini.' : ''}</div></div>`;
   if (near.length) strip += `<div class="alert-strip warn"><i class="fas fa-circle-exclamation"></i><div><b>Hampir batas:</b> ${near.map(k => NUTR[k].label).join(', ')}. Pilih makanan yang ringan.</div></div>`;
   const pendingCount = Object.keys(pending).length;
-  if (syncMode === 'err') strip += `<div class="alert-strip info"><i class="fas fa-database"></i><div>Firebase menolak data Healthcare. Tambahkan aturan <b>hadzmi_healthcare_data</b> di Rules (lihat Pengaturan → Penyimpanan). Data aman tersimpan di perangkat${pendingCount ? ` (${pendingCount} menunggu)` : ''}.</div></div>`;
+  if (syncMode === 'err') strip += `<div class="alert-strip info"><i class="fas fa-database"></i><div>Firebase menolak data Nexa Health. Tambahkan aturan <b>hadzmi_healthcare_data</b> di Rules (lihat Pengaturan → Penyimpanan). Data aman tersimpan di perangkat${pendingCount ? ` (${pendingCount} menunggu)` : ''}.</div></div>`;
   $('alertStrip').innerHTML = strip;
 
   // Air
@@ -574,7 +574,7 @@ function checkExceed(date, before, after) {
   if (over.length) {
     haptic([60, 40, 60]);
     iosAlert('⚠️ Melebihi batas harian', over.join('\n') + (over.some(x => x.startsWith('Purin')) ? '\n\nMinum air putih lebih banyak & hindari makanan tinggi purin sisa hari ini.' : '\n\nPilih makanan ringan & rendah lemak untuk sisa hari ini.'), [{ label: 'Mengerti', bold: true }]);
-    if (isToday) sysNotify('Hadzmi Healthcare: melebihi batas', over.join(' · '), 'healthcare-over-' + date);
+    if (isToday) sysNotify('Nexa Health: melebihi batas', over.join(' · '), 'healthcare-over-' + date);
   } else {
     banner('Hampir mencapai batas', near.join(', ') + ` sudah ≥ ${warnAt}% batas harian.`, 'fa-circle-exclamation', 'bg-orange');
   }
@@ -991,7 +991,7 @@ function autoKcal() {
 async function askNotif() {
   if (!('Notification' in window)) return banner('Tidak didukung', 'Browser ini tidak mendukung notifikasi. Di iPhone, tambahkan ke Layar Utama dulu.', 'fa-bell-slash', 'bg-gray');
   const p = await Notification.requestPermission(); renderSettings();
-  if (p === 'granted') sysNotify('Notifikasi aktif ✅', 'Hadzmi Healthcare akan mengingatkan saat berlebih.', 'healthcare-test');
+  if (p === 'granted') sysNotify('Notifikasi aktif ✅', 'Nexa Health akan mengingatkan saat berlebih.', 'healthcare-test');
 }
 async function sysNotify(title, body, tag) {
   try {

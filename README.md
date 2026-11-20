@@ -52,9 +52,9 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 
 ---
 
-## 🥗 Hadzmi Healthcare — halaman baru `/healthcare/` (kontrol makan)
+## 🥗 Nexa Health — halaman baru `/healthcare/` (kontrol makan)
 
-Web terpisah (tidak mengubah tampilan Assistant), dibuka dari ikon **Healthcare** di Menu Cepat atau langsung `https://<domainmu>/healthcare/`. Bisa ditambahkan ke Layar Utama sebagai app sendiri. Login **memakai PIN & sesi yang sama** dengan Assistant (cukup login sekali).
+Web terpisah (tidak mengubah tampilan Assistant), dibuka dari ikon **Nexa Health** di Menu Cepat atau langsung `https://<domainmu>/healthcare/`. Bisa ditambahkan ke Layar Utama sebagai app sendiri. Login **memakai PIN & sesi yang sama** dengan Assistant (cukup login sekali).
 
 | Menu | Isi |
 |---|---|

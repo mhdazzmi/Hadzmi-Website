@@ -1,5 +1,5 @@
 /* =========================================================
-   Hadzmi Healthcare — endpoint AI di Cloudflare Worker
+   Nexa Health — endpoint AI di Cloudflare Worker
    POST /api/healthcare/ai  (wajib login; kunci Gemini tidak pernah dikirim ke browser)
    body: { mode: 'food'|'ask'|'weight'|'day'|'period', text?, image?: {mime, data}, context?, model? }
 

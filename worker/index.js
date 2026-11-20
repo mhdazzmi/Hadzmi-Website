@@ -92,7 +92,7 @@ async function handleApi(request, env, url) {
   const user = await requireAuth(request, env);
   requireKV(env);
 
-  // ---- Hadzmi Healthcare: analisis gizi dengan Gemini ----
+  // ---- Nexa Health: analisis gizi dengan Gemini ----
   if (path === '/api/healthcare/ai' && method === 'POST') return healthcareAi(request, env);
 
   // ---- Penyimpanan file (R2 / Google Drive / KV lama) ----

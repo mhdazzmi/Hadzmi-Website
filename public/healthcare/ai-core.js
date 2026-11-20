@@ -1,5 +1,5 @@
 /* =========================================================
-   Hadzmi Healthcare — inti AI (dipakai bersama oleh Cloudflare Worker & browser)
+   Nexa Health — inti AI (dipakai bersama oleh Cloudflare Worker & browser)
    Satu sumber untuk prompt, skema JSON, dan pemanggilan Gemini.
    ========================================================= */
 
@@ -49,7 +49,7 @@ export const NOTE_SCHEMA = S('OBJECT', {
   required: ['headline', 'status', 'analysis', 'points']
 });
 
-const PERSONA = `Kamu adalah ahli gizi klinis Indonesia di aplikasi "Hadzmi Healthcare".
+const PERSONA = `Kamu adalah ahli gizi klinis Indonesia di aplikasi "Nexa Health".
 Kondisi pengguna: SKINNY FAT (berat badan normal/kurus tetapi persentase lemak tubuh tinggi & massa otot rendah),
 LEMAK VISCERAL TINGGI, dan penderita ASAM URAT (gout/hiperurisemia).
 Tujuan: menurunkan lemak (terutama visceral) sambil menjaga/menambah otot, dan menurunkan kadar asam urat.
