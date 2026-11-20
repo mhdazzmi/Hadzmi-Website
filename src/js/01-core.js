@@ -490,7 +490,7 @@ function switchHubSubTab(subId) {
   if ($('hubTitle')) $('hubTitle').textContent = L(HUB_KEYS[subId] || 'tab.hub');
   updateNavSmallTitle();
   if (subId === 'sub-focus') renderSleepLineChart();
-  if (subId === 'sub-wallet') renderWallet();
+  if (subId === 'sub-wallet') { walletSorting = false; renderWallet(); }
 }
 
 function switchWorkFinSubTab(subId) {
