@@ -67,7 +67,7 @@ let firebaseDbRef = null;
 let firebaseAuth = null;
 let isFirebaseReady = false;
 let appStarted = false;
-let defaultDocTitle = "Hadzmi Assistant";
+let defaultDocTitle = "Nexa";
 
 try {
   if (typeof firebase !== 'undefined') {
@@ -405,7 +405,7 @@ function setConnectionStatus(state) {
 let currentTabId = 'tab-dashboard';
 // ---------- NAMA MENU (bisa diganti di Settings → Nama Menu) ----------
 const LABEL_GROUPS = [
-  ['Umum', [['app.name', 'Hadzmi Assistant', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
+  ['Umum', [['app.name', 'Nexa', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
   ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Planner'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
   ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
   ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus'], ['hub.wallet', 'Wallet']]],

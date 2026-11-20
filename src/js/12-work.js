@@ -557,7 +557,7 @@ function renderStoragePanel(fromRefresh) {
     html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', used, u.r2.limit, null, 'peringatan di 7 GB & 8,5 GB · upload berhenti di 9 GB (aman dari tagihan)');
   }
   else html += `<div class="divider"></div><div class="t-foot muted semibold">CLOUDFLARE R2</div><div class="t-sub muted">Belum aktif — <a href="#" onclick="openStorageGuide('r2'); return false">lihat langkah</a></div>`;
-  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Assistant: ${formatBytes(u.drive.folderBytes || 0)}`);
+  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Nexa: ${formatBytes(u.drive.folderBytes || 0)}`);
   else if (u.drive && u.drive.error) html += `<div class="divider"></div><div class="t-foot muted semibold">GOOGLE DRIVE</div><div class="t-sub c-red">${esc(u.drive.error)}</div>`;
   if (u.kv && u.kv.count) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE KV (LAMA)', u.kv.bytes, u.kv.limit, null, `${u.kv.count} file`);
   const off = typeof offlineTotalBytes === 'function' ? offlineTotalBytes() : 0;
@@ -572,8 +572,8 @@ function renderStoragePanel(fromRefresh) {
 }
 
 // ---------------- PANDUAN PENYIMPANAN ----------------
-const APPS_SCRIPT_CODE = `/** Hadzmi Assistant — Penyimpanan Google Drive */
-const FOLDER_NAME = 'Hadzmi Assistant';
+const APPS_SCRIPT_CODE = `/** Nexa — Penyimpanan Google Drive */
+const FOLDER_NAME = 'Nexa';
 function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
 function folder_() { const it = DriveApp.getFoldersByName(FOLDER_NAME); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME); }
 function inFolder_(file) { const p = file.getParents(); const fid = folder_().getId(); while (p.hasNext()) if (p.next().getId() === fid) return true; return false; }
@@ -612,9 +612,9 @@ function openStorageGuide(kind) {
   } else {
     $('guideTitle').textContent = 'Sambungkan Google Drive';
     $('guideBody').innerHTML = `
-      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Assistant"</div></div></div></div>
+      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Nexa"</div></div></div></div>
       ${guideSteps([
-        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Assistant Drive".',
+        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Nexa Drive".',
         'Hapus isi editor, lalu tap <b>Salin Kode</b> di bawah ini dan tempel ke editor → tap 💾 <b>Save</b>.',
         'Tap ⚙️ <b>Project Settings</b> → <b>Script Properties</b> → <b>Add script property</b>: Property <code>SECRET</code>, Value: kata rahasia panjang buatanmu (mis. 30 huruf/angka acak) → Save.',
         'Tap <b>Deploy → New deployment</b> → ⚙️ pilih <b>Web app</b> → Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → <b>Deploy</b> → izinkan akses (Authorize) → salin <b>Web app URL</b>.',

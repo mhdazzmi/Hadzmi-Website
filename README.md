@@ -1,4 +1,4 @@
-# Hadzmi Assistant · iOS 26 Light
+# Nexa · iOS 26 Light
 
 Asisten pribadi (Planner: Mind Dump, To-Do, Bookmarks, Countdown, Focus & Sleep, Wallet · Media: Music & Galeri · Kerja · Settings) dengan desain ala iOS 26, login PIN, notifikasi push, dan **ekspor PDF**.
 
@@ -193,7 +193,7 @@ Setelah itu setiap `git push` ke `main` otomatis ter-deploy.
 Batasan: pengingat yang dibuat/diubah baru masuk ke server setelah website dibuka minimal sekali sesudah perubahan itu (otomatis di perangkat mana pun). Ringkasan "tugas terlambat" dan "sesi hampir habis" hanya muncul in-app.
 
 ### Biaya
-Paket gratis: 100.000 request/hari, cron, KV 1.000 tulis & 100.000 baca/hari. Pemakaian Hadzmi Assistant hanya sekitar 1.500 baca dan puluhan tulis per hari, jadi tetap **Rp 0**.
+Paket gratis: 100.000 request/hari, cron, KV 1.000 tulis & 100.000 baca/hari. Pemakaian Nexa hanya sekitar 1.500 baca dan puluhan tulis per hari, jadi tetap **Rp 0**.
 
 ### Tetap di Blogspot (tanpa push)
 Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama seperti sebelumnya. Semua fitur jalan kecuali Push saat website tertutup.

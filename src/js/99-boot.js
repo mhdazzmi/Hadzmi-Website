@@ -36,7 +36,7 @@ function startApp() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  defaultDocTitle = document.title || 'Hadzmi Assistant';
+  defaultDocTitle = document.title || 'Nexa';
   initNavbarScroll();
   bootAuth();
 });

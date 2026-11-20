@@ -1,6 +1,6 @@
 {
-  "name": "Hadzmi Assistant",
-  "short_name": "Hadzmi",
+  "name": "Nexa",
+  "short_name": "Nexa",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

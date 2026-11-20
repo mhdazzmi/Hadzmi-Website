@@ -1,11 +1,11 @@
 /**
- * Hadzmi Assistant — Penyimpanan Google Drive (untuk Galeri, Lagu, Bukti Kas, Gudang File)
- * Semua file disimpan di folder "Hadzmi Assistant" di Google Drive-mu.
- * Hanya server Hadzmi Assistant (Cloudflare Worker) yang tahu SECRET, jadi orang lain tidak bisa mengakses.
+ * Nexa — Penyimpanan Google Drive (untuk Galeri, Lagu, Bukti Kas, Gudang File)
+ * Semua file disimpan di folder "Nexa" di Google Drive-mu.
+ * Hanya server Nexa (Cloudflare Worker) yang tahu SECRET, jadi orang lain tidak bisa mengakses.
  *
  * Cara pasang: lihat Settings → Penyimpanan → Google Drive di website.
  */
-const FOLDER_NAME = 'Hadzmi Assistant';
+const FOLDER_NAME = 'Nexa';
 
 function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
 function folder_() {

@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#F2F2F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Hadzmi Assistant">
+  <meta name="apple-mobile-web-app-title" content="Nexa">
   <meta name="robots" content="noindex, nofollow">
-  <title>Hadzmi Assistant</title>
+  <title>Nexa</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icons/icon-192.png?v=4">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=4">
@@ -985,8 +985,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
   <div id="lockScreen">
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
-      <div class="lock-avatar"><img src="icons/icon-192.png?v=4" alt="" onerror="this.outerHTML='<i class=&quot;fas fa-starfas fa-h&quot;quot;></i>'"></div>
-      <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Assistant</div>
+      <div class="lock-avatar"><img src="icons/icon-192.png?v=4" alt="" onerror="this.outerHTML='<i class=&quot;fas fa-star&quot;></i>'"></div>
+      <div class="t-title3" style="font-weight:700" data-label="app.name">Nexa</div>
       <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
 
       <div id="lockPinWrap" class="hidden">
@@ -1594,7 +1594,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <div class="row" style="padding:16px">
                 <span class="avatar app-logo" style="width:58px;height:58px"><img src="icons/icon-192.png?v=4" alt=""></span>
                 <div class="flex-1">
-                  <div class="t-title3" data-label="app.name">Hadzmi Assistant</div>
+                  <div class="t-title3" data-label="app.name">Nexa</div>
                   <div class="t-foot muted truncate" id="settingsAccountEmail">—</div>
                 </div>
               </div>
@@ -1632,7 +1632,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                 </div>
                 <button class="row" onclick="sendTestNotification()"><span class="icon-tile bg-green"><i class="fas fa-paper-plane"></i></span><div class="flex-1 row-title">Kirim Notifikasi Tes</div><i class="fas fa-chevron-right chev"></i></button>
               </div>
-              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Hadzmi Assistant terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
+              <div class="section-foot">Tanpa Push, notifikasi hanya berjalan saat Nexa terbuka. Aktifkan <b>Push</b> di tiap perangkat agar pengingat tetap masuk walau website ditutup (iPhone: Tambah ke Layar Utama dulu).</div>
             </div>
           </div>
 
@@ -1709,7 +1709,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               </form>
             </div>
 
-            <div class="section-foot center">Hadzmi Assistant · iOS 26 Light · v3.0</div>
+            <div class="section-foot center">Nexa · Asisten pribadi Hadzmi · v3.1</div>
           </div>
         </div>
       </section>
@@ -2324,7 +2324,7 @@ let firebaseDbRef = null;
 let firebaseAuth = null;
 let isFirebaseReady = false;
 let appStarted = false;
-let defaultDocTitle = "Hadzmi Assistant";
+let defaultDocTitle = "Nexa";
 
 try {
   if (typeof firebase !== 'undefined') {
@@ -2662,7 +2662,7 @@ function setConnectionStatus(state) {
 let currentTabId = 'tab-dashboard';
 // ---------- NAMA MENU (bisa diganti di Settings → Nama Menu) ----------
 const LABEL_GROUPS = [
-  ['Umum', [['app.name', 'Hadzmi Assistant', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
+  ['Umum', [['app.name', 'Nexa', 'Nama aplikasi'], ['user.name', 'Hadzmi', 'Nama di sapaan']]],
   ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Planner'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
   ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
   ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus'], ['hub.wallet', 'Wallet']]],
@@ -3065,7 +3065,7 @@ function quickLock() {
 async function lockAppNow(auto) {
   if (!APP_AUTH.enabled) return showToast('Kunci login sedang dinonaktifkan di konfigurasi.', false);
   if (auto !== true) {
-    const ok = await iosConfirm('Kunci Hadzmi Assistant?', 'Kamu perlu memasukkan sandi lagi untuk membuka di perangkat ini.', 'Kunci', true);
+    const ok = await iosConfirm('Kunci Nexa?', 'Kamu perlu memasukkan sandi lagi untuk membuka di perangkat ini.', 'Kunci', true);
     if (!ok) return;
   }
   performLock(auto === true ? 'Sesi berakhir. Silakan login kembali.' : '');
@@ -3085,14 +3085,14 @@ function checkSessionExpiry() {
   const rec = getSessionRecord();
   if (!rec || Date.now() >= rec.expiresAt) performLock('Sesi harian berakhir (00:00 WIB). Silakan login kembali.');
   else if (rec.expiresAt - Date.now() < 10 * 60 * 1000 && typeof pushNotification === 'function') {
-    pushNotification({ key: 'session_' + rec.expiresAt, title: 'Sesi segera berakhir', body: 'Hadzmi Assistant akan terkunci otomatis dalam < 10 menit.', icon: 'fa-lock', color: 'bg-gray', system: false });
+    pushNotification({ key: 'session_' + rec.expiresAt, title: 'Sesi segera berakhir', body: 'Nexa akan terkunci otomatis dalam < 10 menit.', icon: 'fa-lock', color: 'bg-gray', system: false });
   }
 }
 
 function openAccountMenu() {
   const rec = getSessionRecord();
   openActionSheet({
-    title: isPinMode() ? 'Hadzmi Assistant' : ((rec && rec.email) || 'Hadzmi Assistant'),
+    title: isPinMode() ? 'Nexa' : ((rec && rec.email) || 'Nexa'),
     message: APP_AUTH.enabled ? `Sesi aktif hingga ${formatExpiry(rec && rec.expiresAt)}` : 'Kunci login nonaktif',
     actions: [
       { text: 'Kunci Sekarang', icon: 'fas fa-lock', destructive: true, onClick: () => lockAppNow() },
@@ -3596,7 +3596,7 @@ function updateMediaSessionLockscreen() {
     document.title = `${titleText} - ${artistText}`;
     if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: titleText, artist: artistText, album: song.category || 'Hadzmi Music',
+        title: titleText, artist: artistText, album: song.category || 'Nexa Music',
         artwork: ['96x96', '128x128', '192x192', '256x256', '384x384', '512x512'].map(sz => ({ src: coverArt, sizes: sz, type: 'image/jpeg' }))
       });
       try {
@@ -5709,7 +5709,7 @@ async function clearNotifInbox() {
   setInbox([]); renderNotifInbox();
 }
 function sendTestNotification() {
-  pushNotification({ title: 'Notifikasi Tes ✅', body: 'Notifikasi Hadzmi Assistant berfungsi dengan baik.', icon: 'fa-paper-plane', color: 'bg-green' });
+  pushNotification({ title: 'Notifikasi Tes ✅', body: 'Notifikasi Nexa berfungsi dengan baik.', icon: 'fa-paper-plane', color: 'bg-green' });
 }
 
 // ---------- Reminder engine ----------
@@ -6782,7 +6782,7 @@ function renderStoragePanel(fromRefresh) {
     html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE R2', used, u.r2.limit, null, 'peringatan di 7 GB & 8,5 GB · upload berhenti di 9 GB (aman dari tagihan)');
   }
   else html += `<div class="divider"></div><div class="t-foot muted semibold">CLOUDFLARE R2</div><div class="t-sub muted">Belum aktif — <a href="#" onclick="openStorageGuide('r2'); return false">lihat langkah</a></div>`;
-  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Hadzmi Assistant: ${formatBytes(u.drive.folderBytes || 0)}`);
+  if (u.drive && !u.drive.error) html += '<div class="divider"></div>' + usageBlock('GOOGLE DRIVE (seluruh akun)', u.drive.bytes, u.drive.limit, null, `folder Nexa: ${formatBytes(u.drive.folderBytes || 0)}`);
   else if (u.drive && u.drive.error) html += `<div class="divider"></div><div class="t-foot muted semibold">GOOGLE DRIVE</div><div class="t-sub c-red">${esc(u.drive.error)}</div>`;
   if (u.kv && u.kv.count) html += '<div class="divider"></div>' + usageBlock('CLOUDFLARE KV (LAMA)', u.kv.bytes, u.kv.limit, null, `${u.kv.count} file`);
   const off = typeof offlineTotalBytes === 'function' ? offlineTotalBytes() : 0;
@@ -6797,8 +6797,8 @@ function renderStoragePanel(fromRefresh) {
 }
 
 // ---------------- PANDUAN PENYIMPANAN ----------------
-const APPS_SCRIPT_CODE = `/** Hadzmi Assistant — Penyimpanan Google Drive */
-const FOLDER_NAME = 'Hadzmi Assistant';
+const APPS_SCRIPT_CODE = `/** Nexa — Penyimpanan Google Drive */
+const FOLDER_NAME = 'Nexa';
 function getSecret_() { return PropertiesService.getScriptProperties().getProperty('SECRET'); }
 function folder_() { const it = DriveApp.getFoldersByName(FOLDER_NAME); return it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME); }
 function inFolder_(file) { const p = file.getParents(); const fid = folder_().getId(); while (p.hasNext()) if (p.next().getId() === fid) return true; return false; }
@@ -6837,9 +6837,9 @@ function openStorageGuide(kind) {
   } else {
     $('guideTitle').textContent = 'Sambungkan Google Drive';
     $('guideBody').innerHTML = `
-      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Hadzmi Assistant"</div></div></div></div>
+      <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:linear-gradient(135deg,#34A853,#4285F4 55%,#FBBC05)"><i class="fab fa-google-drive"></i></span><div><div class="t-headline">Status: ${st.drive ? '<span class="c-green">Tersambung ✓</span>' : '<span class="c-orange">Belum tersambung</span>'}</div><div class="t-foot muted">Memakai kuota akun Google-mu (15 GB) · file masuk folder "Nexa"</div></div></div></div>
       ${guideSteps([
-        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Hadzmi Assistant Drive".',
+        'Buka <b>script.google.com</b> dengan akun Google yang akan dipakai → <b>New project</b>. Beri nama "Nexa Drive".',
         'Hapus isi editor, lalu tap <b>Salin Kode</b> di bawah ini dan tempel ke editor → tap 💾 <b>Save</b>.',
         'Tap ⚙️ <b>Project Settings</b> → <b>Script Properties</b> → <b>Add script property</b>: Property <code>SECRET</code>, Value: kata rahasia panjang buatanmu (mis. 30 huruf/angka acak) → Save.',
         'Tap <b>Deploy → New deployment</b> → ⚙️ pilih <b>Web app</b> → Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → <b>Deploy</b> → izinkan akses (Authorize) → salin <b>Web app URL</b>.',
@@ -7962,7 +7962,7 @@ function startApp() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  defaultDocTitle = document.title || 'Hadzmi Assistant';
+  defaultDocTitle = document.title || 'Nexa';
   initNavbarScroll();
   bootAuth();
 });

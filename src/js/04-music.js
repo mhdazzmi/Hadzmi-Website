@@ -244,7 +244,7 @@ function updateMediaSessionLockscreen() {
     document.title = `${titleText} - ${artistText}`;
     if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: titleText, artist: artistText, album: song.category || 'Hadzmi Music',
+        title: titleText, artist: artistText, album: song.category || 'Nexa Music',
         artwork: ['96x96', '128x128', '192x192', '256x256', '384x384', '512x512'].map(sz => ({ src: coverArt, sizes: sz, type: 'image/jpeg' }))
       });
       try {
