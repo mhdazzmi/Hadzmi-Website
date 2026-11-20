@@ -454,7 +454,7 @@ async function analyze(forceAi) {
     $('logResult').innerHTML = `<div class="card note-card"><div class="nh"><i class="fas fa-triangle-exclamation c-red"></i>Analisis gagal</div><div>${esc(e.message)}</div><button class="btn btn-gray btn-sm" data-action="analyze">Coba lagi</button></div>`;
   } finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Analisis ulang dengan AI'; }
 }
-function skeleton() { return `<div class="card note-card"><div class="nh"><span class="spinner c-blue"></span> AI sedang menghitung kalori, purin & lemak…</div><div class="t-foot muted">Biasanya 3–10 detik.</div></div>`; }
+function skeleton() { return `<div class="card note-card"><div class="nh"><span class="spinner c-blue"></span> AI sedang menghitung kalori, purin & lemak…</div><div class="t-foot muted ai-wait">Biasanya 3–10 detik.</div></div>`; }
 function renderLogResult(anim) {
   const r = draft.result;
   $('logResult').innerHTML = analysisHtml(r, draft.items, { editable: true, anim, date: $('logDate').value || viewDate }) +
@@ -650,16 +650,27 @@ async function checkServer() {
 }
 async function ai(mode, { text, image, context }) {
   const model = S.settings.aiModel || undefined;
+  const note = t => document.querySelectorAll('.ai-wait').forEach(el => { el.textContent = t; });
   let serverErr = '';
   if (authed && auth && auth.currentUser) {
-    let res = null, data = null;
-    try {
-      res = await fetch('/api/healthcare/ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ mode, text, image, context, model }) });
-      data = await res.json().catch(() => null);
-    } catch (e) { serverErr = 'Server tidak terjangkau'; }
-    if (res && res.ok && data && data.result) return data.result;
-    if (res && data && data.error && !(res.status === 503 && data.code === 'NO_KEY') && res.status !== 404 && res.status !== 405) throw new Error(data.error);
-    serverErr = serverErr || (data && data.error) || 'Server AI belum aktif';
+    const waits = [4000, 8000]; // Gemini gratis sering "sibuk" sesaat → coba ulang otomatis
+    for (let attempt = 0; ; attempt++) {
+      let res = null, data = null;
+      try {
+        res = await fetch('/api/healthcare/ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ mode, text, image, context, model }) });
+        data = await res.json().catch(() => null);
+      } catch (e) { serverErr = 'Server tidak terjangkau'; }
+      if (res && res.ok && data && data.result) return data.result;
+      const noKey = res && res.status === 503 && data && data.code === 'NO_KEY';
+      if (res && (res.status === 503 || res.status === 429) && !noKey && attempt < waits.length) {
+        for (let s = Math.round(waits[attempt] / 1000); s > 0; s--) { note(`Gemini sedang sibuk, mencoba lagi dalam ${s} detik (${attempt + 2}/${waits.length + 1})…`); await new Promise(r => setTimeout(r, 1000)); }
+        note(`Mencoba lagi (${attempt + 2}/${waits.length + 1})…`);
+        continue;
+      }
+      if (res && data && data.error && !noKey && res.status !== 404 && res.status !== 405) throw new Error(data.error);
+      serverErr = serverErr || (data && data.error) || 'Server AI belum aktif';
+      break;
+    }
   }
   const key = readLS(GEMINI_KEY_LS, '');
   if (key) return (await callGemini({ key, mode, text, image, context, model })).result;

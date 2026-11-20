@@ -146,6 +146,7 @@ function extractJson(cand) {
 }
 
 // Daftar model yang benar-benar tersedia untuk kunci ini (Google rutin mempensiunkan model lama)
+const rank = n => /pro/.test(n) ? 2 : /lite/.test(n) ? 1 : 0; // flash dulu, lalu lite, terakhir pro
 async function listFlashModels(f, key) {
   try {
     const res = await f(GEMINI_BASE.replace(/\/models\/$/, '/models') + '?pageSize=200', { headers: { 'x-goog-api-key': key } });
@@ -154,8 +155,8 @@ async function listFlashModels(f, key) {
     return (data.models || [])
       .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
       .map(m => String(m.name || '').replace(/^models\//, ''))
-      .filter(n => /^gemini-[\d.]+-flash(-lite)?$|^gemini-flash(-lite)?-latest$/.test(n))
-      .sort((x, y) => (/lite/.test(x) - /lite/.test(y)) || y.localeCompare(x, undefined, { numeric: true }));
+      .filter(n => /^gemini-[\d.]+-(flash|flash-lite|pro)$|^gemini-(flash|flash-lite|pro)-latest$/.test(n))
+      .sort((x, y) => rank(x) - rank(y) || y.localeCompare(x, undefined, { numeric: true }));
   } catch (e) { return []; }
 }
 
@@ -204,7 +205,7 @@ export async function callGemini({ key, mode, text, image, context, model, fetch
     const r = await tryModel(m); if (r) return r;
   }
   // Semua nama bawaan gagal → tanya Google model flash apa yang tersedia untuk kunci ini
-  for (const m of (await listFlashModels(f, key)).slice(0, 4)) {
+  for (const m of (await listFlashModels(f, key)).slice(0, 5)) {
     if (tried.has(m)) continue;
     const r = await tryModel(m); if (r) return r;
   }
