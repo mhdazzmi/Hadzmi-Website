@@ -31,7 +31,7 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link rel="stylesheet" href="app.css?v=5">
+  <link rel="stylesheet" href="app.css?v=6">
   <script>
     (function () { try { var p = JSON.parse(localStorage.getItem('nexo.theme') || '"light"');
       var t = p === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : p;
@@ -44,10 +44,12 @@
 
   <!-- Aplikasi -->
   <div id="app" class="hidden">
+    <section class="view" id="v-feed"></section>
     <section class="view" id="v-games"></section>
     <section class="view" id="v-chat"></section>
     <section class="view" id="v-me"></section>
     <nav class="tabbar" id="tabbar">
+      <button class="tab" data-tab="feed"><i class="fa-solid fa-house"></i>Beranda</button>
       <button class="tab" data-tab="games"><i class="fa-solid fa-dice"></i>Games<span class="badge hidden" id="b-games"></span></button>
       <button class="tab" data-tab="chat"><i class="fa-solid fa-comment"></i>Chat<span class="badge hidden" id="b-chat"></span></button>
       <button class="tab" data-tab="me"><i class="fa-solid fa-circle-user"></i>Saya</button>
@@ -60,6 +62,6 @@
 
   <div class="conn" id="conn"><span class="spin"></span> Menyambungkan…</div>
 
-  <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="app.js?v=6"></script>
 </body>
 </html>

@@ -258,6 +258,8 @@ export class NexoHub extends DurableObject {
     this.saveUsers();
     if (!wasOnline) this.presence(uid, true);
     this.send(server, await this.initPayload(uid));
+    const pendingCall = this.calls && this.calls.get(uid);
+    if (pendingCall && Date.now() - pendingCall.ts < 45000) this.send(server, { t: 'call', from: pendingCall.from, data: pendingCall.data });
     return new Response(null, { status: 101, webSocket: client });
   }
   onlineIds() { return [...new Set(this.ctx.getWebSockets().map(ws => (ws.deserializeAttachment() || {}).uid).filter(Boolean))]; }
@@ -457,6 +459,96 @@ export class NexoHub extends DurableObject {
         return null;
       }
 
+      // ----- Sosial: feed & story -----
+      case 'feed.list': {
+        const opts = { prefix: 'p:', reverse: true, limit: m.uid ? 600 : 21 };
+        if (m.before) opts.end = postKey(m.before);
+        let list = [...(await this.ctx.storage.list(opts)).values()];
+        if (m.uid) list = list.filter(x => x.uid === m.uid).slice(0, 61);
+        return { posts: list.slice(0, 20), more: list.length > 20 };
+      }
+      case 'post.create': {
+        const text = String(m.text || '').replace(/\r/g, '').slice(0, 2000).trim();
+        const img = m.img && MEDIA_RE.test(m.img.id) ? { id: m.img.id, w: Math.round(Number(m.img.w) || 0), h: Math.round(Number(m.img.h) || 0) } : null;
+        if (!text && !img) fail(400, 'Postingan kosong.');
+        this.settings.postSeq = (this.settings.postSeq || 0) + 1;
+        await this.ctx.storage.put('settings', this.settings);
+        const post = { seq: this.settings.postSeq, uid, text, img, ts: Date.now(), likes: [], comments: [] };
+        await this.ctx.storage.put(postKey(post.seq), post);
+        this.broadcast({ t: 'post', post });
+        return post;
+      }
+      case 'post.like': case 'post.comment': case 'post.delete': case 'post.uncomment': {
+        const k = postKey(m.seq), post = await this.ctx.storage.get(k);
+        if (!post) fail(404, 'Postingan sudah dihapus.');
+        if (m.t === 'post.delete') {
+          if (post.uid !== uid && !me.admin) fail(403, 'Bukan postinganmu.');
+          await this.ctx.storage.delete(k);
+          this.broadcast({ t: 'postGone', seq: post.seq });
+          return true;
+        }
+        if (m.t === 'post.like') {
+          const had = post.likes.includes(uid);
+          post.likes = had ? post.likes.filter(x => x !== uid) : post.likes.concat(uid);
+          if (!had && post.uid !== uid) this.push([post.uid], { title: `❤️ ${me.name} menyukai postinganmu`, body: (post.text || '📷 Foto').slice(0, 100), tag: 'post-' + post.seq, url: './?post=' + post.seq, kind: 'social' }).catch(() => {});
+        } else if (m.t === 'post.comment') {
+          const text = String(m.text || '').replace(/\r/g, '').slice(0, 1000).trim();
+          if (!text) fail(400, 'Komentar kosong.');
+          if (post.comments.length >= 300) fail(400, 'Komentar sudah terlalu banyak.');
+          post.comments.push({ id: randId(8), uid, text, ts: Date.now() });
+          const notify = [...new Set([post.uid, ...post.comments.map(c => c.uid)])].filter(x => x !== uid);
+          this.push(notify, { title: `💬 ${me.name} berkomentar`, body: text.slice(0, 120), tag: 'post-' + post.seq, url: './?post=' + post.seq, kind: 'social' }).catch(() => {});
+        } else {
+          const c = post.comments.find(x => x.id === m.cid);
+          if (!c) fail(404, 'Komentar tidak ada.');
+          if (c.uid !== uid && post.uid !== uid && !me.admin) fail(403, 'Tidak bisa menghapus komentar ini.');
+          post.comments = post.comments.filter(x => x !== c);
+        }
+        await this.ctx.storage.put(k, post);
+        this.broadcast({ t: 'postUpdate', post });
+        return post;
+      }
+      case 'story.list': return { stories: await this.activeStories() };
+      case 'story.create': {
+        const img = m.img && MEDIA_RE.test(m.img.id) ? { id: m.img.id, w: Math.round(Number(m.img.w) || 0), h: Math.round(Number(m.img.h) || 0) } : null;
+        const text = String(m.text || '').slice(0, 200).trim();
+        if (!img && !text) fail(400, 'Story kosong.');
+        const bg = /^#[0-9a-f]{6}$/i.test(m.bg || '') ? m.bg : '#007AFF';
+        const list = await this.activeStories();
+        if (list.filter(x => x.uid === uid).length >= 20) fail(400, 'Maksimal 20 story per hari.');
+        list.push({ id: randId(10), uid, img, text, bg, ts: Date.now(), views: [] });
+        await this.ctx.storage.put('stories', list);
+        this.broadcast({ t: 'stories', stories: list });
+        return true;
+      }
+      case 'story.view': case 'story.delete': {
+        const list = await this.activeStories();
+        const st = list.find(x => x.id === m.id); if (!st) return null;
+        if (m.t === 'story.view') { if (st.uid === uid || st.views.includes(uid)) return null; st.views.push(uid); await this.ctx.storage.put('stories', list); this.toUsers([st.uid], { t: 'stories', stories: list }); return null; }
+        if (st.uid !== uid && !me.admin) fail(403, 'Bukan story-mu.');
+        const next = list.filter(x => x !== st);
+        await this.ctx.storage.put('stories', next);
+        this.broadcast({ t: 'stories', stories: next });
+        return true;
+      }
+
+      // ----- Telepon (sinyal WebRTC) -----
+      case 'call.signal': {
+        const to = String(m.to || '');
+        if (!this.users[to] || to === uid) fail(400, 'Teman tidak ditemukan.');
+        const data = m.data || {};
+        const type = String(data.type || '');
+        if (!['invite', 'answer', 'ice', 'end', 'decline', 'busy', 'ringing'].includes(type)) fail(400, 'Sinyal tidak valid.');
+        if (JSON.stringify(data).length > 60000) fail(400, 'Sinyal terlalu besar.');
+        this.calls = this.calls || new Map();
+        if (type === 'invite') this.calls.set(to, { from: uid, data, ts: Date.now() });
+        if (['answer', 'end', 'decline', 'busy'].includes(type)) { this.calls.delete(uid); this.calls.delete(to); }
+        const online = this.ctx.getWebSockets(to).length > 0;
+        this.toUsers([to], { t: 'call', from: uid, data });
+        if (type === 'invite') this.push([to], { title: `${data.video ? '📹' : '📞'} ${me.name} menelepon kamu`, body: 'Tap untuk menjawab.', tag: 'call-' + uid, url: './?call=' + uid, kind: 'call' }, true).catch(() => {});
+        return { online };
+      }
+
       // ----- Game -----
       case 'game.create': {
         const open = Object.values(this.gindex).filter(gi => gi.host === uid && gi.status !== 'ended').length;
@@ -608,6 +700,12 @@ export class NexoHub extends DurableObject {
     return data;
   }
 
+  async activeStories() {
+    const now = Date.now();
+    const list = ((await this.ctx.storage.get('stories')) || []).filter(x => now - x.ts < 24 * 3600000);
+    return list;
+  }
+
   // ---------- Chat helpers ----------
   conv(uid, id, create) {
     id = String(id || '');
@@ -743,6 +841,7 @@ function decodeEntities(s) {
     return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[l] || m;
   });
 }
+function postKey(seq) { return 'p:' + String(seq).padStart(9, '0'); }
 function msgKey(conv, seq) { return `m:${conv}:${String(seq).padStart(9, '0')}`; }
 function dmId(a, b) { return 'dm:' + [a, b].sort().join(':'); }
 function bearer(request) { const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || ''); return m ? m[1].trim() : null; }

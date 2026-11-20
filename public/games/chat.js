@@ -1,4 +1,5 @@
 /* Nexo Games — Chat ala iMessage: grup + pesan pribadi, foto, balas, reaksi, dibaca, mengetik */
+import { startCall } from './call.js';
 import { $, $$, esc, S, LS, on, emit, call, fire, avatar, user, hm, dayLabel, listTime, lastSeen, pushScreen, popScreen, topScreen, setView,
   toast, sheet, banner, popMenu, viewer, compressImage, uploadImage, pickFile, mediaUrl, linkify, confirmBox, haptic } from './core.js';
 
@@ -142,13 +143,14 @@ function markRead() {
 
 function buildScreen() {
   scr.innerHTML = `<div class="nav conv-nav"><div class="nav-row"><button class="back" id="c-back"><i class="fa-solid fa-chevron-left"></i><span id="c-bl"></span></button>
-    <div class="who" id="c-who"></div><span style="min-width:70px;display:flex;justify-content:flex-end"><button class="icon-btn" id="c-info" aria-label="Info"><i class="fa-solid fa-circle-info"></i></button></span></div></div>
+    <div class="who" id="c-who"></div><span style="min-width:70px;display:flex;justify-content:flex-end;gap:2px">${cur && cur !== 'group' ? '<button class="icon-btn" id="c-vcall" aria-label="Video call"><i class="fa-solid fa-video"></i></button><button class="icon-btn" id="c-call" aria-label="Telepon"><i class="fa-solid fa-phone"></i></button>' : ''}<button class="icon-btn" id="c-info" aria-label="Info"><i class="fa-solid fa-circle-info"></i></button></span></div></div>
     <div class="screen-body" id="c-body"><div class="msgs" id="c-msgs"></div></div>
     <div class="composer"><div id="c-reply"></div><div class="bar"><button class="plus" id="c-plus" aria-label="Kirim foto"><i class="fa-solid fa-image"></i></button>
       <div class="input-wrap"><button class="emo-btn" id="c-emo" aria-label="Emoji"><i class="fa-regular fa-face-smile"></i></button><textarea id="c-text" rows="1" placeholder="Pesan" enterkeyhint="${isTouch ? 'enter' : 'send'}"></textarea><button class="send hidden" id="c-send" aria-label="Kirim"><i class="fa-solid fa-arrow-up"></i></button><button class="mic" id="c-mic" aria-label="Rekam suara"><i class="fa-solid fa-microphone"></i></button></div></div><div id="c-rec"></div><div id="c-emojis"></div></div>`;
   renderHead(); renderBackLabel(); renderReply();
   $('#c-back').onclick = () => popScreen();
   $('#c-info').onclick = convInfo;
+  if ($('#c-call')) { $('#c-call').onclick = () => startCall(otherOf(cur), false); $('#c-vcall').onclick = () => startCall(otherOf(cur), true); }
   const ta = $('#c-text'), send = $('#c-send');
   let lastTyping = 0;
   const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(128, ta.scrollHeight) + 'px'; const has = !!ta.value.trim(); send.classList.toggle('hidden', !has && !editing); $('#c-mic').classList.toggle('hidden', has || !!editing); };

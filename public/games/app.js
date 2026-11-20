@@ -2,6 +2,8 @@
 import { $, $$, esc, S, LS, on, emit, api, connect, disconnect, call, applyTheme, themePref, avatar, user, toast, alertBox, confirmBox,
   sheet, banner, compressImage, uploadImage, pickFile, cropImage, lastSeen, setView, getView, topScreen, haptic } from './core.js';
 import { soundOn, setSound, sfx } from './sound.js';
+import { renderFeed, initFeed, openProfile } from './feed.js';
+import { initCall, startCall } from './call.js';
 import { renderChatList, openConv, unreadCount, totalUnread, initChat } from './chat.js';
 import { renderGamesTab, openGame, initGame, myTurnCount } from './game.js';
 
@@ -127,7 +129,7 @@ function startApp() {
   if (!started) {
     started = true;
     $('#tabbar').onclick = e => { const b = e.target.closest('.tab'); if (b) switchTab(b.dataset.tab); };
-    initChat(); initGame();
+    initChat(); initGame(); initFeed(); initCall();
   }
   switchTab(tab);
   connect();
@@ -143,6 +145,7 @@ function switchTab(t) {
 export function renderTab() {
   if (!S.me) { $('#v-' + tab).innerHTML = `<div class="empty" style="padding-top:40vh"><span class="spin"></span></div>`; return; }
   if (tab === 'games') renderGamesTab($('#v-games'));
+  else if (tab === 'feed') renderFeed($('#v-feed'));
   else if (tab === 'chat') renderChatList($('#v-chat'));
   else renderMe($('#v-me'));
   updateBadges();
@@ -185,15 +188,15 @@ on('nudge', m => { const u = user(m.from); haptic(200); banner({ title: `👋 ${
 
 function handleDeepLink() {
   const q = new URLSearchParams(location.search);
-  const chat = q.get('chat'), game = q.get('game');
-  if (chat || game) history.replaceState(history.state, '', location.pathname);
-  if (game) openGame(game); else if (chat) openConv(chat);
+  const chat = q.get('chat'), game = q.get('game'), post = q.get('post'), callFrom = q.get('call');
+  if (chat || game || post || callFrom) history.replaceState(history.state, '', location.pathname);
+  if (game) openGame(game); else if (chat) openConv(chat); else if (post || callFrom) switchTab('feed');
 }
 navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', e => {
   const d = e.data || {};
   if (d.type === 'nexo-open' && d.url) {
     const u = new URL(d.url, location.href); const chat = u.searchParams.get('chat'), game = u.searchParams.get('game');
-    if (game) openGame(game); else if (chat) openConv(chat);
+    if (game) openGame(game); else if (chat) openConv(chat); else if (u.searchParams.get('post')) switchTab('feed');
   }
 });
 

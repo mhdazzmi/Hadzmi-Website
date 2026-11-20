@@ -67,6 +67,9 @@ Web terpisah untuk kamu dan teman-teman (tidak memakai PIN pemilik Nexa). Buka `
 | **Chat** | Gaya iMessage: **Grup Nexo** (semua teman) + **pesan pribadi** 1 lawan 1 (bisa dibuka dari dalam game). Kirim **foto** (otomatis dikompres), balas pesan, reaksi ❤️👍😂 (tekan lama / klik kanan), hapus pesan, "Dibaca"/"Terkirim", indikator sedang mengetik, status online. |
 | **Notifikasi** | Push saat ada chat, giliran main, ajakan main, tawaran, colekan, dan game selesai, walau web ditutup. Kalau web sedang dibuka, muncul banner ala iOS. |
 | **Tema** | Terang (default), Gelap, atau Otomatis ikut sistem (Saya → Tampilan). |
+| **Beranda (sosial)** | Feed postingan (teks + foto, suka dengan double-tap, komentar), Story 24 jam (foto/teks berwarna, daftar yang melihat, balas story ke chat), profil teman (bio, statistik, postingan). |
+| **Telepon** | Panggilan suara & video 1 lawan 1 di browser (WebRTC). Tombol 📞/📹 di chat pribadi dan profil teman; notifikasi push untuk panggilan masuk. Catatan: tanpa server TURN, sebagian jaringan seluler/kantor yang ketat bisa gagal tersambung. |
+| **Game v2** | Papan 3D isometrik di meja kayu, foto asli kota (Wikipedia, bisa diganti admin), rumah → landmark 3D sesuai warna pemain, kartu 3D, suara tiap kota, giliran otomatis, bot komputer. |
 | **Emoji iOS** | Di iPhone/Mac memakai emoji Apple bawaan. Di Windows & Android, emoji otomatis diganti gambar emoji Apple (paket `emoji-datasource-apple` dari jsDelivr), termasuk bendera 🇮🇩. |
 | **Link preview** | Link yang dikirim di chat otomatis jadi kartu (gambar + judul + situs) seperti iMessage; server membaca tag Open Graph dan menyimpan hasilnya 7 hari. Link `/games/` yang dibagikan ke WhatsApp/Telegram/iMessage juga tampil sebagai kartu bergambar (`public/games/og.jpg`). |
 
