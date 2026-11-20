@@ -52,7 +52,7 @@ function requestNotifPermission() {
 
 function showSystemNotification(title, body, tag) {
   if (!notifSupported() || Notification.permission !== 'granted') return;
-  const opts = { body, tag: tag || undefined, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: false };
+  const opts = { body, tag: tag || undefined, icon: 'icons/icon-192.png?v=3', badge: 'icons/icon-192.png?v=3', renotify: false };
   if (swRegistration && swRegistration.showNotification) { swRegistration.showNotification(title, opts).catch(() => {}); return; }
   try { const n = new Notification(title, opts); n.onclick = () => { window.focus(); n.close(); }; } catch (e) {}
 }

@@ -16,7 +16,7 @@ function goUrl(action) {
   if (!action || !action.tab) return './';
   return './?go=' + encodeURIComponent([action.tab, action.sub || '', action.filter || ''].join(':'));
 }
-const ICON = 'icons/icon-192.png';
+const ICON = 'icons/icon-192.png?v=3';
 
 async function handlePush(event) {
   let items = [];

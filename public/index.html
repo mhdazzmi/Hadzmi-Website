@@ -10,8 +10,8 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Hadzmi Assistant</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png?v=3">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=3">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -985,7 +985,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
   <div id="lockScreen">
 
     <form class="lock-card" id="lockForm" onsubmit="return submitLogin(event)" autocomplete="on">
-      <div class="lock-avatar"><img src="icons/icon-192.png" alt="" onerror="this.outerHTML='<i class=&quot;fas fa-h&quot;></i>'"></div>
+      <div class="lock-avatar"><img src="icons/icon-192.png?v=3" alt="" onerror="this.outerHTML='<i class=&quot;fas fa-starfas fa-h&quot;quot;></i>'"></div>
       <div class="t-title3" style="font-weight:700" data-label="app.name">Hadzmi Assistant</div>
       <div class="lock-hint" id="lockSubtitle">Masukkan sandi untuk membuka</div>
 
@@ -1592,7 +1592,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <!-- Profile -->
             <div class="list">
               <div class="row" style="padding:16px">
-                <span class="avatar app-logo" style="width:58px;height:58px"><img src="icons/icon-192.png" alt=""></span>
+                <span class="avatar app-logo" style="width:58px;height:58px"><img src="icons/icon-192.png?v=3" alt=""></span>
                 <div class="flex-1">
                   <div class="t-title3" data-label="app.name">Hadzmi Assistant</div>
                   <div class="t-foot muted truncate" id="settingsAccountEmail">—</div>
@@ -3592,7 +3592,7 @@ function updateMediaSessionLockscreen() {
     const titleText = song.title || 'Unknown Track';
     const artistText = song.artist || song.category || 'Music Library';
     const cu = songCoverUrl(song);
-    const coverArt = cu && !/^blob:/.test(cu) ? new URL(cu, location.href).href : new URL('icons/icon-512.png', location.href).href;
+    const coverArt = cu && !/^blob:/.test(cu) ? new URL(cu, location.href).href : new URL('icons/icon-512.png?v=3', location.href).href;
     document.title = `${titleText} - ${artistText}`;
     if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -5643,7 +5643,7 @@ function requestNotifPermission() {
 
 function showSystemNotification(title, body, tag) {
   if (!notifSupported() || Notification.permission !== 'granted') return;
-  const opts = { body, tag: tag || undefined, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: false };
+  const opts = { body, tag: tag || undefined, icon: 'icons/icon-192.png?v=3', badge: 'icons/icon-192.png?v=3', renotify: false };
   if (swRegistration && swRegistration.showNotification) { swRegistration.showNotification(title, opts).catch(() => {}); return; }
   try { const n = new Notification(title, opts); n.onclick = () => { window.focus(); n.close(); }; } catch (e) {}
 }
