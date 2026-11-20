@@ -1021,3 +1021,6 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 @keyframes aiPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,.5); } 50% { box-shadow: 0 0 0 8px rgba(255,59,48,0); } }
 .ai-send { background: var(--blue); color: #fff; }
 .ai-send:disabled { opacity: .45; cursor: default; }
+
+/* Galeri: tombol terkunci hanya ikon gembok */
+.seg button.seg-icon { flex: 0 0 52px; font-size: 14px; }

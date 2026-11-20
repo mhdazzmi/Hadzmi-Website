@@ -1047,6 +1047,9 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .ai-send { background: var(--blue); color: #fff; }
 .ai-send:disabled { opacity: .45; cursor: default; }
 
+/* Galeri: tombol terkunci hanya ikon gembok */
+.seg button.seg-icon { flex: 0 0 52px; font-size: 14px; }
+
   </style>
 </head>
 <body>
@@ -1371,7 +1374,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <button data-v="albums" onclick="setGalleryView('albums')">Album</button>
             <button data-v="places" onclick="setGalleryView('places')">Tempat</button>
             <button data-v="favorites" onclick="setGalleryView('favorites')">Favorit</button>
-            <button data-v="hidden" onclick="setGalleryView('hidden')"><i class="fas fa-lock" style="font-size:11px"></i> Tersembunyi</button>
+            <button data-v="hidden" class="seg-icon" onclick="setGalleryView('hidden')" aria-label="Galeri terkunci" title="Galeri terkunci"><i class="fas fa-lock"></i></button>
           </div>
           <div id="galleryContext" class="hidden"></div>
           <div id="galleryBody"></div>
