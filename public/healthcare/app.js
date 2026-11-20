@@ -1,8 +1,8 @@
 /* =========================================================
-   HADZMI SEHAT — kontrol makan (kalori, purin, lemak) + AI Gemini
-   Data teks : Firebase Realtime DB  → node "hadzmi_sehat_data" (terpisah dari Assistant)
+   HADZMI HEALTHCARE — kontrol makan (kalori, purin, lemak) + AI Gemini
+   Data teks : Firebase Realtime DB  → node "hadzmi_healthcare_data" (terpisah dari Assistant)
    Foto      : Cloudflare R2 (lewat /api/files, sama dengan Assistant) + thumbnail kecil di Firebase
-   AI        : /api/sehat/ai (kunci di server)  → cadangan: kunci Gemini di perangkat ini
+   AI        : /api/healthcare/ai (kunci di server)  → cadangan: kunci Gemini di perangkat ini
    ========================================================= */
 import { callGemini } from './ai-core.js';
 
@@ -18,10 +18,10 @@ const firebaseConfig = {
 };
 const OWNER_EMAIL = 'hadzmi-hub@example.com'; // sama dengan Hadzmi Assistant (login PIN)
 const PIN_LEN = 8;
-const DB_PATH = 'hadzmi_sehat_data';
-const CACHE_KEY = 'sehat_cache_v1';
-const PENDING_KEY = 'sehat_pending_v1';
-const GEMINI_KEY_LS = 'sehat_gemini_key';
+const DB_PATH = 'hadzmi_healthcare_data';
+const CACHE_KEY = 'healthcare_cache_v1';
+const PENDING_KEY = 'healthcare_pending_v1';
+const GEMINI_KEY_LS = 'healthcare_gemini_key';
 const SESSION_KEY = 'hz_session'; // dipakai bersama Assistant → login sekali untuk keduanya
 const WIB = 7 * 3600 * 1000;
 
@@ -281,7 +281,7 @@ function renderToday() {
   if (over.length) strip += `<div class="alert-strip"><i class="fas fa-triangle-exclamation"></i><div><b>Berlebih:</b> ${over.map(k => `${NUTR[k].label} ${fmt(tot[k])}/${fmt(t[k])} ${NUTR[k].unit}`).join(' · ')}.${over.includes('purine') ? ' Perbanyak air putih & hindari makanan tinggi purin sisa hari ini.' : ''}</div></div>`;
   if (near.length) strip += `<div class="alert-strip warn"><i class="fas fa-circle-exclamation"></i><div><b>Hampir batas:</b> ${near.map(k => NUTR[k].label).join(', ')}. Pilih makanan yang ringan.</div></div>`;
   const pendingCount = Object.keys(pending).length;
-  if (syncMode === 'err') strip += `<div class="alert-strip info"><i class="fas fa-database"></i><div>Firebase menolak data Sehat. Tambahkan aturan <b>hadzmi_sehat_data</b> di Rules (lihat Pengaturan → Penyimpanan). Data aman tersimpan di perangkat${pendingCount ? ` (${pendingCount} menunggu)` : ''}.</div></div>`;
+  if (syncMode === 'err') strip += `<div class="alert-strip info"><i class="fas fa-database"></i><div>Firebase menolak data Healthcare. Tambahkan aturan <b>hadzmi_healthcare_data</b> di Rules (lihat Pengaturan → Penyimpanan). Data aman tersimpan di perangkat${pendingCount ? ` (${pendingCount} menunggu)` : ''}.</div></div>`;
   $('alertStrip').innerHTML = strip;
 
   // Air
@@ -546,7 +546,7 @@ function learn(meal) {
 function dataUrlToBlob(d) { const [h, b] = d.split(','), bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: (h.match(/:(.*?);/) || [])[1] || 'image/jpeg' }); }
 async function token() { if (!auth || !auth.currentUser) throw new Error('Belum login'); return auth.currentUser.getIdToken(); }
 async function uploadPhoto(dataUrl, mealId) {
-  const res = await fetch('/api/files?store=auto', { method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'image/jpeg', 'X-File-Name': encodeURIComponent('sehat-' + mealId + '.jpg') }, body: dataUrlToBlob(dataUrl) });
+  const res = await fetch('/api/files?store=auto', { method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'image/jpeg', 'X-File-Name': encodeURIComponent('healthcare-' + mealId + '.jpg') }, body: dataUrlToBlob(dataUrl) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.id) throw new Error(data.error || 'upload ' + res.status);
   const m = S.meals[mealId];
@@ -574,7 +574,7 @@ function checkExceed(date, before, after) {
   if (over.length) {
     haptic([60, 40, 60]);
     iosAlert('⚠️ Melebihi batas harian', over.join('\n') + (over.some(x => x.startsWith('Purin')) ? '\n\nMinum air putih lebih banyak & hindari makanan tinggi purin sisa hari ini.' : '\n\nPilih makanan ringan & rendah lemak untuk sisa hari ini.'), [{ label: 'Mengerti', bold: true }]);
-    if (isToday) sysNotify('Hadzmi Sehat: melebihi batas', over.join(' · '), 'sehat-over-' + date);
+    if (isToday) sysNotify('Hadzmi Healthcare: melebihi batas', over.join(' · '), 'healthcare-over-' + date);
   } else {
     banner('Hampir mencapai batas', near.join(', ') + ` sudah ≥ ${warnAt}% batas harian.`, 'fa-circle-exclamation', 'bg-orange');
   }
@@ -654,7 +654,7 @@ async function ai(mode, { text, image, context }) {
   if (authed && auth && auth.currentUser) {
     let res = null, data = null;
     try {
-      res = await fetch('/api/sehat/ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ mode, text, image, context, model }) });
+      res = await fetch('/api/healthcare/ai', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ mode, text, image, context, model }) });
       data = await res.json().catch(() => null);
     } catch (e) { serverErr = 'Server tidak terjangkau'; }
     if (res && res.ok && data && data.result) return data.result;
@@ -960,7 +960,7 @@ function renderSettings() {
       sSwitch('autoAiWeight', 'Analisis AI otomatis setelah timbang'),
       'Kunci gratis: aistudio.google.com/apikey. Foto dari kamera di sini tidak disimpan ke galeri HP.'),
     group('Penyimpanan',
-      `<div class="srow"><i class="fas fa-database c-orange"></i><div class="grow">Firebase · node hadzmi_sehat_data<div class="t-cap muted">${{ on: '● Tersinkron realtime', off: 'Offline — akan sinkron otomatis', err: 'Ditolak Rules — tambahkan hadzmi_sehat_data', local: 'Mode lokal' }[syncMode]}${Object.keys(pending).length ? ` · ${Object.keys(pending).length} menunggu` : ''}</div></div></div>` +
+      `<div class="srow"><i class="fas fa-database c-orange"></i><div class="grow">Firebase · node hadzmi_healthcare_data<div class="t-cap muted">${{ on: '● Tersinkron realtime', off: 'Offline — akan sinkron otomatis', err: 'Ditolak Rules — tambahkan hadzmi_healthcare_data', local: 'Mode lokal' }[syncMode]}${Object.keys(pending).length ? ` · ${Object.keys(pending).length} menunggu` : ''}</div></div></div>` +
       `<div class="srow"><i class="fas fa-cloud c-blue"></i><div class="grow">Cloudflare R2<div class="t-cap muted">Foto makanan (sama dengan Galeri Assistant)</div></div></div>` +
       `<div class="srow"><i class="fas fa-file-lines c-gray"></i><div class="grow">Data tercatat<div class="t-cap muted">${Object.keys(S.meals).length} makanan · ${Object.keys(S.weights).length} timbang · ${Object.keys(S.uric).length} asam urat · ${Object.keys(S.foods).length} kamus</div></div></div>` +
       `<button class="srow c-blue" data-action="exportData" style="width:100%"><i class="fas fa-download"></i><div class="grow" style="text-align:left">Ekspor data (JSON)</div></button>` +
@@ -991,19 +991,19 @@ function autoKcal() {
 async function askNotif() {
   if (!('Notification' in window)) return banner('Tidak didukung', 'Browser ini tidak mendukung notifikasi. Di iPhone, tambahkan ke Layar Utama dulu.', 'fa-bell-slash', 'bg-gray');
   const p = await Notification.requestPermission(); renderSettings();
-  if (p === 'granted') sysNotify('Notifikasi aktif ✅', 'Hadzmi Sehat akan mengingatkan saat berlebih.', 'sehat-test');
+  if (p === 'granted') sysNotify('Notifikasi aktif ✅', 'Hadzmi Healthcare akan mengingatkan saat berlebih.', 'healthcare-test');
 }
 async function sysNotify(title, body, tag) {
   try {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration('/').catch(() => null);
-    const opt = { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', data: { url: '/sehat/' } };
+    const opt = { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', data: { url: '/healthcare/' } };
     if (reg && reg.showNotification) await reg.showNotification(title, opt); else new Notification(title, opt);
   } catch (e) { console.warn('notify', e); }
 }
 function exportData() {
   const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' }), a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `hadzmi-sehat-${today()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  a.href = URL.createObjectURL(blob); a.download = `hadzmi-healthcare-${today()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 async function lockNow() {
   const ok = await iosAlert('Kunci sekarang?', 'Hadzmi Assistant di perangkat ini juga ikut terkunci.', [{ label: 'Batal' }, { label: 'Kunci', danger: true, value: true }]);
@@ -1024,7 +1024,7 @@ function remindTick() {
   ['sarapan', 'siang', 'malam'].forEach(c => {
     const at = S.settings.remindTimes[c]; if (!at) return;
     const [h, m] = at.split(':').map(Number), [nh, nm] = now.split(':').map(Number), diff = (nh * 60 + nm) - (h * 60 + m);
-    const flag = 'sehat_rem_' + t + c;
+    const flag = 'healthcare_rem_' + t + c;
     if (diff >= 0 && diff < 120 && !meals.some(x => x.cat === c) && !readLS(flag, false)) {
       writeLS(flag, true);
       banner(`Sudah ${CAT[c].label.toLowerCase()}?`, 'Jangan lupa catat makananmu.', 'fa-utensils', CAT[c].color);
@@ -1083,7 +1083,7 @@ const ACTIONS = {
   askAi, askPick: el => { $('askInput').value = S.foods[el.dataset.key] ? S.foods[el.dataset.key].name : ''; askAi(); }, logAsk,
   autoKcal, askNotif, exportData, lockNow,
   clearDict: async () => { if (await iosAlert('Hapus kamus auto-suggest?', 'Riwayat makanan tetap ada.', [{ label: 'Batal' }, { label: 'Hapus', danger: true, value: true }])) { dbSet('foods', {}); renderSettings(); } },
-  explainSync: () => iosAlert('Status sinkron', { on: 'Tersambung ke Firebase. Data tersinkron realtime ke semua perangkat.', off: 'Sedang offline. Data disimpan di perangkat dan dikirim otomatis saat online.', err: 'Firebase menolak akses ke node hadzmi_sehat_data. Tempel ulang isi database.rules.json (sudah diperbarui) ke Firebase Console → Realtime Database → Rules, lalu Publish. Sementara itu data tersimpan di perangkat ini.', local: 'Firebase tidak termuat. Data hanya di perangkat ini.' }[syncMode] || '', [{ label: 'OK', bold: true }])
+  explainSync: () => iosAlert('Status sinkron', { on: 'Tersambung ke Firebase. Data tersinkron realtime ke semua perangkat.', off: 'Sedang offline. Data disimpan di perangkat dan dikirim otomatis saat online.', err: 'Firebase menolak akses ke node hadzmi_healthcare_data. Tempel ulang isi database.rules.json (sudah diperbarui) ke Firebase Console → Realtime Database → Rules, lalu Publish. Sementara itu data tersimpan di perangkat ini.', local: 'Firebase tidak termuat. Data hanya di perangkat ini.' }[syncMode] || '', [{ label: 'OK', bold: true }])
 };
 function bindUI() {
   document.addEventListener('click', e => {

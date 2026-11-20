@@ -52,9 +52,9 @@ Darurat: `APP_AUTH.enabled = false` untuk mematikan kunci sementara (tidak disar
 
 ---
 
-## 🥗 Hadzmi Sehat — halaman baru `/sehat/` (kontrol makan)
+## 🥗 Hadzmi Healthcare — halaman baru `/healthcare/` (kontrol makan)
 
-Web terpisah (tidak mengubah tampilan Assistant), dibuka dari ikon **Sehat** di Menu Cepat atau langsung `https://<domainmu>/sehat/`. Bisa ditambahkan ke Layar Utama sebagai app sendiri. Login **memakai PIN & sesi yang sama** dengan Assistant (cukup login sekali).
+Web terpisah (tidak mengubah tampilan Assistant), dibuka dari ikon **Healthcare** di Menu Cepat atau langsung `https://<domainmu>/healthcare/`. Bisa ditambahkan ke Layar Utama sebagai app sendiri. Login **memakai PIN & sesi yang sama** dengan Assistant (cukup login sekali).
 
 | Menu | Isi |
 |---|---|
@@ -68,17 +68,17 @@ Web terpisah (tidak mengubah tampilan Assistant), dibuka dari ikon **Sehat** di 
 ### Penyimpanan
 | Data | Tempat | Catatan |
 |---|---|---|
-| Teks (makanan, gizi, timbangan, asam urat, pengaturan, kamus) | **Firebase RTDB**, node `hadzmi_sehat_data` | ±1 KB per makanan → 1 GB cukup untuk ratusan ribu catatan. Terpisah dari `hadzmi_assistant_data` supaya tidak saling menimpa. |
+| Teks (makanan, gizi, timbangan, asam urat, pengaturan, kamus) | **Firebase RTDB**, node `hadzmi_healthcare_data` | ±1 KB per makanan → 1 GB cukup untuk ratusan ribu catatan. Terpisah dari `hadzmi_assistant_data` supaya tidak saling menimpa. |
 | Thumbnail 120 px | Firebase (±3 KB) | Agar daftar tampil cepat di semua perangkat |
 | Foto makanan (900 px) | **Cloudflare R2** (10 GB gratis) | Sama dengan Galeri; bisa dimatikan di Pengaturan |
 | Cache offline | localStorage perangkat | Otomatis dikirim saat online |
 
 ### ⚠️ Setup wajib (2 langkah)
-1. **Firebase Rules**: tempel ulang `database.rules.json` (sekarang ada blok `hadzmi_sehat_data`), ganti `GANTI_DENGAN_UID_KAMU` (2 blok) → **Publish**. Tanpa ini status menjadi "Ditolak" dan data hanya tersimpan di perangkat.
+1. **Firebase Rules**: tempel ulang `database.rules.json` (sekarang ada blok `hadzmi_healthcare_data`), ganti `GANTI_DENGAN_UID_KAMU` (2 blok) → **Publish**. Tanpa ini status menjadi "Ditolak" dan data hanya tersimpan di perangkat.
 2. **Kunci Gemini** (gratis): buat di **aistudio.google.com/apikey** → Cloudflare Worker → Settings → Variables and Secrets → tambah **Secret** `GEMINI_API_KEY` → deploy ulang. Opsional: variabel `GEMINI_MODEL` (default `gemini-flash-latest`, otomatis turun ke `gemini-2.5-flash`).
    Cadangan: kunci bisa diisi di Pengaturan → AI (tersimpan hanya di perangkat itu, dipakai jika server belum aktif).
 
-Kode: `public/sehat/` (index.html, sehat.css, app.js, ai-core.js) dan `worker/sehat.js` (endpoint `POST /api/sehat/ai`). Tidak perlu build untuk halaman ini.
+Kode: `public/healthcare/` (index.html, healthcare.css, app.js, ai-core.js) dan `worker/healthcare.js` (endpoint `POST /api/healthcare/ai`). Tidak perlu build untuk halaman ini.
 
 ---
 

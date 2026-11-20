@@ -13,7 +13,7 @@
      VAPID_PRIVATE_JWK    (opsional, secret) — jika kosong, kunci dibuat otomatis & disimpan di KV
    ========================================================= */
 
-import { sehatAi } from './sehat.js';
+import { healthcareAi } from './healthcare.js';
 
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const MAX_EVENTS = 400;
@@ -92,8 +92,8 @@ async function handleApi(request, env, url) {
   const user = await requireAuth(request, env);
   requireKV(env);
 
-  // ---- Hadzmi Sehat: analisis gizi dengan Gemini ----
-  if (path === '/api/sehat/ai' && method === 'POST') return sehatAi(request, env);
+  // ---- Hadzmi Healthcare: analisis gizi dengan Gemini ----
+  if (path === '/api/healthcare/ai' && method === 'POST') return healthcareAi(request, env);
 
   // ---- Penyimpanan file (R2 / Google Drive / KV lama) ----
   if (path === '/api/files' && method === 'POST') return uploadFile(request, env, url);
