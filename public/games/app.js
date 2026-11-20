@@ -133,6 +133,7 @@ async function loggedIn(res) {
 
 on('logout', ({ reason }) => logout(reason));
 on('refresh-badges', () => updateBadges());
+on('photos', m => { if (m && m.photos) S.settings.photos = m.photos; });
 async function logout(reason) {
   try { if (S.token) await api('/api/nexo/logout', {}); } catch (e) {}
   disconnect(); S.token = null; LS.del('nexo.token'); S.me = null;

@@ -256,7 +256,7 @@ export class NexoHub extends DurableObject {
     const me = this.users[uid];
     return {
       t: 'init', me: this.pubUser(me), users: Object.values(this.users).map(u => this.pubUser(u)), online: this.onlineIds(),
-      convs: this.myConvs(uid), games: Object.values(this.gindex), settings: { needInvite: !!this.settings.inviteCode, inviteCode: me.admin ? this.settings.inviteCode : undefined },
+      convs: this.myConvs(uid), games: Object.values(this.gindex), settings: { needInvite: !!this.settings.inviteCode, inviteCode: me.admin ? this.settings.inviteCode : undefined, photos: this.settings.photos || {} },
       vapidPublicKey: await this.vapidKey(), now: Date.now()
     };
   }
@@ -318,6 +318,16 @@ export class NexoHub extends DurableObject {
         me.salt = randId(12); me.pin = await hashPin(m.pin, me.salt);
         await this.saveUsers();
         return true;
+      }
+      case 'photo.set': {
+        if (!me.admin) fail(403, 'Hanya admin yang bisa mengganti foto kota.');
+        const key = String(m.key || '').slice(0, 30);
+        if (!E.SPACES.some(sp => sp.key === key)) fail(400, 'Kota tidak dikenal.');
+        this.settings.photos = this.settings.photos || {};
+        if (m.media && MEDIA_RE.test(m.media)) this.settings.photos[key] = m.media; else delete this.settings.photos[key];
+        await this.ctx.storage.put('settings', this.settings);
+        this.broadcast({ t: 'photos', photos: this.settings.photos });
+        return { photos: this.settings.photos };
       }
       case 'invite.set': {
         if (!me.admin) fail(403, 'Hanya admin.');
@@ -405,11 +415,14 @@ export class NexoHub extends DurableObject {
         if (open >= 5) fail(400, 'Kamu sudah punya 5 room aktif.');
         const s = m.settings || {};
         const settings = {
-          startCash: [1000, 1500, 2000, 2500].includes(Number(s.startCash) / 10000) ? Number(s.startCash) : 15000000,
-          maxPlayers: Number(s.maxPlayers) || 6, freeParking: !!s.freeParking, auction: s.auction !== false,
+          startCash: [10, 15, 20, 30].includes(Number(s.startCash) / 1000000) ? Number(s.startCash) : 20000000,
+          maxPlayers: Number(s.maxPlayers) || 6, monopolyWin: s.monopolyWin !== false,
           turnSec: Number(s.turnSec) || 60, timeLimitMin: [0, 30, 45, 60, 90, 120].includes(Number(s.timeLimitMin)) ? Number(s.timeLimitMin) : 0
         };
         const g = E.newGame({ id: 'g' + randId(8), name: cleanName(m.name) || `Room ${me.name}`, host: uid, hostName: me.name, mode: m.mode, settings, now: Date.now() });
+        if (m.color) { try { E.setColor(g, uid, m.color); } catch (e) {} }
+        const nb = Math.max(0, Math.min(g.settings.maxPlayers - 1, Number(m.bots) || 0));
+        for (let k = 0; k < nb; k++) this.addBot(g);
         await this.saveGame(g);
         const inv = (m.invite || []).filter(x => this.users[x] && x !== uid);
         if (inv.length) this.invitePush(g, me, inv);
@@ -422,10 +435,13 @@ export class NexoHub extends DurableObject {
         return this.pubGame(g);
       }
       case 'game.unwatch': att.watch = null; ws.serializeAttachment(att); return null;
-      case 'game.join': case 'game.leave': case 'game.start': case 'game.delete': case 'game.end': case 'game.kick': case 'game.settings': {
+      case 'game.join': case 'game.leave': case 'game.start': case 'game.delete': case 'game.end': case 'game.kick': case 'game.settings': case 'game.color': case 'game.addbot': {
         const g = await this.getGame(m.id); if (!g) fail(404, 'Room tidak ditemukan.');
         const isHost = g.host === uid || me.admin;
-        if (m.t === 'game.join') { try { E.addPlayer(g, uid, me.name); } catch (e) { fail(400, e.message); } }
+        if (g.engine !== E.ENGINE && !['game.delete', 'game.leave'].includes(m.t)) fail(400, 'Room ini versi lama. Hapus lalu buat room baru ya.');
+        if (m.t === 'game.join') { try { E.addPlayer(g, uid, me.name, m.color); } catch (e) { fail(400, e.message); } }
+        else if (m.t === 'game.color') { try { E.setColor(g, uid, m.color); } catch (e) { fail(400, e.message); } }
+        else if (m.t === 'game.addbot') { if (!isHost || g.status !== 'lobby') fail(403, 'Hanya host di lobi.'); if (g.players.length >= g.settings.maxPlayers) fail(400, 'Room sudah penuh.'); this.addBot(g); }
         else if (m.t === 'game.leave') {
           if (g.status !== 'lobby') fail(400, 'Game sudah berjalan. Pakai "Menyerah".');
           if (g.host === uid) fail(400, 'Host tidak bisa keluar. Hapus room saja.');
@@ -453,7 +469,7 @@ export class NexoHub extends DurableObject {
           return this.pubGame(g);
         } else if (m.t === 'game.delete') {
           if (!isHost) fail(403, 'Hanya host.');
-          if (g.status === 'playing') fail(400, 'Akhiri game dulu sebelum menghapus.');
+          if (g.status === 'playing' && g.engine === E.ENGINE) fail(400, 'Akhiri game dulu sebelum menghapus.');
           await this.deleteGame(g.id);
           return true;
         }
@@ -574,14 +590,19 @@ export class NexoHub extends DurableObject {
     if (g) this.games.set(id, g);
     return g || null;
   }
+  addBot(g) {
+    const used = new Set(g.players.map(p => String(p.name).replace(' 🤖', '')));
+    const name = E.BOT_NAMES.find(n => !used.has(n)) || 'Bot ' + (g.players.length + 1);
+    E.addPlayer(g, 'bot_' + randId(6), name + ' 🤖');
+  }
   pubGame(g) {
     const out = Object.assign({}, g);
-    delete out.decks; delete out._notify; delete out._now;
+    delete out.decks; delete out.deck; delete out._notify; delete out._now;
     return out;
   }
   indexEntry(g) {
     return { id: g.id, name: g.name, mode: g.mode, status: g.status, host: g.host, players: g.players.map(p => p.id), max: g.settings.maxPlayers,
-      waiting: E.waitingFor(g), phase: g.phase, updatedAt: g.updatedAt, createdAt: g.createdAt, deadline: g.deadline, winner: g.winner, alive: g.players.filter(p => !p.bankrupt).map(p => p.id) };
+      waiting: E.waitingFor(g), phase: g.phase, botAt: g.status === 'playing' && E.waitingFor(g).some(x => String(x).startsWith('bot_')) ? Date.now() + 1600 : null, updatedAt: g.updatedAt, createdAt: g.createdAt, deadline: g.deadline, winner: g.winner, alive: g.players.filter(p => !p.bankrupt).map(p => p.id) };
   }
   toWatchers(g, obj) {
     const ids = new Set(g.players.map(p => p.id));
@@ -628,15 +649,32 @@ export class NexoHub extends DurableObject {
     for (const n of Object.values(by)) this.push([n.to], { title: n.title, body: n.body, tag: n.tag || 'game-' + g.id, url: './?game=' + g.id, kind: 'game' }).catch(() => {});
   }
   async scheduleAlarm() {
-    const ds = Object.values(this.gindex).filter(g => g.status === 'playing' && g.deadline).map(g => g.deadline);
+    const ds = Object.values(this.gindex).filter(g => g.status === 'playing' && (g.deadline || g.botAt)).map(g => Math.min(g.deadline || Infinity, g.botAt || Infinity));
     if (!ds.length) return;
     const next = Math.max(Date.now() + 500, Math.min(...ds));
     const cur = await this.ctx.storage.getAlarm();
     if (!cur || cur > next || cur < Date.now() - 5000) await this.ctx.storage.setAlarm(next);
   }
+  async runBot(id, now) {
+    const g0 = await this.getGame(id); if (!g0 || g0.engine !== E.ENGINE || g0.status !== 'playing') return;
+    const bot = E.waitingFor(g0).find(x => String(x).startsWith('bot_'));
+    if (!bot) { this.gindex[id].botAt = null; await this.saveIndex(); return; }
+    const g = structuredClone(g0);
+    try {
+      const a = E.botAction(g, bot, rng);
+      if (!a) throw new Error('no action');
+      const notes = E.act(g, bot, a, { now, rng });
+      await this.saveGame(g); this.sendNotifs(g, notes);
+    } catch (e) {
+      console.warn('bot', id, e && e.message);
+      const g2 = structuredClone(g0);
+      try { E.act(g2, bot, { type: 'resign' }, { now, rng }); await this.saveGame(g2); } catch (er) { this.gindex[id].botAt = null; await this.saveIndex(); }
+    }
+  }
   async alarm() {
     const now = Date.now();
     for (const gi of Object.values(this.gindex)) {
+      if (gi.status === 'playing' && gi.botAt && gi.botAt <= now) { await this.runBot(gi.id, now); continue; }
       if (gi.status !== 'playing' || !gi.deadline || gi.deadline > now) continue;
       const g0 = await this.getGame(gi.id); if (!g0) continue;
       const g = structuredClone(g0);
