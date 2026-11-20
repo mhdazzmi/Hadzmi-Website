@@ -3,7 +3,7 @@ import { LS } from './core.js';
 
 let ac = null, master = null, enabled = LS.get('nexo.sound', true);
 export const soundOn = () => enabled;
-export function setSound(v) { enabled = !!v; LS.set('nexo.sound', enabled); if (enabled) ctx(); }
+export function setSound(v) { enabled = !!v; LS.set('nexo.sound', enabled); if (enabled) { unlock(); ctx(); } else stopMusic(); }
 
 function ctx() {
   if (!ac) {
@@ -16,12 +16,29 @@ function ctx() {
   if (ac.state === 'suspended') ac.resume().catch(() => {});
   return ac;
 }
-// iOS: audio harus "dibuka" dari sentuhan pengguna
+// iOS: audio harus "dibuka" dari sentuhan pengguna. Selain itu, iPhone/iPad membisukan
+// Web Audio saat tombol senyap aktif — memutar <audio> senyap + audioSession "playback"
+// membuat suara game tetap terdengar (seperti suara video).
+let unlocked = false, silentEl = null;
+function silentWavUrl() {
+  const n = 2205, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 22050, true); v.setUint32(28, 44100, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
 const unlock = () => {
+  if (!enabled) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
   const c = ctx(); if (!c) return;
-  const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0);
+  if (!unlocked) {
+    unlocked = true;
+    try { const b = c.createBuffer(1, 1, 22050), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch (e) {}
+    try { silentEl = document.createElement('audio'); silentEl.setAttribute('playsinline', ''); silentEl.loop = true; silentEl.src = silentWavUrl(); silentEl.volume = 0.01; silentEl.play().catch(() => { unlocked = false; }); } catch (e) {}
+  } else if (silentEl && silentEl.paused) silentEl.play().catch(() => {});
 };
-['pointerdown', 'touchend', 'keydown'].forEach(ev => document.addEventListener(ev, unlock, { passive: true }));
+['pointerdown', 'touchend', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, unlock, { passive: true }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ac && ac.state !== 'running') ac.resume().catch(() => {}); if (document.visibilityState === 'hidden') stopMusic(); else if (musicWanted) startMusic(); });
 
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 const now = () => ac.currentTime + 0.02;
@@ -138,3 +155,36 @@ export function place(key, delay = 0) {
   if (Date.now() - lastPlace < 600) return; lastPlace = Date.now();
   try { (PLACES[key] || PLACES.card)(now() + delay); } catch (e) {}
 }
+
+// ---------- Musik latar (lounge santai, berulang) ----------
+let musicT = null, musicWanted = false, musicOnPref = LS.get('nexo.music', true), musicBar = 0, musicGain = null;
+export const musicOn = () => musicOnPref;
+export function setMusic(v) { musicOnPref = !!v; LS.set('nexo.music', musicOnPref); if (musicOnPref && musicWanted) startMusic(); else stopMusic(); }
+const PROG = [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65]]; // Am7 Fmaj7 Cmaj7 G7
+function musicBarAt(t) {
+  const beat = 60 / 92, ch = PROG[musicBar % 4];
+  const out = musicGain;
+  const padTone = (m, tt, d, v) => { const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter(); o.type = 'triangle'; o.frequency.value = mtof(m); f.type = 'lowpass'; f.frequency.value = 1200; g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(v, tt + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, tt + d); o.connect(f); f.connect(g); g.connect(out); o.start(tt); o.stop(tt + d + 0.1); };
+  ch.forEach(m => padTone(m, t, beat * 4, 0.05));
+  padTone(ch[0] - 12, t, beat * 2, 0.09); padTone(ch[0] - 12, t + beat * 2, beat * 2, 0.07);
+  const arp = [ch[0] + 12, ch[2] + 12, ch[1] + 12, ch[3] + 12, ch[2] + 12, ch[1] + 12, ch[3] + 12, ch[2] + 12];
+  arp.forEach((m, i) => { const tt = t + i * beat / 2; const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = mtof(m); g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(0.035, tt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.45); o.connect(g); g.connect(out); o.start(tt); o.stop(tt + 0.5); });
+  musicBar++;
+  return beat * 4;
+}
+export function startMusic() {
+  musicWanted = true;
+  if (!enabled || !musicOnPref || musicT || document.visibilityState === 'hidden') return;
+  const c = ctx(); if (!c) return;
+  musicGain = c.createGain(); musicGain.gain.value = 0.0001; musicGain.connect(master);
+  musicGain.gain.exponentialRampToValueAtTime(1, c.currentTime + 2);
+  let next = c.currentTime + 0.1;
+  const tick = () => { while (next < ac.currentTime + 1.2) next += musicBarAt(next); };
+  tick(); musicT = setInterval(tick, 400);
+}
+export function stopMusic(forget) {
+  if (forget) musicWanted = false;
+  clearInterval(musicT); musicT = null;
+  if (musicGain && ac) { const g = musicGain; try { g.gain.cancelScheduledValues(ac.currentTime); g.gain.setValueAtTime(g.gain.value, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.6); } catch (e) {} setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 900); musicGain = null; }
+}
+export function testSound() { unlock(); sfx('landmark'); }

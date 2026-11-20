@@ -4,7 +4,8 @@ import { $, $$, esc, S, LS, on, emit, call, fire, avatar, user, hm, pushScreen, 
 import * as E from './engine.js';
 import { landmarkSvg } from './landmarks.js';
 import { openConv, pickFriend, totalUnread, dmId } from './chat.js';
-import { sfx, place, soundOn, setSound } from './sound.js';
+import { sfx, place, soundOn, setSound, musicOn, setMusic, startMusic, stopMusic, testSound } from './sound.js';
+import { cropImage } from './core.js';
 import { photoOf, loadPhoto, preloadAll } from './photos.js';
 
 const scr = $('#scr-game');
@@ -20,9 +21,11 @@ const TOLLM = [0.3, 0.9, 1.8, 3, 4.5];
 const LVL_IC = ['🚩', '🏠', '🏘️', '🏢', '🏛️'];
 
 function pav(id, size, opts = {}) {
-  if (isBot(id)) { const p = pl(id) || {}; return `<span class="av${opts.ring ? ' ring' : ''}" style="--s:${size}px;background:${p.color || '#8E8E93'};${opts.ring ? `--ring:${opts.ring}` : ''}">🤖</span>`; }
+  if (isBot(id)) { const p = pl(id) || {}; return avatar({ id, avatar: p.avatar || { emoji: '🤖', color: p.color || '#8E8E93' } }, size, opts); }
   return avatar(id, size, opts);
 }
+let viewMode = LS.get('nexo.view', '3d');
+function applyView() { const w = $('#b3wrap'); if (w) { w.classList.toggle('top', viewMode === 'top'); sizeBoard(); } }
 const pname = id => (pl(id) || {}).name || user(id).name;
 export function myTurnCount() { if (!S.me) return 0; return Object.values(S.games).filter(g => g.status === 'playing' && (g.waiting || []).includes(S.me.id)).length; }
 
@@ -149,9 +152,9 @@ export async function openGame(id, preload) {
   $('#g-back').onclick = () => popScreen();
   $('#g-chat').onclick = () => pickFriend('Kirim Pesan');
   $('#g-more').onclick = e => moreMenu(e.currentTarget);
-  $('#g-snd').onclick = e => { setSound(!soundOn()); e.currentTarget.innerHTML = `<i class="fa-solid ${soundOn() ? 'fa-volume-high' : 'fa-volume-xmark'}"></i>`; toast(soundOn() ? 'Suara aktif 🔊' : 'Suara mati 🔇'); if (soundOn()) sfx('turn'); };
+  $('#g-snd').onclick = e => soundMenu(e.currentTarget);
   paintChatBadge();
-  pushScreen(scr, () => { fire('game.unwatch'); gid = null; G = null; built = false; setView('tab'); });
+  pushScreen(scr, () => { fire('game.unwatch'); gid = null; G = null; built = false; setView('tab'); stopMusic(true); });
   scr.dataset.view = 'game:' + id; setView('game:' + id);
   preloadAll(E.SPACES);
   try {
@@ -236,6 +239,7 @@ function render(full) {
   if (G.status === 'lobby') { built = false; root.innerHTML = lobbyHtml(); bindLobby(); return; }
   if (!built || full) { root.innerHTML = shellHtml(); built = true; bindShell(); sizeBoard(); paintPhotos(); }
   paintTiles(); placeTokens(); renderHud(); renderPanel(); paintCorners();
+  if (G.status === 'playing') startMusic(); else stopMusic(true);
   const myTurn = E.waitingFor(G).includes(me()) && G.status === 'playing';
   if (myTurn && !wasMyTurn) { sfx('turn', 0.2); haptic(30); }
   wasMyTurn = myTurn;
@@ -254,7 +258,7 @@ function lobbyHtml() {
     <div class="lobby-top"><span class="room-ico" style="${G.mode === 'live' ? 'background:linear-gradient(140deg,#FF3B30,#FF2D55)' : ''}"><i class="fa-solid fa-city"></i></span>
       <div class="b" style="font-size:24px">${esc(G.name)}</div><div class="muted small">Dibuat oleh ${esc(user(G.host).name)} · <span class="pill ${G.mode}">${G.mode === 'live' ? '⚡ Live' : '☕ Santai'}</span></div></div>
     <div class="section-h">Pemain ${G.players.length}/${s.maxPlayers}</div>
-    <div class="list">${G.players.map(p => `<div class="row has-avatar">${pav(p.id, 40, { ring: p.color })}<div class="main"><div class="t">${esc(isBot(p.id) ? p.name : user(p.id).name)}${p.id === uid ? ' (kamu)' : ''}</div><div class="s"><span class="sw" style="background:${p.color}"></span> ${E.COLOR_NAMES[p.color] || ''} · ${p.id === G.host ? '👑 Host' : isBot(p.id) ? 'Komputer' : 'Siap main'}</div></div>${host && p.id !== uid ? `<button class="icon-btn" data-kick="${p.id}" aria-label="Keluarkan"><i class="fa-solid fa-circle-minus c-red"></i></button>` : ''}</div>`).join('')}
+    <div class="list">${G.players.map(p => `<div class="row has-avatar">${pav(p.id, 40, { ring: p.color })}<div class="main"><div class="t">${esc(isBot(p.id) ? p.name : user(p.id).name)}${p.id === uid ? ' (kamu)' : ''}</div><div class="s"><span class="sw" style="background:${p.color}"></span> ${E.COLOR_NAMES[p.color] || ''} · ${p.id === G.host ? '👑 Host' : isBot(p.id) ? 'Komputer' : 'Siap main'}</div></div>${host && isBot(p.id) ? `<button class="icon-btn" data-botedit="${p.id}" aria-label="Ubah bot"><i class="fa-solid fa-pen"></i></button>` : ''}${host && p.id !== uid ? `<button class="icon-btn" data-kick="${p.id}" aria-label="Keluarkan"><i class="fa-solid fa-circle-minus c-red"></i></button>` : ''}</div>`).join('')}
       ${Array.from({ length: Math.max(0, Math.min(3, s.maxPlayers - G.players.length)) }, () => `<div class="row has-avatar"><span class="av" style="--s:40px;background:var(--fill3);color:var(--label3);font-size:16px"><i class="fa-solid fa-user-plus"></i></span><div class="main"><div class="t faint">Menunggu teman…</div></div></div>`).join('')}</div>
     <div style="display:flex;gap:8px;padding:12px 0 0"><button class="btn md tint" style="flex:1" id="lb-invite"><i class="fa-solid fa-paper-plane"></i> Ajak teman</button>${host && !full ? '<button class="btn md tint" style="flex:1" id="lb-bot"><i class="fa-solid fa-robot"></i> Tambah bot</button>' : ''}</div>
     ${mine ? `<div class="section-h">Pilih warnamu</div><div class="list" style="padding:12px">${colorGrid(mine.color, taken)}<p class="small muted" style="margin-top:10px">Rumah & landmark yang kamu bangun akan berwarna ini.</p></div>` : ''}
@@ -281,6 +285,7 @@ function bindLobby() {
   if (b('lb-leave')) b('lb-leave').onclick = async () => { await act_('game.leave'); popScreen(); };
   if (b('lb-del')) b('lb-del').onclick = async () => { if (await confirmBox('Hapus room?', '', 'Hapus', true)) { try { await call('game.delete', { id: gid }); popScreen(); } catch (e) { toast(e.message); } } };
   if (b('lb-bot')) b('lb-bot').onclick = () => act_('game.addbot');
+  $$('[data-botedit]').forEach(k => k.onclick = () => editBot(k.dataset.botedit));
   b('lb-invite').onclick = inviteSheet;
   b('lb-rules').onclick = rulesSheet;
   $$('[data-kick]').forEach(k => k.onclick = () => act_('game.kick', { uid: k.dataset.kick }));
@@ -328,7 +333,7 @@ function tileHtml(s) {
 }
 function shellHtml() {
   const faces = n => `<div class="die-f f${n}">${dieFace(n)}</div>`;
-  return `<div class="g-wrap"><div class="g-main"><div class="b3-wrap" id="b3wrap"><div class="b3-stage"><div class="b3-plane" id="board">
+  return `<div class="g-wrap"><div class="g-main"><div class="b3-wrap ${viewMode === 'top' ? 'top' : ''}" id="b3wrap"><button class="view-btn" id="view-btn" aria-label="Ganti tampilan"><i class="fa-solid ${viewMode === 'top' ? 'fa-cube' : 'fa-square'}"></i><span>${viewMode === 'top' ? '3D' : 'Atas'}</span></button><div class="b3-stage"><div class="b3-plane" id="board">
       <div class="b3-center"><div class="b3-logo">NEXO</div><div class="b3-sub">KOTA DUNIA</div></div>
       ${E.SPACES.map(tileHtml).join('')}
       <div class="dice3" id="dice3"><div class="cube" id="cubeA">${[1, 2, 3, 4, 5, 6].map(faces).join('')}</div><div class="cube" id="cubeB">${[1, 2, 3, 4, 5, 6].map(faces).join('')}</div></div>
@@ -347,6 +352,7 @@ function bindShell() {
     propertySheet(i);
   });
   $('#p-seg').onclick = e => { const b = e.target.closest('button'); if (!b) return; panelTab = b.dataset.p; LS.set('nexo.ptab2', panelTab); renderPanel(); };
+  $('#view-btn').onclick = e => { viewMode = viewMode === 'top' ? '3d' : 'top'; LS.set('nexo.view', viewMode); e.currentTarget.innerHTML = `<i class="fa-solid ${viewMode === 'top' ? 'fa-cube' : 'fa-square'}"></i><span>${viewMode === 'top' ? '3D' : 'Atas'}</span>`; applyView(); haptic(8); };
 }
 function sizeBoard() {
   const wrap = $('#b3wrap'); if (!wrap) return;
@@ -367,13 +373,26 @@ function paintPhotos(onlyKey) {
 
 // Bangunan 3D (balok CSS) — warna mengikuti warna pemilik
 const box = (w, d, h, o = {}) => `<div class="box ${o.cls || ''}" style="--w:${w};--d:${d};--h:${h};--x:${o.x || 0};--y:${o.y || 0};--z:${o.z || 0}${o.wall ? `;--wall:${o.wall}` : ''}${o.roof ? `;--roof:${o.roof}` : ''}"><i class="f-top"></i><i class="f-front"></i><i class="f-left"></i><i class="f-right"></i></div>`;
+// Atap limas 3D (4 sisi segitiga) — sudut dihitung dari ukuran
+function roof(w, d, r, z, o = {}) {
+  const deg = x => x * 180 / Math.PI;
+  const Lf = Math.hypot(r, d / 2), tf = deg(Math.atan2(r, d / 2)), Ls = Math.hypot(r, w / 2), ts = deg(Math.atan2(r, w / 2));
+  const U = v => `calc(${v} * var(--u))`;
+  return `<div class="roof3 ${o.cls || ''}" style="--x:${o.x || 0};--y:${o.y || 0};--z:${z}">
+    <i class="rf" style="width:${U(w)};height:${U(Lf)};left:${U(-w / 2)};top:${U(d / 2 - Lf)};transform:rotateX(${-tf}deg)"></i>
+    <i class="rb" style="width:${U(w)};height:${U(Lf)};left:${U(-w / 2)};top:${U(-d / 2)};transform:rotateX(${tf}deg)"></i>
+    <i class="rr" style="width:${U(Ls)};height:${U(d)};left:${U(w / 2 - Ls)};top:${U(-d / 2)};transform:rotateY(${ts}deg)"></i>
+    <i class="rl" style="width:${U(Ls)};height:${U(d)};left:${U(-w / 2)};top:${U(-d / 2)};transform:rotateY(${-ts}deg)"></i></div>`;
+}
 function buildingHtml(level, s) {
-  if (s.type === 'air') return box(0.5, 0.34, 0.18, { cls: 'win', y: 0.06 }) + box(0.1, 0.1, 0.55, { x: 0.2, y: -0.08, wall: '#D1D1D6', roof: '#fff' }) + box(0.22, 0.22, 0.09, { x: 0.2, y: -0.08, z: 0.55, cls: 'glass' });
-  if (level === 0) return box(0.04, 0.04, 0.6, { wall: '#F2F2F7', roof: '#fff' }) + box(0.3, 0.02, 0.18, { x: 0.17, z: 0.4, cls: 'flag' });
-  if (level === 1) return box(0.42, 0.34, 0.26, { cls: 'win1' }) + box(0.46, 0.38, 0.06, { z: 0.26, cls: 'roofb' });
-  if (level === 2) return box(0.46, 0.36, 0.52, { cls: 'win' }) + box(0.5, 0.4, 0.06, { z: 0.52, cls: 'roofb' }) + box(0.16, 0.12, 0.12, { z: 0.58, x: 0.1, cls: 'roofb' });
-  if (level === 3) return box(0.5, 0.4, 0.88, { cls: 'win' }) + box(0.54, 0.44, 0.06, { z: 0.88, cls: 'roofb' }) + box(0.2, 0.16, 0.14, { z: 0.94, cls: 'glass' }) + box(0.03, 0.03, 0.28, { z: 1.08, x: -0.12, wall: '#ddd', roof: '#fff' });
-  return box(0.7, 0.54, 0.14, { cls: 'gold' }) + `<div class="lm3"><div class="lm3-in">${landmarkSvg(s.icon, 'lm-shade')}${landmarkSvg(s.icon, 'lm-main')}</div></div>`;
+  const shadow = `<div class="bshadow" style="--sw:${[0.5, 0.6, 0.66, 0.7, 0.9][level] || 0.6}"></div>`;
+  if (s.type === 'air') return shadow + box(0.56, 0.3, 0.16, { cls: 'win glassy', y: 0.08, wall: '#E5E5EA' }) + roof(0.6, 0.34, 0.08, 0.16, { y: 0.08, cls: 'rglass' }) + box(0.1, 0.1, 0.62, { x: 0.22, y: -0.14, wall: '#D1D1D6', roof: '#fff' }) + box(0.24, 0.24, 0.1, { x: 0.22, y: -0.14, z: 0.62, cls: 'glass' });
+  if (level === 0) return shadow + box(0.34, 0.26, 0.04, { cls: 'plot' }) + box(0.035, 0.035, 0.62, { wall: '#F2F2F7', roof: '#fff', x: -0.1 }) + box(0.3, 0.02, 0.18, { x: 0.06, z: 0.42, cls: 'flag' });
+  if (level === 1) return shadow + box(0.42, 0.34, 0.24, { cls: 'win1' }) + roof(0.5, 0.42, 0.24, 0.24) + box(0.06, 0.06, 0.16, { x: 0.12, y: -0.06, z: 0.3, cls: 'chim' });
+  if (level === 2) return shadow + box(0.48, 0.38, 0.46, { cls: 'win' }) + box(0.5, 0.4, 0.04, { z: 0.22, cls: 'band' }) + roof(0.56, 0.46, 0.28, 0.46) + box(0.07, 0.07, 0.2, { x: 0.14, y: -0.08, z: 0.52, cls: 'chim' });
+  if (level === 3) return shadow + box(0.36, 0.3, 0.3, { x: -0.18, y: 0.12, cls: 'win' }) + box(0.48, 0.4, 0.95, { x: 0.06, y: -0.04, cls: 'win' }) + box(0.52, 0.44, 0.05, { x: 0.06, y: -0.04, z: 0.95, cls: 'band' }) + box(0.26, 0.22, 0.16, { x: 0.06, y: -0.04, z: 1, cls: 'glass' }) + box(0.03, 0.03, 0.3, { x: 0.06, y: -0.04, z: 1.16, wall: '#ddd', roof: '#fff' });
+  const layers = [0.1, 0.07, 0.04, 0.01].map((y, i) => `<div class="lm3" style="--ly:${y}"><div class="lm3-in ${i === 3 ? 'front' : 'back'}">${landmarkSvg(s.icon, i === 3 ? 'lm-main' : 'lm-shade')}</div></div>`).join('');
+  return shadow + box(0.78, 0.6, 0.08, { cls: 'gold' }) + box(0.66, 0.5, 0.06, { z: 0.08, cls: 'gold' }) + layers;
 }
 function paintTiles() {
   const pk = G.pending, mineChoose = G.phase === 'choose' && pk && E.waitingFor(G).includes(me());
@@ -424,7 +443,7 @@ function paintCorners() {
   const waiting = E.waitingFor(G);
   el.innerHTML = order.map((id, k) => {
     const p = pl(id), r = rank.indexOf(id) + 1;
-    return `<div class="ch p${k} ${waiting.includes(id) ? 'cur' : ''} ${p.bankrupt ? 'out' : ''}" style="--pc:${p.color}" data-pl="${id}">${r ? `<span class="ch-rank">${['1st', '2nd', '3rd'][r - 1] || r + 'th'}</span>` : ''}${pav(id, 30)}<div style="min-width:0"><div class="ch-n">${esc(p.name)}</div><div class="ch-c">${p.bankrupt ? 'Bangkrut' : rp(p.cash).replace('Rp ', '')}</div></div></div>`;
+    return `<div class="ch p${k} ${waiting.includes(id) ? 'cur' : ''} ${p.bankrupt ? 'out' : ''}" style="--pc:${p.color}" data-pl="${id}">${pav(id, 30)}<div style="min-width:0"><div class="ch-n">${esc(p.name)}</div><div class="ch-c">${p.bankrupt ? 'Bangkrut' : rp(p.cash).replace('Rp ', '')}</div></div></div>`;
   }).join('');
   el.onclick = e => { const c = e.target.closest('[data-pl]'); if (c) playerSheet(c.dataset.pl); };
   $$('.stack3').forEach(st => {
@@ -760,4 +779,54 @@ function rulesSheet() {
     <p>🔒 <b>Penjara:</b> maks 3 giliran. Kabur dengan dobel, bayar ${rp(E.JAIL_FINE)}, atau Kunci Bebas Penjara.</p>
     <p>🏦 <b>Uang kurang?</b> Jual properti ke bank (dapat 50%). Kalau tetap kurang, bangkrut.</p>
     <p>🤖 <b>Bot:</b> host bisa menambahkan bot komputer di lobi untuk latihan atau menggenapi pemain.</p></div>` });
+}
+
+// ---------- Ubah nama & foto bot ----------
+const BOT_EMOJIS = ['🤖', '👾', '🦾', '🐱', '🐶', '🦊', '🐼', '🐯', '🦁', '🐸', '🐵', '🐧', '🦄', '🐲', '👻', '🎃', '😎', '🤠', '🥷', '🧙', '🦸', '🧛', '👑', '⭐'];
+const BOT_COLORS = ['#8E8E93', '#007AFF', '#34C759', '#FF9500', '#FF2D55', '#AF52DE', '#5856D6', '#00C7BE', '#FF3B30', '#FFCC00'];
+function editBot(id) {
+  const p = pl(id); if (!p) return;
+  let av = Object.assign({ emoji: '🤖', color: p.color }, p.avatar || {}), photoBlob = null, photoUrl = av.photo ? '/api/nexo/media/' + av.photo : null;
+  let name = p.name;
+  const sh = sheet({ title: 'Ubah Bot', left: 'Batal', right: 'Simpan' });
+  const paint_ = () => {
+    sh.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0 14px">${photoUrl ? `<span class="av" style="--s:90px"><img src="${photoUrl}"></span>` : avatar({ avatar: av }, 90)}
+      <button class="btn sm tint" id="be-photo"><i class="fa-solid fa-camera"></i> ${photoUrl ? 'Ganti foto' : 'Pakai foto'}</button></div>
+      <div class="list"><div class="row"><div class="main"><div class="t">Nama bot</div></div><input class="inline" id="be-name" maxlength="24" value="${esc(name)}"></div></div>
+      <div class="section-h">Avatar</div><div class="emoji-grid" id="be-emo">${BOT_EMOJIS.map(e => `<button data-e="${e}" class="${!photoUrl && av.emoji === e ? 'on' : ''}">${e}</button>`).join('')}</div>
+      <div class="color-row" id="be-col" style="margin-top:12px">${BOT_COLORS.map(c => `<button data-c="${c}" style="background:${c}" class="${av.color === c ? 'on' : ''}"></button>`).join('')}</div><div style="height:16px"></div>`;
+  };
+  paint_();
+  sh.body.onclick = async e => {
+    const keep = () => { const n = $('#be-name', sh.body); if (n) name = n.value; };
+    if (e.target.closest('#be-photo')) { keep(); const f = await pickFile(); if (!f) return; const blob = await cropImage(f); if (!blob) return; photoBlob = blob; photoUrl = URL.createObjectURL(blob); paint_(); return; }
+    const em = e.target.closest('[data-e]'); if (em) { keep(); av = { emoji: em.dataset.e, color: av.color || BOT_COLORS[0] }; photoBlob = null; photoUrl = null; paint_(); return; }
+    const c = e.target.closest('[data-c]'); if (c) { keep(); av = { emoji: av.emoji || '🤖', color: c.dataset.c }; photoBlob = null; photoUrl = null; paint_(); }
+  };
+  sh.onRight = async () => {
+    name = ($('#be-name', sh.body) || {}).value || name;
+    sh.setRight('…', true);
+    try {
+      let avatar_ = photoUrl && !photoBlob && av.photo ? { photo: av.photo } : { emoji: av.emoji, color: av.color };
+      if (photoBlob) { const up = await uploadImage(photoBlob); avatar_ = { photo: up.id }; }
+      const g = await call('game.botedit', { id: gid, uid: id, name, avatar: avatar_ });
+      if (g && g.id) applyNow(g);
+      sh.close(); toast('Bot diperbarui 🤖');
+    } catch (er) { sh.setRight('Simpan', false); toast(er.message); }
+  };
+}
+function soundMenu(btn) {
+  const html = `<button class="mi" data-s="fx">Efek suara <i class="fa-solid ${soundOn() ? 'fa-toggle-on c-green' : 'fa-toggle-off'}"></i></button>
+    <button class="mi" data-s="music">Musik latar <i class="fa-solid ${musicOn() ? 'fa-toggle-on c-green' : 'fa-toggle-off'}"></i></button>
+    <button class="mi" data-s="test">Tes suara <i class="fa-solid fa-volume-high"></i></button>
+    <div class="mi small muted" style="justify-content:flex-start;padding:8px 16px;white-space:normal;max-width:260px">iPhone: naikkan volume. Suara tetap keluar walau mode senyap aktif.</div>`;
+  popMenu(btn, html, (el, close) => {
+    el.onclick = e => {
+      const b = e.target.closest('[data-s]'); if (!b) return; close();
+      if (b.dataset.s === 'fx') { setSound(!soundOn()); toast(soundOn() ? 'Suara aktif 🔊' : 'Suara mati 🔇'); if (soundOn() && G && G.status === 'playing') startMusic(); }
+      if (b.dataset.s === 'music') { setMusic(!musicOn()); toast(musicOn() ? 'Musik latar aktif 🎵' : 'Musik latar mati'); }
+      if (b.dataset.s === 'test') { if (!soundOn()) setSound(true); testSound(); }
+      const ic = $('#g-snd'); if (ic) ic.innerHTML = `<i class="fa-solid ${soundOn() ? 'fa-volume-high' : 'fa-volume-xmark'}"></i>`;
+    };
+  });
 }
