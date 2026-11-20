@@ -1175,6 +1175,8 @@
           <div class="fl-row"><span class="fl-label">Penerbit</span><input type="text" id="wcIssuer" placeholder="Mis. Indomaret, Gramedia" oninput="renderWalletPreview()"></div>
           <div class="fl-row"><span class="fl-label">Nomor</span><input type="text" id="wcNumber" placeholder="Nomor member / kartu" oninput="renderWalletPreview()"></div>
           <div class="fl-row"><span class="fl-label">Atas nama</span><input type="text" id="wcHolder" placeholder="Nama di kartu" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Berlaku s/d</span><input type="text" id="wcExpiry" placeholder="BB/TT (opsional)" inputmode="numeric" maxlength="5" oninput="formatCardExpiry(this); renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">CVV</span><input type="password" id="wcCvv" placeholder="Opsional" inputmode="numeric" maxlength="4" autocomplete="off"></div>
         </div>
         <div><div class="section-label" style="padding:0 4px 8px">Warna kartu</div><div class="chips wrap" id="wcColors" style="overflow:visible"></div></div>
         <div class="form-list">
@@ -1191,6 +1193,7 @@
           <input type="file" id="wcBackInput" accept="image/*" class="hidden" onchange="pickWalletImage(event, 'back')">
           <button type="button" class="fl-row" style="width:100%" onclick="$('wcFrontInput').click()"><span class="icon-tile bg-blue"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcFrontLabel" style="text-align:left">Foto sisi depan (opsional)</span><i class="fas fa-camera chev"></i></button>
           <button type="button" class="fl-row" style="width:100%" onclick="$('wcBackInput').click()"><span class="icon-tile bg-gray"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcBackLabel" style="text-align:left">Foto sisi belakang (opsional)</span><i class="fas fa-camera chev"></i></button>
+          <div class="fl-row"><span class="flex-1">Tampilkan teks di atas foto</span><label class="switch"><input type="checkbox" id="wcTextOver" onchange="renderWalletPreview()"><span class="slider"></span></label></div>
           <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="wcNote" placeholder="Opsional"></div>
         </div>
         <button class="btn btn-danger-tinted btn-block hidden" id="wcDeleteBtn" onclick="deleteWalletCard($('wcId').value)">Hapus Kartu</button>

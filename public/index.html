@@ -933,7 +933,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .wc-slot .wcard:hover { transform: translateY(-8px); }
 .wcard .wc-bg { position: absolute; inset: 0; width: 100% !important; height: 100% !important; object-fit: cover; z-index: 0; }
 .wcard .wc-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.28), transparent 45%, rgba(0,0,0,.35)); z-index: 1; }
-.wcard > *:not(.wc-bg):not(.wc-shade) { position: relative; z-index: 2; }
+.wcard > *:not(.wc-bg):not(.wc-shade):not(.wc-loading) { position: relative; z-index: 2; }
 .wcard .wc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .wcard .wc-issuer { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
 .wcard .wc-name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.25); }
@@ -953,6 +953,18 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .wallet-scan .ws-hint { position: absolute; bottom: calc(var(--safe-b) + 20px); font-size: 13px; color: #8E8E93; }
 .swatch { width: 34px; height: 34px; border-radius: 99px; border: 3px solid transparent; cursor: pointer; padding: 0; }
 .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--blue); }
+
+/* Wallet: kartu berfoto tampil bersih; teks opsional dengan pelat kaca agar tidak bentrok */
+.wcard.photo-only { padding: 0; }
+.wcard .wc-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.wcard.text-over .wc-shade { background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.08) 40%, rgba(0,0,0,.08) 55%, rgba(0,0,0,.65)); }
+.wcard.text-over .wc-plate { align-self: flex-start; max-width: 100%; padding: 8px 12px; border-radius: 12px; background: rgba(0,0,0,.38); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.wcard.text-over .wc-chip { display: none; }
+.wcard.text-over .wc-num { margin-top: 0 !important; }
+.wcard .wc-icon { font-size: 20px; opacity: .9; }
+.wcard.text-over .wc-icon { padding: 6px 8px; border-radius: 10px; background: rgba(0,0,0,.38); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 16px; }
+.wcard .wc-exp { font-size: 13px; font-weight: 600; letter-spacing: .06em; font-variant-numeric: tabular-nums; text-align: right; line-height: 1.1; }
+.wcard .wc-exp small { display: block; font-size: 8px; font-weight: 700; opacity: .75; letter-spacing: .1em; }
 
   </style>
 </head>
@@ -2105,6 +2117,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <div class="fl-row"><span class="fl-label">Penerbit</span><input type="text" id="wcIssuer" placeholder="Mis. Indomaret, Gramedia" oninput="renderWalletPreview()"></div>
           <div class="fl-row"><span class="fl-label">Nomor</span><input type="text" id="wcNumber" placeholder="Nomor member / kartu" oninput="renderWalletPreview()"></div>
           <div class="fl-row"><span class="fl-label">Atas nama</span><input type="text" id="wcHolder" placeholder="Nama di kartu" oninput="renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">Berlaku s/d</span><input type="text" id="wcExpiry" placeholder="BB/TT (opsional)" inputmode="numeric" maxlength="5" oninput="formatCardExpiry(this); renderWalletPreview()"></div>
+          <div class="fl-row"><span class="fl-label">CVV</span><input type="password" id="wcCvv" placeholder="Opsional" inputmode="numeric" maxlength="4" autocomplete="off"></div>
         </div>
         <div><div class="section-label" style="padding:0 4px 8px">Warna kartu</div><div class="chips wrap" id="wcColors" style="overflow:visible"></div></div>
         <div class="form-list">
@@ -2121,6 +2135,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <input type="file" id="wcBackInput" accept="image/*" class="hidden" onchange="pickWalletImage(event, 'back')">
           <button type="button" class="fl-row" style="width:100%" onclick="$('wcFrontInput').click()"><span class="icon-tile bg-blue"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcFrontLabel" style="text-align:left">Foto sisi depan (opsional)</span><i class="fas fa-camera chev"></i></button>
           <button type="button" class="fl-row" style="width:100%" onclick="$('wcBackInput').click()"><span class="icon-tile bg-gray"><i class="fas fa-id-card"></i></span><span class="flex-1" id="wcBackLabel" style="text-align:left">Foto sisi belakang (opsional)</span><i class="fas fa-camera chev"></i></button>
+          <div class="fl-row"><span class="flex-1">Tampilkan teks di atas foto</span><label class="switch"><input type="checkbox" id="wcTextOver" onchange="renderWalletPreview()"><span class="slider"></span></label></div>
           <div class="fl-row"><span class="fl-label">Catatan</span><input type="text" id="wcNote" placeholder="Opsional"></div>
         </div>
         <button class="btn btn-danger-tinted btn-block hidden" id="wcDeleteBtn" onclick="deleteWalletCard($('wcId').value)">Hapus Kartu</button>
@@ -7643,10 +7658,20 @@ function maskNum(n) { const s = String(n || '').replace(/\s+/g, ''); if (s.lengt
 function groupNum(n) { return String(n || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
 function wCardHTML(c, opts = {}) {
   const img = c.frontId ? signedUrlSync(c.frontId) : (opts.frontPreview || '');
-  return `<div class="wcard ${img ? 'has-img' : ''}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
+  const hasPhoto = !!(c.frontId || opts.frontPreview);
+  const codeIcon = c.codeType && c.codeType !== 'none' && c.code ? `<i class="fas ${c.codeType === 'qr' ? 'fa-qrcode' : 'fa-barcode'}"></i>` : '';
+  const num = opts.full ? groupNum(c.number) : maskNum(c.number);
+  // Kartu berfoto: foto tampil bersih seperti Apple Wallet (teks aslinya sudah ada di foto); info lengkap ada di detail.
+  if (hasPhoto && !c.textOver) {
+    return `<div class="wcard has-img photo-only" aria-label="${esc(c.name || 'Kartu')}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
+      ${img ? `<img class="wc-bg" src="${esc(img)}" alt="">` : '<span class="wc-loading"><span class="spinner"></span></span>'}
+    </div>`;
+  }
+  return `<div class="wcard ${hasPhoto ? 'has-img text-over' : ''}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
     ${img ? `<img class="wc-bg" src="${esc(img)}" alt=""><div class="wc-shade"></div>` : ''}
-    <div class="wc-top"><div><div class="wc-issuer">${esc(c.issuer || '')}</div><div class="wc-name">${esc(c.name || 'Kartu')}</div></div>${c.codeType && c.codeType !== 'none' ? `<i class="fas ${c.codeType === 'qr' ? 'fa-qrcode' : 'fa-barcode'}" style="font-size:20px; opacity:.85"></i>` : ''}</div>
-    <div><div class="wc-chip"></div><div class="wc-num" style="margin-top:10px">${esc(opts.full ? groupNum(c.number) : maskNum(c.number))}</div><div class="wc-holder">${esc(c.holder || '')}</div></div>
+    <div class="wc-top"><div class="wc-plate"><div class="wc-issuer">${esc(c.issuer || '')}</div><div class="wc-name">${esc(c.name || 'Kartu')}</div></div>${codeIcon ? `<span class="wc-icon">${codeIcon}</span>` : ''}</div>
+    <div class="wc-plate"><div class="wc-chip"></div><div class="wc-num" style="margin-top:10px">${esc(num)}</div>
+      <div class="flex justify-between items-end gap-12"><div class="wc-holder truncate">${esc(c.holder || '')}</div>${c.expiry ? `<div class="wc-exp"><small>VALID THRU</small>${esc(c.expiry)}</div>` : ''}</div></div>
   </div>`;
 }
 function shade(hex, amt) {
@@ -7698,6 +7723,8 @@ function openWalletCard(id) {
     <div class="list inset-icon">
       ${c.number ? `<button class="row" onclick="copyText('${esc(c.number)}'); showToast('Nomor disalin')"><span class="icon-tile bg-blue"><i class="fas fa-hashtag"></i></span><div class="flex-1"><div class="row-sub">Nomor</div><div class="row-title tabular">${esc(groupNum(c.number))}</div></div><i class="far fa-copy chev"></i></button>` : ''}
       ${c.holder ? `<div class="row"><span class="icon-tile bg-gray"><i class="fas fa-user"></i></span><div class="flex-1"><div class="row-sub">Atas nama</div><div class="row-title">${esc(c.holder)}</div></div></div>` : ''}
+      ${c.expiry ? `<div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-calendar"></i></span><div class="flex-1"><div class="row-sub">Berlaku sampai</div><div class="row-title tabular">${esc(c.expiry)}</div></div></div>` : ''}
+      ${c.cvv ? `<button class="row" onclick="toggleCvv(this, '${esc(c.cvv)}')"><span class="icon-tile bg-red"><i class="fas fa-shield-halved"></i></span><div class="flex-1"><div class="row-sub">CVV · tap untuk lihat</div><div class="row-title tabular" data-cvv>•••</div></div><i class="fas fa-eye chev"></i></button>` : ''}
       ${c.note ? `<div class="row"><span class="icon-tile bg-orange"><i class="fas fa-note-sticky"></i></span><div class="flex-1"><div class="row-sub">Catatan</div><div class="row-title">${linkify(c.note)}</div></div></div>` : ''}
     </div>`;
   openSheet('sheetWalletCard');
@@ -7712,6 +7739,17 @@ function flipWalletCard() {
   $('wdCardWrap').innerHTML = walletShowingBack
     ? `<div class="wcard has-img" style="background:#222" onclick="flipWalletCard()">${u ? `<img class="wc-bg" src="${esc(u)}" alt="">` : ''}</div>`
     : wCardHTML(c, { full: true, onclick: 'flipWalletCard()' });
+}
+function toggleCvv(btn, v) {
+  const el = btn.querySelector('[data-cvv]'), shown = el.textContent !== '•••';
+  el.textContent = shown ? '•••' : v;
+  btn.querySelector('.chev').className = `fas ${shown ? 'fa-eye' : 'fa-eye-slash'} chev`;
+  if (!shown) setTimeout(() => { if (el.isConnected) { el.textContent = '•••'; btn.querySelector('.chev').className = 'fas fa-eye chev'; } }, 10000);
+}
+function formatCardExpiry(inp) {
+  let d = inp.value.replace(/\D/g, '').slice(0, 4);
+  if (d.length === 1 && +d > 1) d = '0' + d;
+  inp.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
 }
 function closeWalletCard() { closeSheet('sheetWalletCard'); walletOpenId = null; walletShowingBack = false; }
 async function openWalletScan() {
@@ -7729,8 +7767,9 @@ function openWalletEditor(id) {
   closeSheet('sheetWalletCard');
   $('wcId').value = c ? c.id : '';
   $('walletEditTitle').textContent = c ? 'Edit Kartu' : 'Kartu Baru';
-  ['Name', 'Issuer', 'Number', 'Holder', 'Code', 'Note'].forEach(k => { $('wc' + k).value = c ? (c[k.toLowerCase()] || '') : ''; });
+  ['Name', 'Issuer', 'Number', 'Holder', 'Code', 'Note', 'Expiry', 'Cvv'].forEach(k => { $('wc' + k).value = c ? (c[k.toLowerCase()] || '') : ''; });
   $('wcCodeType').value = c ? (c.codeType || 'qr') : 'qr';
+  $('wcTextOver').checked = !!(c && c.textOver);
   walletColor = c ? (c.color || WALLET_COLORS[1]) : WALLET_COLORS[1];
   walletPending = { front: null, back: null };
   $('wcFrontLabel').textContent = c && c.frontId ? 'Foto depan tersimpan ✓ — tap untuk ganti' : 'Foto sisi depan (opsional)';
@@ -7743,7 +7782,7 @@ function openWalletEditor(id) {
 }
 function walletDraft() {
   const id = $('wcId').value, old = id ? wCard(id) : {};
-  return { ...old, name: $('wcName').value.trim(), issuer: $('wcIssuer').value.trim(), number: $('wcNumber').value.trim(), holder: $('wcHolder').value.trim(), codeType: $('wcCodeType').value, code: $('wcCode').value.trim(), note: $('wcNote').value.trim(), color: walletColor };
+  return { ...old, name: $('wcName').value.trim(), issuer: $('wcIssuer').value.trim(), number: $('wcNumber').value.trim(), holder: $('wcHolder').value.trim(), codeType: $('wcCodeType').value, code: $('wcCode').value.trim(), note: $('wcNote').value.trim(), expiry: $('wcExpiry').value.trim(), cvv: $('wcCvv').value.trim(), textOver: $('wcTextOver').checked, color: walletColor };
 }
 function renderWalletPreview() {
   const d = walletDraft();
@@ -7782,6 +7821,8 @@ async function scanQrFromPhoto(e) {
 async function saveWalletCard() {
   const d = walletDraft();
   if (!d.name) return showToast('Nama kartu wajib diisi.', false);
+  if (d.expiry && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(d.expiry)) return showToast('Format berlaku: BB/TT (mis. 08/29).', false);
+  if (d.cvv && !/^\d{3,4}$/.test(d.cvv)) return showToast('CVV harus 3–4 angka.', false);
   if (d.codeType === 'ean13' && d.code && !/^\d{12,13}$/.test(d.code)) return showToast('EAN-13 harus 12–13 angka.', false);
   const btn = $('walletSaveBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
   try {

@@ -908,7 +908,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .wc-slot .wcard:hover { transform: translateY(-8px); }
 .wcard .wc-bg { position: absolute; inset: 0; width: 100% !important; height: 100% !important; object-fit: cover; z-index: 0; }
 .wcard .wc-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.28), transparent 45%, rgba(0,0,0,.35)); z-index: 1; }
-.wcard > *:not(.wc-bg):not(.wc-shade) { position: relative; z-index: 2; }
+.wcard > *:not(.wc-bg):not(.wc-shade):not(.wc-loading) { position: relative; z-index: 2; }
 .wcard .wc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .wcard .wc-issuer { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
 .wcard .wc-name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.25); }
@@ -928,3 +928,15 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 .wallet-scan .ws-hint { position: absolute; bottom: calc(var(--safe-b) + 20px); font-size: 13px; color: #8E8E93; }
 .swatch { width: 34px; height: 34px; border-radius: 99px; border: 3px solid transparent; cursor: pointer; padding: 0; }
 .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--blue); }
+
+/* Wallet: kartu berfoto tampil bersih; teks opsional dengan pelat kaca agar tidak bentrok */
+.wcard.photo-only { padding: 0; }
+.wcard .wc-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.wcard.text-over .wc-shade { background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.08) 40%, rgba(0,0,0,.08) 55%, rgba(0,0,0,.65)); }
+.wcard.text-over .wc-plate { align-self: flex-start; max-width: 100%; padding: 8px 12px; border-radius: 12px; background: rgba(0,0,0,.38); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.wcard.text-over .wc-chip { display: none; }
+.wcard.text-over .wc-num { margin-top: 0 !important; }
+.wcard .wc-icon { font-size: 20px; opacity: .9; }
+.wcard.text-over .wc-icon { padding: 6px 8px; border-radius: 10px; background: rgba(0,0,0,.38); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 16px; }
+.wcard .wc-exp { font-size: 13px; font-weight: 600; letter-spacing: .06em; font-variant-numeric: tabular-nums; text-align: right; line-height: 1.1; }
+.wcard .wc-exp small { display: block; font-size: 8px; font-weight: 700; opacity: .75; letter-spacing: .1em; }

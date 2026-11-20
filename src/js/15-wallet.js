@@ -14,10 +14,20 @@ function maskNum(n) { const s = String(n || '').replace(/\s+/g, ''); if (s.lengt
 function groupNum(n) { return String(n || '').replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim(); }
 function wCardHTML(c, opts = {}) {
   const img = c.frontId ? signedUrlSync(c.frontId) : (opts.frontPreview || '');
-  return `<div class="wcard ${img ? 'has-img' : ''}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
+  const hasPhoto = !!(c.frontId || opts.frontPreview);
+  const codeIcon = c.codeType && c.codeType !== 'none' && c.code ? `<i class="fas ${c.codeType === 'qr' ? 'fa-qrcode' : 'fa-barcode'}"></i>` : '';
+  const num = opts.full ? groupNum(c.number) : maskNum(c.number);
+  // Kartu berfoto: foto tampil bersih seperti Apple Wallet (teks aslinya sudah ada di foto); info lengkap ada di detail.
+  if (hasPhoto && !c.textOver) {
+    return `<div class="wcard has-img photo-only" aria-label="${esc(c.name || 'Kartu')}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
+      ${img ? `<img class="wc-bg" src="${esc(img)}" alt="">` : '<span class="wc-loading"><span class="spinner"></span></span>'}
+    </div>`;
+  }
+  return `<div class="wcard ${hasPhoto ? 'has-img text-over' : ''}" style="background:linear-gradient(145deg, ${c.color || '#102554'}, ${shade(c.color || '#102554', -28)})" ${opts.onclick ? `onclick="${opts.onclick}"` : ''}>
     ${img ? `<img class="wc-bg" src="${esc(img)}" alt=""><div class="wc-shade"></div>` : ''}
-    <div class="wc-top"><div><div class="wc-issuer">${esc(c.issuer || '')}</div><div class="wc-name">${esc(c.name || 'Kartu')}</div></div>${c.codeType && c.codeType !== 'none' ? `<i class="fas ${c.codeType === 'qr' ? 'fa-qrcode' : 'fa-barcode'}" style="font-size:20px; opacity:.85"></i>` : ''}</div>
-    <div><div class="wc-chip"></div><div class="wc-num" style="margin-top:10px">${esc(opts.full ? groupNum(c.number) : maskNum(c.number))}</div><div class="wc-holder">${esc(c.holder || '')}</div></div>
+    <div class="wc-top"><div class="wc-plate"><div class="wc-issuer">${esc(c.issuer || '')}</div><div class="wc-name">${esc(c.name || 'Kartu')}</div></div>${codeIcon ? `<span class="wc-icon">${codeIcon}</span>` : ''}</div>
+    <div class="wc-plate"><div class="wc-chip"></div><div class="wc-num" style="margin-top:10px">${esc(num)}</div>
+      <div class="flex justify-between items-end gap-12"><div class="wc-holder truncate">${esc(c.holder || '')}</div>${c.expiry ? `<div class="wc-exp"><small>VALID THRU</small>${esc(c.expiry)}</div>` : ''}</div></div>
   </div>`;
 }
 function shade(hex, amt) {
@@ -69,6 +79,8 @@ function openWalletCard(id) {
     <div class="list inset-icon">
       ${c.number ? `<button class="row" onclick="copyText('${esc(c.number)}'); showToast('Nomor disalin')"><span class="icon-tile bg-blue"><i class="fas fa-hashtag"></i></span><div class="flex-1"><div class="row-sub">Nomor</div><div class="row-title tabular">${esc(groupNum(c.number))}</div></div><i class="far fa-copy chev"></i></button>` : ''}
       ${c.holder ? `<div class="row"><span class="icon-tile bg-gray"><i class="fas fa-user"></i></span><div class="flex-1"><div class="row-sub">Atas nama</div><div class="row-title">${esc(c.holder)}</div></div></div>` : ''}
+      ${c.expiry ? `<div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-calendar"></i></span><div class="flex-1"><div class="row-sub">Berlaku sampai</div><div class="row-title tabular">${esc(c.expiry)}</div></div></div>` : ''}
+      ${c.cvv ? `<button class="row" onclick="toggleCvv(this, '${esc(c.cvv)}')"><span class="icon-tile bg-red"><i class="fas fa-shield-halved"></i></span><div class="flex-1"><div class="row-sub">CVV · tap untuk lihat</div><div class="row-title tabular" data-cvv>•••</div></div><i class="fas fa-eye chev"></i></button>` : ''}
       ${c.note ? `<div class="row"><span class="icon-tile bg-orange"><i class="fas fa-note-sticky"></i></span><div class="flex-1"><div class="row-sub">Catatan</div><div class="row-title">${linkify(c.note)}</div></div></div>` : ''}
     </div>`;
   openSheet('sheetWalletCard');
@@ -83,6 +95,17 @@ function flipWalletCard() {
   $('wdCardWrap').innerHTML = walletShowingBack
     ? `<div class="wcard has-img" style="background:#222" onclick="flipWalletCard()">${u ? `<img class="wc-bg" src="${esc(u)}" alt="">` : ''}</div>`
     : wCardHTML(c, { full: true, onclick: 'flipWalletCard()' });
+}
+function toggleCvv(btn, v) {
+  const el = btn.querySelector('[data-cvv]'), shown = el.textContent !== '•••';
+  el.textContent = shown ? '•••' : v;
+  btn.querySelector('.chev').className = `fas ${shown ? 'fa-eye' : 'fa-eye-slash'} chev`;
+  if (!shown) setTimeout(() => { if (el.isConnected) { el.textContent = '•••'; btn.querySelector('.chev').className = 'fas fa-eye chev'; } }, 10000);
+}
+function formatCardExpiry(inp) {
+  let d = inp.value.replace(/\D/g, '').slice(0, 4);
+  if (d.length === 1 && +d > 1) d = '0' + d;
+  inp.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
 }
 function closeWalletCard() { closeSheet('sheetWalletCard'); walletOpenId = null; walletShowingBack = false; }
 async function openWalletScan() {
@@ -100,8 +123,9 @@ function openWalletEditor(id) {
   closeSheet('sheetWalletCard');
   $('wcId').value = c ? c.id : '';
   $('walletEditTitle').textContent = c ? 'Edit Kartu' : 'Kartu Baru';
-  ['Name', 'Issuer', 'Number', 'Holder', 'Code', 'Note'].forEach(k => { $('wc' + k).value = c ? (c[k.toLowerCase()] || '') : ''; });
+  ['Name', 'Issuer', 'Number', 'Holder', 'Code', 'Note', 'Expiry', 'Cvv'].forEach(k => { $('wc' + k).value = c ? (c[k.toLowerCase()] || '') : ''; });
   $('wcCodeType').value = c ? (c.codeType || 'qr') : 'qr';
+  $('wcTextOver').checked = !!(c && c.textOver);
   walletColor = c ? (c.color || WALLET_COLORS[1]) : WALLET_COLORS[1];
   walletPending = { front: null, back: null };
   $('wcFrontLabel').textContent = c && c.frontId ? 'Foto depan tersimpan ✓ — tap untuk ganti' : 'Foto sisi depan (opsional)';
@@ -114,7 +138,7 @@ function openWalletEditor(id) {
 }
 function walletDraft() {
   const id = $('wcId').value, old = id ? wCard(id) : {};
-  return { ...old, name: $('wcName').value.trim(), issuer: $('wcIssuer').value.trim(), number: $('wcNumber').value.trim(), holder: $('wcHolder').value.trim(), codeType: $('wcCodeType').value, code: $('wcCode').value.trim(), note: $('wcNote').value.trim(), color: walletColor };
+  return { ...old, name: $('wcName').value.trim(), issuer: $('wcIssuer').value.trim(), number: $('wcNumber').value.trim(), holder: $('wcHolder').value.trim(), codeType: $('wcCodeType').value, code: $('wcCode').value.trim(), note: $('wcNote').value.trim(), expiry: $('wcExpiry').value.trim(), cvv: $('wcCvv').value.trim(), textOver: $('wcTextOver').checked, color: walletColor };
 }
 function renderWalletPreview() {
   const d = walletDraft();
@@ -153,6 +177,8 @@ async function scanQrFromPhoto(e) {
 async function saveWalletCard() {
   const d = walletDraft();
   if (!d.name) return showToast('Nama kartu wajib diisi.', false);
+  if (d.expiry && !/^(0[1-9]|1[0-2])\/\d{2}$/.test(d.expiry)) return showToast('Format berlaku: BB/TT (mis. 08/29).', false);
+  if (d.cvv && !/^\d{3,4}$/.test(d.cvv)) return showToast('CVV harus 3–4 angka.', false);
   if (d.codeType === 'ean13' && d.code && !/^\d{12,13}$/.test(d.code)) return showToast('EAN-13 harus 12–13 angka.', false);
   const btn = $('walletSaveBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner dark" style="display:inline-block"></span>';
   try {
