@@ -696,6 +696,8 @@
       const r = rooms[cur.roomId];
       db.ref(`thaitea/games/rooms/${cur.roomId}/online/${myKey}`).remove();
       db.ref(`thaitea/games/rooms/${cur.roomId}/viewers/${myKey}`).remove();
+      db.ref(`thaitea/games/rooms/${cur.roomId}/requests/${myKey}`).remove();
+      $('gvReq').classList.add('hidden');
       if (r && cur.mode === 'online') {
         const seats = arr(r.seats);
         const mine = seats.findIndex(x => x && x.key === myKey);
@@ -800,6 +802,7 @@
       if (!cur || !cur.state || cur.state.v !== v || isPaused() || cur.anim) return;
       const eng = ENG[cur.game];
       const s = cur.state.turn;
+      if (!cur.seats[s] || !cur.seats[s].bot) return;   // kursi sudah diambil alih orang
       const after = eng.apply(cur.state, s, eng.bot(eng.norm(clone(cur.state)), s));
       if (after.v !== v) commit(after);
     }, cur.game === 'domino' ? 700 : cur.game === 'congklak' ? 500 : 400);
@@ -845,13 +848,96 @@
     cur = { game: r ? r.game : 'ludo', mode, roomId: id, seats: [], mySeat: null, state: null, shown: null, queue: [], anim: false, enteredAt: Date.now() };
     openView((r ? GAMES[r.game].name : 'Game') + (mode === 'watch' ? ' · Menonton' : ' · Online'));
     SFX.unlock();
+    mulaiDetak(id, mode);
+    onRoomUpdate();
+  }
+  function mulaiDetak(id, mode) {
+    clearInterval(beatTimer);
     const path = `thaitea/games/rooms/${id}/${mode === 'watch' ? 'viewers' : 'online'}/${myKey}`;
     const beat = () => db.ref(path).set(mode === 'watch' ? { name: deviceName, at: Date.now() } : Date.now());
     db.ref(path).onDisconnect().remove();
     beat();
     beatTimer = setInterval(beat, 25000);
-    onRoomUpdate();
   }
+
+  /* ---------- minta ikut ke meja Ludo yang sedang berlangsung ---------- */
+  function slotJoin(r) {
+    if (!r || r.game !== 'ludo' || r.status !== 'playing' || !r.state) return null;
+    const seats = arr(r.seats);
+    const bot = seats.findIndex(x => x && x.bot);
+    if (bot >= 0) return { type: 'bot', i: bot, name: seats[bot].name };
+    if ((r.state.n || seats.length) < 4) return { type: 'baru' };
+    return null;
+  }
+  function mintaIkut(id) {
+    const r = rooms[id];
+    if (!r) return;
+    if (!slotJoin(r)) { triggerToast('Meja sudah penuh 4 pemain', true); return; }
+    if (!cur || cur.roomId !== id) masukMeja(id, 'watch');
+    db.ref(`thaitea/games/rooms/${id}/requests/${myKey}`).set({ name: deviceName, at: Date.now() });
+    triggerToast('Permintaan terkirim, tunggu disetujui pemain');
+    renderReq();
+  }
+  function batalMinta() {
+    if (!cur || !cur.roomId) return;
+    db.ref(`thaitea/games/rooms/${cur.roomId}/requests/${myKey}`).remove();
+    renderReq();
+  }
+  function terimaIkut(key) {
+    const r = rooms[cur.roomId]; if (!r) return;
+    const req = (r.requests || {})[key]; if (!req) return;
+    const slot = slotJoin(r);
+    if (!slot) { tolakIkut(key, 'Meja sudah penuh'); return; }
+    const seats = arr(r.seats).map(x => x || null);
+    const upd = { [`requests/${key}`]: null, activeAt: Date.now() };
+    if (slot.type === 'bot') {
+      seats[slot.i] = { key, name: req.name };
+      upd.seats = seats;
+    } else {
+      const st = Ludo.norm(clone(r.state));
+      const used = new Set(st.colors);
+      const col = [0, 2, 1, 3].find(c => !used.has(c));
+      st.colors.push(col);
+      st.tokens[st.n] = [-1, -1, -1, -1];
+      st.n++; st.v++; st.last = { joined: st.n - 1 };
+      seats.push({ key, name: req.name });
+      upd.seats = seats; upd.state = st;
+    }
+    roomsRef.child(cur.roomId).update(upd);
+    SFX.home();
+    triggerToast(`${req.name} ikut main`);
+  }
+  function tolakIkut(key, alasan) {
+    if (!cur || !cur.roomId) return;
+    db.ref(`thaitea/games/rooms/${cur.roomId}/requests/${key}`).update({ ditolak: alasan || 'Ditolak pemain' });
+  }
+  function renderReq() {
+    const box = $('gvReq'); if (!box) return;
+    const r = cur && cur.roomId ? rooms[cur.roomId] : null;
+    if (!r || r.game !== 'ludo' || r.status !== 'playing') { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const reqs = r.requests || {};
+    if (cur.mode === 'watch') {
+      const mine = reqs[myKey];
+      const slot = slotJoin(r);
+      if (mine && mine.ditolak) box.innerHTML = `<span class="rq-txt">Permintaan ikut ditolak.</span><button type="button" class="btn btn-gray btn-sm" onclick="TTG.batalMinta()">OK</button>`;
+      else if (mine) box.innerHTML = `<span class="rq-txt"><span class="rq-spin"></span>Menunggu persetujuan pemain…</span><button type="button" class="btn btn-gray btn-sm" onclick="TTG.batalMinta()">Batal</button>`;
+      else if (slot) box.innerHTML = `<span class="rq-txt">Kamu sedang menonton.${slot.type === 'bot' ? ` Bisa menggantikan <b>${esc(slot.name)}</b>.` : ''}</span><button type="button" class="btn btn-primary btn-sm" onclick="TTG.mintaIkut('${r.id}')">Minta Ikut Main</button>`;
+      else box.innerHTML = `<span class="rq-txt">Kamu sedang menonton. Meja sudah penuh 4 pemain.</span>`;
+      box.classList.remove('hidden');
+      return;
+    }
+    const list = Object.entries(reqs).filter(([, v]) => v && !v.ditolak && Date.now() - (v.at || 0) < 10 * 60000);
+    if (!list.length || cur.mySeat === null) { box.classList.add('hidden'); box.innerHTML = ''; box.dataset.k = ''; return; }
+    const [key, v] = list[0];
+    const slot = slotJoin(r);
+    const baru = box.dataset.k !== key;
+    box.dataset.k = key;
+    box.innerHTML = `<span class="rq-txt"><b>${esc(v.name)}</b> minta ikut main${slot ? (slot.type === 'bot' ? ` (menggantikan ${esc(slot.name)})` : ' sebagai pemain baru') : ''}.</span>
+      <button type="button" class="btn btn-gray btn-sm" onclick="TTG.tolakIkut('${key}')">Tolak</button><button type="button" class="btn btn-primary btn-sm" onclick="TTG.terimaIkut('${key}')">Terima</button>`;
+    box.classList.remove('hidden');
+    if (baru) SFX.turn();
+  }
+
   function onRoomUpdate() {
     if (!cur || !cur.roomId) return;
     const r = rooms[cur.roomId];
@@ -859,7 +945,18 @@
     if (!r) { triggerToast('Meja ditutup'); stopAll(); cur = null; $('gameView').classList.add('hidden'); renderPane(); return; }
     cur.seats = arr(r.seats).map(x => x || null);
     const mine = cur.seats.findIndex(x => x && x.key === myKey);
+    if (cur.mode === 'watch' && mine >= 0 && r.status === 'playing') {
+      cur.mode = 'online';
+      db.ref(`thaitea/games/rooms/${cur.roomId}/viewers/${myKey}`).remove();
+      db.ref(`thaitea/games/rooms/${cur.roomId}/requests/${myKey}`).remove();
+      mulaiDetak(cur.roomId, 'online');
+      $('gvTitle').textContent = GAMES[r.game].name + ' · Online';
+      triggerToast('Permintaan diterima, kamu ikut main!');
+      SFX.home();
+      cur.shown = null; cur.state = null; cur.queue = [];
+    }
     cur.mySeat = cur.mode === 'watch' ? null : (mine >= 0 ? mine : null);
+    renderReq();
     setLive(r);
     renderPause();
     if (r.status === 'waiting') { renderLobbyMeja(r); refreshHead(); return; }
@@ -942,7 +1039,7 @@
       const seats = arr(r.seats).filter(Boolean);
       const v = Object.values(r.viewers || {}).filter(fresh).length;
       return `<div class="room-row" style="cursor:default"><span class="gl-mini" style="background:${GAMES[r.game].bg}">${ICON[r.game]}</span><div class="room-main"><div class="room-name">${GAMES[r.game].name}${r.paused ? ' <span class="pill" style="font-size:11px">DIJEDA</span>' : ''}</div><div class="room-last">${esc(seats.map(s => s.name).join(', '))}${v ? ' · ' + v + ' menonton' : ''}</div></div>
-        <button type="button" class="btn btn-tinted btn-sm" onclick="TTG.tonton('${r.id}')">Tonton</button></div>`;
+        <div style="display:flex;flex-direction:column;gap:6px">${slotJoin(r) && !seats.some(s => s.key === myKey) ? `<button type="button" class="btn btn-primary btn-sm" onclick="TTG.mintaIkut('${r.id}')">Minta Ikut</button>` : ''}<button type="button" class="btn btn-tinted btn-sm" onclick="TTG.tonton('${r.id}')">Tonton</button></div></div>`;
     }).join('')}</div>` : '';
     const waitHtml = wait.length ? `<div class="section-label"><span>Meja Menunggu Pemain</span></div><div class="list">${wait.map(r => {
       const seats = arr(r.seats).filter(Boolean);
@@ -979,6 +1076,10 @@
   .gv-pausebtn,.gv-soundbtn{width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
   .gv-soundbtn{background:var(--fill);color:var(--text2)}
   .gv-pausebtn:active,.gv-exit:active,.gv-soundbtn:active{opacity:.6}
+  .gv-req{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FFF4E6;border-bottom:.5px solid var(--sep);flex:none;animation:gpop .3s ease}
+  .gv-req .rq-txt{flex:1;font-size:15px;line-height:1.3}
+  .rq-spin{display:inline-block;width:14px;height:14px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;margin-right:6px;vertical-align:-2px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .gv-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px calc(env(safe-area-inset-bottom,0px) + 24px);max-width:600px;width:100%;margin:0 auto}
   .gv-pause{position:absolute;inset:0;z-index:5;background:rgba(242,242,247,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px}
   .gvp-card{width:100%;max-width:360px;background:#fff;border-radius:26px;padding:26px 20px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.15);animation:gpop .3s cubic-bezier(.2,1.3,.4,1)}
@@ -1087,6 +1188,7 @@
       <button type="button" id="gvSoundBtn" class="gv-soundbtn" onclick="TTG.suara()" aria-label="Suara"></button>
       <button type="button" id="gvPauseBtn" class="gv-pausebtn hidden" onclick="TTG.jeda()" aria-label="Jeda"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button>
     </div>
+    <div id="gvReq" class="gv-req hidden"></div>
     <div id="gvBody" class="gv-body"></div>
     <div id="gvPause" class="gv-pause hidden"><div class="gvp-card">
       <div class="gvp-ico"><svg viewBox="0 0 24 24" width="44" height="44"><path fill="#fff" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></div>
@@ -1108,7 +1210,7 @@
 
   window.TTG = {
     renderPane, pilih, tutup: closeView, keluar, jeda, lanjut, mulaiOnline, _mulai: mulaiDengan, mainLagi,
-    gabung: gabungMeja, tonton: id => masukMeja(id, 'watch'),
+    gabung: gabungMeja, tonton: id => masukMeja(id, 'watch'), mintaIkut, batalMinta, terimaIkut, tolakIkut,
     suara: () => { SFX.toggle(); refreshHead(); if (!SFX.muted) SFX.tap(); },
     _engines: { Domino, Ludo, Congklak }
   };
