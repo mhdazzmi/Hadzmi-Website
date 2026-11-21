@@ -33,7 +33,11 @@ async function handlePush() {
     // Browser mewajibkan setiap push menampilkan notifikasi
     return self.registration.showNotification('Thai Tea', { body: 'Ada catatan baru. Ketuk untuk melihat.', icon: ICON, badge: ICON, tag: 'tt-generic' });
   }
-  await Promise.all(items.map(i => self.registration.showNotification(i.title || 'Thai Tea', {
+  // Pesanan online (urgent): tetap tampil sampai disentuh + getar panjang
+  await Promise.all(items.map(i => self.registration.showNotification(i.title || 'Thai Tea', i.urgent ? {
+    body: i.body || '', icon: ICON, badge: ICON, tag: i.id, requireInteraction: true, renotify: true,
+    vibrate: [600, 200, 600, 200, 600, 200, 600, 200, 900], data: { url: './#online' }
+  } : {
     body: i.body || '', icon: ICON, badge: ICON, tag: i.id, renotify: false
   })));
 }
@@ -44,8 +48,12 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const target = (event.notification.data && event.notification.data.url) || './';
     const open = all.find(c => c.url && c.url.indexOf('/thaitea/') !== -1 && 'focus' in c);
-    if (open) return open.focus();
-    return self.clients.openWindow('./');
+    if (open) {
+      if (target !== './') open.postMessage({ type: 'open-online' });
+      return open.focus();
+    }
+    return self.clients.openWindow(target);
   })());
 });
