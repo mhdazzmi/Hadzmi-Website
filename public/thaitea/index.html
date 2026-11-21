@@ -644,7 +644,7 @@
                 <label class="field">
                   <span class="field-label">Nominal Belanja</span>
                   <span class="money-prefix">Rp</span>
-                  <input type="number" inputmode="numeric" id="expenseAmount" placeholder="0" class="input input-money">
+                  <input type="text" inputmode="numeric" autocomplete="off" id="expenseAmount" placeholder="0" class="input input-money">
                 </label>
 
                 <label class="field">
@@ -1069,7 +1069,7 @@
             <label class="field">
               <span class="field-label">Nominal Biaya</span>
               <span class="money-prefix">Rp</span>
-              <input type="number" inputmode="numeric" id="editExpenseAmount" class="input input-money" style="color:var(--red)">
+              <input type="text" inputmode="numeric" autocomplete="off" id="editExpenseAmount" class="input input-money" style="color:var(--red)">
             </label>
           </div>
         </div>
@@ -1105,7 +1105,7 @@
             <label class="field">
               <span class="field-label">Nominal Investasi</span>
               <span class="money-prefix">Rp</span>
-              <input type="number" inputmode="numeric" id="assetAmount" placeholder="0" class="input input-money">
+              <input type="text" inputmode="numeric" autocomplete="off" id="assetAmount" placeholder="0" class="input input-money">
             </label>
             <label class="field">
               <span class="field-label">Keterangan / Garansi / Lokasi</span>
@@ -1355,6 +1355,38 @@
       const sug = document.getElementById('expenseItemSuggestions');
       if (sug && !e.target.closest('#expenseItemSuggestions') && e.target.id !== 'expenseItemName') sug.classList.add('hidden');
     });
+
+
+    // Kolom nominal Rupiah: tampil pakai titik per 3 angka (15.000), tapi .value tetap angka polos (15000)
+    // supaya logika simpan/edit (parseFloat) tidak berubah.
+    const NATIVE_INPUT_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    function fmtRibuan(digits) {
+      digits = (digits || '').replace(/^0+(?=\d)/, '');
+      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    function setupMoneyInput(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      Object.defineProperty(el, 'value', {
+        configurable: true,
+        get() { return NATIVE_INPUT_VALUE.get.call(this).replace(/\D/g, ''); },
+        set(v) {
+          const digits = typeof v === 'number' ? (isFinite(v) ? String(Math.round(v)) : '') : String(v === undefined || v === null ? '' : v).replace(/\D/g, '');
+          NATIVE_INPUT_VALUE.set.call(this, fmtRibuan(digits));
+        }
+      });
+      el.addEventListener('input', () => {
+        const cur = NATIVE_INPUT_VALUE.get.call(el);
+        const pos = el.selectionStart === null ? cur.length : el.selectionStart;
+        const digitsBefore = cur.slice(0, pos).replace(/\D/g, '').length;
+        const formatted = fmtRibuan(cur.replace(/\D/g, ''));
+        NATIVE_INPUT_VALUE.set.call(el, formatted);
+        let i = 0, c = 0;
+        while (i < formatted.length && c < digitsBefore) { if (/\d/.test(formatted[i])) c++; i++; }
+        try { el.setSelectionRange(i, i); } catch (e) {}
+      });
+    }
+    ['expenseAmount', 'editExpenseAmount', 'assetAmount'].forEach(setupMoneyInput);
 
     function updateCartBar() {
       const bar = document.getElementById('cartBar');
