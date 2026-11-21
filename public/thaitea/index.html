@@ -2697,6 +2697,15 @@
       const t = document.getElementById('chatBadgeTile');
       if (t) { t.textContent = b.textContent; t.classList.toggle('hidden', n === 0); }
     }
+    // Chat Resto (customer /pesan/): daftar room di thaitea/cs_rooms, pesan di thaitea/chat/cs_xxx
+    let csRoomsData = {};
+    db.ref('thaitea/cs_rooms').on('value', snap => {
+      const all = snap.val() || {};
+      const top = Object.entries(all).sort((a, b) => (b[1].lastTs || 0) - (a[1].lastTs || 0)).slice(0, 40);
+      csRoomsData = Object.fromEntries(top);
+      top.forEach(([room]) => dengarRoom(room));
+      if (!document.getElementById('tab-chat').classList.contains('hidden')) renderChatRooms();
+    });
     function dengarRoom(room) {
       if (chatListeners[room]) return;
       const ref = db.ref('thaitea/chat/' + room).limitToLast(300);
@@ -2710,6 +2719,7 @@
           const lihat = currentRoom === room && document.visibilityState === 'visible';
           if (m.ts > chatLoadedAt && m.from !== myKey && !lihat && document.visibilityState === 'visible') {
             triggerToast(`💬 ${m.name}: ${previewPesan(m)}`);
+            if (m.from === 'cs' && typeof bunyiPendek === 'function') bunyiPendek();
           }
         });
         if (currentRoom === room) { renderMessages(); tandaiDibaca(room); }
@@ -2719,7 +2729,7 @@
     }
     function siapkanRoomChat() {
       Object.keys(chatListeners).forEach(r => {
-        if (r !== ROOM_ALL && (!myKey || !r.slice(3).split('__').includes(myKey) || !usersData[otherOfRoom(r)])) {
+        if (r !== ROOM_ALL && !r.startsWith('cs_') && (!myKey || !r.slice(3).split('__').includes(myKey) || !usersData[otherOfRoom(r)])) {
           chatListeners[r].off(); delete chatListeners[r]; delete chatData[r];
         }
       });
@@ -2759,6 +2769,17 @@
             ? `<span class="room-last unread">${esc(previewPesan(last))}</span>`
             : `<span class="room-last ${isOnline(k) ? 'on' : ''}">${isOnline(k) ? '● Online' : esc(statusText(k))}</span>`}${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
       });
+      // Chat Resto: customer dari halaman /pesan/
+      Object.entries(csRoomsData).forEach(([room, r]) => {
+        const msgs = chatData[room] || [];
+        const last = msgs[msgs.length - 1];
+        const un = unreadCount(room);
+        const nm = r.nick || 'Customer';
+        rows.push({ room, ts: last ? last.ts : (r.lastTs || 0), html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
+          ${avaHtml('cs_' + nm, nm)}
+          <div class="room-main"><div class="room-top"><span class="room-name">${esc(nm)} <span class="pill pill-online" style="font-size:11px;padding:1px 7px">Customer</span></span><span class="room-time">${last ? jamWIB(last.ts) : ''}<span class="room-chev">›</span></span></div>
+          <div class="room-bottom"><span class="room-last ${un ? 'unread' : ''}">${esc(last ? (last.from === 'cs' ? '' : 'Kamu: ') + previewPesan(last) : (r.lastText || ''))}</span>${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
+      });
       rows.sort((a, b) => b.ts - a.ts);
       box.innerHTML = myKey ? rows.map(r => r.html).join('') : '<div class="empty">Pilih nama pengguna dulu di Pengaturan.</div>';
     }
@@ -2766,6 +2787,14 @@
     function renderChatHead() {
       const nameEl = document.getElementById('chatHeadName'), stEl = document.getElementById('chatHeadStatus'), avaEl = document.getElementById('chatHeadAva');
       if (!currentRoom) return;
+      if (currentRoom.startsWith('cs_')) {
+        const r = csRoomsData[currentRoom] || {};
+        nameEl.innerHTML = esc(r.nick || 'Customer') + ' <span class="pill pill-online" style="font-size:11px;padding:1px 7px">Customer</span>';
+        stEl.textContent = 'Chat Resto dari halaman Pesan Online';
+        stEl.classList.remove('on');
+        avaEl.outerHTML = avaHtml('cs_' + (r.nick || 'C'), r.nick || 'Customer').replace('<span class="ava ', '<span id="chatHeadAva" class="ava ');
+        return;
+      }
       if (currentRoom === ROOM_ALL) {
         nameEl.innerHTML = 'Chat Semua <span class="room-chev" style="margin:0">›</span>';
         const on = Object.entries(usersData).filter(([k]) => isOnline(k)).map(([, u]) => u.name);
@@ -2872,6 +2901,7 @@
       const p = db.ref(`thaitea/chat/${room}/${id}`).set(msg);
       usersRef.child(myKey).update({ name: deviceName });
       const isi = previewPesan(msg);
+      if (room.startsWith('cs_')) { db.ref('thaitea/cs_rooms/' + room).update({ lastTs: ts, lastText: ('Kedai: ' + isi).slice(0, 80) }); return p; }
       if (room === ROOM_ALL) kirimNotif(`${deviceName}: ${isi}`, '💬 Chat Semua');
       else kirimNotif(isi, `💬 ${deviceName}`, false, otherOfRoom(room));
       return p;
