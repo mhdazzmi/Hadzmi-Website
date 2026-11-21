@@ -1252,13 +1252,13 @@
               <button type="button" class="active" onclick="admFunTab('musik', this)">Musik</button>
               <button type="button" onclick="admFunTab('ayat', this)">Ayat Suci</button>
             </div>
-            <p class="card-sub" style="margin-top:10px">File suara diunggah dari HP ke <b>Cloudflare R2</b> (maks 60 MB per file, format MP3/M4A). Isi nama dulu, lalu ketuk <b>Pilih File & Upload</b>, otomatis tersimpan.</p>
+            <p class="card-sub" style="margin-top:10px">File suara diunggah dari HP ke <b>Cloudflare R2</b> (maks 60 MB per file, format MP3/M4A/MP4). Isi nama dulu, lalu ketuk <b>Pilih File & Upload</b>, otomatis tersimpan.</p>
 
             <div id="admFun-musik">
               <div id="admMusikList" class="adm-list"></div>
               <div class="divider"></div>
               <label class="field"><span class="field-label">Nama Lagu</span><input type="text" id="admMusikName" class="input" placeholder="Contoh: Sholawat Nariyah"></label>
-              <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept="audio/*" hidden onchange="uploadHiburan(this, 'musik')"></label>
+              <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept=".mp3,.m4a,.mp4,.aac,.wav,.ogg,.opus,.flac,.webm,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,video/mp4" hidden onchange="uploadHiburan(this, 'musik')"></label>
             </div>
 
             <div id="admFun-ayat" class="hidden">
@@ -1270,7 +1270,7 @@
                 </select>
               </label>
               <label class="field"><span class="field-label">Nama Ayat / Surah</span><input type="text" id="admAyatName" class="input" placeholder="Contoh: Surah Al-Kahfi"></label>
-              <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept="audio/*" hidden onchange="uploadHiburan(this, 'ayat')"></label>
+              <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept=".mp3,.m4a,.mp4,.aac,.wav,.ogg,.opus,.flac,.webm,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,video/mp4" hidden onchange="uploadHiburan(this, 'ayat')"></label>
             </div>
           </div>
 
@@ -2921,7 +2921,12 @@
       const nameEl = document.getElementById(jenis === 'musik' ? 'admMusikName' : 'admAyatName');
       const name = (nameEl.value.trim() || f.name.replace(/\.[^.]+$/, '')).slice(0, 80);
       if (f.size > 60 * 1024 * 1024) { triggerToast('File terlalu besar (maks 60 MB)', true); return; }
-      const type = (f.type || '').split(';')[0] || (/\.m4a$/i.test(f.name) ? 'audio/mp4' : 'audio/mpeg');
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      const EXT_AUDIO = { mp3: 'audio/mpeg', m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac', webm: 'audio/webm' };
+      const MIME_AUDIO = { 'video/mp4': 'audio/mp4', 'audio/x-m4a': 'audio/mp4', 'audio/m4a': 'audio/mp4', 'audio/mp3': 'audio/mpeg', 'audio/x-wav': 'audio/wav', 'audio/wave': 'audio/wav', 'audio/x-flac': 'audio/flac', 'audio/opus': 'audio/ogg' };
+      const raw = (f.type || '').split(';')[0].toLowerCase();
+      const type = EXT_AUDIO[ext] || MIME_AUDIO[raw] || (/^audio\/(mpeg|mp4|aac|wav|ogg|flac|webm)$/.test(raw) ? raw : '');
+      if (!type) { triggerToast('Format tidak didukung. Pakai MP3, M4A, MP4, AAC, WAV atau OGG', true); return; }
       try {
         triggerToast('Mengunggah… tunggu sebentar');
         const url = await unggahBerkas(f, type);

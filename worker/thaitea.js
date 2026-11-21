@@ -23,12 +23,12 @@ const MAX_UPLOAD = 4 * 1024 * 1024;               // 4 MB per foto (foto sudah d
 const MAX_AUDIO = 60 * 1024 * 1024;               // 60 MB per suara (lagu / bacaan ayat di menu Hiburan)
 const UPLOAD_PER_MIN = 40;
 const R2_SAFE_LIMIT = 9 * 1024 * 1024 * 1024;     // sama dengan batas aman Nexa (kuota gratis 10 GB)
-const FILE_ID_RE = /^[0-9a-f-]{36}\.(jpg|webp|png|webm|m4a|ogg|mp3|aac)$/;
+const FILE_ID_RE = /^[0-9a-f-]{36}\.(jpg|webp|png|webm|m4a|ogg|mp3|aac|wav|flac)$/;
 const TYPES = {
   'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/png': 'png',
-  'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3'
+  'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/flac': 'flac'
 };
-const EXT_TYPE = { jpg: 'image/jpeg', webp: 'image/webp', png: 'image/png', webm: 'audio/webm', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', mp3: 'audio/mpeg' };
+const EXT_TYPE = { jpg: 'image/jpeg', webp: 'image/webp', png: 'image/png', webm: 'audio/webm', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', mp3: 'audio/mpeg', wav: 'audio/wav', flac: 'audio/flac' };
 
 export async function handleThaiTea(request, env, url, ctx) {
   if (!env.HUB_KV) return json({ error: 'KV belum diatur' }, 503);
