@@ -416,6 +416,7 @@
     .k-add { background: var(--green-soft); color: var(--green); }
     .k-edit { background: var(--amber-soft); color: var(--amber); }
     .k-del { background: var(--red-soft); color: var(--red); }
+    .k-fun { background: #F3E8FD; color: #AF52DE; }
     .k-sys { background: #E6F0FD; color: var(--blue); }
     .field-label + .search, .field-label + select { margin-top: 0; }
     span.field-label[style*="margin-top"] { display: block; }
@@ -2047,7 +2048,7 @@
         box.innerHTML = `<div class="empty"><i class="fas fa-list-check"></i>Belum ada aktivitas${d ? ' di tanggal ' + fmtTgl(d) : ''}.</div>`;
         return;
       }
-      const JENIS = { add: ['k-add', 'Tambah'], edit: ['k-edit', 'Ubah'], del: ['k-del', 'Hapus'], sys: ['k-sys', 'Sistem'] };
+      const JENIS = { add: ['k-add', 'Tambah'], edit: ['k-edit', 'Ubah'], del: ['k-del', 'Hapus'], sys: ['k-sys', 'Sistem'], fun: ['k-fun', 'Hiburan'] };
       let html = '', lastDate = null;
       list.forEach(a => {
         if (!d && a.date !== lastDate) { html += `<div class="act-date">${fmtTgl(a.date)}</div>`; lastDate = a.date; }
@@ -2858,12 +2859,17 @@
       if (window.TTG) TTG.renderPane();
       renderPemutar();
     }
+    let logPutarTerakhir = { key: '', at: 0 };
     function putarAntrean(list, idx) {
       antrean = list; antreanIdx = idx;
       const t = antrean[idx];
       if (!t) return;
       player.src = t.url;
       player.play().catch(() => triggerToast('Suara tidak bisa diputar.', true));
+      if (t.key !== logPutarTerakhir.key || Date.now() - logPutarTerakhir.at > 10 * 60000) {
+        logPutarTerakhir = { key: t.key, at: Date.now() };
+        logAktivitas('fun', t.key.startsWith('a:') ? `Memutar ${t.name}` : `Memutar lagu ${t.name}`);
+      }
       renderHiburan();
     }
     function putarMusik(i) {

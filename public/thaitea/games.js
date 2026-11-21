@@ -676,7 +676,9 @@
   }
   async function keluar() {
     if (cur && gameRunning() && cur.mode !== 'watch') {
-      const msg = cur.mode === 'bot' ? 'Permainan ini akan berakhir.' : 'Kursimu akan dilanjutkan oleh komputer.';
+      const rr = cur.roomId && rooms[cur.roomId];
+      const sendiri = cur.mode === 'bot' || (rr && !arr(rr.seats).some(x => x && !x.bot && x.key !== myKey));
+      const msg = sendiri ? 'Permainan ini akan berakhir.' : 'Kursimu akan dilanjutkan oleh komputer.';
       if (!(await iosConfirm(msg, { title: 'Keluar dari Game?', okText: 'Keluar', destructive: true }))) return;
       const p = pauseInfo();
       if (p && cur.mode === 'online' && p.by === deviceName) lanjut();
@@ -708,8 +710,10 @@
         if (r.status === 'waiting') {
           if (r.host === myKey) roomsRef.child(cur.roomId).remove();
           else if (mine >= 0) db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}`).remove();
-        } else if (r.status === 'playing' && mine >= 0) {
-          db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}`).update({ bot: true, name: seats[mine].name + ' (bot)' });
+        } else if (mine >= 0) {
+          const orangLain = seats.some((x, i) => i !== mine && x && !x.bot);
+          if (!orangLain) { roomsRef.child(cur.roomId).remove(); cur = null; tutupPodium(); $('gameView').classList.add('hidden'); renderPane(); return; }
+          if (r.status === 'playing') db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}`).update({ bot: true, name: seats[mine].name + ' (bot)' });
         }
         roomsRef.child(cur.roomId).update({ activeAt: Date.now() });
       }
@@ -820,11 +824,27 @@
     if (game === 'congklak') n = 2;
     const seats = [{ key: myKey, name: deviceName || 'Kamu' }];
     for (let i = 1; i < n; i++) seats.push({ bot: true, name: BOT_NAMES[i - 1] });
-    cur = { game, mode: 'bot', seats, mySeat: 0, queue: [], anim: false };
-    openView(GAMES[game].name + ' · Lawan Komputer');
-    SFX.unlock();
-    terima(ENG[game].init(n));
+    if (!myKey) {   // belum pilih nama: main lokal saja (tidak tampil di Live)
+      cur = { game, mode: 'bot', seats, mySeat: 0, queue: [], anim: false };
+      openView(GAMES[game].name + ' · Lawan Komputer');
+      SFX.unlock();
+      terima(ENG[game].init(n));
+      return;
+    }
+    // lawan komputer juga jadi meja Live, supaya yang lain bisa menonton
+    const id = 'R' + Date.now() + Math.random().toString(36).slice(2, 5);
+    const now = Date.now();
+    const room = { id, game, solo: true, host: myKey, hostName: deviceName, status: 'playing', max: n, createdAt: now, startedAt: now, activeAt: now, seats, online: { [myKey]: now }, state: ENG[game].init(n) };
+    rooms[id] = room;
+    roomsRef.child(id).set(room);
+    catat(`Mulai main ${GAMES[game].name} lawan komputer`);
+    masukMeja(id, 'online');
   }
+  function namaPemain(r) {
+    const org = arr(r && r.seats).filter(x => x && !x.bot && x.key !== myKey).map(x => x.name);
+    return org.length ? org.join(', ') : 'komputer';
+  }
+  function catat(text) { try { if (typeof logAktivitas === 'function') logAktivitas('fun', text); } catch (e) { } }
 
   /* ---------- online: meja ---------- */
   function buatMeja(game, max) {
@@ -835,6 +855,7 @@
     rooms[id] = room;
     roomsRef.child(id).set(room).then(() => {
       kirimNotif(`${deviceName} membuka meja ${GAMES[game].name}. Ayo ikut main!`, '🎮 Game');
+      catat(`Membuka meja ${GAMES[game].name} online`);
       masukMeja(id, 'online');
     });
   }
@@ -846,15 +867,17 @@
     let free = -1;
     for (let i = 0; i < r.max; i++) if (!seats[i]) { free = i; break; }
     if (free < 0) { triggerToast('Meja sudah penuh', true); return; }
+    catat(`Ikut meja ${GAMES[r.game].name} milik ${r.hostName || 'pengguna lain'}`);
     db.ref(`thaitea/games/rooms/${id}/seats/${free}`).set({ key: myKey, name: deviceName }).then(() => { roomsRef.child(id).update({ activeAt: Date.now() }); masukMeja(id, 'online'); });
   }
   function masukMeja(id, mode) {
     stopAll();
     const r = rooms[id];
     cur = { game: r ? r.game : 'ludo', mode, roomId: id, seats: [], mySeat: null, state: null, shown: null, queue: [], anim: false, enteredAt: Date.now() };
-    openView((r ? GAMES[r.game].name : 'Game') + (mode === 'watch' ? ' · Menonton' : ' · Online'));
+    openView((r ? GAMES[r.game].name : 'Game') + (mode === 'watch' ? ' · Menonton' : r && r.solo ? ' · Lawan Komputer' : ' · Online'));
     SFX.unlock();
     mulaiDetak(id, mode);
+    if (mode === 'watch' && r) catat(`Menonton ${GAMES[r.game].name} (${arr(r.seats).filter(x => x && !x.bot).map(x => x.name).join(', ') || 'komputer'})`);
     onRoomUpdate();
   }
   function mulaiDetak(id, mode) {
@@ -947,7 +970,7 @@
   function onRoomUpdate() {
     if (!cur || !cur.roomId) return;
     const r = rooms[cur.roomId];
-    if (!r && Date.now() - (cur.enteredAt || 0) < 4000) return;
+    if (!r && Date.now() - (cur.enteredAt || 0) < 4000) { const c = cur; setTimeout(() => { if (cur === c) onRoomUpdate(); }, 4200 - (Date.now() - cur.enteredAt)); return; }
     if (!r) { triggerToast('Meja ditutup'); stopAll(); cur = null; $('gameView').classList.add('hidden'); renderPane(); return; }
     cur.seats = arr(r.seats).map(x => x || null);
     const mine = cur.seats.findIndex(x => x && x.key === myKey);
@@ -957,6 +980,7 @@
       db.ref(`thaitea/games/rooms/${cur.roomId}/requests/${myKey}`).remove();
       mulaiDetak(cur.roomId, 'online');
       $('gvTitle').textContent = GAMES[r.game].name + ' · Online';
+      catat(`Ikut main ${GAMES[r.game].name} bersama ${namaPemain(r)}`);
       triggerToast('Permintaan diterima, kamu ikut main!');
       SFX.home();
       cur.shown = null; cur.state = null; cur.queue = [];
@@ -1006,6 +1030,7 @@
     if (isiBot) { let b = 0; while (seats.length < r.max) seats.push({ bot: true, name: BOT_NAMES[b++ % 3] }); }
     const n = Math.max(GAMES[r.game].min, seats.length);
     while (seats.length < n) seats.push({ bot: true, name: BOT_NAMES[seats.length % 3] });
+    catat(`Mulai main ${GAMES[r.game].name} bersama ${humans.filter(x => x.key !== myKey).map(x => x.name).join(', ') || 'komputer'}`);
     roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n) });
   }
   function mainLagi() {
@@ -1045,6 +1070,7 @@
     const seri = cur.game === 'congklak' && st.winner === -1;
     const urut = peringkat(cur.game, st);
     const iWin = !ctx.spectator && urut[0] === ctx.mySeat && !seri;
+    if (iWin) catat(`Juara 1 main ${GAMES[cur.game].name}`);
     const tempat = urut.slice(0, 3);
     const kolom = [tempat[1], tempat[0], tempat[2]];          // susunan podium: 2 · 1 · 3
     const tinggi = { 1: 128, 2: 92, 3: 66 };
@@ -1102,7 +1128,7 @@
     const liveHtml = live.length ? `<div class="section-label"><span><span class="live-dot"></span> Live Sekarang</span></div><div class="list">${live.map(r => {
       const seats = arr(r.seats).filter(Boolean);
       const v = Object.values(r.viewers || {}).filter(fresh).length;
-      return `<div class="sw-wrap" data-room="${r.id}"><button type="button" class="sw-del" onclick="TTG.hapusMeja('${r.id}')"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9z"/></svg>Hapus</button><div class="room-row sw-row" style="cursor:default"><span class="gl-mini" style="background:${GAMES[r.game].bg}">${ICON[r.game]}</span><div class="room-main"><div class="room-name">${GAMES[r.game].name}${r.paused ? ' <span class="pill" style="font-size:11px">DIJEDA</span>' : ''}</div><div class="room-last">${esc(seats.map(s => s.name).join(', '))}${v ? ' · ' + v + ' menonton' : ''}</div></div>
+      return `<div class="sw-wrap" data-room="${r.id}"><button type="button" class="sw-del" onclick="TTG.hapusMeja('${r.id}')"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9z"/></svg>Hapus</button><div class="room-row sw-row" style="cursor:default"><span class="gl-mini" style="background:${GAMES[r.game].bg}">${ICON[r.game]}</span><div class="room-main"><div class="room-name">${GAMES[r.game].name}${r.paused ? ' <span class="pill" style="font-size:11px">DIJEDA</span>' : ''}</div><div class="room-last">${r.solo && !seats.some(s => !s.bot && s.key !== r.host) ? esc((r.hostName || seats[0].name) + ' lawan komputer') : esc(seats.map(s => s.name).join(', '))}${v ? ' · ' + v + ' menonton' : ''}</div></div>
         <div style="display:flex;flex-direction:column;gap:6px">${slotJoin(r) && !seats.some(s => s.key === myKey) ? `<button type="button" class="btn btn-primary btn-sm" onclick="TTG.mintaIkut('${r.id}')">Minta Ikut</button>` : ''}<button type="button" class="btn btn-tinted btn-sm" onclick="TTG.tonton('${r.id}')">Tonton</button></div></div></div>`;
     }).join('')}</div>` : '';
     const waitHtml = wait.length ? `<div class="section-label"><span>Meja Menunggu Pemain</span></div><div class="list">${wait.map(r => {
