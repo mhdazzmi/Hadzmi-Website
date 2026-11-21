@@ -1,4 +1,5 @@
 /* Kartun untuk pop-up "berhasil" Kasir Thai Tea.
+   Pesanan: gelas minuman tanpa boba, berwajah, dengan tanda centang. Pengeluaran: tanpa wajah & tanpa centang.
    Semua gambar dibuat dari bentuk sederhana (SVG), gaya & warna seragam (oranye thai tea, krem, cokelat).
    window.TT_CARTOONS.order[0..9]   → pop-up "Pesanan Sudah Ditambahkan"
    window.TT_CARTOONS.expense[0..9] → pop-up "Pengeluaran Sudah Ditambahkan" */
@@ -47,10 +48,10 @@
     const tw = 34 * k, bw = 26 * k, h = 92 * k, y0 = top + 14 * k, y1 = y0 + h;
     const tea = opts.tea || TEA;
     const straw = opts.noStraw ? '' : `<rect x="${cx + 4 * k}" y="${top - 34 * k}" width="${9 * k}" height="${50 * k}" rx="${4 * k}" fill="${RED}" ${SW} transform="rotate(14 ${cx + 8 * k} ${top})"/>`;
-    const boba = [[-12, -14], [2, -10], [14, -16], [-4, -24], [9, -28]].map(([dx, dy]) => `<circle cx="${cx + dx * k}" cy="${y1 + dy * k}" r="${5.2 * k}" fill="#4A2508"/>`).join('');
+    const boba = opts.noBoba ? '' : [[-12, -14], [2, -10], [14, -16], [-4, -24], [9, -28]].map(([dx, dy]) => `<circle cx="${cx + dx * k}" cy="${y1 + dy * k}" r="${5.2 * k}" fill="#4A2508"/>`).join('');
     return straw +
       `<path d="M${cx - tw} ${y0} L${cx + tw} ${y0} L${cx + bw} ${y1} Q${cx + bw - 2 * k} ${y1 + 6 * k} ${cx + bw - 8 * k} ${y1 + 6 * k} L${cx - bw + 8 * k} ${y1 + 6 * k} Q${cx - bw + 2 * k} ${y1 + 6 * k} ${cx - bw} ${y1} Z" fill="${tea}" ${SW}/>` +
-      `<path d="M${cx - tw + 3 * k} ${y0 + 4 * k} L${cx + tw - 3 * k} ${y0 + 4 * k} L${cx + tw - 6 * k} ${y0 + 24 * k} L${cx - tw + 6 * k} ${y0 + 24 * k} Z" fill="${CREAM}" opacity=".9"/>` +
+      (opts.noCream ? '' : `<path d="M${cx - tw + 3 * k} ${y0 + 4 * k} L${cx + tw - 3 * k} ${y0 + 4 * k} L${cx + tw - 6 * k} ${y0 + 24 * k} L${cx - tw + 6 * k} ${y0 + 24 * k} Z" fill="${CREAM}" opacity=".9"/>`) +
       boba +
       `<path d="M${cx - tw - 6 * k} ${y0} Q${cx - tw - 6 * k} ${top - 4 * k} ${cx} ${top - 6 * k} Q${cx + tw + 6 * k} ${top - 4 * k} ${cx + tw + 6 * k} ${y0} Z" fill="#fff" ${SW}/>` +
       `<rect x="${cx - tw - 9 * k}" y="${y0 - 3 * k}" width="${(tw + 9 * k) * 2}" height="${9 * k}" rx="${4.5 * k}" fill="#fff" ${SW}/>` +
@@ -61,56 +62,62 @@
   function bg(c) { return `<circle cx="100" cy="108" r="86" fill="${c || CREAM2}"/>`; }
   function svg(inner) { return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">${inner}</svg>`; }
 
-  /* ================= PESANAN (10) ================= */
+  /* ================= PESANAN (10): minuman tanpa boba, berwajah, ada centang ================= */
+  const C = { thai: '#F59A3C', matcha: '#7CC46E', coklat: '#9A5A2B', taro: '#B58BE0', mango: '#FFC23D', redv: '#E4576A', vanilla: '#F6E7C8', lemon: '#FFE066', peach: '#FFAD8A', teler: '#8FD9B6' };
+  const kup = (cx, top, k, mood, tea, extra) => cup(cx, top, k, mood, Object.assign({ tea, noBoba: true }, extra || {}));
+  const lemonSlice = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#FFF3A6" ${SW}/><circle cx="${x}" cy="${y}" r="${r * .62}" fill="${GOLD}"/><path d="M${x - r * .6} ${y} h${r * 1.2} M${x} ${y - r * .6} v${r * 1.2} M${x - r * .42} ${y - r * .42} l${r * .84} ${r * .84} M${x + r * .42} ${y - r * .42} l${-r * .84} ${r * .84}" stroke="#FFF3A6" stroke-width="2.5"/>`;
   const order = [
-    // 1. Gelas boba senyum + kilau
-    svg(bg() + star(40, 54, 13) + star(160, 62, 10) + star(152, 150, 8, TEA2) + cup(100, 52, 1, 'happy')),
-    // 2. Gelas mengacungkan jempol
-    svg(bg() + cup(92, 54, .95, 'wink') + arm(124, 120, 150, 96) + `<path d="M144 102 q2 -18 10 -18 q4 2 1 12 h12 q6 1 4 8 l-4 14 q-2 5 -8 5 h-14 z" fill="${CREAM}" ${SW}/>` + star(46, 60, 11)),
-    // 3. Konfeti perayaan
-    svg(bg('#FFE7C9') + confetti(11) + cup(100, 66, .92, 'open') + arm(70, 122, 48, 96) + hand(48, 94) + arm(130, 122, 152, 96) + hand(152, 94)),
-    // 4. Dua gelas bersulang
-    svg(bg() + cup(70, 64, .78, 'happy', { noStraw: false }) + cup(132, 64, .78, 'happy', { tea: '#7FC77A' }) + star(101, 52, 12) + `<path d="M92 40 l-6 -10 M101 36 v-12 M110 40 l6 -10" ${SW}/>`),
-    // 5. Gelas bermata hati
-    svg(bg('#FFE3E3') + heart(42, 64, 12) + heart(160, 54, 9) + heart(156, 150, 8, PINK) + cup(100, 54, 1, 'love')),
-    // 6. Nampan + centang
-    svg(bg() + cup(92, 48, .86, 'smile') + `<rect x="34" y="150" width="132" height="14" rx="7" fill="${GOLD}" ${SW}/><path d="M44 164 q56 18 112 0" fill="none" ${SW}/>` + check(152, 70, 20)),
-    // 7. Gelas bermahkota "Yey"
-    svg(bg() + cup(100, 66, .9, 'open', { noStraw: true }) + `<path d="M68 56 l10 -24 l12 16 l10 -22 l10 22 l12 -16 l10 24 z" fill="${GOLD}" ${SW}/><circle cx="100" cy="30" r="4" fill="${RED}"/>` + star(36, 110, 10) + star(166, 116, 9)),
-    // 8. Gelas melompat + bintang
-    svg(`<ellipse cx="100" cy="182" rx="40" ry="7" fill="#EBC9A0"/>` + bg('#FFF0DA') + star(30, 46, 10) + star(70, 26, 8, TEA2) + star(132, 24, 9) + star(172, 52, 11, TEA2) + cup(100, 46, .9, 'happy') + `<path d="M76 168 l-8 10 M124 168 l8 10" ${SW}/>`),
-    // 9. Gelas memegang papan centang
-    svg(bg() + cup(74, 56, .8, 'smile') + `<rect x="112" y="70" width="68" height="74" rx="12" fill="#fff" ${SW}/>` + check(146, 107, 22) + arm(100, 124, 116, 120) + hand(116, 120)),
-    // 10. Boba menari mengelilingi gelas
-    svg(bg() + cup(100, 56, .86, 'happy') + [[38, 70], [160, 74], [44, 146], [156, 150]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="15" fill="#4A2508" ${SW}/>` + `<circle cx="${x - 5}" cy="${y - 3}" r="2.4" fill="#fff"/><circle cx="${x + 5}" cy="${y - 3}" r="2.4" fill="#fff"/><path d="M${x - 4} ${y + 4} q4 4 8 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`).join(''))
+    // 1. Thai tea tersenyum + centang
+    svg(bg() + star(40, 58, 12) + star(158, 60, 9) + kup(96, 52, 1, 'happy', C.thai) + check(146, 150, 22)),
+    // 2. Matcha mengedip + kilau + centang di atas
+    svg(bg('#E7F6DF') + star(42, 120, 11) + star(56, 60, 8, TEA2) + kup(96, 56, .95, 'wink', C.matcha) + check(150, 64, 22)),
+    // 3. Coklat mengacungkan jempol + centang
+    svg(bg() + kup(86, 56, .92, 'smile', C.coklat) + arm(116, 122, 140, 98) + `<path d="M134 104 q2 -18 10 -18 q4 2 1 12 h12 q6 1 4 8 l-4 14 q-2 5 -8 5 h-14 z" fill="${CREAM}" ${SW}/>` + check(152, 156, 20)),
+    // 4. Taro mengangkat papan centang
+    svg(bg('#EFE4FB') + kup(78, 62, .82, 'open', C.taro) + `<rect x="118" y="44" width="62" height="62" rx="14" fill="#fff" ${SW}/>` + check(149, 75, 20) + arm(104, 120, 122, 100) + hand(122, 100)),
+    // 5. Mangga ceria + bintang + centang kiri atas
+    svg(bg('#FFF1C9') + star(160, 56, 12) + star(162, 140, 8, TEA2) + kup(104, 54, .95, 'happy', C.mango) + check(50, 64, 22)),
+    // 6. Red velvet mata hati + centang
+    svg(bg('#FFE3E3') + heart(44, 72, 11) + heart(160, 58, 8) + kup(98, 54, .95, 'love', C.redv) + check(150, 152, 21)),
+    // 7. Vanilla + konfeti + centang
+    svg(bg('#FFF4E2') + confetti(23) + kup(96, 64, .9, 'happy', C.vanilla) + check(148, 150, 21)),
+    // 8. Lemon tea dengan irisan lemon + centang
+    svg(bg('#FFF8D6') + kup(96, 56, .95, 'smile', C.lemon, { noCream: true }) + lemonSlice(56, 70, 18) + check(150, 150, 21)),
+    // 9. Dua gelas bersama + centang di tengah atas
+    svg(bg() + kup(64, 72, .74, 'happy', C.thai) + kup(136, 72, .74, 'happy', C.matcha) + check(100, 44, 22)),
+    // 10. Peach bermahkota + centang
+    svg(bg('#FFE7DC') + kup(96, 70, .88, 'open', C.peach, { noStraw: true }) + `<path d="M64 60 l10 -24 l12 16 l10 -22 l10 22 l12 -16 l10 24 z" fill="${GOLD}" ${SW}/><circle cx="96" cy="34" r="4" fill="${RED}"/>` + check(150, 152, 21))
   ];
 
-  /* ================= PENGELUARAN (10) ================= */
-  const wallet = (x, y, k) => `<rect x="${x - 46 * k}" y="${y - 30 * k}" width="${92 * k}" height="${64 * k}" rx="${14 * k}" fill="${TEA2}" ${SW}/><rect x="${x + 14 * k}" y="${y - 10 * k}" width="${40 * k}" height="${24 * k}" rx="${10 * k}" fill="${GOLD}" ${SW}/><circle cx="${x + 30 * k}" cy="${y + 2 * k}" r="${4 * k}" fill="${O}"/>`;
+  /* ================= PENGELUARAN (10): tanpa wajah, tanpa centang ================= */
+  const wallet = (x, y, k) => `<rect x="${x - 46 * k}" y="${y - 30 * k}" width="${92 * k}" height="${64 * k}" rx="${14 * k}" fill="${TEA2}" ${SW}/><path d="M${x - 46 * k} ${y - 12 * k} h${92 * k}" stroke="#C25508" stroke-width="5"/><rect x="${x + 14 * k}" y="${y - 6 * k}" width="${40 * k}" height="${24 * k}" rx="${10 * k}" fill="${GOLD}" ${SW}/><circle cx="${x + 30 * k}" cy="${y + 6 * k}" r="${4 * k}" fill="${O}"/>`;
   const coin = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${GOLD}" ${SW}/><text x="${x}" y="${y + r * .36}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${r}" fill="${BROWN}">Rp</text>`;
-  const iceCube = (x, y, s, mood) => `<rect x="${x - s}" y="${y - s}" width="${2 * s}" height="${2 * s}" rx="${s * .3}" fill="${ICE}" ${SW}/><path d="M${x - s * .6} ${y - s * .55} h${s * .5}" stroke="#fff" stroke-width="4" stroke-linecap="round"/>` + face(x, y - s * .05, s / 34, mood);
-  const milk = (x, y, k, mood) => `<path d="M${x - 26 * k} ${y - 20 * k} l${14 * k} ${-22 * k} h${24 * k} l${14 * k} ${22 * k} v${74 * k} h${-52 * k} z" fill="#fff" ${SW}/><rect x="${x - 26 * k}" y="${y + 8 * k}" width="${52 * k}" height="${22 * k}" fill="${BLUE}"/><path d="M${x - 26 * k} ${y - 20 * k} h${52 * k}" ${SW}/>` + face(x, y - 2 * k, .7 * k, mood);
+  const note = (x, y, w, h, rot) => `<g transform="rotate(${rot || 0} ${x + w / 2} ${y + h / 2})"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${LEAF}" ${SW}/><circle cx="${x + w / 2}" cy="${y + h / 2}" r="${h * .26}" fill="#C9F2B0" stroke="${O}" stroke-width="3"/></g>`;
+  const ice = (x, y, s) => `<rect x="${x - s}" y="${y - s}" width="${2 * s}" height="${2 * s}" rx="${s * .3}" fill="${ICE}" ${SW}/><path d="M${x - s * .55} ${y - s * .5} h${s * .45} M${x - s * .55} ${y - s * .2} h${s * .2}" stroke="#fff" stroke-width="4" stroke-linecap="round"/>`;
+  const milk = (x, y, k) => `<path d="M${x - 24 * k} ${y - 18 * k} l${12 * k} ${-20 * k} h${24 * k} l${12 * k} ${20 * k} v${70 * k} h${-48 * k} z" fill="#fff" ${SW}/><rect x="${x - 24 * k}" y="${y + 6 * k}" width="${48 * k}" height="${22 * k}" fill="${BLUE}"/><path d="M${x - 24 * k} ${y - 18 * k} h${48 * k}" ${SW}/><text x="${x}" y="${y + 23 * k}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${13 * k}" fill="#fff">SUSU</text>`;
+  const cheese = (x, y, k) => `<path d="M${x - 30 * k} ${y + 18 * k} l${60 * k} ${-36 * k} l${4 * k} ${36 * k} z" fill="${GOLD}" ${SW}/><circle cx="${x + 12 * k}" cy="${y + 6 * k}" r="${4 * k}" fill="#E5A800"/><circle cx="${x - 6 * k}" cy="${y + 12 * k}" r="${3 * k}" fill="#E5A800"/>`;
+  const sugar = (x, y, k) => `<path d="M${x - 24 * k} ${y - 28 * k} q${24 * k} ${-10 * k} ${48 * k} 0 l${4 * k} ${58 * k} q${-28 * k} ${8 * k} ${-56 * k} 0 z" fill="#fff" ${SW}/><text x="${x}" y="${y + 8 * k}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${12 * k}" fill="${BROWN}">GULA</text>`;
   const expense = [
-    // 1. Dompet senyum + koin
-    svg(bg() + coin(48, 56, 16) + coin(150, 46, 13) + wallet(100, 118, 1.15) + face(76, 118, .8, 'happy')),
-    // 2. Tas belanja (es, susu)
-    svg(bg() + `<path d="M76 70 q0 -30 24 -30 q24 0 24 30" fill="none" ${SW}/><path d="M48 70 h104 l-10 104 h-84 z" fill="${TEA}" ${SW}/>` + iceCube(84, 56, 16, 'smile') + face(100, 118, 1, 'happy') + check(152, 156, 16)),
-    // 3. Struk belanja dengan centang
-    svg(bg() + `<path d="M58 30 h84 v138 l-10 -8 l-10 8 l-10 -8 l-10 8 l-10 -8 l-10 8 l-10 -8 l-14 8 z" fill="#fff" ${SW}/><path d="M74 104 h52 M74 120 h40 M74 136 h48" ${SW}/>` + face(100, 66, .8, 'smile') + check(146, 140, 20)),
-    // 4. Troli belanja gembira
-    svg(bg() + `<path d="M26 56 h22 l16 74 h84 l14 -56 h-104" fill="none" ${SW}/><path d="M56 74 h104 l-12 50 h-80 z" fill="${TEA}" ${SW}/><circle cx="76" cy="152" r="10" fill="${O}"/><circle cx="138" cy="152" r="10" fill="${O}"/>` + face(108, 98, .8, 'open') + star(162, 40, 11)),
-    // 5. Celengan babi + koin
-    svg(bg() + coin(100, 36, 15) + `<ellipse cx="100" cy="122" rx="58" ry="44" fill="${PINK}" ${SW}/><ellipse cx="150" cy="122" rx="12" ry="15" fill="#FFC0C5" ${SW}/><path d="M66 86 l-6 -18 l20 10 M126 82 l10 -16 l6 20" fill="${PINK}" ${SW}/><rect x="90" y="78" width="22" height="6" rx="3" fill="${O}"/><path d="M62 160 v14 M84 164 v12 M118 164 v12 M140 160 v14" ${SW}/>` + face(96, 116, .85, 'happy')),
+    // 1. Dompet + koin
+    svg(bg() + coin(52, 60, 17) + coin(150, 50, 13) + coin(160, 150, 11) + wallet(100, 120, 1.2)),
+    // 2. Tas belanja berisi es & susu
+    svg(bg() + ice(80, 66, 18) + milk(120, 66, .8) + `<path d="M76 92 q0 -26 24 -26 q24 0 24 26" fill="none" ${SW}/><path d="M46 92 h108 l-10 84 h-88 z" fill="${TEA}" ${SW}/><path d="M60 120 h80" stroke="${TEA2}" stroke-width="6" stroke-linecap="round"/>`),
+    // 3. Struk belanja
+    svg(bg() + `<path d="M56 28 h88 v142 l-11 -8 l-11 8 l-11 -8 l-11 8 l-11 -8 l-11 8 l-11 -8 l-11 8 z" fill="#fff" ${SW}/><path d="M72 56 h56 M72 76 h40 M72 94 h52 M72 112 h36" ${SW}/><path d="M72 136 h56" stroke="${TEA2}" stroke-width="6" stroke-linecap="round"/><text x="100" y="158" text-anchor="middle" font-family="Arial" font-weight="900" font-size="15" fill="${BROWN}">TOTAL Rp</text>`),
+    // 4. Troli belanja berisi barang
+    svg(bg() + ice(82, 76, 13) + milk(116, 76, .6) + `<path d="M24 56 h22 l16 76 h86 l14 -58 h-104" fill="none" ${SW}/><path d="M54 86 h108 l-12 46 h-84 z" fill="${TEA}" ${SW}/><circle cx="76" cy="154" r="10" fill="${O}"/><circle cx="140" cy="154" r="10" fill="${O}"/>`),
+    // 5. Tumpukan koin + uang kertas
+    svg(bg() + note(38, 54, 92, 50, -12) + note(70, 72, 92, 50, 8) + [0, 1, 2, 3].map(i => `<ellipse cx="74" cy="${160 - i * 14}" rx="30" ry="10" fill="${GOLD}" ${SW}/>`).join('') + coin(146, 150, 18)),
     // 6. Buku catatan + pensil
-    svg(bg() + `<rect x="50" y="42" width="92" height="124" rx="10" fill="#fff" ${SW}/><path d="M50 62 h92" ${SW}/><path d="M66 120 h58 M66 138 h44" ${SW}/>` + face(96, 92, .8, 'smile') + `<rect x="136" y="70" width="16" height="84" rx="4" fill="${GOLD}" ${SW} transform="rotate(24 144 112)"/><path d="M154 148 l-4 18 l-10 -12 z" fill="${CREAM}" ${SW}/>`),
+    svg(bg() + `<rect x="48" y="38" width="96" height="128" rx="10" fill="#fff" ${SW}/><path d="M48 60 h96" ${SW}/>${[0, 1, 2, 3, 4].map(i => `<circle cx="60" cy="${50 + i * 0}" r="0"/>`).join('')}<path d="M64 82 h60 M64 102 h48 M64 122 h56 M64 142 h36" ${SW}/>` + `<rect x="138" y="66" width="16" height="88" rx="4" fill="${GOLD}" ${SW} transform="rotate(24 146 110)"/><path d="M156 148 l-4 18 l-10 -12 z" fill="${CREAM}" ${SW}/>`),
     // 7. Keranjang (es, susu, keju, gula)
-    svg(bg() + iceCube(62, 74, 15, 'smile') + `<path d="M96 52 h24 l10 16 v30 h-44 v-30 z" fill="#fff" ${SW}/><rect x="86" y="80" width="44" height="12" fill="${BLUE}"/>` + `<path d="M136 92 l34 -26 l6 34 z" fill="${GOLD}" ${SW}/><circle cx="160" cy="88" r="4" fill="${TEA2}"/>` + `<path d="M30 100 h140 l-14 70 h-112 z" fill="${TEA}" ${SW}/><path d="M50 114 h100 M58 136 h84 M66 156 h68" stroke="${TEA2}" stroke-width="5" stroke-linecap="round"/>` + face(100, 128, .8, 'happy')),
-    // 8. Kalkulator tersenyum
-    svg(bg() + `<rect x="56" y="30" width="88" height="140" rx="16" fill="${TEA2}" ${SW}/><rect x="70" y="44" width="60" height="30" rx="6" fill="#E8FFE8" ${SW}/>` + face(100, 59, .55, 'smile') + [0, 1, 2].map(r => [0, 1, 2].map(c => `<rect x="${72 + c * 20}" y="${88 + r * 24}" width="14" height="16" rx="4" fill="${c === 2 && r === 2 ? GOLD : CREAM}" ${SW}/>`).join('')).join('')),
-    // 9. Es batu & susu tos
-    svg(bg() + iceCube(64, 118, 30, 'happy') + milk(140, 110, 1, 'happy') + star(102, 54, 13) + `<path d="M92 42 l-6 -10 M112 42 l6 -10" ${SW}/>`),
-    // 10. Amplop uang + centang
-    svg(bg() + `<rect x="34" y="66" width="132" height="90" rx="12" fill="#fff" ${SW}/><path d="M34 74 l66 44 l66 -44" fill="none" ${SW}/><rect x="60" y="48" width="80" height="40" rx="6" fill="${LEAF}" ${SW} transform="rotate(-8 100 68)"/>` + coin(100, 66, 12) + face(100, 134, .7, 'smile') + check(160, 150, 18))
+    svg(bg() + ice(58, 76, 15) + milk(96, 74, .62) + sugar(132, 80, .62) + cheese(160, 88, .55) + `<path d="M28 102 h144 l-14 70 h-116 z" fill="${TEA}" ${SW}/><path d="M48 118 h104 M56 138 h88 M64 158 h72" stroke="${TEA2}" stroke-width="5" stroke-linecap="round"/>`),
+    // 8. Kalkulator
+    svg(bg() + `<rect x="56" y="28" width="88" height="144" rx="16" fill="${TEA2}" ${SW}/><rect x="70" y="42" width="60" height="32" rx="6" fill="#E8FFE8" ${SW}/><text x="124" y="66" text-anchor="end" font-family="Arial" font-weight="900" font-size="16" fill="${O}">Rp</text>` + [0, 1, 2].map(r => [0, 1, 2].map(c => `<rect x="${72 + c * 20}" y="${88 + r * 26}" width="14" height="18" rx="4" fill="${c === 2 && r === 2 ? GOLD : CREAM}" ${SW}/>`).join('')).join('')),
+    // 9. Bahan belanja: es, susu, keju, gula
+    svg(bg() + milk(72, 98, 1) + sugar(134, 104, .95) + ice(58, 150, 17) + cheese(132, 152, .8) + star(170, 50, 10)),
+    // 10. Amplop uang
+    svg(bg() + note(52, 40, 96, 52, -8) + `<rect x="32" y="70" width="136" height="92" rx="12" fill="#fff" ${SW}/><path d="M32 78 l68 46 l68 -46" fill="none" ${SW}/>` + coin(100, 132, 16))
   ];
 
   window.TT_CARTOONS = { order, expense };
