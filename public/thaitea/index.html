@@ -460,36 +460,56 @@
     .room-bottom { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 2px; }
     .room-last { font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-unread { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
-    .chat-view { position: fixed; inset: 0; z-index: 1000000; background: #F7EFE6; display: flex; flex-direction: column; height: 100%; }
-    .chat-head { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 10px 4px; background: rgba(255, 255, 255, .92); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: .5px solid var(--sep); flex: none; }
-    .chat-back { width: 44px; height: 44px; color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
-    .chat-head-name { font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .chat-head-status { font-size: 13px; color: var(--text2); }
-    .chat-head-status.on { color: var(--green); font-weight: 700; }
-    .chat-msgs { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 10px 14px; display: flex; flex-direction: column; gap: 4px; }
-    .msg-day { align-self: center; background: rgba(255, 255, 255, .85); color: var(--text2); font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 10px; margin: 10px 0 6px; }
-    .msg { display: flex; gap: 8px; align-items: flex-end; max-width: 86%; }
-    .msg.me { align-self: flex-end; flex-direction: row-reverse; }
-    .msg .ava { width: 30px; height: 30px; font-size: 13px; }
-    .msg.me .ava, .msg.cont .ava { visibility: hidden; }
-    .bubble { padding: 9px 13px 7px; border-radius: 20px; font-size: 17px; line-height: 1.35; background: #fff; color: var(--text); box-shadow: 0 1px 1.5px rgba(0, 0, 0, .08); word-wrap: break-word; overflow-wrap: anywhere; min-width: 64px; }
-    .msg:not(.me) .bubble { border-bottom-left-radius: 6px; }
-    .msg.me .bubble { background: linear-gradient(160deg, #FF9F43, #EA6A0A); color: #fff; border-bottom-right-radius: 6px; }
-    .bubble .who { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
-    .bubble .t { font-size: 11.5px; opacity: .7; text-align: right; margin-top: 3px; }
-    .bubble img { display: block; max-width: 230px; max-height: 300px; width: 100%; border-radius: 14px; margin: 2px 0; cursor: zoom-in; background: #eee; }
-    .vn { display: flex; align-items: center; gap: 10px; min-width: 180px; }
-    .vn button { width: 42px; height: 42px; border-radius: 50%; background: rgba(0, 0, 0, .08); display: flex; align-items: center; justify-content: center; flex: none; }
-    .msg.me .vn button { background: rgba(255, 255, 255, .25); }
-    .vn .bar { flex: 1; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; }
-    .msg.me .vn .bar { background: rgba(255, 255, 255, .35); }
-    .vn .bar i { display: block; height: 100%; width: 0; background: currentColor; }
-    .vn .d { font-size: 13px; font-weight: 700; min-width: 34px; }
-    .chat-compose { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px); background: rgba(255, 255, 255, .95); border-top: .5px solid var(--sep); flex: none; }
-    .chat-compose textarea { flex: 1; min-height: 46px; max-height: 120px; resize: none; border: 1.5px solid var(--sep); border-radius: 23px; padding: 11px 16px; font-size: 17px; line-height: 1.3; outline: none; background: #fff; font-family: inherit; }
-    .chat-compose textarea:focus { border-color: var(--accent); }
-    .cc-btn { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); flex: none; cursor: pointer; }
-    .cc-round { width: 46px; height: 46px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+    .room-chev { color: #C7C7CC; margin-left: 4px; display: inline-flex; }
+    /* Chat bergaya iMessage (warna oranye thai tea) */
+    .chat-view { position: fixed; inset: 0; z-index: 1000000; background: #fff; display: flex; flex-direction: column; height: 100%; }
+    .chat-head { display: grid; grid-template-columns: 72px 1fr 72px; align-items: center; padding: calc(env(safe-area-inset-top, 0px) + 6px) 6px 8px; background: rgba(247, 247, 247, .94); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid rgba(60, 60, 67, .22); flex: none; }
+    .chat-back { height: 44px; color: var(--accent); display: flex; align-items: center; gap: 0; font-size: 17px; font-weight: 500; padding-left: 2px; }
+    .chat-head-center { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+    .chat-head-center .ava { width: 52px; height: 52px; font-size: 21px; }
+    .chat-head-name { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-head-status { font-size: 12px; color: #8E8E93; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-head-status.on { color: var(--green); font-weight: 600; }
+    .chat-msgs { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 14px 12px; display: flex; flex-direction: column; background: #fff; }
+    .im-empty { align-self: center; color: #8E8E93; font-size: 15px; margin-top: 30px; }
+    .im-time { align-self: center; font-size: 12.5px; color: #8E8E93; margin: 16px 0 6px; }
+    .im-time b { font-weight: 600; }
+    .im-row { display: flex; align-items: flex-end; gap: 7px; margin-top: 2px; }
+    .im-row.start { margin-top: 9px; }
+    .im-row.me { justify-content: flex-end; }
+    .im-col { display: flex; flex-direction: column; max-width: 76%; min-width: 0; }
+    .im-row.me .im-col { align-items: flex-end; }
+    .im-row.them .im-col { align-items: flex-start; }
+    .im-name { font-size: 12.5px; color: #8E8E93; margin: 0 0 3px 13px; }
+    .im-ava-slot { width: 30px; flex: none; position: relative; z-index: 2; }
+    .im-ava-slot .ava { width: 30px; height: 30px; font-size: 13px; }
+    .im-ava-slot .ava .on-dot { width: 10px; height: 10px; border-width: 2px; }
+    .im-bubble { position: relative; padding: 8px 14px 8px; border-radius: 19px; font-size: 17px; line-height: 1.32; overflow-wrap: anywhere; max-width: 100%; }
+    .them .im-bubble { background: #E9E9EB; color: #000; }
+    .me .im-bubble { background: linear-gradient(180deg, #FF9F43, #EA6A0A); color: #fff; }
+    .im-bubble.tail::before, .im-bubble.tail::after { content: ''; position: absolute; bottom: 0; height: 20px; }
+    .me .im-bubble.tail::before { right: -7px; width: 20px; background: #EA6A0A; border-bottom-left-radius: 16px 14px; }
+    .me .im-bubble.tail::after { right: -26px; width: 26px; background: #fff; border-bottom-left-radius: 10px; }
+    .them .im-bubble.tail::before { left: -7px; width: 20px; background: #E9E9EB; border-bottom-right-radius: 16px 14px; }
+    .them .im-bubble.tail::after { left: -26px; width: 26px; background: #fff; border-bottom-right-radius: 10px; }
+    .im-bubble.img { padding: 0; background: none !important; }
+    .im-bubble.img img { display: block; max-width: 240px; max-height: 320px; width: 100%; border-radius: 18px; cursor: zoom-in; background: #eee; }
+    .im-status { align-self: flex-end; font-size: 12px; color: #8E8E93; margin: 3px 4px 0; font-weight: 500; }
+    .vn { display: flex; align-items: center; gap: 10px; min-width: 190px; }
+    .vn button { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
+    .them .vn button { background: #fff; color: var(--accent); }
+    .me .vn button { background: rgba(255, 255, 255, .95); color: var(--accent); }
+    .vn .wave { flex: 1; display: flex; align-items: center; gap: 2px; height: 26px; position: relative; }
+    .vn .wave span { flex: 1; border-radius: 2px; background: currentColor; opacity: .35; }
+    .vn .wave span.on { opacity: 1; }
+    .vn .d { font-size: 13px; font-weight: 600; min-width: 34px; text-align: right; }
+    .chat-compose { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px); background: #fff; flex: none; }
+    .cc-plus { width: 40px; height: 40px; border-radius: 50%; background: #E9E9EB; color: #6C6C70; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer; margin-bottom: 2px; }
+    .cc-pill { flex: 1; display: flex; align-items: flex-end; border: 1px solid #C7C7CC; border-radius: 22px; padding: 3px 4px 3px 15px; min-height: 44px; background: #fff; min-width: 0; }
+    .cc-pill textarea { flex: 1; border: 0; outline: 0; resize: none; font-size: 17px; line-height: 1.3; padding: 8px 0; max-height: 120px; background: transparent; font-family: inherit; min-width: 0; }
+    .cc-send { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; margin: 1px 0; }
+    .cc-mic { width: 36px; height: 36px; border-radius: 50%; color: #8E8E93; display: flex; align-items: center; justify-content: center; flex: none; }
+    .cc-mic:active, .cc-plus:active, .cc-send:active { opacity: .6; }
     .chat-rec { display: flex; align-items: center; gap: 10px; padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px); background: #fff; border-top: .5px solid var(--sep); font-size: 17px; }
     .chat-rec > span:nth-child(2) { flex: 1; }
     .rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #FF3B30; animation: blink 1s infinite; }
@@ -1444,15 +1464,16 @@
       </div>
     </div>
 
-    <!-- CHAT: layar percakapan -->
+    <!-- CHAT: layar percakapan (gaya iMessage) -->
     <div id="chatView" class="chat-view hidden">
       <div class="chat-head">
-        <button type="button" class="chat-back" onclick="tutupChat()" aria-label="Kembali"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span id="chatHeadAva" class="ava"></span>
-        <div style="min-width:0;flex:1">
+        <button type="button" class="chat-back" onclick="tutupChat()" aria-label="Kembali"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="chatBackBadge"></span></button>
+        <div class="chat-head-center">
+          <span id="chatHeadAva" class="ava"></span>
           <div id="chatHeadName" class="chat-head-name">Chat Semua</div>
           <div id="chatHeadStatus" class="chat-head-status"></div>
         </div>
+        <span></span>
       </div>
       <div id="chatMsgs" class="chat-msgs"></div>
       <div id="chatRecBar" class="chat-rec hidden">
@@ -1461,13 +1482,15 @@
         <button type="button" class="btn btn-primary btn-sm" onclick="selesaiRekam()">Kirim</button>
       </div>
       <div id="chatCompose" class="chat-compose">
-        <label class="cc-btn" aria-label="Kirim foto" title="Kirim foto">
-          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M9 4l-1.8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4H9zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+        <label class="cc-plus" aria-label="Kirim foto" title="Kirim foto">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 4l-1.8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4H9zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
           <input type="file" accept="image/*" onchange="kirimFoto(this)" hidden>
         </label>
-        <textarea id="chatInput" rows="1" placeholder="Tulis pesan…" oninput="chatInputBerubah()"></textarea>
-        <button type="button" id="chatSendBtn" class="cc-round cc-send hidden" onclick="kirimTeks()" aria-label="Kirim"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="#fff" d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg></button>
-        <button type="button" id="chatMicBtn" class="cc-round" onclick="mulaiRekam()" aria-label="Pesan suara"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="#fff" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12h-2z"/></svg></button>
+        <div class="cc-pill">
+          <textarea id="chatInput" rows="1" placeholder="Pesan" oninput="chatInputBerubah()"></textarea>
+          <button type="button" id="chatSendBtn" class="cc-send hidden" onclick="kirimTeks()" aria-label="Kirim"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" id="chatMicBtn" class="cc-mic" onclick="mulaiRekam()" aria-label="Pesan suara"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12h-2z"/></svg></button>
+        </div>
       </div>
     </div>
     <div id="imgViewer" class="img-viewer hidden" onclick="this.classList.add('hidden')"><img id="imgViewerImg" alt="Foto"></div>
@@ -2422,7 +2445,7 @@
       const onlineCount = Object.keys(usersData).filter(isOnline).length;
       rows.push({ room: ROOM_ALL, ts: Infinity, html: `<button type="button" class="room-row" onclick="bukaChat('${ROOM_ALL}')">
           <span class="ava ava-logo">${chatLogoSvg()}</span>
-          <div class="room-main"><div class="room-top"><span class="room-name">Chat Semua</span><span class="room-time">${lastAll ? jamWIB(lastAll.ts) : ''}</span></div>
+          <div class="room-main"><div class="room-top"><span class="room-name">Chat Semua</span><span class="room-time">${lastAll ? jamWIB(lastAll.ts) : ''}<span class="room-chev">›</span></span></div>
           <div class="room-bottom"><span class="room-last">${lastAll ? esc(lastAll.name + ': ' + previewPesan(lastAll)) : esc(onlineCount + ' orang online')}</span>${unreadCount(ROOM_ALL) ? `<span class="room-unread">${unreadCount(ROOM_ALL)}</span>` : ''}</div></div></button>` });
       Object.entries(usersData).filter(([k, u]) => k !== myKey && u && u.name).forEach(([k, u]) => {
         const room = roomIdWith(k);
@@ -2431,7 +2454,7 @@
         const un = unreadCount(room);
         rows.push({ room, ts: last ? last.ts : 0, html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
           ${avaHtml(k, u.name)}
-          <div class="room-main"><div class="room-top"><span class="room-name">${esc(u.name)}</span><span class="room-time">${last ? jamWIB(last.ts) : ''}</span></div>
+          <div class="room-main"><div class="room-top"><span class="room-name">${esc(u.name)}</span><span class="room-time">${last ? jamWIB(last.ts) : ''}<span class="room-chev">›</span></span></div>
           <div class="room-bottom"><span class="room-last" style="${!last && isOnline(k) ? 'color:var(--green);font-weight:700' : ''}">${last ? esc((last.from === myKey ? 'Kamu: ' : '') + previewPesan(last)) : esc(statusText(k))}</span>${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
       });
       rows.sort((a, b) => b.ts - a.ts);
@@ -2441,46 +2464,79 @@
       const nameEl = document.getElementById('chatHeadName'), stEl = document.getElementById('chatHeadStatus'), avaEl = document.getElementById('chatHeadAva');
       if (!currentRoom) return;
       if (currentRoom === ROOM_ALL) {
-        nameEl.textContent = 'Chat Semua';
+        nameEl.innerHTML = 'Chat Semua <span class="room-chev" style="margin:0">›</span>';
         const on = Object.entries(usersData).filter(([k]) => isOnline(k)).map(([, u]) => u.name);
         stEl.textContent = on.length ? `Online: ${on.join(', ')}` : 'Belum ada yang online';
         stEl.classList.toggle('on', on.length > 0);
         avaEl.outerHTML = `<span id="chatHeadAva" class="ava ava-logo">${chatLogoSvg()}</span>`;
       } else {
         const k = otherOfRoom(currentRoom), u = usersData[k] || {};
-        nameEl.textContent = u.name || k;
+        nameEl.innerHTML = esc(u.name || k) + ' <span class="room-chev" style="margin:0">›</span>';
         stEl.textContent = statusText(k);
         stEl.classList.toggle('on', isOnline(k));
         avaEl.outerHTML = avaHtml(k, u.name).replace('<span class="ava ', '<span id="chatHeadAva" class="ava ');
       }
     }
+    function labelHari(day) {
+      const today = hariIniWIB();
+      const d = new Date(today + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 1);
+      if (day === today) return 'Hari Ini';
+      if (day === d.toISOString().slice(0, 10)) return 'Kemarin';
+      return fmtTgl(day);
+    }
+    function gelombang(seed) {
+      let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return Array.from({ length: 26 }, () => { h = (h * 1103515245 + 12345) >>> 0; return 25 + (h % 75); });
+    }
     function renderMessages() {
       const box = document.getElementById('chatMsgs');
       const msgs = chatData[currentRoom] || [];
       const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
-      let html = '', lastDay = null, prevFrom = null;
-      if (!msgs.length) html = `<div class="msg-day">Belum ada pesan. Sapa duluan 👋</div>`;
-      msgs.forEach(m => {
-        const day = tglWIB(m.ts);
-        if (day !== lastDay) { html += `<div class="msg-day">${day === hariIniWIB() ? 'Hari Ini' : fmtTgl(day)}</div>`; lastDay = day; prevFrom = null; }
+      const grup = currentRoom === ROOM_ALL;
+      const GAP_JAM = 15 * 60000, GAP_KLASTER = 3 * 60000;
+      let html = '';
+      if (!msgs.length) html = `<div class="im-empty">Belum ada pesan. Sapa duluan 👋</div>`;
+      msgs.forEach((m, i) => {
+        const prev = msgs[i - 1], next = msgs[i + 1];
+        const tampilJam = !prev || m.ts - prev.ts > GAP_JAM || tglWIB(prev.ts) !== tglWIB(m.ts);
+        if (tampilJam) html += `<div class="im-time"><b>${labelHari(tglWIB(m.ts))}</b> ${jamWIB(m.ts)}</div>`;
+        const nextJam = next && (next.ts - m.ts > GAP_JAM || tglWIB(next.ts) !== tglWIB(m.ts));
+        const awal = tampilJam || prev.from !== m.from || m.ts - prev.ts > GAP_KLASTER;
+        const akhir = !next || nextJam || next.from !== m.from || next.ts - m.ts > GAP_KLASTER;
         const me = m.from === myKey;
-        const cont = prevFrom === m.from;
-        let body;
-        if (m.type === 'image') body = `<img src="${esc(m.url)}" alt="Foto" loading="lazy" onclick="lihatFoto(this.src)">`;
-        else if (m.type === 'audio') body = `<div class="vn" data-src="${esc(m.url)}"><button type="button" onclick="putarVN(this)" aria-label="Putar pesan suara">${ICON_PLAY}</button><div class="bar"><i></i></div><span class="d">${fmtDur(m.dur)}</span></div>`;
+        let body, cls = '';
+        if (m.type === 'image') { body = `<img src="${esc(m.url)}" alt="Foto" onload="gulirChatJikaDiBawah()" onclick="lihatFoto(this.src)">`; cls = 'img'; }
+        else if (m.type === 'audio') body = `<div class="vn" data-src="${esc(m.url)}"><button type="button" onclick="putarVN(this)" aria-label="Putar pesan suara">${ICON_PLAY}</button><div class="wave">${gelombang(m.id).map(v => `<span style="height:${v}%"></span>`).join('')}</div><span class="d">${fmtDur(m.dur)}</span></div>`;
         else body = esc(m.text || '').replace(/\n/g, '<br>');
-        html += `<div class="msg ${me ? 'me' : ''} ${cont ? 'cont' : ''}">${me ? '' : avaHtml(m.from, m.name)}
-          <div class="bubble">${!me && currentRoom === ROOM_ALL && !cont ? `<div class="who" style="color:${warnaNama(m.name)}">${esc(m.name)}</div>` : ''}${body}<div class="t">${jamWIB(m.ts)}</div></div></div>`;
-        prevFrom = m.from;
+        if (akhir && cls !== 'img') cls += ' tail';
+        const slot = (!me && grup) ? `<span class="im-ava-slot">${akhir ? avaHtml(m.from, m.name) : ''}</span>` : '';
+        const nama = (!me && grup && awal) ? `<div class="im-name">${esc(m.name)}</div>` : '';
+        html += `<div class="im-row ${me ? 'me' : 'them'} ${awal ? 'start' : ''}">${slot}<div class="im-col">${nama}<div class="im-bubble ${cls}">${body}</div></div></div>`;
       });
+      const last = msgs[msgs.length - 1];
+      if (last && last.from === myKey) html += `<div class="im-status">Terkirim · ${jamWIB(last.ts)}</div>`;
       box.innerHTML = html;
-      if (nearBottom || box.dataset.first !== currentRoom) { box.scrollTop = box.scrollHeight; box.dataset.first = currentRoom; }
+      if (nearBottom || box.dataset.first !== currentRoom) {
+        box.dataset.stick = '1';
+        box.scrollTop = box.scrollHeight;
+        requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+        box.dataset.first = currentRoom;
+      }
+    }
+    // foto selesai dimuat → tetap di pesan paling bawah kalau sebelumnya di bawah
+    function gulirChatJikaDiBawah() {
+      const box = document.getElementById('chatMsgs');
+      if (box.dataset.stick === '1') box.scrollTop = box.scrollHeight;
     }
     function bukaChat(room) {
       if (!myKey) { openWhoSheet(); return; }
       currentRoom = room;
       document.getElementById('chatView').classList.remove('hidden');
-      document.getElementById('chatMsgs').dataset.first = '';
+      const cm = document.getElementById('chatMsgs');
+      cm.dataset.first = '';
+      cm.onscroll = () => { cm.dataset.stick = (cm.scrollHeight - cm.scrollTop - cm.clientHeight < 80) ? '1' : '0'; };
+      document.getElementById('chatInput').value = '';
+      chatInputBerubah();
       renderChatHead();
       renderMessages();
       tandaiDibaca(room);
@@ -2585,9 +2641,10 @@
       if (vnAudio) { vnAudio.pause(); if (vnBtn) vnBtn.innerHTML = ICON_PLAY; }
       vnAudio = new Audio(wrap.dataset.src);
       vnBtn = btn;
-      const bar = wrap.querySelector('.bar i');
-      vnAudio.ontimeupdate = () => { if (vnAudio.duration) bar.style.width = (vnAudio.currentTime / vnAudio.duration * 100) + '%'; };
-      vnAudio.onended = () => { btn.innerHTML = ICON_PLAY; bar.style.width = '0'; };
+      const bars = [...wrap.querySelectorAll('.wave span')];
+      const tandai = (r) => bars.forEach((b, i) => b.classList.toggle('on', i / bars.length < r));
+      vnAudio.ontimeupdate = () => { if (vnAudio.duration && isFinite(vnAudio.duration)) tandai(vnAudio.currentTime / vnAudio.duration); };
+      vnAudio.onended = () => { btn.innerHTML = ICON_PLAY; tandai(0); };
       vnAudio.play().then(() => { btn.innerHTML = ICON_PAUSE; }).catch(() => triggerToast('Pesan suara tidak bisa diputar', true));
     }
     // Perbarui teks "terakhir aktif" setiap 30 detik
