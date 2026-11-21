@@ -13,6 +13,7 @@ public/                 ← isi website yang di-deploy
   manifest.webmanifest, icons/  ← PWA (bisa "Tambah ke Layar Utama")
 public/games/           ← Nexo Games (game properti + chat bareng teman)
 public/thaitea/         ← Kasir Thai Tea (web terpisah, Firebase project sendiri: kasir-thai-tea). Buka di /thaitea/. Notifikasi lewat worker/thaitea.js (/api/thaitea/*, KV tt_subs & tt_outbox)
+public/pesan/           ← Pesan Online Thai Tea untuk CUSTOMER (link /pesan/). Bayar QRIS, tinggal jemput. Tidak memakai Firebase langsung, semua lewat worker/pesan.js (/api/pesan/*). Pesanan muncul di kasir menu "Online"
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
 wrangler.jsonc          ← konfigurasi Cloudflare
@@ -270,3 +271,14 @@ Paket gratis: 100.000 request/hari, cron, KV 1.000 tulis & 100.000 baca/hari. Pe
 
 ### Tetap di Blogspot (tanpa push)
 Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama seperti sebelumnya. Semua fitur jalan kecuali Push saat website tertutup.
+
+
+## Pesan Online Thai Tea (customer)
+
+- **Link customer:** `https://<domain>/pesan/` (berbeda dari web kasir `/thaitea/`).
+- **Alur:** kenalan (nama panggilan + jenis kelamin) → pilih menu & topping → isi *atas nama* + *jam jemput* (Sekarang / pilih jam, 12.00–23.40) → QRIS dengan nominal terisi otomatis → customer tekan **Saya Sudah Bayar** → kasir mencocokkan di ShopeePay Partner → **Pembayaran Diterima** → **Siap Dijemput** → **Selesai**.
+- **Kasir:** menu **Online** di tab bawah: tombol Buka/Tutup, alarm keras berulang sampai disentuh, riwayat, topping habis, dan ganti foto menu. Pesanan yang dibayar otomatis masuk Laporan/Riwayat (metode QRIS) dan memotong stok.
+- **QRIS:** QRIS statis ShopeePay Partner diubah jadi QRIS bernominal oleh `worker/pesan.js` (`qrisWithAmount`). Pembayaran **dicek manual** oleh kasir (ShopeePay Partner tidak mengirim konfirmasi otomatis).
+- **Data Firebase kasir:** `thaitea/online_settings`, `thaitea/online_orders`, `thaitea/online_customers`.
+- **Variabel opsional Worker:** `TT_FIREBASE_URL`, `TT_FIREBASE_SECRET` (wajib kalau rules Firebase kasir dikunci), `TT_QRIS`.
+- **Foto menu sementara** ada di `public/pesan/img/` (dipotong dari gambar daftar menu). Foto asli diunggah lewat kasir → Online → Foto menu.

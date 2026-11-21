@@ -693,6 +693,48 @@
     .toast i.ok { color: #30D158; }
     .toast i.err { color: #FF6961; }
 
+    /* ---------- PESANAN ONLINE ---------- */
+    .tabbar-inner .tab-btn { font-size: 11.5px; padding: 6px 0; min-width: 0; }
+    .tabbar-inner .tab-btn i { font-size: 21px; }
+    .on-store { box-shadow: inset 0 0 0 2px var(--red-soft), var(--shadow); }
+    .on-store.open { box-shadow: inset 0 0 0 2px #34C759, var(--shadow); }
+    .on-sound { margin-top: 12px; background: var(--amber-soft); }
+    .on-link { font-size: 15px; font-weight: 700; color: var(--accent-text); margin-top: 6px; word-break: break-all; }
+    .on-group { margin-top: 18px; }
+    .on-group-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--text2); margin: 0 6px 8px; display: flex; align-items: center; gap: 8px; }
+    .on-group-title .count { background: var(--fill); color: var(--text); border-radius: 20px; padding: 1px 9px; font-size: 13px; }
+    .on-card { background: #fff; border-radius: 18px; padding: 14px; box-shadow: var(--shadow); }
+    .on-card + .on-card { margin-top: 10px; }
+    .on-card.cek { box-shadow: inset 0 0 0 3px var(--red), var(--shadow); }
+    .on-card.proses { box-shadow: inset 0 0 0 2px var(--accent), var(--shadow); }
+    .on-card.siap { box-shadow: inset 0 0 0 2px #34C759, var(--shadow); }
+    .on-card.muted { opacity: .75; }
+    .on-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .on-no { font-size: 13px; font-weight: 700; color: var(--text2); }
+    .on-name { font-size: 20px; font-weight: 800; line-height: 1.2; }
+    .on-total { font-size: 20px; font-weight: 800; color: var(--accent-text); white-space: nowrap; }
+    .on-items { font-size: 16px; margin: 8px 0; line-height: 1.45; }
+    .on-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+    .on-check { background: #FFF3F2; border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 15px; }
+    .on-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .on-actions .btn { flex: 1; }
+    .on-actions .btn.grow { flex: 2; }
+    .on-empty { text-align: center; color: var(--text2); padding: 26px 10px; }
+    .on-tops .toggle-row { min-height: 48px; border-bottom: .5px solid var(--sep); }
+    .on-photo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .on-photo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; text-align: center; cursor: pointer; line-height: 1.2; }
+    .on-photo img { width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: #fff; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--sep); }
+    .on-photo input { display: none; }
+    .on-photo .on-reset { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .on-alarm { position: fixed; inset: 0; z-index: 1000003; background: rgba(224, 53, 43, .94); display: flex; align-items: center; justify-content: center; padding: 24px; animation: onFlash 1s infinite; }
+    @keyframes onFlash { 50% { background: rgba(234, 106, 10, .94); } }
+    .on-alarm-box { width: 100%; max-width: 420px; text-align: center; color: #fff; }
+    .on-alarm-bell { font-size: 86px; line-height: 1; animation: onRing .5s infinite; }
+    @keyframes onRing { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+    .on-alarm-title { font-size: 30px; font-weight: 900; margin: 14px 0 8px; letter-spacing: -.01em; }
+    .on-alarm-text { font-size: 19px; font-weight: 600; white-space: pre-line; }
+    .on-alarm-btn { background: #fff; color: var(--red); margin-top: 22px; font-weight: 900; }
+
     .file-pick { display: flex; align-items: center; gap: 10px; background: var(--bg); border-radius: 13px; padding: 8px 8px 8px 14px; min-height: 56px; }
     .file-pick span { flex: 1; font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .file-pick input { display: none; }
@@ -745,7 +787,6 @@
               <button onclick="filterMenu('thai-premium', event)" class="chip cat-pill">Premium</button>
               <button onclick="filterMenu('thai-regular', event)" class="chip cat-pill">Original</button>
               <button onclick="filterMenu('tea', event)" class="chip cat-pill">Tea Buah</button>
-              <button onclick="filterMenu('special', event)" class="chip cat-pill">Es Teler</button>
             </div>
             <div id="menuCardsGrid" class="menu-grid"></div>
           </div>
@@ -1047,6 +1088,72 @@
       </section>
 
       <!-- ================= CATATAN AKTIVITAS (tombol kecil di kanan atas) ================= -->
+      <!-- ================= TAB: PESANAN ONLINE (dari halaman customer /pesan/) ================= -->
+      <section id="tab-online" class="tab-content hidden">
+        <h1 class="large-title">Pesanan Online</h1>
+        <p class="page-sub">Pesanan customer dari link <b>/pesan</b>. Cocokkan pembayaran QRIS di ShopeePay Partner.</p>
+
+        <div class="split">
+          <div>
+            <div class="card on-store" id="onStoreCard">
+              <label class="toggle-row">
+                <div>
+                  <div class="toggle-title" id="onOpenTitle">Pesanan online: TUTUP</div>
+                  <div class="toggle-desc" id="onOpenDesc">Customer tidak bisa membuka menu pesan.</div>
+                </div>
+                <span class="switch"><input type="checkbox" id="onOpenToggle" onchange="setTokoOnline(this.checked)"><span class="slider"></span></span>
+              </label>
+            </div>
+            <div class="card on-sound hidden" id="onSoundBox">
+              <div class="toggle-title">🔇 Suara alarm belum aktif di HP ini</div>
+              <div class="toggle-desc">Browser butuh satu sentuhan dulu supaya alarm pesanan baru bisa berbunyi keras.</div>
+              <button type="button" class="btn btn-primary btn-block" style="margin-top:10px" onclick="aktifkanSuaraOnline()"><i class="fas fa-volume-high"></i> Aktifkan Suara Alarm</button>
+            </div>
+
+            <div class="segmented" id="onSeg" style="margin-top:16px">
+              <button type="button" data-v="aktif" class="active" onclick="pilihPaneOnline('aktif')">Perlu Diproses</button>
+              <button type="button" data-v="riwayat" onclick="pilihPaneOnline('riwayat')">Riwayat</button>
+            </div>
+
+            <div id="onAktifPane"></div>
+
+            <div id="onRiwayatPane" class="hidden">
+              <div class="day-nav" style="margin-top:16px">
+                <button type="button" class="day-arrow" onclick="geserTglOnline(-1)" aria-label="Hari sebelumnya">‹</button>
+                <label class="day-pick"><span id="onRiwayatLabel">Hari ini</span><input type="date" id="onRiwayatDate" onchange="renderOnline()"></label>
+                <button type="button" class="day-arrow" onclick="geserTglOnline(1)" aria-label="Hari berikutnya">›</button>
+              </div>
+              <div class="card" style="margin-top:12px" id="onRiwayatSum"></div>
+              <div id="onRiwayatList" style="margin-top:12px"></div>
+            </div>
+          </div>
+
+          <div class="sticky-col">
+            <div class="section-label" style="margin-top:24px"><span>Pengaturan Pesan Online</span></div>
+            <div class="card">
+              <div class="toggle-title">Link untuk customer</div>
+              <div class="on-link" id="onLinkText">-</div>
+              <div class="grid-2" style="margin-top:10px">
+                <button type="button" class="btn btn-tinted btn-sm" onclick="salinLinkOnline()"><i class="fas fa-copy"></i> Salin</button>
+                <a class="btn btn-gray btn-sm" href="/pesan/" target="_blank" rel="noopener" style="text-decoration:none"><i class="fas fa-arrow-up-right-from-square"></i> Buka</a>
+              </div>
+              <button type="button" class="btn btn-gray btn-block btn-sm" style="margin-top:10px" onclick="tesAlarmOnline()"><i class="fas fa-bell"></i> Tes Bunyi Alarm</button>
+              <p class="card-sub" style="margin-top:10px">Alarm berbunyi kalau web kasir ini <b>sedang terbuka</b>. Biarkan terbuka di satu HP/tablet selama jam jualan. Notifikasi HP (Pengaturan → Notifikasi) tetap masuk walau web tertutup.</p>
+            </div>
+            <div class="card">
+              <div class="toggle-title">Topping tersedia</div>
+              <div class="toggle-desc">Matikan kalau topping habis, supaya tidak bisa dipilih customer.</div>
+              <div id="onToppingList" style="margin-top:6px"></div>
+            </div>
+            <div class="card">
+              <div class="toggle-title">Foto menu</div>
+              <div class="toggle-desc">Ketuk foto untuk mengganti. Foto langsung tampil di halaman customer.</div>
+              <div id="onPhotoList" class="on-photo-grid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-aktivitas" class="tab-content hidden">
         <button type="button" class="back-btn" onclick="switchTab(lastMainTab)"><i class="fas fa-chevron-left"></i> Kembali</button>
         <h1 class="large-title">Aktivitas</h1>
@@ -1345,6 +1452,16 @@
       <span class="cb-go">Lihat & Simpan <i class="fas fa-chevron-right" style="font-size:13px"></i></span>
     </button>
 
+    <!-- ALARM PESANAN ONLINE BARU (berbunyi sampai disentuh) -->
+    <div id="onAlarm" class="on-alarm hidden" onclick="lihatPesananOnline()">
+      <div class="on-alarm-box">
+        <div class="on-alarm-bell">🔔</div>
+        <div class="on-alarm-title">PESANAN ONLINE BARU!</div>
+        <div class="on-alarm-text" id="onAlarmText"></div>
+        <button type="button" class="btn btn-lg btn-block on-alarm-btn">Lihat Pesanan</button>
+      </div>
+    </div>
+
     <!-- TAB BAR -->
     <nav class="tabbar">
       <div class="tabbar-inner">
@@ -1352,6 +1469,7 @@
         <button onclick="switchTab('tab-pengeluaran')" id="btn-tab-pengeluaran" class="tab-btn"><i class="fas fa-wallet"></i>Belanja</button>
         <button onclick="switchTab('tab-analisis')" id="btn-tab-analisis" class="tab-btn"><i class="fas fa-chart-pie"></i>Laporan</button>
         <button onclick="switchTab('tab-riwayat')" id="btn-tab-riwayat" class="tab-btn"><i class="fas fa-clock-rotate-left"></i>Riwayat</button>
+        <button onclick="switchTab('tab-online')" id="btn-tab-online" class="tab-btn"><span class="tab-ico"><i class="fas fa-mobile-screen-button"></i><span id="onlineBadge" class="tab-badge hidden">0</span></span>Online</button>
         <button onclick="switchTab('tab-hiburan')" id="btn-tab-hiburan" class="tab-btn"><span class="tab-ico"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></span>Hiburan</button>
         <button onclick="switchTab('tab-chat')" id="btn-tab-chat" class="tab-btn"><span class="tab-ico"><i class="fas fa-comments"></i><span id="chatBadge" class="tab-badge hidden">0</span></span>Chat</button>
       </div>
@@ -1711,9 +1829,7 @@
       { id: 'ttr-vanilla', name: 'Vanilla', price: 10000, category: 'thai-regular', catLabel: 'Thai Tea Regular', grad: 'from-slate-300 to-slate-500' },
 
       { id: 'tea-lemon', name: 'Lemon Tea', price: 7000, category: 'tea', catLabel: 'Tea Buah', grad: 'from-yellow-500 to-amber-600' },
-      { id: 'tea-peach', name: 'Peach Tea', price: 7000, category: 'tea', catLabel: 'Tea Buah', grad: 'from-rose-400 to-orange-500' },
-
-      { id: 'sp-esteler', name: 'Es Teler Creamy', price: 15000, category: 'special', catLabel: 'Spesial', grad: 'from-emerald-500 to-teal-700' }
+      { id: 'tea-peach', name: 'Peach Tea', price: 7000, category: 'tea', catLabel: 'Tea Buah', grad: 'from-rose-400 to-orange-500' }
     ];
 
     const TOPPING_ITEMS = [
@@ -3146,6 +3262,7 @@
       else if (targetId === 'tab-hiburan') pilihHiburan(funPane);
       else if (targetId === 'tab-admin') { calculateAndRenderAnalytics(); refreshPushStatus(); renderProfil(); renderAdminVisibility(); renderInventoryUI(); renderUserStatus(); renderCartoonPickers(); renderAdminHiburan(); }
       else if (targetId === 'tab-aktivitas') renderActivityLog();
+      else if (targetId === 'tab-online' && typeof renderOnline === 'function') renderOnline();
     }
 
     /* 4. TAB 1: MENU & ORDERING LOGIC WITH EXACT FLAVOR STOK DEDUCTION */
@@ -4562,6 +4679,368 @@
         triggerToast('Stok berhasil diperbarui!');
       }).catch(err => triggerToast('Gagal update stok!', true));
     }
+  </script>
+  <!-- ===== PESANAN ONLINE (customer /pesan/ → Worker /api/pesan/* → Firebase thaitea/online_orders) ===== -->
+  <script>
+    const onlineOrdersRef = db.ref('thaitea/online_orders');
+    const onlineSettingsRef = db.ref('thaitea/online_settings');
+    const ON_PAY_WINDOW = 20 * 60000;   // sama dengan PAY_WINDOW_MIN di worker/pesan.js
+    const ON_TOPPINGS = ['Keju', 'Boba', 'Cream', 'Jelly', 'Oreo'];
+    let onlineList = [], onlineSettings = {}, onlineLoaded = false, onlinePane = 'aktif';
+    const onlineSeen = {};           // id → status terakhir yang sudah dilihat HP ini
+    let onlineAck = new Set();       // pesanan 'cek' yang alarmnya sudah dimatikan
+    try { onlineAck = new Set(JSON.parse(sessionStorage.getItem('tt_online_ack') || '[]')); } catch (e) {}
+
+    function onStatus(o) {
+      if (o.status === 'bayar' && nowServer() - (o.createdAt || 0) > ON_PAY_WINDOW) return 'kedaluwarsa';
+      return o.status;
+    }
+    function onJam(ts) { return ts ? new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '-'; }
+    function onItems(items) {
+      return (items || []).map(i => `<b>${i.qty}x</b> ${esc(i.name)}${i.toppings && i.toppings.length ? ` <span style="color:var(--text2)">+ ${esc(i.toppings.join(', '))}</span>` : ''}`).join('<br>');
+    }
+
+    /* ---------- data realtime ---------- */
+    onlineOrdersRef.orderByKey().limitToLast(300).on('value', snap => {
+      const data = snap.val() || {};
+      onlineList = Object.values(data).filter(o => o && o.id).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const pertama = !onlineLoaded;
+      onlineLoaded = true;
+      let baruBayar = null;
+      onlineList.forEach(o => {
+        const st = o.status, lama = onlineSeen[o.id];
+        if (!pertama && !lama && st === 'bayar') baruBayar = o;
+        onlineSeen[o.id] = st;
+      });
+      cekAlarmOnline();
+      if (baruBayar) { bunyiPendek(); triggerToast(`Pesanan online #${baruBayar.no} (${baruBayar.name}) · menunggu customer bayar`); }
+      renderOnlineBadge();
+      if (currentTab === 'tab-online') renderOnline();
+    });
+    onlineSettingsRef.on('value', snap => {
+      onlineSettings = snap.val() || {};
+      renderOnlineStore();
+      if (currentTab === 'tab-online') renderOnline();
+      aturWakeLock();
+    });
+    setInterval(() => { renderOnlineBadge(); if (currentTab === 'tab-online' && document.visibilityState === 'visible') renderOnline(); }, 30000);
+
+    function renderOnlineBadge() {
+      const n = onlineList.filter(o => ['cek', 'proses', 'siap'].includes(onStatus(o))).length;
+      const b = document.getElementById('onlineBadge');
+      b.textContent = n; b.classList.toggle('hidden', !n);
+    }
+
+    /* ---------- buka / tutup ---------- */
+    function renderOnlineStore() {
+      const open = onlineSettings.open === true;
+      document.getElementById('onOpenToggle').checked = open;
+      document.getElementById('onStoreCard').classList.toggle('open', open);
+      document.getElementById('onOpenTitle').textContent = open ? 'Pesanan online: BUKA' : 'Pesanan online: TUTUP';
+      document.getElementById('onOpenDesc').textContent = open
+        ? 'Customer bisa memesan (jam jemput 12.00 – 23.40). Matikan kalau kedai tutup.'
+        : 'Customer tidak bisa membuka menu pesan. Nyalakan saat kedai buka.';
+    }
+    async function setTokoOnline(open) {
+      if (!open && !(await iosConfirm('Tutup pesanan online? Customer tidak bisa memesan sampai dibuka lagi.', { title: 'Tutup Pesanan Online?', okText: 'Tutup' }))) {
+        renderOnlineStore(); return;
+      }
+      onlineSettingsRef.child('open').set(open).then(() => {
+        triggerToast(open ? 'Pesanan online DIBUKA' : 'Pesanan online DITUTUP');
+        logAktivitas('edit', open ? 'Membuka pesanan online' : 'Menutup pesanan online');
+      }).catch(() => { triggerToast('Gagal menyimpan, cek internet', true); renderOnlineStore(); });
+    }
+
+    /* ---------- tampilan ---------- */
+    function pilihPaneOnline(v) {
+      onlinePane = v;
+      document.querySelectorAll('#onSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+      renderOnline();
+    }
+    function kartuOnline(o) {
+      const st = onStatus(o);
+      const meta = [
+        `<span class="pill">🕒 Jemput ${o.pickupLabel === 'Sekarang' ? 'SEKARANG' : 'jam ' + esc(o.pickupLabel)}</span>`,
+        `<span class="pill">Pesan ${onJam(o.createdAt)}</span>`,
+        `<span class="pill">${o.totalCups} cup</span>`
+      ];
+      if (o.readyAt) meta.push(`<span class="pill pill-green">Siap ${onJam(o.readyAt)}</span>`);
+      if (o.doneAt) meta.push(`<span class="pill">Diambil ${onJam(o.doneAt)}</span>`);
+      let status = '', aksi = '', cek = '';
+      const id = esc(o.id);
+      if (st === 'cek') {
+        status = '<span class="pill pill-red">CEK PEMBAYARAN</span>';
+        cek = `<div class="on-check">Cocokkan di <b>ShopeePay Partner</b>: masuk <b>${formatRp(o.totalPrice)}</b>${o.payerName ? ` dari <b>${esc(o.payerName)}</b>` : ` (nama pemesan <b>${esc(o.name)}</b>)`} sekitar jam <b>${onJam(o.paidClaimAt)}</b>.</div>`;
+        aksi = `<button type="button" class="btn btn-red-tinted btn-sm" onclick="tolakBayarOnline('${id}')">Tidak Ada</button><button type="button" class="btn btn-primary btn-sm grow" onclick="terimaBayarOnline('${id}')"><i class="fas fa-check"></i> Pembayaran Diterima</button>`;
+      } else if (st === 'bayar' || st === 'kedaluwarsa') {
+        const sisa = Math.max(0, Math.ceil(((o.createdAt || 0) + ON_PAY_WINDOW - nowServer()) / 60000));
+        status = st === 'bayar' ? `<span class="pill pill-amber">Menunggu customer bayar · ${sisa} mnt</span>` : '<span class="pill">Kedaluwarsa (tidak dibayar)</span>';
+        aksi = `<button type="button" class="btn btn-gray btn-sm" onclick="batalOnline('${id}')">Batalkan</button><button type="button" class="btn btn-tinted btn-sm grow" onclick="terimaBayarOnline('${id}')">Sudah Masuk? Terima</button>`;
+      } else if (st === 'proses') {
+        status = '<span class="pill pill-orange">Sedang Disiapkan</span>';
+        aksi = `<button type="button" class="btn btn-gray btn-sm" onclick="batalOnline('${id}')">Batalkan</button><button type="button" class="btn btn-primary btn-sm grow" onclick="siapOnline('${id}')"><i class="fas fa-bell-concierge"></i> Siap Dijemput</button>`;
+      } else if (st === 'siap') {
+        status = '<span class="pill pill-green">Menunggu Customer Datang</span>';
+        aksi = `<button type="button" class="btn btn-gray btn-sm" onclick="batalOnline('${id}')">Batalkan</button><button type="button" class="btn btn-primary btn-sm grow" style="background:var(--green);box-shadow:none" onclick="selesaiOnline('${id}')"><i class="fas fa-check-double"></i> Selesai, Sudah Diambil</button>`;
+      } else if (st === 'selesai') {
+        status = '<span class="pill pill-green">Selesai</span>';
+      } else if (st === 'batal') {
+        status = '<span class="pill pill-red">Dibatalkan</span>';
+        if (o.cancelReason) cek = `<div class="toggle-desc" style="margin-top:6px">${esc(o.cancelReason)}</div>`;
+      }
+      return `<div class="on-card ${st === 'cek' || st === 'proses' || st === 'siap' ? st : (st === 'bayar' ? '' : 'muted')}">
+        <div class="on-head"><div><div class="on-no">#${o.no} · ${esc(o.nick ? (o.gender === 'L' ? 'Bang ' : 'Kak ') + o.nick : '')}</div><div class="on-name">${esc(o.name)}</div></div><div class="on-total">${formatRp(o.totalPrice)}</div></div>
+        <div style="margin-top:6px">${status}</div>
+        <div class="on-items">${onItems(o.items)}</div>
+        <div class="on-meta">${meta.join('')}</div>
+        ${cek}${aksi ? `<div class="on-actions">${aksi}</div>` : ''}
+      </div>`;
+    }
+    function grupOnline(judul, list, kosong) {
+      if (!list.length) return kosong ? `<div class="on-group"><div class="on-group-title">${judul}</div><div class="on-card on-empty">${kosong}</div></div>` : '';
+      return `<div class="on-group"><div class="on-group-title">${judul} <span class="count">${list.length}</span></div>${list.map(kartuOnline).join('')}</div>`;
+    }
+    function renderOnline() {
+      renderOnlineStore();
+      document.getElementById('onLinkText').textContent = location.origin + '/pesan/';
+      document.getElementById('onSoundBox').classList.toggle('hidden', !!(onAc && onAc.state === 'running'));
+      document.getElementById('onAktifPane').classList.toggle('hidden', onlinePane !== 'aktif');
+      document.getElementById('onRiwayatPane').classList.toggle('hidden', onlinePane !== 'riwayat');
+      const by = st => onlineList.filter(o => onStatus(o) === st);
+      const lama = (a, b) => (a.createdAt || 0) - (b.createdAt || 0);
+      if (onlinePane === 'aktif') {
+        const cek = by('cek').sort(lama), proses = by('proses').sort(lama), siap = by('siap').sort(lama), bayar = by('bayar').sort(lama);
+        const semuaKosong = !cek.length && !proses.length && !siap.length && !bayar.length;
+        document.getElementById('onAktifPane').innerHTML = !onlineLoaded ? '<div class="on-card on-empty" style="margin-top:16px">Memuat…</div>'
+          : semuaKosong ? `<div class="on-card on-empty" style="margin-top:16px"><div style="font-size:40px">🧋</div>Belum ada pesanan online yang perlu diproses.</div>`
+          : grupOnline('🔴 Cek Pembayaran', cek) + grupOnline('🧋 Sedang Disiapkan', proses) + grupOnline('🛍️ Menunggu Customer Datang', siap) + grupOnline('⏳ Menunggu Customer Bayar', bayar);
+      } else {
+        const inp = document.getElementById('onRiwayatDate');
+        if (!inp.value) inp.value = hariIniWIB();
+        const d = inp.value;
+        document.getElementById('onRiwayatLabel').innerHTML = (d === hariIniWIB() ? '<small>HARI INI</small>' : '') + tanggalPanjang(d);
+        const list = onlineList.filter(o => o.date === d);
+        const selesai = list.filter(o => onStatus(o) === 'selesai');
+        const dibayar = list.filter(o => ['proses', 'siap', 'selesai'].includes(onStatus(o)));
+        document.getElementById('onRiwayatSum').innerHTML = `<div class="grid-2">
+          <div><div class="toggle-desc">Pesanan dibayar</div><div style="font-size:24px;font-weight:800">${dibayar.length} <span style="font-size:15px;color:var(--text2)">(${selesai.length} selesai)</span></div></div>
+          <div><div class="toggle-desc">Omzet online</div><div style="font-size:24px;font-weight:800;color:var(--accent-text)">${formatRp(dibayar.reduce((a, o) => a + (o.totalPrice || 0), 0))}</div></div></div>`;
+        document.getElementById('onRiwayatList').innerHTML = list.length ? list.map(kartuOnline).join('') : '<div class="on-card on-empty">Tidak ada pesanan online di tanggal ini.</div>';
+      }
+      renderOnlineSettings();
+    }
+    function geserTglOnline(d) {
+      const inp = document.getElementById('onRiwayatDate');
+      const t = new Date((inp.value || hariIniWIB()) + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + d);
+      inp.value = t.toISOString().slice(0, 10); renderOnline();
+    }
+    function renderOnlineSettings() {
+      const off = onlineSettings.toppingOff || {};
+      document.getElementById('onToppingList').innerHTML = `<div class="on-tops">${ON_TOPPINGS.map(t => `<label class="toggle-row"><div class="toggle-title" style="font-size:16px">${t}${off[t] ? ' <span class="pill pill-red" style="margin-left:6px">Habis</span>' : ''}</div>
+        <span class="switch"><input type="checkbox" ${off[t] ? '' : 'checked'} onchange="setToppingOnline('${t}', this.checked)"><span class="slider"></span></span></label>`).join('')}</div>`;
+      const photos = onlineSettings.photos || {};
+      document.getElementById('onPhotoList').innerHTML = MENU_DATABASE.map(m => `<label class="on-photo">
+        <img src="${esc(photos[m.id] || '/pesan/img/' + m.id + '.jpg')}" alt="" loading="lazy">
+        ${photos[m.id] ? `<button type="button" class="on-reset" title="Kembali ke foto awal" onclick="event.preventDefault();resetFotoMenu('${m.id}')">✕</button>` : ''}
+        <span>${esc(m.name)}</span><input type="file" accept="image/*" onchange="gantiFotoMenu('${m.id}', this)"></label>`).join('');
+    }
+    function setToppingOnline(t, tersedia) {
+      onlineSettingsRef.child('toppingOff/' + t).set(tersedia ? null : true)
+        .then(() => triggerToast(`Topping ${t} ${tersedia ? 'tersedia' : 'ditandai HABIS'}`))
+        .catch(() => triggerToast('Gagal menyimpan', true));
+    }
+    async function gantiFotoMenu(menuId, input) {
+      const f = input.files && input.files[0];
+      input.value = '';
+      if (!f) return;
+      try {
+        triggerToast('Mengunggah foto…');
+        const blob = await kecilkanFoto(f, 640, .85);
+        const url = await unggahBerkas(blob, 'image/jpeg');
+        await onlineSettingsRef.child('photos/' + menuId).set(url);
+        triggerToast('Foto menu diganti');
+      } catch (e) { triggerToast(e.message || 'Gagal mengganti foto', true); }
+    }
+    async function resetFotoMenu(menuId) {
+      if (!(await iosConfirm('Kembalikan ke foto awal?', { title: 'Hapus Foto?', okText: 'Kembalikan' }))) return;
+      onlineSettingsRef.child('photos/' + menuId).remove();
+    }
+    function salinLinkOnline() {
+      const link = location.origin + '/pesan/';
+      (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(() => triggerToast('Link disalin: ' + link)).catch(() => iosConfirm(link, { title: 'Link Customer', okText: 'OK' }));
+    }
+
+    /* ---------- aksi status ---------- */
+    function ubahStokOnline(items, totalCups, arah) {
+      // arah -1 = potong stok (sama seperti saveActiveOrder), +1 = kembalikan
+      let susu = 0;
+      (items || []).forEach(it => {
+        const q = it.qty || 0, n = (it.name || '').toLowerCase(), cat = (it.category || '').toLowerCase();
+        if (cat.includes('thai')) susu += 50 * q;
+        const pakai = (k, g) => { inventoryData[k] = Math.max(0, (inventoryData[k] || 0) + arah * g * q); };
+        if (n.includes('matcha')) pakai('bubukMatcha', 20);
+        else if (n.includes('coklat')) pakai('bubukCoklat', 20);
+        else if (n.includes('tarro')) pakai('bubukTarro', 20);
+        else if (n.includes('cappuccino')) pakai('bubukCappuccino', 20);
+        else if (n.includes('red velvet')) pakai('bubukRedVelvet', 20);
+        else if (n.includes('mangga')) pakai('bubukMangga', 20);
+        else if (n.includes('vanilla')) pakai('bubukVanilla', 20);
+        else if (n.includes('lemon')) pakai('bubukLemon', 27);
+        else if (n.includes('peach')) pakai('bubukPeach', 27);
+        else if (n.includes('thai')) pakai('bubukThai', 20);
+      });
+      inventoryData.cup = Math.max(0, (inventoryData.cup || 0) + arah * (totalCups || 0));
+      inventoryData.susu = Math.max(0, (inventoryData.susu || 0) + arah * susu);
+      return inventoryRef.set(inventoryData);
+    }
+    async function ubahStatusOnline(id, dari, patch) {
+      // transaksi: aman kalau dua HP kasir menekan tombol bersamaan
+      const res = await onlineOrdersRef.child(id).transaction(o => {
+        if (!o || !dari.includes(o.status)) return;
+        return { ...o, ...patch };
+      });
+      if (!res.committed) { triggerToast('Pesanan ini sudah diubah dari HP lain', true); return null; }
+      return res.snapshot.val();
+    }
+    async function terimaBayarOnline(id) {
+      const o = onlineList.find(x => x.id === id); if (!o) return;
+      if (!(await iosConfirm(`Pembayaran ${formatRp(o.totalPrice)}${o.payerName ? ' dari ' + o.payerName : ''} sudah masuk di ShopeePay Partner?`, { title: 'Terima Pembayaran #' + o.no + '?', okText: 'Sudah Masuk' }))) return;
+      ackAlarm(id);
+      const salesId = 'ORD-' + Date.now();
+      const upd = await ubahStatusOnline(id, ['bayar', 'cek'], { status: 'proses', paidAt: nowServer(), confirmBy: deviceName || 'Kasir', salesOrderId: salesId });
+      if (!upd) return;
+      // masuk Laporan & Riwayat kasir sebagai transaksi QRIS + potong stok
+      const items = (upd.items || []).map((it, i) => ({ cartId: 'on_' + i + '_' + Date.now(), menuId: it.menuId, name: it.name, category: it.category, catLabel: it.catLabel, pricePerCup: it.pricePerCup, toppings: it.toppings || [], qty: it.qty, total: it.total }));
+      const sale = {
+        orderId: salesId, date: hariIniWIB(),
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        items, totalCups: upd.totalCups, totalPrice: upd.totalPrice, method: 'QRIS',
+        note: `Online #${upd.no} · a.n. ${upd.name}`, isFreeDrink: false, source: 'online', onlineId: upd.id
+      };
+      try {
+        await ordersRef.child(salesId).set(sale);
+        await ubahStokOnline(items, upd.totalCups, -1);
+      } catch (e) { triggerToast('Status diubah, tapi gagal mencatat ke laporan. Cek internet.', true); }
+      logAktivitas('add', `Menerima pesanan online #${upd.no} ${ringkasItem(items)} · ${formatRp(upd.totalPrice)} (QRIS)`);
+      triggerToast(`#${upd.no} diterima, silakan dibuat 🧋`);
+    }
+    async function tolakBayarOnline(id) {
+      const o = onlineList.find(x => x.id === id); if (!o) return;
+      if (!(await iosConfirm(`Pembayaran ${formatRp(o.totalPrice)} tidak ditemukan di ShopeePay Partner? Pesanan #${o.no} akan dibatalkan.`, { title: 'Pembayaran Tidak Ada?', okText: 'Batalkan Pesanan', destructive: true }))) return;
+      ackAlarm(id);
+      const upd = await ubahStatusOnline(id, ['cek', 'bayar'], { status: 'batal', cancelAt: nowServer(), cancelBy: deviceName || 'Kasir', cancelReason: 'Pembayaran tidak ditemukan. Kalau sudah terlanjur bayar, datang ke kedai dan tunjukkan bukti bayar ke kasir ya.' });
+      if (upd) { logAktivitas('delete', `Membatalkan pesanan online #${upd.no} (pembayaran tidak ditemukan)`); triggerToast('Pesanan dibatalkan'); }
+    }
+    async function siapOnline(id) {
+      const upd = await ubahStatusOnline(id, ['proses'], { status: 'siap', readyAt: nowServer() });
+      if (upd) triggerToast(`#${upd.no} ditandai SIAP. Customer langsung dapat kabar.`);
+    }
+    async function selesaiOnline(id) {
+      const o = onlineList.find(x => x.id === id); if (!o) return;
+      if (!(await iosConfirm(`Pesanan #${o.no} a.n. ${o.name} sudah diambil customer?`, { title: 'Pesanan Selesai?', okText: 'Sudah Diambil' }))) return;
+      const upd = await ubahStatusOnline(id, ['siap', 'proses'], { status: 'selesai', doneAt: nowServer() });
+      if (upd) triggerToast(`#${upd.no} selesai ✅`);
+    }
+    async function batalOnline(id) {
+      const o = onlineList.find(x => x.id === id); if (!o) return;
+      const sudahBayar = ['proses', 'siap'].includes(o.status);
+      const alasan = await iosPrompt(sudahBayar
+        ? `Pesanan #${o.no} SUDAH DIBAYAR. Uang ${formatRp(o.totalPrice)} perlu dikembalikan manual ke customer. Transaksinya juga dihapus dari laporan & stok dikembalikan. Tulis alasan untuk customer:`
+        : `Batalkan pesanan #${o.no}? Tulis alasan untuk customer (boleh kosong):`, { title: 'Batalkan Pesanan?', okText: 'Batalkan', destructive: true });
+      if (alasan === null || alasan === false) return;
+      ackAlarm(id);
+      const upd = await ubahStatusOnline(id, ['bayar', 'cek', 'proses', 'siap'], { status: 'batal', cancelAt: nowServer(), cancelBy: deviceName || 'Kasir', cancelReason: String(alasan || '').trim() || 'Dibatalkan oleh kedai.' });
+      if (!upd) return;
+      if (sudahBayar && upd.salesOrderId) {
+        const sale = ordersList.find(x => x.orderId === upd.salesOrderId);
+        if (sale) { await ordersRef.child(sale.orderId).remove().catch(() => {}); await ubahStokOnline(sale.items, sale.totalCups, +1).catch(() => {}); }
+      }
+      logAktivitas('delete', `Membatalkan pesanan online #${upd.no} a.n. ${upd.name}`);
+      triggerToast('Pesanan dibatalkan');
+    }
+
+    /* ---------- ALARM: bunyi keras & berulang sampai disentuh ---------- */
+    let onAc = null, alarmTimer = null, alarmOn = false, judulAsli = document.title, judulTimer = null;
+    function siapkanAudio() {
+      try {
+        if (!onAc) onAc = new (window.AudioContext || window.webkitAudioContext)();
+        if (onAc.state === 'suspended') onAc.resume();
+      } catch (e) {}
+      return onAc;
+    }
+    document.addEventListener('pointerdown', () => { siapkanAudio(); if (currentTab === 'tab-online') setTimeout(() => document.getElementById('onSoundBox').classList.toggle('hidden', !!(onAc && onAc.state === 'running')), 200); }, true);
+    function aktifkanSuaraOnline() {
+      siapkanAudio(); bunyiPendek();
+      setTimeout(() => { renderOnline(); triggerToast(onAc && onAc.state === 'running' ? 'Suara alarm aktif 🔊' : 'Suara belum bisa aktif, coba sentuh lagi', !(onAc && onAc.state === 'running')); }, 300);
+    }
+    function nada(a, f, t, dur, vol, type) {
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type || 'square'; o.frequency.setValueAtTime(f, a.currentTime + t);
+      g.gain.setValueAtTime(0.0001, a.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(vol, a.currentTime + t + 0.02);
+      g.gain.setValueAtTime(vol, a.currentTime + t + dur - 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + t + dur);
+      o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + dur + 0.02);
+    }
+    function bunyiAlarm() {
+      const a = siapkanAudio(); if (!a) return;
+      // sirene 2 nada, keras
+      for (let i = 0; i < 4; i++) { nada(a, 1046, i * 0.5, 0.24, 0.9); nada(a, 1568, i * 0.5 + 0.25, 0.24, 0.9); }
+      try { navigator.vibrate && navigator.vibrate([500, 150, 500, 150, 500]); } catch (e) {}
+    }
+    function bunyiPendek() {
+      const a = siapkanAudio(); if (!a) return;
+      nada(a, 880, 0, 0.18, 0.6, 'sine'); nada(a, 1320, 0.2, 0.3, 0.6, 'sine');
+    }
+    function mulaiAlarm(teks) {
+      document.getElementById('onAlarmText').textContent = teks;
+      document.getElementById('onAlarm').classList.remove('hidden');
+      if (alarmOn) return;
+      alarmOn = true;
+      bunyiAlarm(); alarmTimer = setInterval(bunyiAlarm, 2600);
+      let k = false; judulTimer = setInterval(() => { document.title = (k = !k) ? '🔔 PESANAN ONLINE BARU!' : judulAsli; }, 1000);
+    }
+    function stopAlarm() {
+      alarmOn = false; clearInterval(alarmTimer); clearInterval(judulTimer); document.title = judulAsli;
+      document.getElementById('onAlarm').classList.add('hidden');
+      try { navigator.vibrate && navigator.vibrate(0); } catch (e) {}
+    }
+    function ackAlarm(id) {
+      onlineAck.add(id);
+      try { sessionStorage.setItem('tt_online_ack', JSON.stringify([...onlineAck].slice(-100))); } catch (e) {}
+      cekAlarmOnline();
+    }
+    function cekAlarmOnline() {
+      const perlu = onlineList.filter(o => o.status === 'cek' && !onlineAck.has(o.id));
+      if (!perlu.length) { if (alarmOn || !document.getElementById('onAlarm').classList.contains('hidden')) stopAlarm(); return; }
+      mulaiAlarm(perlu.map(o => `#${o.no} · ${o.name} · ${formatRp(o.totalPrice)}\nJemput ${o.pickupLabel === 'Sekarang' ? 'SEKARANG' : 'jam ' + o.pickupLabel}`).join('\n\n') + '\n\nCek pembayaran QRIS di ShopeePay Partner');
+    }
+    function lihatPesananOnline() {
+      onlineList.filter(o => o.status === 'cek').forEach(o => onlineAck.add(o.id));
+      try { sessionStorage.setItem('tt_online_ack', JSON.stringify([...onlineAck].slice(-100))); } catch (e) {}
+      stopAlarm();
+      pilihPaneOnline('aktif'); switchTab('tab-online');
+    }
+    function tesAlarmOnline() {
+      siapkanAudio();
+      mulaiAlarm('Ini hanya tes bunyi alarm.\nSentuh layar untuk mematikan.');
+    }
+
+    /* ---------- layar tetap menyala saat pesanan online dibuka ---------- */
+    let wakeLock = null;
+    async function aturWakeLock() {
+      try {
+        if (!('wakeLock' in navigator)) return;
+        const perlu = onlineSettings.open === true && document.visibilityState === 'visible';
+        if (perlu && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+        else if (!perlu && wakeLock) { await wakeLock.release(); wakeLock = null; }
+      } catch (e) { wakeLock = null; }
+    }
+    document.addEventListener('visibilitychange', () => { aturWakeLock(); if (document.visibilityState === 'visible') cekAlarmOnline(); });
+
+    // Notifikasi "pesanan online" disentuh → buka tab Online
+    if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'open-online') lihatPesananOnline(); });
+    if (location.hash === '#online') setTimeout(() => switchTab('tab-online'), 300);
   </script>
   <script src="games.js"></script>
 </body>

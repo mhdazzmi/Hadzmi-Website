@@ -8,6 +8,7 @@
      POST /api/thaitea/subscribe    { endpoint, name }
      POST /api/thaitea/unsubscribe  { endpoint }
      POST /api/thaitea/notify       { title, body, from }   (from = endpoint pengirim, tidak ikut dikirimi)
+                                    (pesanan online memakai pushKasir() langsung, lihat worker/pesan.js)
      GET  /api/thaitea/pending?endpoint=&since=
      POST /api/thaitea/upload       (body = file mentah; Content-Type image/* (maks 4 MB) atau audio/* (maks 60 MB)) → { url }
      GET  /api/thaitea/file/<id>    → foto / pesan suara chat & foto profil (Cloudflare R2, folder thaitea/)
@@ -63,30 +64,9 @@ export async function handleThaiTea(request, env, url, ctx) {
 
   if (path === '/api/thaitea/notify' && method === 'POST') {
     const b = await readJson(request);
-    const title = cleanText(b.title, 60) || 'Thai Tea';
-    const body = cleanText(b.body, 240);
-    if (!body) return json({ error: 'Isi kosong' }, 400);
-    const to = cleanKey(b.to);
-    const now = Date.now();
-    const outbox = await kvGet(env, OUTBOX, []);
-    if (outbox.filter(i => i.ts > now - 60000).length >= RATE_PER_MIN) return json({ error: 'Terlalu banyak notifikasi' }, 429);
-    outbox.push({ id: 'tt-' + now + '-' + Math.random().toString(36).slice(2, 6), ts: now, title, body, to: to || undefined });
-    await env.HUB_KV.put(OUTBOX, JSON.stringify(outbox.slice(-OUTBOX_MAX)));
-
-    const from = cleanEndpoint(b.from);
-    const subs = await kvGet(env, SUBS, []);
-    const targets = subs.filter(s => s.endpoint !== from && (!to || s.user === to));
-    const work = (async () => {
-      const vapid = await getVapid(env, true);
-      const results = await Promise.all(targets.map(s => sendPush(s, env, vapid).then(st => ({ s, st })).catch(() => ({ s, st: 0 }))));
-      const gone = new Set(results.filter(r => r.st === 404 || r.st === 410).map(r => r.s.endpoint));
-      if (gone.size) {
-        const fresh = await kvGet(env, SUBS, []);
-        await env.HUB_KV.put(SUBS, JSON.stringify(fresh.filter(s => !gone.has(s.endpoint))));
-      }
-    })().catch(err => console.error('thaitea push', err && err.stack || err));
-    if (ctx && ctx.waitUntil) ctx.waitUntil(work); else await work;
-    return json({ ok: true, sentTo: targets.length });
+    const r = await pushKasir(env, ctx, { title: b.title, body: b.body, to: b.to, from: b.from });
+    if (r.error) return json({ error: r.error }, r.status);
+    return json({ ok: true, sentTo: r.sentTo });
   }
 
   if (path === '/api/thaitea/pending' && method === 'GET') {
@@ -146,6 +126,35 @@ export async function handleThaiTea(request, env, url, ctx) {
   }
 
   return json({ error: 'Not found' }, 404);
+}
+
+// Kirim notifikasi ke HP kasir. Dipakai /api/thaitea/notify dan pesanan online (/api/pesan/*).
+// urgent = notifikasi tetap tampil sampai disentuh (pesanan online baru)
+export async function pushKasir(env, ctx, { title, body, to, from, urgent }) {
+  title = cleanText(title, 60) || 'Thai Tea';
+  body = cleanText(body, 240);
+  if (!body) return { error: 'Isi kosong', status: 400 };
+  to = cleanKey(to);
+  const now = Date.now();
+  const outbox = await kvGet(env, OUTBOX, []);
+  if (outbox.filter(i => i.ts > now - 60000).length >= RATE_PER_MIN) return { error: 'Terlalu banyak notifikasi', status: 429 };
+  outbox.push({ id: 'tt-' + now + '-' + Math.random().toString(36).slice(2, 6), ts: now, title, body, to: to || undefined, urgent: urgent ? true : undefined });
+  await env.HUB_KV.put(OUTBOX, JSON.stringify(outbox.slice(-OUTBOX_MAX)));
+
+  from = cleanEndpoint(from);
+  const subs = await kvGet(env, SUBS, []);
+  const targets = subs.filter(s => s.endpoint !== from && (!to || s.user === to));
+  const work = (async () => {
+    const vapid = await getVapid(env, true);
+    const results = await Promise.all(targets.map(s => sendPush(s, env, vapid).then(st => ({ s, st })).catch(() => ({ s, st: 0 }))));
+    const gone = new Set(results.filter(r => r.st === 404 || r.st === 410).map(r => r.s.endpoint));
+    if (gone.size) {
+      const fresh = await kvGet(env, SUBS, []);
+      await env.HUB_KV.put(SUBS, JSON.stringify(fresh.filter(s => !gone.has(s.endpoint))));
+    }
+  })().catch(err => console.error('thaitea push', err && err.stack || err));
+  if (ctx && ctx.waitUntil) ctx.waitUntil(work); else await work;
+  return { sentTo: targets.length };
 }
 
 function cleanEndpoint(v) {

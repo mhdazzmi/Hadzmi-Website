@@ -1,0 +1,14 @@
+{
+  "name": "Pesan Thai Tea",
+  "short_name": "Pesan Thai Tea",
+  "description": "Pesan Thai Tea online, bayar QRIS, tinggal jemput.",
+  "start_url": "/pesan/",
+  "scope": "/pesan/",
+  "display": "standalone",
+  "background_color": "#F6F3EF",
+  "theme_color": "#EA6A0A",
+  "icons": [
+    { "src": "/thaitea/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/thaitea/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
