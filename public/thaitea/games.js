@@ -306,7 +306,7 @@
     if (roll) { diceSpin.x += 720 + 360 * rnd(2); diceSpin.y += 720 + 360 * rnd(2); }
     const bx = Math.round(diceSpin.x / 360) * 360, by = Math.round(diceSpin.y / 360) * 360;
     diceSpin = { x: bx, y: by };
-    cube.style.transition = roll ? 'transform .95s cubic-bezier(.15,.85,.25,1)' : 'none';
+    cube.style.transition = roll ? 'transform .6s cubic-bezier(.15,.85,.25,1)' : 'none';
     cube.style.transform = `rotateX(${bx + fx}deg) rotateY(${by + fy}deg)`;
     const sc = cube.parentElement;
     if (roll) { sc.classList.remove('bounce'); void sc.offsetWidth; sc.classList.add('bounce'); }
@@ -356,7 +356,16 @@
       hits.forEach(h => { const dd = Math.hypot(h.x - px, h.y - py); if (dd < bd) { bd = dd; best = h; } });
       if (best && bd < size / 15 * 1.4) { SFX.tap(); ctx.act({ token: best.i }); }
     };
-    const db_ = $('luDiceBtn'); if (db_ && myTurn && !st.rolled) db_.onclick = () => { SFX.unlock(); ctx.act({ roll: true }); };
+    const db_ = $('luDiceBtn'); if (db_ && myTurn && !st.rolled) db_.onclick = () => { SFX.unlock(); clearInterval(autoTick); ctx.act({ roll: true }); };
+    // tidak diketuk → dadu terkocok sendiri setelah 6 detik
+    if (myTurn && !st.rolled) {
+      const until = Date.now() + AUTO_ROLL_MS;
+      const txt = document.querySelector('#gvBody .lu-dicetxt');
+      clearInterval(autoTick);
+      const tick = () => { const left = Math.ceil((until - Date.now()) / 1000); if (txt) txt.innerHTML = `<b>Ketuk dadu</b><br>atau otomatis dalam <b>${Math.max(0, left)}</b> dtk`; };
+      tick(); autoTick = setInterval(tick, 250);
+      ctx.auto(() => { clearInterval(autoTick); ctx.act({ roll: true }); }, AUTO_ROLL_MS);
+    }
     if (myTurn && st.rolled && mv.length && new Set(mv.map(i => st.tokens[me][i])).size === 1) ctx.auto(() => ctx.act({ token: mv[0] }), 900);
   }
   function drawLudo(cv, S, dpr, st, tokens, me, mv, hop, glowSeat) {
@@ -456,9 +465,9 @@
     if (l.roll) {
       redraw(prev, { tokens: prev.tokens, glow: l.s });
       diceShow(l.roll, true); SFX.dice();
-      await sleep(1000); SFX.land();
+      await sleep(650); SFX.land();
       redraw(next);
-      if (l.none) await sleep(900);
+      if (l.none) await sleep(550);
       return;
     }
     if (l.token !== undefined) {
@@ -469,7 +478,7 @@
       let [pr, pc] = Ludo.cell(next, s, l.from, i);
       for (const step of path) {
         const [nr, nc] = Ludo.cell(next, s, step, i);
-        const t0 = performance.now(), D = 170;
+        const t0 = performance.now(), D = 125;
         await new Promise(res => {
           const f = () => {
             const k = Math.min(1, (performance.now() - t0) / D);
@@ -597,7 +606,8 @@
   const ANIM = { domino: animDomino, ludo: animLudo, congklak: animCongklak };
   let cur = null;   // { game, mode, roomId, seats, mySeat, state (terbaru), shown (sedang tampil), queue, anim }
   let rooms = {};
-  let botTimer = null, autoTimer = null, beatTimer = null, rafLoop = 0;
+  let botTimer = null, autoTimer = null, beatTimer = null, rafLoop = 0, autoTick = null;
+  const AUTO_ROLL_MS = 6000;
 
   function seatName(ctx, s) { const x = (ctx.seats || [])[s]; return x ? (x.key === myKey && !ctx.spectator ? 'Kamu' : x.name) : 'Kosong'; }
   function seatAva(ctx, s) {
@@ -653,7 +663,7 @@
   function jeda() {
     if (!cur || cur.mode === 'watch' || !gameRunning() || isPaused()) return;
     const p = { by: deviceName || 'Seseorang', at: Date.now() };
-    if (cur.mode === 'bot') { cur.paused = p; clearTimeout(botTimer); clearTimeout(autoTimer); renderPause(); }
+    if (cur.mode === 'bot') { cur.paused = p; clearTimeout(botTimer); clearTimeout(autoTimer); clearInterval(autoTick); renderPause(); }
     else roomsRef.child(cur.roomId).update({ paused: p, activeAt: Date.now() });
   }
   function lanjut() {
@@ -702,7 +712,7 @@
     $('gameView').classList.add('hidden');
     renderPane();
   }
-  function stopAll() { clearTimeout(botTimer); clearTimeout(autoTimer); clearInterval(beatTimer); cancelAnimationFrame(rafLoop); rafLoop = 0; }
+  function stopAll() { clearInterval(autoTick); clearTimeout(botTimer); clearTimeout(autoTimer); clearInterval(beatTimer); cancelAnimationFrame(rafLoop); rafLoop = 0; }
   function setLive(room) {
     const b = $('gvLive');
     if (!room || room.status !== 'playing') { b.classList.add('hidden'); return; }
@@ -723,6 +733,7 @@
   }
   function draw(st, anim) { if (cur) RENDER[cur.game]($('gvBody'), st, ctxFor(anim)); }
   function tampil() {
+    clearInterval(autoTick);
     if (!cur || !cur.shown) return;
     draw(cur.shown);
     refreshHead();
@@ -757,7 +768,7 @@
     const next = cur.queue.shift();
     if (!next) { tampil(); return; }
     cur.anim = true;
-    clearTimeout(autoTimer); cancelAnimationFrame(rafLoop);
+    clearTimeout(autoTimer); clearInterval(autoTick); cancelAnimationFrame(rafLoop);
     const c = cur;
     try { await ANIM[cur.game](cur.shown, next, (st, anim) => { if (cur === c) draw(st, anim); }); } catch (e) { console.warn(e); }
     if (cur !== c) return;
@@ -791,7 +802,7 @@
       const s = cur.state.turn;
       const after = eng.apply(cur.state, s, eng.bot(eng.norm(clone(cur.state)), s));
       if (after.v !== v) commit(after);
-    }, cur.game === 'domino' ? 1100 : 750);
+    }, cur.game === 'domino' ? 700 : cur.game === 'congklak' ? 500 : 400);
   }
 
   /* ---------- lawan komputer ---------- */
@@ -1035,7 +1046,7 @@
   .lu-dicebtn:disabled{cursor:default}
   @keyframes pulse{50%{transform:scale(1.06)}}
   .dc-scene{width:64px;height:64px;perspective:420px;position:relative}
-  .dc-scene.bounce{animation:dcb .95s cubic-bezier(.3,1.4,.5,1)}
+  .dc-scene.bounce{animation:dcb .6s cubic-bezier(.3,1.4,.5,1)}
   @keyframes dcb{0%{transform:translateY(0)}25%{transform:translateY(-26px)}55%{transform:translateY(0)}70%{transform:translateY(-8px)}100%{transform:translateY(0)}}
   .dc-cube{width:100%;height:100%;position:relative;transform-style:preserve-3d}
   .dc-f{position:absolute;inset:0;border-radius:13px;background:linear-gradient(145deg,#FFFFFF,#ECE7DF);box-shadow:inset 0 0 0 2px rgba(0,0,0,.06),inset -4px -4px 10px rgba(0,0,0,.08);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:9px;backface-visibility:hidden}
