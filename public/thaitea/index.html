@@ -681,21 +681,12 @@
 
             <div class="section-label"><span>Riwayat Belanja</span></div>
             <div class="card">
-              <div class="date-range">
-                <label class="field">
-                  <span class="field-label">Dari</span>
-                  <input type="date" id="expenseStartDate" onchange="document.getElementById('expenseMonthSelect').value=''; renderExpensesList()" class="input">
-                </label>
-                <label class="field">
-                  <span class="field-label">Sampai</span>
-                  <input type="date" id="expenseEndDate" onchange="document.getElementById('expenseMonthSelect').value=''; renderExpensesList()" class="input">
-                </label>
+              <div class="segmented">
+                <button type="button" id="expRangeToday" onclick="setExpenseDay(hariIniWIB())">Hari Ini</button>
+                <button type="button" id="expRangeMonth" onclick="setExpenseThisMonth()">Bulan Ini</button>
+                <button type="button" id="expRangeAll" onclick="resetExpenseFilter()">Semua</button>
               </div>
-              <p class="card-sub" id="expenseDateLabel" style="margin:8px 2px 0;font-weight:600">Hari Ini</p>
-              <div style="display:flex;gap:10px;margin-top:10px">
-                <button type="button" onclick="setExpenseDay(hariIniWIB())" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
-                <button type="button" onclick="resetExpenseFilter()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
-              </div>
+              <p class="card-sub" id="expenseDateLabel" style="margin:10px 2px 0;font-weight:600">Hari Ini</p>
               <div class="row-between" style="margin-top:12px;background:var(--red-soft);border-radius:14px;padding:12px 16px">
                 <span id="expenseCountLabel" style="font-weight:600;color:#7f1d1d">0 catatan</span>
                 <span id="expenseTotalLabel" style="font-size:20px;font-weight:800;color:var(--red)">Rp 0</span>
@@ -937,6 +928,18 @@
           <!-- 5. PENGELUARAN -->
           <div class="section-label"><span>⑤ Pengeluaran</span></div>
           <div class="card">
+            <span class="field-label">Rentang tanggal Riwayat Belanja</span>
+            <div class="date-range">
+              <label class="field">
+                <span class="field-label">Dari</span>
+                <input type="date" id="expenseStartDate" onchange="document.getElementById('expenseMonthSelect').value=''; renderExpensesList()" class="input">
+              </label>
+              <label class="field">
+                <span class="field-label">Sampai</span>
+                <input type="date" id="expenseEndDate" onchange="document.getElementById('expenseMonthSelect').value=''; renderExpensesList()" class="input">
+              </label>
+            </div>
+            <div class="divider"></div>
             <span class="field-label">Cari keperluan di Riwayat Belanja</span>
             <div class="search">
               <i class="fas fa-magnifying-glass"></i>
@@ -2595,6 +2598,15 @@
       document.getElementById('expenseMonthSelect').value = '';
       renderExpensesList();
     }
+    function setExpenseThisMonth() {
+      const today = hariIniWIB();
+      const ym = today.slice(0, 7);
+      const [y, m] = ym.split('-');
+      document.getElementById('expenseStartDate').value = ym + '-01';
+      document.getElementById('expenseEndDate').value = ym + '-' + String(new Date(Date.UTC(+y, +m, 0)).getUTCDate()).padStart(2, '0');
+      document.getElementById('expenseMonthSelect').value = '';
+      renderExpensesList();
+    }
     function shiftExpenseDate(days) {
       const base = document.getElementById('expenseStartDate').value || hariIniWIB();
       const d = new Date(base + 'T00:00:00Z');
@@ -2641,7 +2653,15 @@
       const dayLabel = (!startF && !endF) ? 'Semua Tanggal'
         : (startF === endF ? (startF === todayISO ? `Hari Ini · ${fmtTgl(startF)}` : fmtTgl(startF))
         : `${fmtTgl(startF).slice(0, 6)} – ${fmtTgl(endF)}`);
-      document.getElementById('expenseDateLabel').textContent = 'Menampilkan: ' + dayLabel + (searchKw ? ` · cari "${searchKw}"` : '') + (showAssets ? ' · termasuk aset' : '');
+      const ymNow = todayISO.slice(0, 7);
+      const [yN, mN] = ymNow.split('-');
+      const monthEnd = ymNow + '-' + String(new Date(Date.UTC(+yN, +mN, 0)).getUTCDate()).padStart(2, '0');
+      document.getElementById('expRangeToday').classList.toggle('active', !!startF && startF === todayISO && endF === todayISO);
+      document.getElementById('expRangeMonth').classList.toggle('active', startF === ymNow + '-01' && endF === monthEnd);
+      document.getElementById('expRangeAll').classList.toggle('active', !startF && !endF);
+      const isThisMonth = startF === ymNow + '-01' && endF === monthEnd;
+      const namaBulan = new Date(ymNow + '-15T12:00:00Z').toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      document.getElementById('expenseDateLabel').textContent = 'Menampilkan: ' + (isThisMonth ? `Bulan Ini · ${namaBulan}` : dayLabel) + (searchKw ? ` · cari "${searchKw}"` : '') + (showAssets ? ' · termasuk aset' : '');
       document.getElementById('expenseCountLabel').textContent = `${list.length} catatan`;
       document.getElementById('expenseTotalLabel').textContent = formatRp(list.reduce((acc, e) => acc + (e.amount || 0), 0));
 
