@@ -3,7 +3,8 @@
    Halaman customer TIDAK memakai Firebase langsung (kunci database kasir tidak ikut terbuka).
    Semua lewat route ini; Worker memeriksa jam buka, menghitung harga sendiri, lalu menulis ke
    Firebase kasir (project kasir-thai-tea) lewat REST:
-     thaitea/online_settings            { open, toppingOff: {Keju:true}, photos: {menuId: url} }  ← diubah dari web kasir
+     thaitea/online_settings            { mode: 'auto'|'tutup', toppingOff: {Keju:true}, photos: {menuId: url} }  ← diubah dari web kasir
+                                        (auto = buka 11.30 AM – 11.45 PM WIB; tutup = tertutup terus)
      thaitea/online_orders/<id>         pesanan online (status diubah dari web kasir)
      thaitea/online_customers/<cid>     { nick, gender, orders: {<id>: createdAt} }
    Status pesanan:
@@ -43,8 +44,11 @@ export const STORE = {
   address: 'Jln Swakarya, Kota Pekanbaru (dekat Jln HR Soebrantas)',
   maps: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Jalan Swakarya, Pekanbaru')
 };
-const OPEN_MIN = 12 * 60;          // 12.00
-const CLOSE_MIN = 23 * 60 + 40;    // 23.40
+const OPEN_MIN = 11 * 60 + 30;     // 11.30 AM WIB — buka otomatis
+const CLOSE_MIN = 23 * 60 + 45;    // 11.45 PM WIB — tutup otomatis
+// format 12 jam: 690 → "11.30 AM"
+const jam12 = m => { const h = Math.floor(m / 60), mm = String(m % 60).padStart(2, '0'); return `${((h + 11) % 12) + 1}.${mm} ${h < 12 ? 'AM' : 'PM'}`; };
+const JAM_TXT = `${jam12(OPEN_MIN)} – ${jam12(CLOSE_MIN)}`;
 const PAY_WINDOW_MIN = 20;         // batas waktu bayar QRIS
 const MAX_CUPS = 30;
 const MAX_UNPAID = 2;              // pesanan belum dibayar per HP
@@ -98,16 +102,16 @@ export async function handlePesan(request, env, url, ctx) {
     const info = infoFrom(settings);
     if (!info.canOrder) return json({ error: info.closedReason || 'Kedai sedang tutup.' }, 409);
 
-    // Jam jemput: "now" atau "HH:MM" (12.00 – 23.40, tidak boleh sudah lewat)
+    // Jam jemput: "now" atau "HH:MM" (11.30 AM – 11.45 PM, tidak boleh sudah lewat)
     const nowMin = wibMinutes();
     let pickup = 'now', pickupMin = nowMin;
     if (b.pickup === 'now') {
-      if (nowMin < OPEN_MIN || nowMin > CLOSE_MIN) return json({ error: 'Pilihan "Sekarang" hanya bisa jam 12.00 – 23.40. Pilih jam jemput.' }, 400);
+      if (nowMin < OPEN_MIN || nowMin > CLOSE_MIN) return json({ error: `Pilihan "Sekarang" hanya bisa jam ${JAM_TXT}. Pilih jam jemput.` }, 400);
     } else {
       const m = /^(\d{2}):(\d{2})$/.exec(String(b.pickup || ''));
       if (!m) return json({ error: 'Pilih dulu jam jemputnya.' }, 400);
       pickupMin = Number(m[1]) * 60 + Number(m[2]);
-      if (pickupMin < OPEN_MIN || pickupMin > CLOSE_MIN) return json({ error: 'Jam jemput hanya bisa 12.00 – 23.40.' }, 400);
+      if (pickupMin < OPEN_MIN || pickupMin > CLOSE_MIN) return json({ error: `Jam jemput hanya bisa ${JAM_TXT}.` }, 400);
       if (pickupMin < nowMin - 2) return json({ error: 'Jam jemput sudah lewat, pilih jam lain.' }, 400);
       pickup = m[1] + ':' + m[2];
     }
@@ -150,7 +154,7 @@ export async function handlePesan(request, env, url, ctx) {
     const id = 'ON-' + now + '-' + Math.random().toString(36).slice(2, 6);
     const order = {
       id, no, cid, nick, gender, name, date,
-      pickup, pickupMin, pickupLabel: pickup === 'now' ? 'Sekarang' : pickup.replace(':', '.'),
+      pickup, pickupMin, pickupLabel: pickup === 'now' ? 'Sekarang' : jam12(pickupMin),
       items, totalCups, totalPrice,
       status: 'bayar', createdAt: now
     };
@@ -276,15 +280,17 @@ export async function nudgeKasir(env, ctx) {
 // ---------- data ----------
 function infoFrom(settings) {
   const nowMin = wibMinutes();
-  const open = settings.open === true;
+  const mode = settings.mode === 'tutup' ? 'tutup' : 'auto';
+  const open = mode === 'auto' && nowMin >= OPEN_MIN && nowMin <= CLOSE_MIN;
   let closedReason = '';
-  if (!open) closedReason = 'Kedai sedang tutup. Coba lagi nanti ya!';
-  else if (nowMin > CLOSE_MIN) closedReason = 'Pesanan online hari ini sudah ditutup (jam jemput terakhir 23.40). Sampai besok ya!';
+  if (mode === 'tutup') closedReason = 'Kedai sedang tutup. Coba lagi nanti ya!';
+  else if (nowMin < OPEN_MIN) closedReason = `Pesanan online buka jam ${jam12(OPEN_MIN)}. Sampai nanti ya!`;
+  else if (nowMin > CLOSE_MIN) closedReason = `Pesanan online hari ini sudah tutup (buka lagi besok jam ${jam12(OPEN_MIN)}). Sampai besok ya!`;
   const photos = settings.photos || {};
   const off = settings.toppingOff || {};
   return {
     now: Date.now(),
-    open, canOrder: !closedReason, closedReason,
+    open, mode, canOrder: !closedReason, closedReason,
     hours: { open: OPEN_MIN, close: CLOSE_MIN },
     payWindowMin: PAY_WINDOW_MIN, maxCups: MAX_CUPS,
     store: STORE,

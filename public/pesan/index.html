@@ -482,7 +482,7 @@
           </div>
           <label class="ios-row hidden" id="coTimeRow"><span class="grow">Jam Jemput</span><select id="coTime" class="ios-input" onchange="cekCheckout(false)"></select></label>
         </div>
-        <div class="ios-foot" id="coWhenHint">Bisa dijemput jam 12.00 – 23.40, Senin – Minggu.</div>
+        <div class="ios-foot" id="coWhenHint">Bisa dijemput jam 11.30 AM – 11.45 PM, Senin – Minggu.</div>
         <div class="ios-group" style="margin-top:22px">
           <div class="ios-row total-row"><span>Total</span><b id="coTotal">Rp0</b></div>
         </div>
@@ -601,6 +601,8 @@
     const now = () => Date.now() + serverOffset;
     function wibMin() { const d = new Date(now() + 7 * 3600000); return d.getUTCHours() * 60 + d.getUTCMinutes(); }
     const jam = m => String(Math.floor(m / 60)).padStart(2, '0') + '.' + String(m % 60).padStart(2, '0');
+    // tampilan 12 jam: 690 → "11.30 AM"
+    const jam12 = m => { const h = Math.floor(m / 60); return `${((h + 11) % 12) + 1}.${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
     function jamDari(ts) { const d = new Date(ts + 7 * 3600000); return String(d.getUTCHours()).padStart(2, '0') + '.' + String(d.getUTCMinutes()).padStart(2, '0'); }
     function tglDari(ts) {
       const d = new Date(ts + 7 * 3600000);
@@ -820,11 +822,11 @@
       const btnNow = document.querySelector('#coWhen [data-w="now"]');
       btnNow.disabled = !bisaSekarang;
       if (!bisaSekarang && when === 'now') { when = ''; btnNow.classList.remove('active'); }
-      $('coWhenHint').textContent = bisaSekarang ? 'Bisa dijemput jam 12.00 – 23.40, Senin – Minggu.' : `Kedai mulai melayani jam ${jam(o)}. Pilih jam jemput mulai ${jam(o)}.`;
+      $('coWhenHint').textContent = bisaSekarang ? `Bisa dijemput jam ${jam12(o)} – ${jam12(c)}, Senin – Minggu.` : `Kedai mulai melayani jam ${jam12(o)}. Pilih jam jemput mulai ${jam12(o)}.`;
       const start = Math.max(o, Math.ceil((m + 10) / 5) * 5);
       const sel = $('coTime'), prev = sel.value;
       let html = '<option value="">Pilih</option>';
-      for (let t = start; t <= c; t += 5) html += `<option value="${jam(t).replace('.', ':')}">${jam(t)}</option>`;
+      for (let t = start; t <= c; t += 5) html += `<option value="${jam(t).replace('.', ':')}">${jam12(t)}</option>`;
       sel.innerHTML = html;
       if (prev && [...sel.options].some(op => op.value === prev)) sel.value = prev;
       document.querySelector('#coWhen [data-w="custom"]').disabled = start > c;
