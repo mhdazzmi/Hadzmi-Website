@@ -960,10 +960,6 @@
       <section id="tab-analisis" class="tab-content hidden">
         <h1 class="large-title">Laporan</h1>
         <p class="page-sub">Pendapatan, pengeluaran, dan laba bersih.</p>
-        <div class="segmented lap-seg">
-          <button type="button" class="active" onclick="switchTab('tab-analisis')">Ringkasan</button>
-          <button type="button" class="" onclick="switchTab('tab-riwayat')">Riwayat Transaksi</button>
-        </div>
 
         <div class="card">
           <div class="segmented">
@@ -1021,12 +1017,8 @@
 
       <!-- ================= TAB 4: RIWAYAT ================= -->
       <section id="tab-riwayat" class="tab-content hidden">
-        <h1 class="large-title">Laporan</h1>
-        <p class="page-sub">Transaksi per tanggal. Geser ‹ › untuk ganti hari.</p>
-        <div class="segmented lap-seg">
-          <button type="button" class="" onclick="switchTab('tab-analisis')">Ringkasan</button>
-          <button type="button" class="active" onclick="switchTab('tab-riwayat')">Riwayat Transaksi</button>
-        </div>
+        <h1 class="large-title">Riwayat</h1>
+        <p class="page-sub">Semua transaksi per tanggal. Geser ‹ › untuk ganti hari.</p>
 
         <div class="narrow riwayat-split">
           <div class="card">
@@ -1112,6 +1104,7 @@
       <!-- ================= CATATAN AKTIVITAS (tombol kecil di kanan atas) ================= -->
       <!-- ================= TAB: PESANAN ONLINE (dari halaman customer /pesan/) ================= -->
       <section id="tab-online" class="tab-content hidden">
+        <button type="button" class="back-btn" onclick="switchTab('tab-lainnya')"><i class="fas fa-chevron-left"></i> Lainnya</button>
         <h1 class="large-title">Pesanan Online</h1>
         <p class="page-sub">Pesanan customer dari link <b>/pesan</b>. Cocokkan pembayaran QRIS di ShopeePay Partner.</p>
 
@@ -1180,9 +1173,10 @@
       <!-- ================= TAB: LAINNYA (Chat, Hiburan, Aktivitas, Pengaturan) ================= -->
       <section id="tab-lainnya" class="tab-content hidden">
         <h1 class="large-title">Lainnya</h1>
-        <p class="page-sub">Chat, hiburan, dan catatan aktivitas.</p>
+        <p class="page-sub">Pesanan online, chat, hiburan, dan catatan aktivitas.</p>
         <div class="narrow">
           <div class="more-grid">
+            <button type="button" class="more-tile" onclick="switchTab('tab-online')"><span class="more-ico" style="background:linear-gradient(160deg,#FFB340,#EA6A0A)"><i class="fas fa-mobile-screen-button"></i><span id="onlineBadgeTile" class="tab-badge hidden">0</span></span><span><b>Pesanan Online</b><small>Pesanan dari link /pesan</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-chat')"><span class="more-ico" style="background:linear-gradient(160deg,#5AC8FA,#0A84FF)"><i class="fas fa-comments"></i><span id="chatBadgeTile" class="tab-badge hidden">0</span></span><span><b>Chat</b><small>Pesan, foto & suara</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-hiburan')"><span class="more-ico" style="background:linear-gradient(160deg,#FF6B8B,#E8325A)"><i class="fas fa-music"></i></span><span><b>Hiburan</b><small>Musik, ayat & game</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-aktivitas')"><span class="more-ico" style="background:linear-gradient(160deg,#34C759,#1E9E4A)"><i class="fas fa-list-check"></i></span><span><b>Aktivitas</b><small>Siapa mencatat apa</small></span></button>
@@ -1504,8 +1498,8 @@
         <button onclick="switchTab('tab-penjualan')" id="btn-tab-penjualan" class="tab-btn active"><i class="fas fa-cash-register"></i>Kasir</button>
         <button onclick="switchTab('tab-pengeluaran')" id="btn-tab-pengeluaran" class="tab-btn"><i class="fas fa-wallet"></i>Belanja</button>
         <button onclick="switchTab('tab-analisis')" id="btn-tab-analisis" class="tab-btn"><i class="fas fa-chart-pie"></i>Laporan</button>
-        <button onclick="switchTab('tab-online')" id="btn-tab-online" class="tab-btn"><span class="tab-ico"><i class="fas fa-mobile-screen-button"></i><span id="onlineBadge" class="tab-badge hidden">0</span></span>Online</button>
-        <button onclick="switchTab('tab-lainnya')" id="btn-tab-lainnya" class="tab-btn"><span class="tab-ico"><i class="fas fa-grip"></i><span id="chatBadge" class="tab-badge hidden">0</span></span>Lainnya</button>
+        <button onclick="switchTab('tab-riwayat')" id="btn-tab-riwayat" class="tab-btn"><i class="fas fa-clock-rotate-left"></i>Riwayat</button>
+        <button onclick="switchTab('tab-lainnya')" id="btn-tab-lainnya" class="tab-btn"><span class="tab-ico"><i class="fas fa-grip"></i><span id="chatBadge" class="tab-badge hidden">0</span><span id="onlineBadge" class="tab-badge hidden">0</span></span>Lainnya</button>
       </div>
     </nav>
 
@@ -2696,6 +2690,7 @@
       b.classList.toggle('hidden', n === 0);
       const t = document.getElementById('chatBadgeTile');
       if (t) { t.textContent = b.textContent; t.classList.toggle('hidden', n === 0); }
+      if (typeof renderOnlineBadge === 'function') try { renderOnlineBadge(); } catch (e) { }
     }
     // Chat Resto (customer /pesan/): daftar room di thaitea/cs_rooms, pesan di thaitea/chat/cs_xxx
     let csRoomsData = {};
@@ -3316,7 +3311,7 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
       document.getElementById(targetId).classList.remove('hidden');
-      const induk = { 'tab-riwayat': 'tab-analisis', 'tab-chat': 'tab-lainnya', 'tab-hiburan': 'tab-lainnya' }[targetId] || targetId;
+      const induk = { 'tab-online': 'tab-lainnya', 'tab-chat': 'tab-lainnya', 'tab-hiburan': 'tab-lainnya' }[targetId] || targetId;
       const tabBtn = document.getElementById('btn-' + induk);
       if (tabBtn) { tabBtn.classList.add('active'); lastMainTab = targetId; }
       currentTab = targetId;
@@ -4807,7 +4802,9 @@
     function renderOnlineBadge() {
       const n = onlineList.filter(o => ['cek', 'proses', 'siap'].includes(onStatus(o))).length;
       const b = document.getElementById('onlineBadge');
-      b.textContent = n; b.classList.toggle('hidden', !n);
+      b.textContent = n; b.classList.toggle('hidden', !n || !document.getElementById('chatBadge').classList.contains('hidden'));
+      const t = document.getElementById('onlineBadgeTile');
+      if (t) { t.textContent = n; t.classList.toggle('hidden', !n); }
     }
 
     /* ---------- buka / tutup ---------- */
