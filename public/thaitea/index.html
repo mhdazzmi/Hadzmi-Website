@@ -1269,7 +1269,7 @@
                   <option value="senin">Senin</option><option value="selasa">Selasa</option><option value="rabu">Rabu</option><option value="kamis">Kamis</option><option value="jumat">Jum'at</option><option value="sabtu">Sabtu</option><option value="minggu">Minggu</option>
                 </select>
               </label>
-              <label class="field"><span class="field-label">Nama Ayat / Surah</span><input type="text" id="admAyatName" class="input" placeholder="Contoh: Surah Al-Kahfi"></label>
+              <p class="card-sub" style="margin:0 0 10px">Nama otomatis: <b>Hari - Ayat Suci</b> (misalnya Senin - Ayat Suci).</p>
               <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept=".mp3,.m4a,.mp4,.aac,.wav,.ogg,.opus,.flac,.webm,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,video/mp4" hidden onchange="uploadHiburan(this, 'ayat')"></label>
             </div>
           </div>
@@ -2819,6 +2819,11 @@
       return HARI[(d + 6) % 7];
     }
     function urutMusik() { return Object.values(hiburan.musik || {}).filter(m => m && m.url).sort((a, b) => (a.ts || 0) - (b.ts || 0)); }
+    function namaAyat(a) {
+      const sama = ayatHari(a.day);
+      const i = sama.findIndex(x => x.id === a.id);
+      return `${HARI_LABEL[a.day] || ''} - Ayat Suci` + (sama.length > 1 && i > 0 ? ` ${i + 1}` : '');
+    }
     function ayatHari(h) { return Object.values(hiburan.ayatItems || {}).filter(a => a && a.url && a.day === h).sort((a, b) => (a.ts || 0) - (b.ts || 0)); }
     function pilihHiburan(p) {
       funPane = p;
@@ -2842,7 +2847,7 @@
       document.getElementById('ayatList').innerHTML = [today, ...HARI.filter(h => h !== today)].map(h => {
         const items = ayatHari(h);
         return `<div class="day-head ${h === today ? 'today' : ''}">${HARI_LABEL[h]}${h === today ? ' · Hari Ini' : ''}</div>` + (items.length
-          ? items.map(a => { const on = now && now.key === 'a:' + a.id; return `<button type="button" class="track-row ${on ? 'playing' : ''}" onclick="putarAyat('${a.id}')">${trackIco(on, IC_BOOK)}<div class="track-main"><div class="track-name">${esc(a.name)}</div><div class="track-sub">${HARI_LABEL[h]}</div></div></button>`; }).join('')
+          ? items.map(a => { const on = now && now.key === 'a:' + a.id; return `<button type="button" class="track-row ${on ? 'playing' : ''}" onclick="putarAyat('${a.id}')">${trackIco(on, IC_BOOK)}<div class="track-main"><div class="track-name">${esc(namaAyat(a))}</div></div></button>`; }).join('')
           : `<div class="track-row empty-day"><span class="track-ico">${IC_BOOK}</span><div class="track-main"><div class="track-sub">Belum diisi admin</div></div></div>`);
       }).join('');
       if (window.TTG) TTG.renderPane();
@@ -2864,7 +2869,7 @@
       const a = (hiburan.ayatItems || {})[id];
       if (!a || !a.url) return;
       const list = ayatHari(a.day);
-      putarAntrean(list.map(x => ({ key: 'a:' + x.id, name: x.name, url: x.url, sub: `Ayat Suci · ${HARI_LABEL[x.day]}`, art: IC_BOOK })), list.findIndex(x => x.id === id));
+      putarAntrean(list.map(x => ({ key: 'a:' + x.id, name: namaAyat(x), url: x.url, sub: `Ayat Suci · ${HARI_LABEL[x.day]}`, art: IC_BOOK })), list.findIndex(x => x.id === id));
     }
     function togglePutar() {
       if (!antrean[antreanIdx]) return;
@@ -2911,15 +2916,16 @@
           <button type="button" class="icon-act del" aria-label="Hapus lagu" onclick="hapusHiburan('musik','${m.id}')">${ICON_TRASH}</button></div>`).join('') : '<p class="card-sub" style="margin:10px 0 0">Belum ada lagu.</p>';
       const ay = document.getElementById('admAyatList');
       const semua = HARI.flatMap(h => ayatHari(h));
-      ay.innerHTML = semua.length ? semua.map(a => `<div class="adm-row"><span class="track-ico" style="width:38px;height:38px">${IC_BOOK}</span><div class="ar-main"><div class="ar-name">${esc(a.name)}</div><div class="ar-url">${HARI_LABEL[a.day]}</div></div>
+      ay.innerHTML = semua.length ? semua.map(a => `<div class="adm-row"><span class="track-ico" style="width:38px;height:38px">${IC_BOOK}</span><div class="ar-main"><div class="ar-name">${esc(namaAyat(a))}</div></div>
           <button type="button" class="icon-act del" aria-label="Hapus ayat" onclick="hapusHiburan('ayatItems','${a.id}')">${ICON_TRASH}</button></div>`).join('') : '<p class="card-sub" style="margin:10px 0 0">Belum ada ayat.</p>';
     }
     async function uploadHiburan(input, jenis) {
       const f = input.files && input.files[0];
       input.value = '';
       if (!f || !adminTerbuka()) return;
-      const nameEl = document.getElementById(jenis === 'musik' ? 'admMusikName' : 'admAyatName');
-      const name = (nameEl.value.trim() || f.name.replace(/\.[^.]+$/, '')).slice(0, 80);
+      const nameEl = jenis === 'musik' ? document.getElementById('admMusikName') : null;
+      const hariAyat = jenis === 'ayat' ? document.getElementById('admAyatDay').value : '';
+      const name = jenis === 'ayat' ? `${HARI_LABEL[hariAyat]} - Ayat Suci` : ((nameEl.value.trim() || f.name.replace(/\.[^.]+$/, '')).slice(0, 80));
       if (f.size > 60 * 1024 * 1024) { triggerToast('File terlalu besar (maks 60 MB)', true); return; }
       const ext = (f.name.split('.').pop() || '').toLowerCase();
       const EXT_AUDIO = { mp3: 'audio/mpeg', m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac', webm: 'audio/webm' };
@@ -2932,11 +2938,11 @@
         const url = await unggahBerkas(f, type);
         const id = (jenis === 'musik' ? 'L' : 'A') + Date.now();
         const data = { id, name, url, size: f.size, ts: Date.now() };
-        if (jenis === 'ayat') data.day = document.getElementById('admAyatDay').value;
+        if (jenis === 'ayat') data.day = hariAyat;
         await hiburanRef.child((jenis === 'musik' ? 'musik/' : 'ayatItems/') + id).set(data);
-        nameEl.value = '';
+        if (nameEl) nameEl.value = '';
         triggerToast(jenis === 'musik' ? 'Lagu tersimpan' : `Ayat hari ${HARI_LABEL[data.day]} tersimpan`);
-        logAktivitas('sys', jenis === 'musik' ? `Menambahkan lagu ${name}` : `Menambahkan ayat suci ${name} (${HARI_LABEL[data.day]})`);
+        logAktivitas('sys', jenis === 'musik' ? `Menambahkan lagu ${name}` : `Menambahkan ${name}`);
       } catch (e) { triggerToast(e.message || 'Upload gagal', true); }
     }
     async function hapusHiburan(jenis, id) {
