@@ -473,8 +473,8 @@
     .room-name { font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-time { font-size: 13px; color: var(--text2); flex: none; }
     .room-bottom { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 2px; }
-    .room-status { font-size: 13px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .room-status.on { color: var(--green); font-weight: 700; }
+    .room-last.on { color: var(--green); font-weight: 700; }
+    .room-last.unread { color: var(--text); font-weight: 700; }
     .room-last { font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-unread { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
     .room-chev { color: #C7C7CC; margin-left: 4px; display: inline-flex; }
@@ -2593,7 +2593,7 @@
       rows.push({ room: ROOM_ALL, ts: Infinity, html: `<button type="button" class="room-row" onclick="bukaChat('${ROOM_ALL}')">
           <span class="ava ava-logo">${chatLogoSvg()}</span>
           <div class="room-main"><div class="room-top"><span class="room-name">Chat Semua</span><span class="room-time">${lastAll ? jamWIB(lastAll.ts) : ''}<span class="room-chev">›</span></span></div>
-          <div class="room-bottom"><span class="room-last">${lastAll ? esc(lastAll.name + ': ' + previewPesan(lastAll)) : esc(onlineCount + ' orang online')}</span>${unreadCount(ROOM_ALL) ? `<span class="room-unread">${unreadCount(ROOM_ALL)}</span>` : ''}</div></div></button>` });
+          <div class="room-bottom"><span class="room-last ${unreadCount(ROOM_ALL) && lastAll ? 'unread' : ''}">${unreadCount(ROOM_ALL) && lastAll ? esc(lastAll.name + ': ' + previewPesan(lastAll)) : esc(onlineCount + ' orang online')}</span>${unreadCount(ROOM_ALL) ? `<span class="room-unread">${unreadCount(ROOM_ALL)}</span>` : ''}</div></div></button>` });
       Object.entries(usersData).filter(([k, u]) => k !== myKey && u && u.name).forEach(([k, u]) => {
         const room = roomIdWith(k);
         const msgs = chatData[room] || [];
@@ -2602,8 +2602,9 @@
         rows.push({ room, ts: last ? last.ts : 0, html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
           ${avaHtml(k, u.name)}
           <div class="room-main"><div class="room-top"><span class="room-name">${esc(u.name)}</span><span class="room-time">${last ? jamWIB(last.ts) : ''}<span class="room-chev">›</span></span></div>
-          <div class="room-status ${isOnline(k) ? 'on' : ''}">${isOnline(k) ? '● Online' : esc(statusText(k))}</div>
-          ${last ? `<div class="room-bottom"><span class="room-last">${esc((last.from === myKey ? 'Kamu: ' : '') + previewPesan(last))}</span>` : `<div class="room-bottom"><span class="room-last"></span>`}${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
+          <div class="room-bottom">${un && last
+            ? `<span class="room-last unread">${esc(previewPesan(last))}</span>`
+            : `<span class="room-last ${isOnline(k) ? 'on' : ''}">${isOnline(k) ? '● Online' : esc(statusText(k))}</span>`}${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
       });
       rows.sort((a, b) => b.ts - a.ts);
       box.innerHTML = myKey ? rows.map(r => r.html).join('') : '<div class="empty">Pilih nama pengguna dulu di Pengaturan.</div>';
