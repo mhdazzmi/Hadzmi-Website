@@ -473,6 +473,8 @@
     .room-name { font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-time { font-size: 13px; color: var(--text2); flex: none; }
     .room-bottom { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 2px; }
+    .room-status { font-size: 13px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .room-status.on { color: var(--green); font-weight: 700; }
     .room-last { font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-unread { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
     .room-chev { color: #C7C7CC; margin-left: 4px; display: inline-flex; }
@@ -2600,11 +2602,13 @@
         rows.push({ room, ts: last ? last.ts : 0, html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
           ${avaHtml(k, u.name)}
           <div class="room-main"><div class="room-top"><span class="room-name">${esc(u.name)}</span><span class="room-time">${last ? jamWIB(last.ts) : ''}<span class="room-chev">›</span></span></div>
-          <div class="room-bottom"><span class="room-last" style="${!last && isOnline(k) ? 'color:var(--green);font-weight:700' : ''}">${last ? esc((last.from === myKey ? 'Kamu: ' : '') + previewPesan(last)) : esc(statusText(k))}</span>${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
+          <div class="room-status ${isOnline(k) ? 'on' : ''}">${isOnline(k) ? '● Online' : esc(statusText(k))}</div>
+          ${last ? `<div class="room-bottom"><span class="room-last">${esc((last.from === myKey ? 'Kamu: ' : '') + previewPesan(last))}</span>` : `<div class="room-bottom"><span class="room-last"></span>`}${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
       });
       rows.sort((a, b) => b.ts - a.ts);
       box.innerHTML = myKey ? rows.map(r => r.html).join('') : '<div class="empty">Pilih nama pengguna dulu di Pengaturan.</div>';
     }
+    setInterval(() => { if (!document.hidden) renderChatRooms(); }, 30000);
     function renderChatHead() {
       const nameEl = document.getElementById('chatHeadName'), stEl = document.getElementById('chatHeadStatus'), avaEl = document.getElementById('chatHeadAva');
       if (!currentRoom) return;
