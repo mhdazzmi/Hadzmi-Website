@@ -535,6 +535,8 @@
       display: flex; align-items: flex-end; justify-content: center; transition: background .28s ease;
     }
     .sheet-backdrop.show { background: rgba(0, 0, 0, .42); }
+    #menuPickSheet, #cupOptionModal { z-index: 1000001; }
+    .alert-backdrop { z-index: 1000002 !important; }
     .sheet {
       width: 100%; max-width: 560px; max-height: 92%; background: var(--bg); border-radius: 24px 24px 0 0;
       transform: translateY(100%); transition: transform .32s cubic-bezier(.2, .85, .25, 1);
@@ -1234,6 +1236,18 @@
       </div>
     </div>
 
+    <!-- SHEET: PILIH MENU (tambah menu ke pesanan yang diedit) -->
+    <div id="menuPickSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeSheet('menuPickSheet')">
+      <div class="sheet">
+        <div class="sheet-grabber"></div>
+        <div class="sheet-head">
+          <div><div class="sheet-title">Tambah Menu</div><div class="sheet-sub">Pilih minuman yang mau ditambahkan</div></div>
+          <button onclick="closeSheet('menuPickSheet')" class="round-btn" aria-label="Tutup"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="sheet-body"><div id="menuPickGrid" class="menu-grid" style="margin-top:0"></div></div>
+      </div>
+    </div>
+
     <!-- SHEET: EDIT PESANAN -->
     <div id="editOrderModal" class="sheet-backdrop hidden" onclick="if(event.target===this) closeEditModal()">
       <div class="sheet">
@@ -1254,7 +1268,7 @@
           </div>
 
           <div class="white-group">
-            <div class="grid-2 field">
+            <div class="grid-2 field hidden" id="editDateTimeBox"><!-- hanya admin -->
               <label>
                 <span class="field-label">Tanggal</span>
                 <input type="date" id="editOrderDate" class="input">
@@ -1283,6 +1297,7 @@
           <div class="white-group" style="padding-top:2px;padding-bottom:2px">
             <div id="editItemsListContainer"></div>
           </div>
+          <button type="button" class="btn btn-tinted btn-block" style="margin-top:10px" onclick="bukaPilihMenuEdit()"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg> Tambah Menu ke Pesanan Ini</button>
 
           <div class="summary" style="background:var(--accent-soft)">
             <div class="summary-row"><span>Total Cup Baru</span><b id="editTotalCupsDisplay">0 cup</b></div>
@@ -2019,13 +2034,13 @@
     let appSettings = {};
     // Pilihan default: pesanan No. 1, pengeluaran No. 4 (bisa diganti di Admin)
     const DEFAULT_KARTUN = { order: 0, expense: 3 };
-    function tampilkanSukses(jenis, detail) {
+    function tampilkanSukses(jenis, detail, judul) {
       const lib = window.TT_CARTOONS || { order: [], expense: [] };
       const pilih = jenis === 'order' ? appSettings.cartoonOrder : appSettings.cartoonExpense;
       const idx = (pilih === undefined || pilih === null) ? DEFAULT_KARTUN[jenis] : (Number(pilih) || 0);
       const arr = lib[jenis] || [];
       document.getElementById('spArt').innerHTML = arr[idx] || arr[0] || '';
-      document.getElementById('spTitle').textContent = jenis === 'order' ? 'Pesanan Sudah Ditambahkan ke Sistem' : 'Pengeluaran Sudah Ditambahkan ke Sistem';
+      document.getElementById('spTitle').textContent = judul || (jenis === 'order' ? 'Pesanan Sudah Ditambahkan ke Sistem' : 'Pengeluaran Sudah Ditambahkan ke Sistem');
       document.getElementById('spDetail').textContent = detail || '';
       const conf = document.getElementById('spConfetti');
       const warna = ['#FFC83D', '#EA6A0A', '#FF9AA2', '#5AC8FA', '#34C759', '#FF6B6B'];
@@ -2202,6 +2217,55 @@
       sessSet('tt_admin_ok', null);
       renderAdminVisibility();
       triggerToast('Bagian admin dikunci');
+    }
+
+    /* ===== TAMBAH MENU SAAT MENGUBAH PESANAN ===== */
+    let tambahKeEdit = false;
+    function bukaPilihMenuEdit() {
+      const grid = document.getElementById('menuPickGrid');
+      grid.innerHTML = MENU_DATABASE.map(m => `<button type="button" class="menu-tile" onclick="pilihMenuUntukEdit('${m.id}')">
+          <div class="mt-art" style="background:${gradCss(m.grad)};height:56px">${m.category.includes('premium') ? '<span class="mt-badge">PREMIUM</span>' : ''}</div>
+          <div class="mt-name" style="min-height:0">${m.name}</div>
+          <div class="mt-foot"><span class="mt-price">${formatRp(m.price)}</span><span class="mt-plus">+</span></div></button>`).join('');
+      openSheet('menuPickSheet');
+    }
+    function pilihMenuUntukEdit(id) {
+      closeSheet('menuPickSheet');
+      tambahKeEdit = true;
+      openCustomizeModal(id);
+    }
+    // Pemakaian bahan per daftar menu (aturan sama dengan saat simpan pesanan)
+    function pemakaianBahan(items) {
+      const u = {};
+      const add = (k, v) => { u[k] = (u[k] || 0) + v; };
+      (items || []).forEach(it => {
+        const q = it.qty || 0;
+        const n = (it.name || '').toLowerCase();
+        const cat = (it.category || '').toLowerCase();
+        add('cup', q);
+        if (cat.includes('thai')) add('susu', 50 * q);
+        if (n.includes('matcha')) add('bubukMatcha', 20 * q);
+        else if (n.includes('coklat')) add('bubukCoklat', 20 * q);
+        else if (n.includes('tarro')) add('bubukTarro', 20 * q);
+        else if (n.includes('cappuccino')) add('bubukCappuccino', 20 * q);
+        else if (n.includes('red velvet')) add('bubukRedVelvet', 20 * q);
+        else if (n.includes('mangga')) add('bubukMangga', 20 * q);
+        else if (n.includes('vanilla')) add('bubukVanilla', 20 * q);
+        else if (n.includes('lemon')) add('bubukLemon', 27 * q);
+        else if (n.includes('peach')) add('bubukPeach', 27 * q);
+        else if (n.includes('thai tea') || n.includes('thai')) add('bubukThai', 20 * q);
+      });
+      return u;
+    }
+    // Stok ikut menyesuaikan kalau jumlah/menu pesanan diubah
+    function sesuaikanStok(itemsLama, itemsBaru) {
+      const a = pemakaianBahan(itemsLama), b = pemakaianBahan(itemsBaru);
+      let berubah = false;
+      new Set([...Object.keys(a), ...Object.keys(b)]).forEach(k => {
+        const selisih = (b[k] || 0) - (a[k] || 0);
+        if (selisih) { inventoryData[k] = Math.max(0, (inventoryData[k] || 0) - selisih); berubah = true; }
+      });
+      if (berubah) inventoryRef.set(inventoryData);
     }
 
     /* ===== DATA LAMA TERKUNCI =====
@@ -2784,6 +2848,7 @@
 
     function closeCupModal() {
       closeSheet('cupOptionModal');
+      setTimeout(() => { if (document.getElementById('cupOptionModal').classList.contains('hidden')) tambahKeEdit = false; }, 400);
     }
 
     function toggleToppingSelection(tName) {
@@ -2813,7 +2878,7 @@
       const toppingFee = selectedToppings.length * 3000;
       const pricePerCup = activeItem.price + toppingFee;
 
-      cartItems.push({
+      const itemBaru = {
         cartId: 'c_' + Date.now() + Math.random().toString(36).substr(2, 4),
         menuId: activeItem.id,
         name: activeItem.name,
@@ -2823,7 +2888,16 @@
         toppings: [...selectedToppings],
         qty: activeQty,
         total: pricePerCup * activeQty
-      });
+      };
+      if (tambahKeEdit) {
+        tambahKeEdit = false;
+        editingOrderItems.push(itemBaru);
+        closeCupModal();
+        renderEditOrderItems();
+        triggerToast(`${activeQty}x ${activeItem.name} ditambahkan`);
+        return;
+      }
+      cartItems.push(itemBaru);
 
       closeCupModal();
       renderCartUI();
@@ -3045,8 +3119,8 @@
             <div class="lc-body">${desc}</div>
             ${o.note ? `<div class="lc-note">“${esc(o.note)}”</div>` : ''}
             <div class="lc-actions icons">
-              <button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit${dataLama(o.date) ? ' locked' : ''}" aria-label="Ubah pesanan">${ICON_EDIT}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
-              <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del${dataLama(o.date) ? ' locked' : ''}" aria-label="Hapus pesanan">${ICON_TRASH}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
+              <button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit" aria-label="Ubah pesanan">${ICON_EDIT}</button>
+              <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
             </div>
           `;
           tableBody.appendChild(cell);
@@ -3131,13 +3205,11 @@
       const freeDrinkBox = document.getElementById('freeDrinkOptionContainer');
       const freeDrinkChk = document.getElementById('freeDrinkCheckbox');
 
-      if (fromHistoryTab) {
-        freeDrinkBox.classList.remove('hidden');
-        freeDrinkChk.checked = !!order.isFreeDrink;
-      } else {
-        freeDrinkBox.classList.add('hidden');
-        freeDrinkChk.checked = false;
-      }
+      // Free Drink, tanggal & jam hanya untuk admin
+      const isAdm = adminTerbuka();
+      freeDrinkBox.classList.toggle('hidden', !isAdm);
+      freeDrinkChk.checked = !!order.isFreeDrink;
+      document.getElementById('editDateTimeBox').classList.toggle('hidden', !isAdm);
 
       renderEditOrderItems();
       openSheet('editOrderModal');
@@ -3212,7 +3284,8 @@
       const updatedTime = document.getElementById('editOrderTime').value.trim();
       const updatedMethod = document.getElementById('editPaymentMethod').value;
       const updatedNote = document.getElementById('editOrderNote').value.trim();
-      const isFree = isEditingFromHistoryTab ? document.getElementById('freeDrinkCheckbox').checked : false;
+      const orderAsal = ordersList.find(o => o.orderId === editingOrderId) || {};
+      const isFree = adminTerbuka() ? document.getElementById('freeDrinkCheckbox').checked : !!orderAsal.isFreeDrink;
 
       const totalCups = editingOrderItems.reduce((acc, i) => acc + i.qty, 0);
       const totalPrice = isFree ? 0 : editingOrderItems.reduce((acc, i) => acc + i.total, 0);
@@ -3230,7 +3303,8 @@
         isFreeDrink: isFree
       }).then(() => {
         closeEditModal();
-        triggerToast('Pesanan berhasil diperbarui di Sistem!');
+        if (orderLama) sesuaikanStok(orderLama.items, itemBaru);
+        tampilkanSukses('order', `${ringkasItem(itemBaru)}\n${totalCups} cup · ${formatRp(totalPrice)} · ${updatedMethod}`, 'Berhasil Mengedit Pesanan');
         if (orderLama) {
           const ubah = [];
           if (ringkasItem(orderLama.items) !== ringkasItem(itemBaru)) ubah.push(`menu ${ringkasItem(orderLama.items)} → ${ringkasItem(itemBaru)}`);
@@ -3507,8 +3581,8 @@
           </div>
           ${e.note ? `<div class="lc-note">${esc(e.note)}</div>` : ''}
           <div class="lc-actions icons">
-            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="icon-act edit${dataLama(e.date) ? ' locked' : ''}" aria-label="Ubah pengeluaran">${ICON_EDIT}${dataLama(e.date) ? LOCK_BADGE : ''}</button>
-            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="icon-act del${dataLama(e.date) ? ' locked' : ''}" aria-label="Hapus pengeluaran">${ICON_TRASH}${dataLama(e.date) ? LOCK_BADGE : ''}</button>
+            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="icon-act edit" aria-label="Ubah pengeluaran">${ICON_EDIT}</button>
+            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="icon-act del" aria-label="Hapus pengeluaran">${ICON_TRASH}</button>
           </div>
         `;
         tbody.appendChild(cell);
@@ -3962,8 +4036,8 @@
           </div>
           <div class="lc-body">${esc(detailStr)}</div>
           <div class="lc-actions icons">
-            <button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit${dataLama(o.date) ? ' locked' : ''}" aria-label="Ubah pesanan / free drink">${ICON_EDIT}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
-            <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del${dataLama(o.date) ? ' locked' : ''}" aria-label="Hapus pesanan">${ICON_TRASH}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
+            <button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit" aria-label="Ubah pesanan / free drink">${ICON_EDIT}</button>
+            <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
           </div>
         `;
         tbody.appendChild(cell);
