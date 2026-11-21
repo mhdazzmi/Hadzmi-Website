@@ -193,6 +193,14 @@
     .steps { margin: 0; padding: 0 0 0 4px; list-style: none; counter-reset: s; }
     .steps li { counter-increment: s; position: relative; padding: 6px 0 6px 36px; font-size: 15px; }
     .steps li::before { content: counter(s); position: absolute; left: 0; top: 5px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .thanks-pop { position: fixed; inset: 0; z-index: 95; background: linear-gradient(165deg, #FF9F43 0%, #EA6A0A 55%, #C95705 100%); color: #fff; display: flex; align-items: center; justify-content: center; padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(var(--safe-b) + 24px); text-align: center; }
+    .tp-in { width: 100%; max-width: 440px; animation: tpIn .5s cubic-bezier(.2, .9, .3, 1.2); }
+    @keyframes tpIn { from { opacity: 0; transform: scale(.9) translateY(20px); } }
+    .tp-emoji { font-size: 88px; line-height: 1; animation: tpBounce 1.6s ease-in-out infinite; }
+    @keyframes tpBounce { 50% { transform: translateY(-10px) rotate(-6deg); } }
+    .thanks-pop h1 { font-size: 32px; font-weight: 800; letter-spacing: -.02em; margin: 18px 0 12px; line-height: 1.15; }
+    .thanks-pop p { font-size: 18px; line-height: 1.5; margin: 0; opacity: .95; }
+    .tp-ok { width: 100%; margin-top: 36px; background: #fff; color: var(--accent-text); font-size: 18px; min-height: 56px; box-shadow: 0 10px 26px rgba(0, 0, 0, .18); }
     .thanks-hero { text-align: center; padding: 18px 8px 6px; }
     .thanks-hero .big { font-size: 64px; line-height: 1; }
     .thanks-hero h1 { font-size: 26px; letter-spacing: -.02em; margin: 12px 0 8px; }
@@ -456,13 +464,22 @@
     </div>
   </section>
 
+  <!-- POPUP UCAPAN TERIMA KASIH (layar penuh, tekan Oke untuk lanjut) -->
+  <section id="thanksPop" class="thanks-pop hidden">
+    <div class="tp-in">
+      <div class="tp-emoji">🎉</div>
+      <h1 id="thanksTitle">Terima Kasih!</h1>
+      <p id="thanksMsg"></p>
+      <button type="button" class="btn tp-ok" onclick="okTerimaKasih()">Oke</button>
+    </div>
+  </section>
+
   <!-- LAYAR TERIMA KASIH -->
   <section id="thanksScreen" class="screen hidden">
     <div class="wrap">
       <div class="thanks-hero">
-        <div class="big">🎉</div>
-        <h1 id="thanksTitle">Terima Kasih!</h1>
-        <p id="thanksMsg"></p>
+        <div class="big">✅</div>
+        <h1>Pesanan <span id="thanksNo2"></span> berhasil dibuat</h1>
       </div>
       <div class="card" style="margin-top:16px">
         <b>📍 Pesanan <span id="thanksNo"></span> sedang dicek kasir</b>
@@ -884,11 +901,16 @@
       thanksOrder = o;
       $('thanksTitle').textContent = `Terima Kasih Ya ${sapa()} ${profile.nick}!`;
       $('thanksMsg').textContent = `${sapa()} ${profile.nick} sudah bertransaksi dan belanja di Kedai Thai Tea. Semoga ${sapaPanjang()} murah rezeki dan sehat selalu 🤲`;
-      $('thanksNo').textContent = '#' + o.no;
+      $('thanksNo').textContent = $('thanksNo2').textContent = '#' + o.no;
       $('thanksAddr').textContent = info ? info.store.address : 'Jln Swakarya, Kota Pekanbaru (dekat Jln HR Soebrantas)';
       $('thanksMaps').href = info ? info.store.maps : 'https://www.google.com/maps/search/?api=1&query=Jalan%20Swakarya%20Pekanbaru';
-      $('thanksScreen').classList.remove('hidden'); $('thanksScreen').scrollTop = 0;
+      $('thanksPop').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+      getar([80, 60, 80]);
+    }
+    function okTerimaKasih() {
+      $('thanksPop').classList.add('hidden');
+      $('thanksScreen').classList.remove('hidden'); $('thanksScreen').scrollTop = 0;
     }
     function selesaiTerimaKasih() {
       $('thanksScreen').classList.add('hidden'); document.body.style.overflow = '';

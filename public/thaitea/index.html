@@ -246,6 +246,7 @@
     .pill-red { background: var(--red); color: #fff; }
     .pill-amber { background: var(--amber-soft); color: var(--amber); }
     .pill-free { background: #F3E8FF; color: #7C3AED; }
+    .pill-online { background: #E6F0FD; color: var(--blue); }
 
     /* ---------- KASIR: MENU ---------- */
     .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
@@ -1175,13 +1176,12 @@
       <!-- ================= TAB: LAINNYA (Chat, Hiburan, Aktivitas, Pengaturan) ================= -->
       <section id="tab-lainnya" class="tab-content hidden">
         <h1 class="large-title">Lainnya</h1>
-        <p class="page-sub">Chat, hiburan, catatan aktivitas, dan pengaturan.</p>
+        <p class="page-sub">Chat, hiburan, dan catatan aktivitas.</p>
         <div class="narrow">
           <div class="more-grid">
             <button type="button" class="more-tile" onclick="switchTab('tab-chat')"><span class="more-ico" style="background:linear-gradient(160deg,#5AC8FA,#0A84FF)"><i class="fas fa-comments"></i><span id="chatBadgeTile" class="tab-badge hidden">0</span></span><span><b>Chat</b><small>Pesan, foto & suara</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-hiburan')"><span class="more-ico" style="background:linear-gradient(160deg,#FF6B8B,#E8325A)"><i class="fas fa-music"></i></span><span><b>Hiburan</b><small>Musik, ayat & game</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-aktivitas')"><span class="more-ico" style="background:linear-gradient(160deg,#34C759,#1E9E4A)"><i class="fas fa-list-check"></i></span><span><b>Aktivitas</b><small>Siapa mencatat apa</small></span></button>
-            <button type="button" class="more-tile" onclick="switchTab('tab-admin')"><span class="more-ico" style="background:linear-gradient(160deg,#AEAEB2,#636366)"><i class="fas fa-gear"></i></span><span><b>Pengaturan</b><small>Profil, notifikasi, admin</small></span></button>
           </div>
         </div>
       </section>
@@ -3636,14 +3636,14 @@
             <div class="lc-head">
               <div>
                 <div class="lc-title">Jam ${esc(o.time || '-')}</div>
-                <div class="lc-meta">${fmtTgl(o.date)} <span class="pill">${esc(o.method || 'Tunai')}</span> <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
+                <div class="lc-meta">${fmtTgl(o.date)} <span class="pill">${esc(o.method || 'Tunai')}</span>${o.source === 'online' ? ' <span class="pill pill-online">Online</span>' : ''} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
               </div>
               <div class="lc-amount ${o.isFreeDrink ? 'strike' : 'green'}">${formatRp(o.totalPrice)}</div>
             </div>
             <div class="lc-body">${desc}</div>
             ${o.note ? `<div class="lc-note">“${esc(o.note)}”</div>` : ''}
             <div class="lc-actions icons">
-              <button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit" aria-label="Ubah pesanan">${ICON_EDIT}</button>
+              ${o.source === 'online' ? '' : `<button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit" aria-label="Ubah pesanan">${ICON_EDIT}</button>`}
               <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
             </div>
           `;
@@ -3659,7 +3659,18 @@
     async function deleteSingleOrder(orderId) {
       const cekOrder = ordersList.find(o => o.orderId === orderId);
       if (cekOrder && !(await izinDataLama(cekOrder.date, 'menghapus pesanan ini'))) return;
-      if (!(await iosConfirm('Hapus transaksi ini dari Sistem dan kembalikan stok semula?', { title: 'Hapus Transaksi?', okText: 'Hapus', destructive: true }))) return;
+      const dariOnline = cekOrder && cekOrder.source === 'online' && cekOrder.onlineId;
+      const pesanHapus = dariOnline
+        ? 'Ini pesanan ONLINE. Transaksi dihapus, stok dikembalikan, dan pesanan juga hilang dari menu Online & riwayat customer.'
+        : 'Hapus transaksi ini dari Sistem dan kembalikan stok semula?';
+      if (!(await iosConfirm(pesanHapus, { title: 'Hapus Transaksi?', okText: 'Hapus', destructive: true }))) return;
+      if (dariOnline) {
+        // hapus juga dari menu Online & riwayat di HP customer
+        const on = (typeof onlineList !== 'undefined' ? onlineList : []).find(x => x.id === cekOrder.onlineId);
+        const upd = { ['thaitea/online_orders/' + cekOrder.onlineId]: null };
+        if (on && on.cid) upd['thaitea/online_customers/' + on.cid + '/orders/' + cekOrder.onlineId] = null;
+        db.ref().update(upd).catch(() => {});
+      }
 
       const orderToDel = ordersList.find(o => o.orderId === orderId);
       if (orderToDel && !orderToDel.isFreeDrink && orderToDel.items) {
@@ -3711,6 +3722,8 @@
 
     /* EDIT ORDER MODAL */
     async function openEditOrderModal(orderId, fromHistoryTab = false) {
+      const cekOnline = ordersList.find(o => o.orderId === orderId);
+      if (cekOnline && cekOnline.source === 'online') { triggerToast('Pesanan online tidak bisa diubah, hanya bisa dihapus', true); return; }
       const order = ordersList.find(o => o.orderId === orderId);
       if (!order) return;
       if (!(await izinDataLama(order.date, 'mengubah pesanan ini'))) return;
@@ -4554,13 +4567,13 @@
           <div class="lc-head">
             <div>
               <div class="lc-title">${fmtTgl(o.date)}</div>
-              <div class="lc-meta">Jam ${esc(o.time || '-')} ${payPill(o.method)} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
+              <div class="lc-meta">Jam ${esc(o.time || '-')} ${payPill(o.method)}${o.source === 'online' ? ' <span class="pill pill-online">Online</span>' : ''} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
             </div>
             <div class="lc-amount ${o.isFreeDrink ? 'strike' : 'green'}">${formatRp(o.totalPrice)}</div>
           </div>
           <div class="lc-body">${esc(detailStr)}</div>
           <div class="lc-actions icons">
-            <button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit" aria-label="Ubah pesanan / free drink">${ICON_EDIT}</button>
+            ${o.source === 'online' ? '' : `<button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit" aria-label="Ubah pesanan / free drink">${ICON_EDIT}</button>`}
             <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
           </div>
         `;
