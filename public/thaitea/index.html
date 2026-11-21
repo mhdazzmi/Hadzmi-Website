@@ -192,6 +192,12 @@
     .grid-2 > * { min-width: 0; }
     .date-range .field { margin-bottom: 0; }
     .is-disabled { opacity: .4; pointer-events: none; }
+    .day-nav { display: flex; align-items: center; gap: 8px; }
+    .day-arrow { width: 54px; height: 58px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text); font-size: 34px; font-weight: 600; line-height: 1; flex: none; display: flex; align-items: center; justify-content: center; padding-bottom: 4px; }
+    .day-arrow:active { transform: scale(.94); }
+    .day-pick { flex: 1; min-width: 0; position: relative; min-height: 58px; border-radius: 14px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 4.6vw, 20px); font-weight: 800; cursor: pointer; white-space: nowrap; padding: 0 8px; }
+    .day-pick input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; cursor: pointer; }
+    .day-pick input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
     /* Segmented control */
     .segmented { display: flex; background: var(--fill); border-radius: 13px; padding: 3px; gap: 3px; }
@@ -818,13 +824,32 @@
       <!-- ================= TAB 4: RIWAYAT ================= -->
       <section id="tab-riwayat" class="tab-content hidden">
         <h1 class="large-title">Riwayat</h1>
-        <p class="page-sub">Semua transaksi yang tersimpan di cloud.</p>
+        <p class="page-sub">Transaksi per tanggal. Geser ‹ › untuk ganti hari.</p>
 
         <div class="split">
           <div>
-            <div class="search">
-              <i class="fas fa-magnifying-glass"></i>
-              <input type="text" id="searchHistoryInput" oninput="filterHistoryTable()" placeholder="Cari tanggal / menu" class="input" style="background:#fff;box-shadow:var(--shadow)">
+            <div class="card">
+              <span class="field-label">Tanggal Transaksi</span>
+              <div class="day-nav">
+                <button type="button" class="day-arrow" onclick="shiftHistoryDate(-1)" aria-label="Hari sebelumnya">‹</button>
+                <label class="day-pick">
+                  <span id="historyDateLabel">Hari Ini</span>
+                  <input type="date" id="historyDate" onchange="filterHistoryTable()">
+                </label>
+                <button type="button" class="day-arrow" onclick="shiftHistoryDate(1)" aria-label="Hari berikutnya">›</button>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:10px">
+                <button type="button" onclick="setHistoryToday()" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
+                <button type="button" onclick="setHistoryAllDates()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
+              </div>
+              <div class="search" style="margin-top:12px">
+                <i class="fas fa-magnifying-glass"></i>
+                <input type="text" id="searchHistoryInput" oninput="filterHistoryTable()" placeholder="Cari menu di tanggal ini" class="input">
+              </div>
+              <div class="row-between" style="margin-top:12px;background:var(--green-soft);border-radius:14px;padding:12px 16px">
+                <span id="historyCountLabel" style="font-weight:600;color:#14532d">0 transaksi</span>
+                <span id="historyTotalLabel" style="font-size:20px;font-weight:800;color:var(--green)">Rp 0</span>
+              </div>
             </div>
             <div id="allHistoryTableBody" class="list" style="margin-top:12px"></div>
           </div>
@@ -1362,6 +1387,7 @@
       document.getElementById('orderInputDate').value = todayISO;
       document.getElementById('expenseDate').value = todayISO;
       document.getElementById('assetDate').value = todayISO;
+      document.getElementById('historyDate').value = todayISO;
 
       const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       document.getElementById('currentDateHeader').textContent = new Date().toLocaleDateString('id-ID', dateOpts);
@@ -1753,8 +1779,8 @@
       const grossIncome = document.getElementById('dailyGrossIncome');
       const subTitle = document.getElementById('periodTableSubtitle');
 
-      if (startDate === endDate && startDate) subTitle.textContent = `Menampilkan transaksi tanggal: ${startDate}`;
-      else if (startDate && endDate) subTitle.textContent = `Menampilkan transaksi ${startDate} s/d ${endDate}`;
+      if (startDate === endDate && startDate) subTitle.textContent = `Menampilkan transaksi tanggal: ${fmtTgl(startDate)}`;
+      else if (startDate && endDate) subTitle.textContent = `Menampilkan transaksi ${fmtTgl(startDate)} s/d ${fmtTgl(endDate)}`;
       else subTitle.textContent = `Daftar seluruh transaksi yang terekam`;
 
       let dayTotalCups = 0;
@@ -1781,7 +1807,7 @@
             <div class="lc-head">
               <div>
                 <div class="lc-title">Jam ${esc(o.time || '-')}</div>
-                <div class="lc-meta">${esc(o.date)} <span class="pill">${esc(o.method || 'Tunai')}</span> <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
+                <div class="lc-meta">${fmtTgl(o.date)} <span class="pill">${esc(o.method || 'Tunai')}</span> <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
               </div>
               <div class="lc-amount ${o.isFreeDrink ? 'strike' : 'green'}">${formatRp(o.totalPrice)}</div>
             </div>
@@ -2177,7 +2203,7 @@
           <div class="lc-head">
             <div style="min-width:0">
               <div class="lc-title">${esc(displayTitle)}</div>
-              <div class="lc-meta">${esc(e.date)}${e.qty ? ` <span class="pill pill-orange">${esc(e.qty)} ${esc(e.unit || '')}</span>` : ''}${e.isAsset ? ' <span class="pill pill-amber">Aset</span>' : ''}</div>
+              <div class="lc-meta">${fmtTgl(e.date)}${e.qty ? ` <span class="pill pill-orange">${esc(e.qty)} ${esc(e.unit || '')}</span>` : ''}${e.isAsset ? ' <span class="pill pill-amber">Aset</span>' : ''}</div>
             </div>
             <div class="lc-amount ${e.isAsset ? 'amber' : 'red'}">${formatRp(e.amount)}</div>
           </div>
@@ -2551,18 +2577,53 @@
     }
 
     /* 7. TAB 4: RIWAYAT & CADANGAN DATA */
-    function renderFullHistoryTable(filterKw = '') {
+    // Format tampilan tanggal: 2026-11-21 → 21-Nov-2026 (data di database tetap YYYY-MM-DD)
+    const BULAN_SINGKAT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    function fmtTgl(iso) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+      if (!m) return iso || '-';
+      return `${m[3]}-${BULAN_SINGKAT[parseInt(m[2], 10) - 1] || m[2]}-${m[1]}`;
+    }
+
+    // Tab Riwayat: default hanya hari ini, bisa pilih tanggal lain
+    function setHistoryToday() {
+      document.getElementById('historyDate').value = new Date().toISOString().split('T')[0];
+      filterHistoryTable();
+    }
+    function setHistoryAllDates() {
+      document.getElementById('historyDate').value = '';
+      filterHistoryTable();
+    }
+    function shiftHistoryDate(days) {
+      const inp = document.getElementById('historyDate');
+      const base = inp.value || new Date().toISOString().split('T')[0];
+      const d = new Date(base + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + days);
+      inp.value = d.toISOString().split('T')[0];
+      filterHistoryTable();
+    }
+
+    function renderFullHistoryTable(filterKw = (document.getElementById('searchHistoryInput')?.value || '').trim()) {
       const tbody = document.getElementById('allHistoryTableBody');
       tbody.innerHTML = '';
 
+      const todayISO = new Date().toISOString().split('T')[0];
+      const pickedDate = document.getElementById('historyDate').value;
+      document.getElementById('historyDateLabel').textContent = !pickedDate ? 'Semua Tanggal' : (pickedDate === todayISO ? `Hari Ini · ${fmtTgl(pickedDate)}` : fmtTgl(pickedDate));
+
       let list = [...ordersList];
+      if (pickedDate) list = list.filter(o => o.date === pickedDate);
       if (filterKw) {
         const q = filterKw.toLowerCase();
-        list = list.filter(o => (o.date && o.date.includes(q)) || (o.items || []).some(i => i.name.toLowerCase().includes(q)));
+        list = list.filter(o => (o.date && (o.date.includes(q) || fmtTgl(o.date).toLowerCase().includes(q))) || (o.items || []).some(i => i.name.toLowerCase().includes(q)));
       }
 
+      const paidTotal = list.reduce((acc, o) => acc + (o.isFreeDrink ? 0 : (o.totalPrice || 0)), 0);
+      document.getElementById('historyCountLabel').textContent = `${list.length} transaksi`;
+      document.getElementById('historyTotalLabel').textContent = formatRp(paidTotal);
+
       if (list.length === 0) {
-        tbody.innerHTML = `<div class="empty"><i class="fas fa-clock-rotate-left"></i>Tidak ada riwayat transaksi.</div>`;
+        tbody.innerHTML = `<div class="empty"><i class="fas fa-clock-rotate-left"></i>${pickedDate ? 'Tidak ada transaksi di tanggal ' + fmtTgl(pickedDate) + '.' : 'Tidak ada riwayat transaksi.'}</div>`;
         return;
       }
 
@@ -2573,7 +2634,7 @@
         cell.innerHTML = `
           <div class="lc-head">
             <div>
-              <div class="lc-title">${esc(o.date)}</div>
+              <div class="lc-title">${fmtTgl(o.date)}</div>
               <div class="lc-meta">Jam ${esc(o.time || '-')} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
             </div>
             <div class="lc-amount ${o.isFreeDrink ? 'strike' : 'green'}">${formatRp(o.totalPrice)}</div>
