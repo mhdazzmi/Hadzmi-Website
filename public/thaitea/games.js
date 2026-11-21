@@ -401,9 +401,10 @@
       }
       g.restore();
     }
-    let raf = 0, prev = 0, running = true, down = false;
+    let raf = 0, prev = 0, running = true, down = false, paused = false;
     function frame(now) {
       if (!running) return;
+      if (paused) { prev = now; raf = requestAnimationFrame(frame); return; }
       const dt = Math.min(.05, (now - (prev || now)) / 1000); prev = now;
       if (now > st.spawn) spawn(now);
       const grav = H * 1.15;
@@ -425,7 +426,7 @@
     }
     const pos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top, t: performance.now() }; };
     const move = e => {
-      if (!down) return; e.preventDefault();
+      if (!down || paused) return; e.preventDefault();
       const p = pos(e); const last = st.trail[st.trail.length - 1]; st.trail.push(p);
       if (last) st.items.forEach(it => { if (!it.cut && segHit(last, p, it, it.r + 4)) cut(it, Math.atan2(p.y - last.y, p.x - last.x), p.t); });
     };
@@ -434,7 +435,7 @@
     cv.addEventListener('pointerup', () => { down = false; });
     cv.addEventListener('pointercancel', () => { down = false; });
     raf = requestAnimationFrame(frame);
-    return { stop() { running = false; cancelAnimationFrame(raf); }, get score() { return st.score; } };
+    return { stop() { running = false; cancelAnimationFrame(raf); }, pause() { paused = true; down = false; }, resume() { paused = false; }, get score() { return st.score; } };
   }
 
   /* =====================================================================
@@ -467,11 +468,81 @@
     return room.host === myKey;
   }
 
+  /* ---------- jeda & keluar ---------- */
+  function pauseInfo() {
+    if (!cur) return null;
+    if (cur.mode === 'bot') return cur.paused || null;
+    const r = rooms[cur.roomId];
+    return (r && r.status === 'playing' && r.paused) || null;
+  }
+  function isPaused() { return !!pauseInfo(); }
+  function pausedTotal() {
+    if (!cur) return 0;
+    let t = cur.mode === 'bot' ? (cur.pauseTotal || 0) : ((((rooms[cur.roomId] || {}).rt) || {}).pauseTotal || 0);
+    const p = pauseInfo();
+    if (p) t += Math.max(0, Date.now() - p.at);
+    return t;
+  }
+  function gameRunning() {
+    if (!cur) return false;
+    if (cur.mode !== 'bot') { const r = rooms[cur.roomId]; if (!r || r.status !== 'playing') return false; }
+    if (cur.state) return cur.state.winner === null || cur.state.winner === undefined;
+    if (cur.rt) return !cur.rtEnded;
+    return false;
+  }
+  function refreshHead() {
+    const inGame = !!(cur && (cur.state || cur.rt || cur.roomId));
+    $('gvExitTxt').textContent = inGame ? 'Keluar' : 'Kembali';
+    $('gvPauseBtn').classList.toggle('hidden', !(gameRunning() && cur.mode !== 'watch' && !isPaused()));
+  }
+  function renderPause() {
+    const p = pauseInfo();
+    const box = $('gvPause');
+    box.classList.toggle('hidden', !p);
+    if (p) {
+      $('gvPauseBy').textContent = cur.mode === 'bot' ? 'Waktu dan komputer ikut berhenti.' : (p.by === deviceName ? 'Kamu menjeda permainan untuk semua pemain.' : `Dijeda oleh ${p.by}.`);
+      $('gvPauseResume').classList.toggle('hidden', cur.mode === 'watch');
+    }
+    refreshHead();
+  }
+  function jeda() {
+    if (!cur || cur.mode === 'watch' || !gameRunning() || isPaused()) return;
+    const p = { by: deviceName || 'Seseorang', at: Date.now() };
+    if (cur.mode === 'bot') { cur.paused = p; clearTimeout(botTimer); clearTimeout(autoTimer); renderPause(); }
+    else roomsRef.child(cur.roomId).update({ paused: p });
+  }
+  function lanjut() {
+    const p = pauseInfo();
+    if (!p || !cur) return;
+    const add = Math.max(0, Date.now() - p.at);
+    if (cur.mode === 'bot') {
+      cur.pauseTotal = (cur.pauseTotal || 0) + add; cur.paused = null;
+      renderPause();
+      if (cur.state) renderTurn();
+    } else {
+      const r = rooms[cur.roomId] || {};
+      const upd = { paused: null };
+      if (r.rt) upd['rt/pauseTotal'] = (r.rt.pauseTotal || 0) + add;
+      roomsRef.child(cur.roomId).update(upd);
+    }
+  }
+  async function keluar() {
+    if (cur && gameRunning() && cur.mode !== 'watch') {
+      const msg = cur.mode === 'bot' ? 'Permainan ini akan berakhir.' : 'Kursimu akan dilanjutkan oleh komputer.';
+      if (!(await iosConfirm(msg, { title: 'Keluar dari Game?', okText: 'Keluar', destructive: true }))) return;
+      const p = pauseInfo();
+      if (p && cur.mode === 'online' && p.by === deviceName) lanjut();
+    }
+    closeView();
+  }
+
   /* ---------- tampilan layar game ---------- */
   function openView(title) {
     $('gameView').classList.remove('hidden');
     $('gvTitle').textContent = title;
     $('gvBody').innerHTML = '';
+    $('gvPause').classList.add('hidden');
+    refreshHead();
   }
   function closeView() {
     stopAll();
@@ -533,9 +604,10 @@
     const box = $('gvBody');
     (cur.game === 'domino' ? renderDomino : renderLudo)(box, cur.state, ctxFor());
     jadwalBot();
+    refreshHead();
   }
   function act(mv) {
-    if (!cur || cur.mode === 'watch') return;
+    if (!cur || cur.mode === 'watch' || isPaused()) return;
     const eng = engine(cur.game);
     const before = cur.state;
     const after = eng.apply(before, cur.mySeat, mv);
@@ -553,10 +625,10 @@
     const st = cur && cur.state;
     if (!st || st.winner !== null && st.winner !== undefined) return;
     const seat = cur.seats[st.turn];
-    if (!seat || !seat.bot || !isDriver()) return;
+    if (!seat || !seat.bot || !isDriver() || isPaused()) return;
     const v = st.v;
     botTimer = setTimeout(() => {
-      if (!cur || !cur.state || cur.state.v !== v) return;
+      if (!cur || !cur.state || cur.state.v !== v || isPaused()) return;
       const eng = engine(cur.game);
       const s = cur.state.turn;
       const after = eng.apply(eng.norm(clone(cur.state)), s, eng.bot(eng.norm(clone(cur.state)), s));
@@ -569,8 +641,10 @@
   function startRealtime(startAt) {
     stopAll();
     const game = cur.game, dur = GAMES[game].dur * 1000;
-    const endAt = startAt + dur;
-    cur.rt = { startAt, endAt, players: {} };
+    const T0 = () => startAt + pausedTotal();      // mulai (bergeser sesuai lama jeda)
+    const T1 = () => T0() + dur;                   // selesai
+    cur.rt = { startAt, players: {} };
+    cur.rtEnded = false;
     const box = $('gvBody');
     const spectator = cur.mode === 'watch';
     const n = cur.seats.length;
@@ -613,6 +687,9 @@
     const sync = (s, data) => { if (cur.mode === 'online') db.ref(`thaitea/games/rooms/${cur.roomId}/players/${s}`).set(data); else cur.rt.players[s] = data; };
     rtTimer = setInterval(() => {
       const now = Date.now();
+      if (isPaused()) { if (buah) buah.pause(); return; }
+      if (buah) buah.resume();
+      const startAt = T0(), endAt = T1();
       const left = Math.ceil((endAt - now) / 1000);
       const cnt = $('rtCount');
       if (now < startAt) { if (cnt) { cnt.textContent = Math.ceil((startAt - now) / 1000); cnt.classList.remove('hidden'); } $('rtTimer').textContent = GAMES[game].dur + ' dtk'; renderBoard(); return; }
@@ -631,11 +708,12 @@
       }
       renderBoard();
       if (now >= endAt && !ended) {
-        ended = true; clearInterval(rtTimer); if (buah) buah.stop();
+        ended = true; cur.rtEnded = true; clearInterval(rtTimer); if (buah) buah.stop(); refreshHead();
         setTimeout(() => selesaiRealtime(), cur.mode === 'online' ? 900 : 50);
       }
     }, 50);
     rtLocal = { stop() { if (buah) buah.stop(); } };
+    refreshHead();
   }
   function rtPlayers() { return cur.mode === 'bot' ? cur.rt.players : ((rooms[cur.roomId] || {}).players || {}); }
   function renderBoard() {
@@ -707,7 +785,8 @@
     const mine = cur.seats.findIndex(x => x && x.key === myKey);
     cur.mySeat = cur.mode === 'watch' ? null : (mine >= 0 ? mine : null);
     setLive(r);
-    if (r.status === 'waiting') { renderLobbyMeja(r); return; }
+    renderPause();
+    if (r.status === 'waiting') { renderLobbyMeja(r); refreshHead(); return; }
     const g = GAMES[r.game];
     if (g.turn) {
       if (!r.state) return;
@@ -753,7 +832,7 @@
     const r = rooms[cur.roomId]; if (!r) return;
     const g = GAMES[r.game];
     cur.state = null;
-    const upd = { status: 'playing', players: null, updatedAt: TS(), winnerName: null };
+    const upd = { status: 'playing', players: null, paused: null, updatedAt: TS(), winnerName: null };
     if (g.turn) upd.state = engine(r.game).init(arr(r.seats).length);
     else upd.rt = { startAt: Date.now() + 4000 };
     roomsRef.child(cur.roomId).update(upd);
@@ -795,8 +874,8 @@
     $('gvBody').innerHTML = `<div class="gl-hero" style="background:${g.bg}"><span class="gl-ico">${ICON[game]}</span><div><div class="gl-title">${g.name}</div><div class="gl-sub">${g.desc}</div></div></div>
       <div class="card" style="margin-top:12px"><span class="field-label">Jumlah pemain</span><div class="segmented" id="glN">${nList.map(opsi).join('')}</div>
         <button type="button" class="btn btn-primary btn-lg btn-block" style="margin-top:14px" id="glBot"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M11 2h2v3h4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h4V2zm-2 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm6 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg> Main Lawan Komputer</button>
-        <button type="button" class="btn btn-tinted btn-lg btn-block" style="margin-top:10px" id="glOnline"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.6 0-1 .1 1.2.8 2 1.9 2 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z"/></svg> Buat Meja Online</button>
-        <p class="card-sub" style="margin-top:10px">Meja online: pengguna lain bisa ikut. Kursi yang kosong saat dimulai otomatis dimainkan komputer.</p></div>`;
+        <button type="button" class="btn btn-tinted btn-lg btn-block" style="margin-top:10px" id="glOnline"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.6 0-1 .1 1.2.8 2 1.9 2 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z"/></svg> Main Online</button>
+        <p class="card-sub" style="margin-top:10px"><b>Main Online</b>: pengguna lain dapat pemberitahuan dan bisa ikut. Kursi yang kosong saat dimulai otomatis dimainkan komputer.</p></div>`;
     let n = 2;
     document.querySelectorAll('#glN button').forEach(b => b.onclick = () => { n = +b.dataset.n; document.querySelectorAll('#glN button').forEach(x => x.classList.toggle('active', x === b)); });
     $('glBot').onclick = () => mulaiBot(game, n);
@@ -807,7 +886,15 @@
   const css = `
   .game-view{position:fixed;inset:0;z-index:1000000;background:var(--bg);display:flex;flex-direction:column}
   .gv-head{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 10px 4px;background:rgba(247,247,247,.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:.5px solid var(--sep);flex:none}
-  .gv-title{flex:1;font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gv-title{flex:1;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gv-exit{display:flex;align-items:center;gap:2px;color:var(--accent);font-size:17px;font-weight:700;min-height:44px;padding:0 6px 0 2px;flex:none}
+  .gv-pausebtn{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+  .gv-pausebtn:active,.gv-exit:active{opacity:.6}
+  .gv-pause{position:absolute;inset:0;z-index:5;background:rgba(242,242,247,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px}
+  .gvp-card{width:100%;max-width:360px;background:#fff;border-radius:26px;padding:26px 20px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.15)}
+  .gvp-ico{width:84px;height:84px;border-radius:50%;background:var(--accent);margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
+  .gvp-title{font-size:26px;font-weight:900}
+  .gvp-sub{color:var(--text2);margin:6px 0 20px;font-size:16px}
   .gv-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 24px);max-width:560px;width:100%;margin:0 auto}
   .live-badge{display:inline-flex;align-items:center;gap:6px;background:#FF3B30;color:#fff;font-size:12px;font-weight:800;padding:5px 10px;border-radius:8px;letter-spacing:.03em;flex:none}
   .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF3B30;box-shadow:0 0 0 3px rgba(255,59,48,.25);animation:blink 1.2s infinite;vertical-align:1px}
@@ -872,7 +959,19 @@
   const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
   const view = document.createElement('div');
   view.id = 'gameView'; view.className = 'game-view hidden';
-  view.innerHTML = `<div class="gv-head"><button type="button" class="chat-back" onclick="TTG.tutup()" aria-label="Kembali"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div id="gvTitle" class="gv-title"></div><span id="gvLive" class="live-badge hidden"></span></div><div id="gvBody" class="gv-body"></div>`;
+  view.innerHTML = `<div class="gv-head">
+      <button type="button" class="gv-exit" onclick="TTG.keluar()"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="gvExitTxt">Kembali</span></button>
+      <div id="gvTitle" class="gv-title"></div><span id="gvLive" class="live-badge hidden"></span>
+      <button type="button" id="gvPauseBtn" class="gv-pausebtn hidden" onclick="TTG.jeda()" aria-label="Jeda"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button>
+    </div>
+    <div id="gvBody" class="gv-body"></div>
+    <div id="gvPause" class="gv-pause hidden"><div class="gvp-card">
+      <div class="gvp-ico"><svg viewBox="0 0 24 24" width="44" height="44"><path fill="#fff" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></div>
+      <div class="gvp-title">Permainan Dijeda</div>
+      <div id="gvPauseBy" class="gvp-sub"></div>
+      <button type="button" id="gvPauseResume" class="btn btn-primary btn-lg btn-block" onclick="TTG.lanjut()"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg> Lanjutkan</button>
+      <button type="button" class="btn btn-red-tinted btn-lg btn-block" style="margin-top:10px" onclick="TTG.keluar()">Keluar dari Game</button>
+    </div></div>`;
   (document.getElementById('thaiTeaAppRoot') || document.body).appendChild(view);
 
   roomsRef.on('value', snap => {
@@ -882,7 +981,7 @@
   });
 
   window.TTG = {
-    renderPane, pilih, tutup: closeView, mulaiOnline, mainLagi, gabung: gabungMeja, tonton: tontonMeja,
+    renderPane, pilih, tutup: closeView, keluar, jeda, lanjut, mulaiOnline, mainLagi, gabung: gabungMeja, tonton: tontonMeja,
     _engines: { Domino, Ludo }
   };
 })();
