@@ -623,7 +623,7 @@
                   </div>
                 </div>
 
-                <div class="grid-2 field" id="expenseQtyUnitBox">
+                <div class="grid-2 field hidden" id="expenseQtyUnitBox"><!-- disembunyikan permanen: berat & satuan tidak dipakai di menu belanja -->
                   <label>
                     <span class="field-label">Jumlah / Berat</span>
                     <input type="number" inputmode="decimal" id="expenseQty" placeholder="Cth: 1000" class="input">
@@ -1054,7 +1054,7 @@
               <span class="field-label">Keperluan / Nama Barang</span>
               <input type="text" id="editExpenseTitle" class="input">
             </label>
-            <div class="grid-2 field" id="editExpenseQtyUnitBox">
+            <div class="grid-2 field hidden" id="editExpenseQtyUnitBox"><!-- disembunyikan permanen; nilai lama tetap tersimpan saat diedit -->
               <label>
                 <span class="field-label">Jumlah / Berat</span>
                 <input type="number" inputmode="decimal" id="editExpenseQty" placeholder="Cth: 1000" class="input">
@@ -2053,7 +2053,6 @@
         itemInput.value = 'Belanja Bahan Baku (Borongan)';
       } else {
         box.classList.remove('is-disabled');
-        document.getElementById('expenseQtyUnitBox').classList.remove('hidden');
         itemInput.value = '';
       }
     }
@@ -2304,8 +2303,6 @@
 
       document.getElementById('editExpenseQty').value = target.qty !== undefined ? target.qty : '';
       document.getElementById('editExpenseUnit').value = target.unit || (isAsset ? 'Aset' : 'Operasional/Tanpa Stok');
-      // Catatan "Total Belanja Saja": kolom jumlah/berat & satuan disembunyikan juga saat diedit
-      document.getElementById('editExpenseQtyUnitBox').classList.toggle('hidden', !!target.isQuick);
 
       openSheet('editExpenseModal');
     }
