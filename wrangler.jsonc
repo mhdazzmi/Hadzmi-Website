@@ -19,15 +19,13 @@
   ],
   // === NEXO GAMES: server realtime (chat + game) — Durable Object SQLite, termasuk paket gratis ===
   "durable_objects": {
-    "bindings": [
-      { "name": "NEXO", "class_name": "NexoHub" },
-      // === STARDOM: private AI social universe (SQLite database + background simulation alarm) ===
-      { "name": "STARDOM", "class_name": "StardomHub" }
-    ]
+    "bindings": [{ "name": "NEXO", "class_name": "NexoHub" }]
   },
   "migrations": [
     { "tag": "nexo-v1", "new_sqlite_classes": ["NexoHub"] },
-    { "tag": "stardom-v1", "new_sqlite_classes": ["StardomHub"] }
+    { "tag": "stardom-v1", "new_sqlite_classes": ["StardomHub"] },
+    // STARDOM dihapus: migrasi ini menghapus Durable Object beserta datanya (jangan dihapus dari daftar)
+    { "tag": "stardom-v2-remove", "deleted_classes": ["StardomHub"] }
   ],
   "vars": {
     "FIREBASE_PROJECT_ID": "web-hadzmi-new"
