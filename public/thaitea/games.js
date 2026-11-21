@@ -327,17 +327,20 @@
     let status = '';
     if (st.winner === null) {
       const l = st.last;
-      if (l && l.roll && l.none) status = `${esc(seatName(ctx, l.s))} dapat ${l.roll}, tidak ada bidak yang bisa jalan.`;
+      if (ctx.anim && ctx.anim.rolling) status = ctx.anim.glow === me && !ctx.spectator ? 'Melempar dadu…' : `${esc(seatName(ctx, ctx.anim.glow))} melempar dadu…`;
+      else if (l && l.roll && l.none) status = `${esc(seatName(ctx, l.s))} dapat ${l.roll}, tidak ada bidak yang bisa jalan.`;
       else if (l && l.captured) status = `${esc(seatName(ctx, l.s))} memakan bidak lawan! Main lagi.`;
       else if (l && l.finished) status = `${esc(seatName(ctx, l.s))} membawa bidak pulang! Main lagi.`;
-      else if (ctx.anim) status = 'Melempar dadu…';
+      else if (l && l.roll && !myTurn && st.rolled) status = `${esc(seatName(ctx, l.s))} dapat <b>${l.roll}</b>…`;
       else if (myTurn) status = st.rolled ? `Dapat <b>${st.dice}</b>. Ketuk bidak yang menyala.` : '<b>Giliranmu!</b> Ketuk dadu untuk melempar.';
       else status = `Giliran ${esc(seatName(ctx, st.turn))}…`;
     }
     const turnCol = LUDO_COL[st.colors[st.turn]];
+    // dadu hanya muncul saat giliran HP ini (termasuk saat dadunya sedang berputar)
+    const showDice = !ctx.spectator && (ctx.anim ? (ctx.anim.rolling && ctx.anim.glow === me) : (st.turn === me && st.winner === null));
     box.innerHTML = `<div class="gp-others">${chips.join('')}</div><div class="gp-status">${status}</div>
       <div class="lu-wrap"><canvas id="luCanvas"></canvas></div>
-      <div class="lu-ctrl" style="--tc:${turnCol}">
+      <div class="lu-ctrl ${showDice ? '' : 'hidden'}" style="--tc:${turnCol}">
         <button type="button" id="luDiceBtn" class="lu-dicebtn ${myTurn && !st.rolled ? 'ready' : ''}" ${myTurn && !st.rolled ? '' : 'disabled'} aria-label="Lempar dadu">${diceHtml()}</button>
         <div class="lu-dicetxt">${myTurn && !st.rolled ? '<b>Ketuk dadu</b><br>untuk melempar' : (st.dice ? `Dadu: <b>${st.dice}</b>` : '')}</div>
       </div>
@@ -463,7 +466,7 @@
     const l = next.last;
     if (!prev || next.gid !== prev.gid || !l) { redraw(next); return; }
     if (l.roll) {
-      redraw(prev, { tokens: prev.tokens, glow: l.s });
+      redraw(prev, { tokens: prev.tokens, glow: l.s, rolling: true });
       diceShow(l.roll, true); SFX.dice();
       await sleep(650); SFX.land();
       redraw(next);
@@ -687,6 +690,7 @@
     $('gvTitle').textContent = title;
     $('gvBody').innerHTML = '';
     $('gvPause').classList.add('hidden');
+    $('gvWin').classList.add('hidden');
     $('gvLive').classList.add('hidden');
     refreshHead();
   }
@@ -711,6 +715,7 @@
       }
     }
     cur = null;
+    tutupPodium();
     $('gameView').classList.add('hidden');
     renderPane();
   }
@@ -775,6 +780,7 @@
     try { await ANIM[cur.game](cur.shown, next, (st, anim) => { if (cur === c) draw(st, anim); }); } catch (e) { console.warn(e); }
     if (cur !== c) return;
     cur.shown = next; cur.anim = false;
+    if (next.winner !== null && next.winner !== undefined && cur.podiumGid !== next.gid) { cur.podiumGid = next.gid; setTimeout(() => tampilPodium(next), 450); }
     if (next.turn !== undefined && next.winner === null && cur.seats[next.turn] && cur.seats[next.turn].key === myKey && cur.mode !== 'watch' && (!cur.queue.length)) SFX.turn();
     jalankanAntrean();
   }
@@ -1003,11 +1009,69 @@
     roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n) });
   }
   function mainLagi() {
+    tutupPodium();
     if (!cur) return;
     if (cur.mode === 'bot') return mulaiBot(cur.game, cur.seats.length);
     const r = rooms[cur.roomId]; if (!r) return;
     roomsRef.child(cur.roomId).update({ status: 'playing', paused: null, activeAt: Date.now(), winnerName: null, state: ENG[r.game].init(arr(r.seats).length) });
   }
+
+  /* ---------- pop-up juara (podium 1-2-3) ---------- */
+  function peringkat(game, st) {
+    const seats = Array.from({ length: st.n }, (_, i) => i);
+    if (game === 'ludo') {
+      const sc = s => st.tokens[s].filter(t => t === 56).length * 1000 + st.tokens[s].reduce((a, t) => a + Math.max(0, t), 0);
+      return seats.sort((a, b) => (b === st.winner) - (a === st.winner) || sc(b) - sc(a));
+    }
+    if (game === 'domino') {
+      const pip = s => st.hands[s].reduce((a, t) => a + t[0] + t[1], 0);
+      return seats.sort((a, b) => (b === st.winner) - (a === st.winner) || pip(a) - pip(b) || st.hands[a].length - st.hands[b].length);
+    }
+    return seats.sort((a, b) => st.b[Congklak.store(b)] - st.b[Congklak.store(a)]);
+  }
+  function nilaiPeringkat(game, st, s) {
+    if (game === 'ludo') return `${st.tokens[s].filter(t => t === 56).length}/4 bidak pulang`;
+    if (game === 'domino') { const p = st.hands[s].reduce((a, t) => a + t[0] + t[1], 0); return st.hands[s].length ? `sisa ${st.hands[s].length} kartu · nilai ${p}` : 'kartu habis'; }
+    return `${st.b[Congklak.store(s)]} biji`;
+  }
+  function medali(rank) {
+    const c = { 1: ['#FFE071', '#E3A500', '#8A5A00'], 2: ['#F1F3F6', '#AEB6C0', '#5C6670'], 3: ['#FFC18A', '#C8732E', '#6E3A10'] }[rank] || ['#E5E5EA', '#AEAEB2', '#3A3A3C'];
+    return `<svg viewBox="0 0 48 62" class="pd-medal"><path d="M13 0h9l5 20h-9z" fill="#E8325A"/><path d="M35 0h-9l-5 20h9z" fill="#1E7BE0"/><circle cx="24" cy="39" r="20" fill="${c[1]}"/><circle cx="24" cy="39" r="16" fill="${c[0]}" stroke="${c[1]}" stroke-width="2"/><text x="24" y="46" text-anchor="middle" font-size="20" font-weight="900" fill="${c[2]}" font-family="Inter,Arial,sans-serif">${rank}</text></svg>`;
+  }
+  const PIALA = '<svg viewBox="0 0 64 64" class="pd-cup"><path d="M18 8h28v14a14 14 0 0 1-28 0z" fill="url(#pdG)"/><path d="M18 12H9a9 9 0 0 0 10 12M46 12h9a9 9 0 0 1-10 12" fill="none" stroke="#E3A500" stroke-width="4"/><rect x="28" y="35" width="8" height="10" fill="#E3A500"/><rect x="20" y="45" width="24" height="7" rx="2" fill="#C98A00"/><rect x="16" y="52" width="32" height="6" rx="2" fill="#8A5A00"/><path d="M27 15l5-4 5 4-2 7h-6z" fill="#FFF5C8" opacity=".8"/><defs><linearGradient id="pdG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF0A0"/><stop offset=".5" stop-color="#FFC81E"/><stop offset="1" stop-color="#E09A00"/></linearGradient></defs></svg>';
+  function tampilPodium(st) {
+    if (!cur) return;
+    const ctx = { seats: cur.seats, mySeat: cur.mySeat, spectator: cur.mode === 'watch' };
+    const seri = cur.game === 'congklak' && st.winner === -1;
+    const urut = peringkat(cur.game, st);
+    const iWin = !ctx.spectator && urut[0] === ctx.mySeat && !seri;
+    const tempat = urut.slice(0, 3);
+    const kolom = [tempat[1], tempat[0], tempat[2]];          // susunan podium: 2 · 1 · 3
+    const tinggi = { 1: 128, 2: 92, 3: 66 };
+    const pod = kolom.map(s => {
+      if (s === undefined) return '<div class="pd-col"></div>';
+      const rank = urut.indexOf(s) + 1;
+      const rr = seri ? 1 : rank;
+      return `<div class="pd-col r${rr}">${rank === 1 && !seri ? PIALA : ''}<div class="pd-ava">${seatAva(ctx, s).replace('width:32px;height:32px', 'width:56px;height:56px;font-size:22px')}</div>${medali(rr)}
+        <div class="pd-name">${esc(seatName(ctx, s))}</div><div class="pd-val">${esc(nilaiPeringkat(cur.game, st, s))}</div>
+        <div class="pd-block" style="height:${tinggi[rr]}px"><span>${rr}</span></div></div>`;
+    }).join('');
+    const sisa = urut.slice(3).map(s => `<div class="pd-rest"><b>${urut.indexOf(s) + 1}</b>${seatAva(ctx, s)}<span class="pd-rn">${esc(seatName(ctx, s))}</span><small>${esc(nilaiPeringkat(cur.game, st, s))}</small></div>`).join('');
+    const warna = ['#FFC83D', '#EA6A0A', '#FF9AA2', '#5AC8FA', '#34C759', '#FF6B6B'];
+    const box = $('gvWin');
+    box.innerHTML = `<div class="pd-confetti">${Array.from({ length: 44 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${warna[i % 6]};animation-duration:${2 + Math.random() * 1.8}s;animation-delay:${Math.random() * .6}s"></i>`).join('')}</div>
+      <div class="pd-card">
+        <div class="pd-title">${seri ? 'Seri!' : (iWin ? 'Kamu Juara 1!' : esc(seatName(ctx, urut[0])) + ' Juara 1!')}</div>
+        <div class="pd-sub">${esc(GAMES[cur.game].name)}${st.reason ? ' · ' + esc(st.reason) : ''}</div>
+        <div class="pd-podium">${pod}</div>${sisa ? `<div class="pd-rests">${sisa}</div>` : ''}
+        ${ctx.spectator ? '' : '<button type="button" class="btn btn-primary btn-lg btn-block" onclick="TTG.mainLagi()">Main Lagi</button>'}
+        <button type="button" class="btn btn-gray btn-lg btn-block" style="margin-top:10px" onclick="TTG.tutupPodium()">${ctx.spectator ? 'Tutup' : 'Lihat Papan'}</button>
+        <button type="button" class="btn btn-red-tinted btn-block" style="margin-top:10px" onclick="TTG.keluar()">Keluar</button>
+      </div>`;
+    box.classList.remove('hidden');
+    SFX.win();
+  }
+  function tutupPodium() { $('gvWin').classList.add('hidden'); }
 
   /* ---------- tutup otomatis meja yang kosong ---------- */
   let lastClean = 0;
@@ -1076,6 +1140,26 @@
   .gv-pausebtn,.gv-soundbtn{width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
   .gv-soundbtn{background:var(--fill);color:var(--text2)}
   .gv-pausebtn:active,.gv-exit:active,.gv-soundbtn:active{opacity:.6}
+  .pd-wrap{position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 25%,#FFF6E8,#FFE0BE);display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px 24px;overflow-y:auto}
+  .pd-card{position:relative;z-index:2;width:100%;max-width:440px;text-align:center;margin:auto 0;animation:gpop .45s cubic-bezier(.2,1.3,.4,1)}
+  .pd-title{font-size:32px;font-weight:900;color:var(--accent);letter-spacing:-.02em}
+  .pd-sub{color:var(--text2);margin:4px 0 6px}
+  .pd-podium{display:grid;grid-template-columns:repeat(3,1fr);align-items:end;gap:6px;margin:10px 0 14px}
+  .pd-col{display:flex;flex-direction:column;align-items:center;min-width:0}
+  .pd-cup{width:64px;height:64px;margin-bottom:-6px;animation:bob 2.2s ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(200,140,0,.4))}
+  .pd-ava .ava{box-shadow:0 0 0 3px #fff,0 4px 10px rgba(0,0,0,.2)}
+  .pd-medal{width:40px;height:52px;margin-top:-10px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+  .pd-name{font-weight:800;font-size:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pd-val{font-size:12px;color:var(--text2);margin-bottom:6px}
+  .pd-block{width:100%;border-radius:14px 14px 4px 4px;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 6px 14px rgba(0,0,0,.15);animation:rise .7s cubic-bezier(.2,1,.3,1)}
+  .pd-block span{font-size:34px;font-weight:900;color:rgba(255,255,255,.95);text-shadow:0 2px 4px rgba(0,0,0,.2)}
+  .r1 .pd-block{background:linear-gradient(#FFD54A,#E3A500)}.r2 .pd-block{background:linear-gradient(#DDE2E8,#9BA5B0)}.r3 .pd-block{background:linear-gradient(#F4B57E,#C26A2A)}
+  @keyframes rise{from{transform:scaleY(.1);transform-origin:bottom;opacity:.3}to{transform:none}}
+  .pd-rests{background:#fff;border-radius:16px;padding:4px 12px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .pd-rest{display:flex;align-items:center;gap:10px;padding:8px 0}
+  .pd-rest b{width:22px;color:var(--text2)}.pd-rest .pd-rn{flex:1;text-align:left;font-weight:700}.pd-rest .ava{flex:none}.pd-rest small{color:var(--text2)}
+  .pd-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .pd-confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:3px;animation:fall linear forwards}
   .gv-req{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FFF4E6;border-bottom:.5px solid var(--sep);flex:none;animation:gpop .3s ease}
   .gv-req .rq-txt{flex:1;font-size:15px;line-height:1.3}
   .rq-spin{display:inline-block;width:14px;height:14px;border:2px solid var(--accent);border-right-color:transparent;border-radius:50%;margin-right:6px;vertical-align:-2px;animation:spin .8s linear infinite}
@@ -1190,6 +1274,7 @@
     </div>
     <div id="gvReq" class="gv-req hidden"></div>
     <div id="gvBody" class="gv-body"></div>
+    <div id="gvWin" class="pd-wrap hidden"></div>
     <div id="gvPause" class="gv-pause hidden"><div class="gvp-card">
       <div class="gvp-ico"><svg viewBox="0 0 24 24" width="44" height="44"><path fill="#fff" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></div>
       <div class="gvp-title">Permainan Dijeda</div>
@@ -1211,6 +1296,7 @@
   window.TTG = {
     renderPane, pilih, tutup: closeView, keluar, jeda, lanjut, mulaiOnline, _mulai: mulaiDengan, mainLagi,
     gabung: gabungMeja, tonton: id => masukMeja(id, 'watch'), mintaIkut, batalMinta, terimaIkut, tolakIkut,
+    tutupPodium,
     suara: () => { SFX.toggle(); refreshHead(); if (!SFX.muted) SFX.tap(); },
     _engines: { Domino, Ludo, Congklak }
   };
