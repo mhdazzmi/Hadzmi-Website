@@ -554,33 +554,36 @@
     .fun-tile { background: #fff; border-radius: 20px; padding: 14px 6px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; box-shadow: var(--shadow); width: 100%; }
     .fun-tile.active { box-shadow: inset 0 0 0 3px var(--accent), var(--shadow); }
     .fun-ico { width: 58px; height: 58px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
-    .fun-player { margin-top: 14px; background: linear-gradient(145deg, #2B1A10, #4A2A14); color: #fff; border-radius: 22px; padding: 14px; display: flex; gap: 12px; align-items: center; box-shadow: var(--shadow); position: sticky; top: 74px; z-index: 5; }
-    .fp-art { width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(145deg, #FF9F43, #E25C00); display: flex; align-items: center; justify-content: center; font-size: 28px; flex: none; }
+    .fun-player { margin-top: 14px; background: #fff; color: var(--text); border-radius: 22px; padding: 14px; display: flex; gap: 12px; align-items: center; box-shadow: var(--shadow); position: sticky; top: 74px; z-index: 5; }
+    .fp-art { width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(160deg, #FF9F43, #E25C00); display: flex; align-items: center; justify-content: center; font-size: 28px; flex: none; }
     .fp-main { flex: 1; min-width: 0; }
     .fp-title { font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fp-sub { font-size: 13px; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fp-sub { font-size: 13px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fp-bar { height: 16px; display: flex; align-items: center; cursor: pointer; margin-top: 4px; }
     .fp-bar::before { content: ''; position: absolute; }
     .fp-bar { position: relative; }
-    .fp-bar i { display: block; height: 5px; width: 0; background: #FFB066; border-radius: 3px; box-shadow: 0 0 0 0 transparent; }
-    .fp-bar { background: linear-gradient(rgba(255,255,255,.22), rgba(255,255,255,.22)) center / 100% 5px no-repeat; border-radius: 3px; }
-    .fp-time { display: flex; justify-content: space-between; font-size: 11.5px; opacity: .7; }
+    .fp-bar i { display: block; height: 5px; width: 0; background: var(--accent); border-radius: 3px; box-shadow: 0 0 0 0 transparent; }
+    .fp-bar { background: linear-gradient(#ECE6E0, #ECE6E0) center / 100% 5px no-repeat; border-radius: 3px; }
+    .fp-time { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text2); }
     .fun-player { flex-wrap: wrap; }
     .fp-ctrl { display: flex; align-items: center; justify-content: center; gap: 22px; flex: none; width: 100%; margin-top: 2px; }
     .fp-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .fp-btn { width: 40px; height: 44px; color: #fff; display: flex; align-items: center; justify-content: center; }
-    .fp-play { width: 50px; height: 50px; border-radius: 50%; background: #fff; color: #E25C00; }
+    .fp-btn { width: 40px; height: 44px; color: var(--accent); display: flex; align-items: center; justify-content: center; }
+    .fp-play { width: 54px; height: 54px; border-radius: 50%; background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(234,106,10,.3); }
     .fp-btn:active { opacity: .6; }
     .track-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; width: 100%; text-align: left; position: relative; }
     .track-row + .track-row::before { content: ''; position: absolute; top: 0; left: 70px; right: 0; height: .5px; background: var(--sep); }
     .track-row:active { background: var(--bg); }
-    .track-ico { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex: none; background: var(--accent-soft); }
+    .track-ico { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; background: var(--accent-soft); color: var(--accent); }
+    .track-ico svg { width: 22px; height: 22px; }
+    .day-head { padding: 10px 16px 4px; font-size: 13px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: .03em; background: var(--bg); }
+    .day-head.today { color: var(--accent-text); background: var(--accent-soft); }
     .track-row.playing .track-ico { background: var(--accent); color: #fff; }
     .track-main { flex: 1; min-width: 0; }
     .track-name { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-sub { font-size: 13.5px; color: var(--text2); }
     .track-row.playing .track-name { color: var(--accent); }
-    .track-row.today { background: #F1FBF4; }
+
     .track-row.empty-day { opacity: .5; }
     .game-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .game-card { background: #fff; border-radius: 20px; padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; box-shadow: var(--shadow); text-align: center; width: 100%; color: inherit; text-decoration: none; }
@@ -1005,14 +1008,14 @@
         <p class="page-sub">Musik, ayat suci, dan game.</p>
         <div class="narrow">
           <div class="fun-tiles">
-            <button type="button" class="fun-tile" id="funTab-musik" onclick="pilihHiburan('musik')"><span class="fun-ico" style="background:linear-gradient(145deg,#FF7AA8,#E83E8C)">🎵</span>Musik</button>
-            <button type="button" class="fun-tile" id="funTab-ayat" onclick="pilihHiburan('ayat')"><span class="fun-ico" style="background:linear-gradient(145deg,#5ED39A,#1E9E5A)">📖</span>Ayat Suci</button>
-            <button type="button" class="fun-tile" id="funTab-game" onclick="pilihHiburan('game')"><span class="fun-ico" style="background:linear-gradient(145deg,#7AB8FF,#2F6FE0)">🎮</span>Game</button>
+            <button type="button" class="fun-tile" id="funTab-musik" onclick="pilihHiburan('musik')"><span class="fun-ico" style="background:linear-gradient(160deg,#FF6B8B,#E8325A)"><svg viewBox="0 0 24 24" width="30" height="30"><path fill="#fff" d="M19 3v11.5a3.5 3.5 0 1 1-2-3.16V7.2L9 8.9v7.6A3.5 3.5 0 1 1 7 13.34V5.5L19 3z"/></svg></span>Musik</button>
+            <button type="button" class="fun-tile" id="funTab-ayat" onclick="pilihHiburan('ayat')"><span class="fun-ico" style="background:linear-gradient(160deg,#FFB547,#F07A12)"><svg viewBox="0 0 24 24" width="30" height="30"><path fill="#fff" d="M12 6.2C10.3 4.9 7.9 4.3 4 4.3v13.4c3.9 0 6.3.6 8 1.9 1.7-1.3 4.1-1.9 8-1.9V4.3c-3.9 0-6.3.6-8 1.9zm-1 10.9c-1.5-.7-3.4-1.1-5.5-1.2V6.3c2.4.1 4.1.6 5.5 1.6v9.2zm7.5-1.2c-2.1.1-4 .5-5.5 1.2V7.9c1.4-1 3.1-1.5 5.5-1.6v9.6z"/></svg></span>Ayat Suci</button>
+            <button type="button" class="fun-tile" id="funTab-game" onclick="pilihHiburan('game')"><span class="fun-ico" style="background:linear-gradient(160deg,#5AC8FA,#1E7BE0)"><svg viewBox="0 0 24 24" width="32" height="32"><path fill="#fff" d="M7.5 6h9A5.5 5.5 0 0 1 22 11.5v1.8a3.7 3.7 0 0 1-6.6 2.3L14.6 14.6H9.4l-.8 1A3.7 3.7 0 0 1 2 13.3v-1.8A5.5 5.5 0 0 1 7.5 6zM7 8.8v1.7H5.3v1.6H7v1.7h1.6v-1.7h1.7v-1.6H8.6V8.8H7zm9.6.3a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2zm-2.2 2.2a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2zm4.4 0a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2z"/></svg></span>Game</button>
           </div>
 
           <!-- Pemutar -->
           <div id="funPlayer" class="fun-player hidden">
-            <div class="fp-art" id="fpArt">🎵</div>
+            <div class="fp-art" id="fpArt"></div>
             <div class="fp-main">
               <div class="fp-title" id="fpTitle">-</div>
               <div class="fp-sub" id="fpSub">-</div>
@@ -1035,8 +1038,7 @@
             <div id="ayatList" class="list"></div>
           </div>
           <div id="funPane-game" class="fun-pane hidden">
-            <div class="section-label"><span>Game</span></div>
-            <div id="gameList" class="game-grid"></div>
+            <div id="gameList"></div>
           </div>
         </div>
       </section>
@@ -1247,36 +1249,28 @@
           <div class="section-label"><span>Hiburan</span></div>
           <div class="card">
             <div class="segmented" id="admFunSeg">
-              <button type="button" class="active" onclick="admFunTab('musik', this)">🎵 Musik</button>
-              <button type="button" onclick="admFunTab('ayat', this)">📖 Ayat</button>
-              <button type="button" onclick="admFunTab('game', this)">🎮 Game</button>
+              <button type="button" class="active" onclick="admFunTab('musik', this)">Musik</button>
+              <button type="button" onclick="admFunTab('ayat', this)">Ayat Suci</button>
             </div>
-            <p class="card-sub" style="margin-top:10px">Isi dengan <b>direct link</b> (link langsung ke file MP3/M4A), atau ketuk <b>Upload File</b> untuk mengunggah dari HP (Cloudflare, maks 60 MB). Link Google Drive / Dropbox otomatis diubah jadi link langsung.</p>
+            <p class="card-sub" style="margin-top:10px">File suara diunggah dari HP ke <b>Cloudflare R2</b> (maks 60 MB per file, format MP3/M4A). Isi nama dulu, lalu ketuk <b>Pilih File & Upload</b>, otomatis tersimpan.</p>
 
             <div id="admFun-musik">
               <div id="admMusikList" class="adm-list"></div>
               <div class="divider"></div>
               <label class="field"><span class="field-label">Nama Lagu</span><input type="text" id="admMusikName" class="input" placeholder="Contoh: Sholawat Nariyah"></label>
-              <label class="field"><span class="field-label">Direct Link Suara</span><input type="url" id="admMusikUrl" class="input" placeholder="https://…/lagu.mp3" autocomplete="off"></label>
-              <div style="display:flex;gap:10px">
-                <label class="btn btn-gray btn-sm" style="flex:1"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Upload File<input type="file" accept="audio/*" hidden onchange="uploadSuara(this, 'admMusikUrl', 'admMusikName')"></label>
-                <button type="button" class="btn btn-primary btn-sm" style="flex:1" onclick="simpanMusik()">Simpan Lagu</button>
-              </div>
+              <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept="audio/*" hidden onchange="uploadHiburan(this, 'musik')"></label>
             </div>
 
             <div id="admFun-ayat" class="hidden">
-              <div id="admAyatList"></div>
-            </div>
-
-            <div id="admFun-game" class="hidden">
-              <div id="admGameList" class="adm-list"></div>
+              <div id="admAyatList" class="adm-list"></div>
               <div class="divider"></div>
-              <div class="grid-2 field">
-                <label><span class="field-label">Nama Game</span><input type="text" id="admGameName" class="input" placeholder="Contoh: Tebak Kata"></label>
-                <label><span class="field-label">Ikon (emoji)</span><input type="text" id="admGameEmoji" class="input" maxlength="4" placeholder="🎲"></label>
-              </div>
-              <label class="field"><span class="field-label">Link Game</span><input type="url" id="admGameUrl" class="input" placeholder="https://…" autocomplete="off"></label>
-              <button type="button" class="btn btn-primary btn-sm btn-block" onclick="simpanGame()">Simpan Game</button>
+              <label class="field"><span class="field-label">Hari</span>
+                <select id="admAyatDay" class="input">
+                  <option value="senin">Senin</option><option value="selasa">Selasa</option><option value="rabu">Rabu</option><option value="kamis">Kamis</option><option value="jumat">Jum'at</option><option value="sabtu">Sabtu</option><option value="minggu">Minggu</option>
+                </select>
+              </label>
+              <label class="field"><span class="field-label">Nama Ayat / Surah</span><input type="text" id="admAyatName" class="input" placeholder="Contoh: Surah Al-Kahfi"></label>
+              <label class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 3l-6 6h4v6h4V9h4l-6-6z"/></svg> Pilih File &amp; Upload<input type="file" accept="audio/*" hidden onchange="uploadHiburan(this, 'ayat')"></label>
             </div>
           </div>
 
@@ -2806,12 +2800,15 @@
     }, 30000);
 
     /* ===== HIBURAN: Musik, Ayat Suci, Game =====
-       File suara TIDAK disimpan di Firebase. Firebase hanya menyimpan nama + direct link (thaitea/hiburan).
-       File bisa dari link langsung mana pun, atau diunggah lewat Admin ke Cloudflare R2. */
+       File suara disimpan di Cloudflare R2 (lewat /api/thaitea/upload).
+       Firebase hanya menyimpan nama + link file (thaitea/hiburan/musik & thaitea/hiburan/ayatItems). */
     const HARI = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
     const HARI_LABEL = { senin: 'Senin', selasa: 'Selasa', rabu: 'Rabu', kamis: 'Kamis', jumat: "Jum'at", sabtu: 'Sabtu', minggu: 'Minggu' };
+    const IC_NOTE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3v11.5a3.5 3.5 0 1 1-2-3.16V7.2L9 8.9v7.6A3.5 3.5 0 1 1 7 13.34V5.5L19 3z"/></svg>';
+    const IC_BOOK = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6.2C10.3 4.9 7.9 4.3 4 4.3v13.4c3.9 0 6.3.6 8 1.9 1.7-1.3 4.1-1.9 8-1.9V4.3c-3.9 0-6.3.6-8 1.9zm-1 10.9c-1.5-.7-3.4-1.1-5.5-1.2V6.3c2.4.1 4.1.6 5.5 1.6v9.2zm7.5-1.2c-2.1.1-4 .5-5.5 1.2V7.9c1.4-1 3.1-1.5 5.5-1.6v9.6z"/></svg>';
+    const IC_WAVE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 10v4h4l5 5V5L7 10H3zm13.5 2A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
     const hiburanRef = db.ref('thaitea/hiburan');
-    let hiburan = { musik: {}, ayat: {}, game: {} };
+    let hiburan = { musik: {}, ayatItems: {} };
     let funPane = 'musik';
     const player = new Audio();
     player.preload = 'none';
@@ -2821,15 +2818,8 @@
       const d = new Date(hariIniWIB() + 'T12:00:00Z').getUTCDay();   // 0 = Minggu
       return HARI[(d + 6) % 7];
     }
-    // Ubah link berbagi Google Drive / Dropbox menjadi link langsung
-    function linkLangsung(u) {
-      u = String(u || '').trim();
-      let m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([\w-]+)/);
-      if (m) return 'https://drive.google.com/uc?export=download&id=' + m[1];
-      if (/dropbox\.com\//.test(u)) return u.replace(/[?&]dl=0/, '').replace(/\?$/, '') + (u.includes('?') && !/[?&]dl=0/.test(u) ? '&raw=1' : '?raw=1');
-      return u;
-    }
     function urutMusik() { return Object.values(hiburan.musik || {}).filter(m => m && m.url).sort((a, b) => (a.ts || 0) - (b.ts || 0)); }
+    function ayatHari(h) { return Object.values(hiburan.ayatItems || {}).filter(a => a && a.url && a.day === h).sort((a, b) => (a.ts || 0) - (b.ts || 0)); }
     function pilihHiburan(p) {
       funPane = p;
       ['musik', 'ayat', 'game'].forEach(k => {
@@ -2838,29 +2828,24 @@
       });
       renderHiburan();
     }
+    function trackIco(isNow, ic) { return `<span class="track-ico">${isNow && !player.paused ? IC_WAVE : ic}</span>`; }
     function renderHiburan() {
       const now = antrean[antreanIdx];
-      // Musik
       const lagu = urutMusik();
-      document.getElementById('musikList').innerHTML = lagu.length ? lagu.map((m, i) => `<button type="button" class="track-row ${now && now.key === 'm:' + m.id ? 'playing' : ''}" onclick="putarMusik(${i})">
-          <span class="track-ico">${now && now.key === 'm:' + m.id && !player.paused ? '🔊' : '🎵'}</span>
-          <div class="track-main"><div class="track-name">${esc(m.name)}</div><div class="track-sub">Lagu ${i + 1}</div></div></button>`).join('')
-        : '<div class="empty">Belum ada lagu. Admin bisa menambahkan di Pengaturan → Admin → Hiburan.</div>';
-      // Ayat
+      document.getElementById('musikList').innerHTML = lagu.length ? lagu.map((m, i) => {
+        const on = now && now.key === 'm:' + m.id;
+        return `<button type="button" class="track-row ${on ? 'playing' : ''}" onclick="putarMusik(${i})">${trackIco(on, IC_NOTE)}
+          <div class="track-main"><div class="track-name">${esc(m.name)}</div><div class="track-sub">Lagu ${i + 1}</div></div></button>`;
+      }).join('') : '<div class="empty">Belum ada lagu. Admin bisa menambahkan di Pengaturan → Admin → Hiburan.</div>';
       const today = hariIniKey();
       document.getElementById('ayatHariIni').textContent = 'Hari ini: ' + HARI_LABEL[today];
-      const urutHari = [today, ...HARI.filter(h => h !== today)];
-      document.getElementById('ayatList').innerHTML = urutHari.map(h => {
-        const a = (hiburan.ayat || {})[h] || {};
-        const ada = !!a.url;
-        return `<button type="button" class="track-row ${h === today ? 'today' : ''} ${ada ? '' : 'empty-day'} ${now && now.key === 'a:' + h ? 'playing' : ''}" onclick="putarAyat('${h}')">
-          <span class="track-ico" style="${h === today ? 'background:#D7F5E2' : ''}">${now && now.key === 'a:' + h && !player.paused ? '🔊' : '📖'}</span>
-          <div class="track-main"><div class="track-name">${HARI_LABEL[h]}${h === today ? ' · Hari Ini' : ''}</div><div class="track-sub">${ada ? esc(a.name || 'Ayat Suci') : 'Belum diisi admin'}</div></div></button>`;
+      document.getElementById('ayatList').innerHTML = [today, ...HARI.filter(h => h !== today)].map(h => {
+        const items = ayatHari(h);
+        return `<div class="day-head ${h === today ? 'today' : ''}">${HARI_LABEL[h]}${h === today ? ' · Hari Ini' : ''}</div>` + (items.length
+          ? items.map(a => { const on = now && now.key === 'a:' + a.id; return `<button type="button" class="track-row ${on ? 'playing' : ''}" onclick="putarAyat('${a.id}')">${trackIco(on, IC_BOOK)}<div class="track-main"><div class="track-name">${esc(a.name)}</div><div class="track-sub">${HARI_LABEL[h]}</div></div></button>`; }).join('')
+          : `<div class="track-row empty-day"><span class="track-ico">${IC_BOOK}</span><div class="track-main"><div class="track-sub">Belum diisi admin</div></div></div>`);
       }).join('');
-      // Game
-      const games = Object.values(hiburan.game || {}).filter(g => g && g.url).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-      document.getElementById('gameList').innerHTML = games.length ? games.map(g => `<a class="game-card" href="${esc(g.url)}" target="_blank" rel="noopener"><span class="ge">${esc(g.emoji || '🎮')}</span>${esc(g.name)}</a>`).join('')
-        : '<div class="empty" style="grid-column:1/-1">Belum ada game. Admin bisa menambahkan di Pengaturan → Admin → Hiburan.</div>';
+      if (window.TTG) TTG.renderPane();
       renderPemutar();
     }
     function putarAntrean(list, idx) {
@@ -2868,17 +2853,18 @@
       const t = antrean[idx];
       if (!t) return;
       player.src = t.url;
-      player.play().catch(() => triggerToast('Suara tidak bisa diputar. Cek direct link-nya.', true));
+      player.play().catch(() => triggerToast('Suara tidak bisa diputar.', true));
       renderHiburan();
     }
     function putarMusik(i) {
       const lagu = urutMusik();
-      putarAntrean(lagu.map((m, j) => ({ key: 'm:' + m.id, name: m.name, url: m.url, sub: `Musik · Lagu ${j + 1}`, art: '🎵' })), i);
+      putarAntrean(lagu.map((m, j) => ({ key: 'm:' + m.id, name: m.name, url: m.url, sub: `Musik · Lagu ${j + 1}`, art: IC_NOTE })), i);
     }
-    function putarAyat(h) {
-      const a = (hiburan.ayat || {})[h];
-      if (!a || !a.url) { triggerToast(`Ayat untuk hari ${HARI_LABEL[h]} belum diisi admin`, true); return; }
-      putarAntrean([{ key: 'a:' + h, name: a.name || 'Ayat Suci', url: a.url, sub: `Ayat Suci · ${HARI_LABEL[h]}`, art: '📖' }], 0);
+    function putarAyat(id) {
+      const a = (hiburan.ayatItems || {})[id];
+      if (!a || !a.url) return;
+      const list = ayatHari(a.day);
+      putarAntrean(list.map(x => ({ key: 'a:' + x.id, name: x.name, url: x.url, sub: `Ayat Suci · ${HARI_LABEL[x.day]}`, art: IC_BOOK })), list.findIndex(x => x.id === id));
     }
     function togglePutar() {
       if (!antrean[antreanIdx]) return;
@@ -2899,7 +2885,7 @@
       if (!t) return;
       document.getElementById('fpTitle').textContent = t.name;
       document.getElementById('fpSub').textContent = t.sub;
-      document.getElementById('fpArt').textContent = t.art;
+      document.getElementById('fpArt').innerHTML = `<span style="color:#fff;display:flex;width:30px;height:30px">${t.art}</span>`;
       document.getElementById('fpPlayBtn').innerHTML = player.paused ? ICON_PLAY_BIG : ICON_PAUSE_BIG;
     }
     player.addEventListener('timeupdate', () => {
@@ -2910,99 +2896,48 @@
     });
     ['play', 'pause'].forEach(ev => player.addEventListener(ev, () => { if (!document.getElementById('tab-hiburan').classList.contains('hidden')) renderHiburan(); else renderPemutar(); }));
     player.addEventListener('ended', () => { if (antreanIdx < antrean.length - 1) laguBerikut(); else renderHiburan(); });
-    player.addEventListener('error', () => { if (antrean[antreanIdx]) triggerToast('Suara gagal dimuat. Pastikan direct link-nya benar.', true); });
+    player.addEventListener('error', () => { if (antrean[antreanIdx]) triggerToast('Suara gagal dimuat.', true); });
 
-    // ---- Admin: kelola Hiburan ----
+    // ---- Admin: kelola Hiburan (upload ke Cloudflare R2) ----
     function admFunTab(p, btn) {
       document.querySelectorAll('#admFunSeg button').forEach(b => b.classList.toggle('active', b === btn));
-      ['musik', 'ayat', 'game'].forEach(k => document.getElementById('admFun-' + k).classList.toggle('hidden', k !== p));
+      ['musik', 'ayat'].forEach(k => document.getElementById('admFun-' + k).classList.toggle('hidden', k !== p));
     }
     function renderAdminHiburan() {
       const box = document.getElementById('admMusikList');
       if (!box) return;
       const lagu = urutMusik();
-      box.innerHTML = lagu.length ? lagu.map(m => `<div class="adm-row"><span class="track-ico" style="width:38px;height:38px;font-size:18px">🎵</span><div class="ar-main"><div class="ar-name">${esc(m.name)}</div><div class="ar-url">${esc(m.url)}</div></div>
-          <button type="button" class="icon-act del" aria-label="Hapus lagu" onclick="hapusHiburan('musik','${m.id}','${esc(m.name).replace(/'/g, '&#39;')}')">${ICON_TRASH}</button></div>`).join('') : '<p class="card-sub" style="margin:10px 0 0">Belum ada lagu.</p>';
+      box.innerHTML = lagu.length ? lagu.map(m => `<div class="adm-row"><span class="track-ico" style="width:38px;height:38px">${IC_NOTE}</span><div class="ar-main"><div class="ar-name">${esc(m.name)}</div><div class="ar-url">${esc(m.size ? (m.size / 1048576).toFixed(1) + ' MB' : 'File suara')}</div></div>
+          <button type="button" class="icon-act del" aria-label="Hapus lagu" onclick="hapusHiburan('musik','${m.id}')">${ICON_TRASH}</button></div>`).join('') : '<p class="card-sub" style="margin:10px 0 0">Belum ada lagu.</p>';
       const ay = document.getElementById('admAyatList');
-      // jangan timpa isian yang sedang diketik
-      if (!ay.contains(document.activeElement)) {
-        ay.innerHTML = HARI.map(h => {
-          const a = (hiburan.ayat || {})[h] || {};
-          return `<div class="adm-day"><div class="ad-title"><span>${HARI_LABEL[h]}</span>${a.url ? '<span class="pill pill-green">Terisi</span>' : '<span class="pill">Kosong</span>'}</div>
-            <input type="text" class="input" id="ayatName-${h}" placeholder="Nama, mis. Surah Al-Kahfi" value="${esc(a.name || '')}">
-            <input type="url" class="input" id="ayatUrl-${h}" placeholder="Direct link suara" value="${esc(a.url || '')}" autocomplete="off">
-            <div style="display:flex;gap:8px">
-              <label class="btn btn-gray btn-sm" style="flex:1">Upload File<input type="file" accept="audio/*" hidden onchange="uploadSuara(this, 'ayatUrl-${h}', 'ayatName-${h}')"></label>
-              <button type="button" class="btn btn-primary btn-sm" style="flex:1" onclick="simpanAyat('${h}')">Simpan</button>
-              ${a.url ? `<button type="button" class="icon-act del" aria-label="Kosongkan" onclick="hapusAyat('${h}')">${ICON_TRASH}</button>` : ''}
-            </div></div>`;
-        }).join('');
-      }
-      const gl = document.getElementById('admGameList');
-      const games = Object.values(hiburan.game || {}).filter(g => g && g.url).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-      gl.innerHTML = games.length ? games.map(g => `<div class="adm-row"><span class="track-ico" style="width:38px;height:38px;font-size:20px">${esc(g.emoji || '🎮')}</span><div class="ar-main"><div class="ar-name">${esc(g.name)}</div><div class="ar-url">${esc(g.url)}</div></div>
-          <button type="button" class="icon-act del" aria-label="Hapus game" onclick="hapusHiburan('game','${g.id}','${esc(g.name).replace(/'/g, '&#39;')}')">${ICON_TRASH}</button></div>`).join('') : '<p class="card-sub" style="margin:10px 0 0">Belum ada game.</p>';
+      const semua = HARI.flatMap(h => ayatHari(h));
+      ay.innerHTML = semua.length ? semua.map(a => `<div class="adm-row"><span class="track-ico" style="width:38px;height:38px">${IC_BOOK}</span><div class="ar-main"><div class="ar-name">${esc(a.name)}</div><div class="ar-url">${HARI_LABEL[a.day]}</div></div>
+          <button type="button" class="icon-act del" aria-label="Hapus ayat" onclick="hapusHiburan('ayatItems','${a.id}')">${ICON_TRASH}</button></div>`).join('') : '<p class="card-sub" style="margin:10px 0 0">Belum ada ayat.</p>';
     }
-    function cekLink(u) { return /^https?:\/\/\S+$/i.test(u) || /^\/api\/thaitea\/file\//.test(u); }
-    async function uploadSuara(input, urlId, nameId) {
+    async function uploadHiburan(input, jenis) {
       const f = input.files && input.files[0];
       input.value = '';
-      if (!f) return;
+      if (!f || !adminTerbuka()) return;
+      const nameEl = document.getElementById(jenis === 'musik' ? 'admMusikName' : 'admAyatName');
+      const name = (nameEl.value.trim() || f.name.replace(/\.[^.]+$/, '')).slice(0, 80);
       if (f.size > 60 * 1024 * 1024) { triggerToast('File terlalu besar (maks 60 MB)', true); return; }
       const type = (f.type || '').split(';')[0] || (/\.m4a$/i.test(f.name) ? 'audio/mp4' : 'audio/mpeg');
       try {
         triggerToast('Mengunggah… tunggu sebentar');
         const url = await unggahBerkas(f, type);
-        document.getElementById(urlId).value = location.origin + url;
-        const nm = document.getElementById(nameId);
-        if (nm && !nm.value.trim()) nm.value = f.name.replace(/\.[^.]+$/, '');
-        triggerToast('Upload selesai. Ketuk Simpan.');
+        const id = (jenis === 'musik' ? 'L' : 'A') + Date.now();
+        const data = { id, name, url, size: f.size, ts: Date.now() };
+        if (jenis === 'ayat') data.day = document.getElementById('admAyatDay').value;
+        await hiburanRef.child((jenis === 'musik' ? 'musik/' : 'ayatItems/') + id).set(data);
+        nameEl.value = '';
+        triggerToast(jenis === 'musik' ? 'Lagu tersimpan' : `Ayat hari ${HARI_LABEL[data.day]} tersimpan`);
+        logAktivitas('sys', jenis === 'musik' ? `Menambahkan lagu ${name}` : `Menambahkan ayat suci ${name} (${HARI_LABEL[data.day]})`);
       } catch (e) { triggerToast(e.message || 'Upload gagal', true); }
     }
-    function simpanMusik() {
+    async function hapusHiburan(jenis, id) {
       if (!adminTerbuka()) return;
-      const name = document.getElementById('admMusikName').value.trim().slice(0, 80);
-      const url = linkLangsung(document.getElementById('admMusikUrl').value);
-      if (!name || !cekLink(url)) { triggerToast('Isi nama lagu dan direct link yang benar', true); return; }
-      const id = 'L' + Date.now();
-      hiburanRef.child('musik/' + id).set({ id, name, url, ts: Date.now() }).then(() => {
-        document.getElementById('admMusikName').value = '';
-        document.getElementById('admMusikUrl').value = '';
-        triggerToast('Lagu disimpan');
-        logAktivitas('sys', `Menambahkan lagu ${name}`);
-      });
-    }
-    function simpanAyat(h) {
-      if (!adminTerbuka()) return;
-      const name = document.getElementById('ayatName-' + h).value.trim().slice(0, 80);
-      const url = linkLangsung(document.getElementById('ayatUrl-' + h).value);
-      if (!cekLink(url)) { triggerToast('Direct link belum benar', true); return; }
-      hiburanRef.child('ayat/' + h).set({ name: name || 'Ayat Suci', url, ts: Date.now() }).then(() => {
-        document.activeElement && document.activeElement.blur();
-        triggerToast(`Ayat ${HARI_LABEL[h]} disimpan`);
-        logAktivitas('sys', `Mengatur ayat suci hari ${HARI_LABEL[h]}: ${name || 'Ayat Suci'}`);
-      });
-    }
-    async function hapusAyat(h) {
-      if (!adminTerbuka()) return;
-      if (!(await iosConfirm(`Kosongkan ayat hari ${HARI_LABEL[h]}?`, { title: 'Kosongkan?', okText: 'Kosongkan', destructive: true }))) return;
-      hiburanRef.child('ayat/' + h).remove();
-    }
-    function simpanGame() {
-      if (!adminTerbuka()) return;
-      const name = document.getElementById('admGameName').value.trim().slice(0, 40);
-      const url = document.getElementById('admGameUrl').value.trim();
-      const emoji = document.getElementById('admGameEmoji').value.trim().slice(0, 4) || '🎮';
-      if (!name || !/^https?:\/\/\S+$/i.test(url)) { triggerToast('Isi nama game dan link yang benar', true); return; }
-      const id = 'G' + Date.now();
-      hiburanRef.child('game/' + id).set({ id, name, url, emoji, ts: Date.now() }).then(() => {
-        ['admGameName', 'admGameUrl', 'admGameEmoji'].forEach(i => document.getElementById(i).value = '');
-        triggerToast('Game disimpan');
-      });
-    }
-    async function hapusHiburan(jenis, id, nama) {
-      if (!adminTerbuka()) return;
-      if (!(await iosConfirm(`Hapus "${nama}"?`, { title: 'Hapus?', okText: 'Hapus', destructive: true }))) return;
+      const it = (hiburan[jenis] || {})[id] || {};
+      if (!(await iosConfirm(`Hapus "${it.name || 'item ini'}"?`, { title: 'Hapus?', okText: 'Hapus', destructive: true }))) return;
       hiburanRef.child(jenis + '/' + id).remove();
     }
 
@@ -3134,7 +3069,7 @@
       window.addEventListener('pagehide', () => { if (myKey) lepasPresence(myKey); });
       siapkanRoomChat();
       hiburanRef.on('value', snap => {
-        hiburan = Object.assign({ musik: {}, ayat: {}, game: {} }, snap.val() || {});
+        hiburan = Object.assign({ musik: {}, ayatItems: {} }, snap.val() || {});
         if (!document.getElementById('tab-hiburan').classList.contains('hidden')) renderHiburan();
         if (adminTerbuka()) renderAdminHiburan();
       });
@@ -4606,5 +4541,6 @@
       }).catch(err => triggerToast('Gagal update stok!', true));
     }
   </script>
+  <script src="games.js"></script>
 </body>
 </html>
