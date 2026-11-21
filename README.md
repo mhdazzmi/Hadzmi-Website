@@ -12,6 +12,7 @@ public/                 ← isi website yang di-deploy
   sw.js                 ← service worker (Web Push + klik notifikasi)
   manifest.webmanifest, icons/  ← PWA (bisa "Tambah ke Layar Utama")
 public/games/           ← Nexo Games (game properti + chat bareng teman)
+public/thaitea/         ← Kasir Thai Tea (web terpisah, Firebase project sendiri: kasir-thai-tea). Buka di /thaitea/
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
 wrangler.jsonc          ← konfigurasi Cloudflare
