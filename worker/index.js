@@ -15,6 +15,7 @@
 
 import { healthcareAi } from './healthcare.js';
 import { handleNexo } from './nexo.js';
+import { handleThaiTea } from './thaitea.js';
 export { NexoHub } from './nexo.js';
 
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
@@ -68,6 +69,8 @@ async function handleApi(request, env, url, ctx) {
 
   // ---- Nexo Games (akun teman sendiri, tidak memakai login Firebase pemilik) ----
   if (path.startsWith('/api/nexo/')) return handleNexo(request, env, url);
+  // ---- Kasir Thai Tea: notifikasi untuk HP orang tua (tanpa login Nexa) ----
+  if (path.startsWith('/api/thaitea/')) return handleThaiTea(request, env, url, ctx);
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
   if (path === '/api/pending' && method === 'GET') {
