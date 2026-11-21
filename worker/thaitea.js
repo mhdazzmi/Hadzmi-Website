@@ -9,6 +9,8 @@
      POST /api/thaitea/unsubscribe  { endpoint }
      POST /api/thaitea/notify       { title, body, from }   (from = endpoint pengirim, tidak ikut dikirimi)
      GET  /api/thaitea/pending?endpoint=&since=
+     POST /api/thaitea/upload       (body = file mentah; Content-Type image/* atau audio/*) → { url }
+     GET  /api/thaitea/file/<id>    → foto / pesan suara chat & foto profil (Cloudflare R2, folder thaitea/)
    ========================================================= */
 import { getVapid, sendPush } from './index.js';
 
@@ -17,6 +19,15 @@ const OUTBOX = 'tt_outbox';
 const MAX_SUBS = 60;
 const OUTBOX_MAX = 40;
 const RATE_PER_MIN = 30;
+const MAX_UPLOAD = 4 * 1024 * 1024;               // 4 MB per file (foto sudah dikecilkan di HP)
+const UPLOAD_PER_MIN = 40;
+const R2_SAFE_LIMIT = 9 * 1024 * 1024 * 1024;     // sama dengan batas aman Nexa (kuota gratis 10 GB)
+const FILE_ID_RE = /^[0-9a-f-]{36}\.(jpg|webp|png|webm|m4a|ogg|mp3|aac)$/;
+const TYPES = {
+  'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/png': 'png',
+  'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3'
+};
+const EXT_TYPE = { jpg: 'image/jpeg', webp: 'image/webp', png: 'image/png', webm: 'audio/webm', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', mp3: 'audio/mpeg' };
 
 export async function handleThaiTea(request, env, url, ctx) {
   if (!env.HUB_KV) return json({ error: 'KV belum diatur' }, 503);
@@ -35,7 +46,7 @@ export async function handleThaiTea(request, env, url, ctx) {
     if (!endpoint) return json({ error: 'Endpoint tidak valid' }, 400);
     const subs = await kvGet(env, SUBS, []);
     const next = subs.filter(s => s.endpoint !== endpoint);
-    next.push({ endpoint, name: cleanText(b.name, 30) || 'Seseorang', at: Date.now() });
+    next.push({ endpoint, name: cleanText(b.name, 30) || 'Seseorang', user: cleanKey(b.user), at: Date.now() });
     await env.HUB_KV.put(SUBS, JSON.stringify(next.slice(-MAX_SUBS)));
     return json({ ok: true, devices: next.length });
   }
@@ -54,15 +65,16 @@ export async function handleThaiTea(request, env, url, ctx) {
     const title = cleanText(b.title, 60) || 'Thai Tea';
     const body = cleanText(b.body, 240);
     if (!body) return json({ error: 'Isi kosong' }, 400);
+    const to = cleanKey(b.to);
     const now = Date.now();
     const outbox = await kvGet(env, OUTBOX, []);
     if (outbox.filter(i => i.ts > now - 60000).length >= RATE_PER_MIN) return json({ error: 'Terlalu banyak notifikasi' }, 429);
-    outbox.push({ id: 'tt-' + now + '-' + Math.random().toString(36).slice(2, 6), ts: now, title, body });
+    outbox.push({ id: 'tt-' + now + '-' + Math.random().toString(36).slice(2, 6), ts: now, title, body, to: to || undefined });
     await env.HUB_KV.put(OUTBOX, JSON.stringify(outbox.slice(-OUTBOX_MAX)));
 
     const from = cleanEndpoint(b.from);
     const subs = await kvGet(env, SUBS, []);
-    const targets = subs.filter(s => s.endpoint !== from);
+    const targets = subs.filter(s => s.endpoint !== from && (!to || s.user === to));
     const work = (async () => {
       const vapid = await getVapid(env, true);
       const results = await Promise.all(targets.map(s => sendPush(s, env, vapid).then(st => ({ s, st })).catch(() => ({ s, st: 0 }))));
@@ -83,7 +95,52 @@ export async function handleThaiTea(request, env, url, ctx) {
     if (!endpoint || !subs.some(s => s.endpoint === endpoint)) return json({ error: 'Unknown subscription' }, 403);
     const outbox = await kvGet(env, OUTBOX, []);
     const minTs = since > 0 ? since : Date.now() - 15 * 60000;
-    return json({ items: outbox.filter(i => i.ts > minTs).slice(-10), now: Date.now() });
+    const me = subs.find(s => s.endpoint === endpoint);
+    const items = outbox.filter(i => i.ts > minTs && (!i.to || i.to === me.user)).slice(-10);
+    return json({ items, now: Date.now() });
+  }
+
+  if (path === '/api/thaitea/upload' && method === 'POST') {
+    if (!env.FILES) return json({ error: 'Penyimpanan R2 belum aktif' }, 503);
+    const type = String(request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+    const ext = TYPES[type];
+    if (!ext) return json({ error: 'Jenis file tidak didukung' }, 415);
+    const len = Number(request.headers.get('Content-Length') || 0);
+    if (len > MAX_UPLOAD) return json({ error: 'File terlalu besar' }, 413);
+    // batas unggahan per menit (mencegah penyalahgunaan)
+    const minute = Math.floor(Date.now() / 60000);
+    const rate = await kvGet(env, 'tt_upload_rate', { minute: 0, count: 0 });
+    if (rate.minute === minute && rate.count >= UPLOAD_PER_MIN) return json({ error: 'Terlalu banyak unggahan, coba sebentar lagi' }, 429);
+    await env.HUB_KV.put('tt_upload_rate', JSON.stringify({ minute, count: rate.minute === minute ? rate.count + 1 : 1 }));
+    const used = Number(await env.HUB_KV.get('r2_bytes')) || 0;
+    if (used + (len || MAX_UPLOAD) > R2_SAFE_LIMIT) return json({ error: 'Penyimpanan hampir penuh' }, 507);
+    const buf = await request.arrayBuffer();
+    if (!buf.byteLength || buf.byteLength > MAX_UPLOAD) return json({ error: 'File kosong atau terlalu besar' }, 413);
+    const id = crypto.randomUUID() + '.' + ext;
+    await env.FILES.put('thaitea/' + id, buf, { httpMetadata: { contentType: type } });
+    await env.HUB_KV.put('r2_bytes', String(used + buf.byteLength));
+    return json({ ok: true, url: '/api/thaitea/file/' + id, size: buf.byteLength });
+  }
+
+  const fileMatch = /^\/api\/thaitea\/file\/([A-Za-z0-9.-]{20,60})$/.exec(path);
+  if (fileMatch && method === 'GET') {
+    const id = fileMatch[1];
+    if (!FILE_ID_RE.test(id) || !env.FILES) return json({ error: 'Not found' }, 404);
+    const obj = await env.FILES.get('thaitea/' + id, { range: request.headers });
+    if (!obj) return json({ error: 'Not found' }, 404);
+    const headers = new Headers();
+    headers.set('Content-Type', (obj.httpMetadata && obj.httpMetadata.contentType) || EXT_TYPE[id.split('.').pop()] || 'application/octet-stream');
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('ETag', obj.httpEtag);
+    if (obj.range && request.headers.get('Range')) {
+      const off = obj.range.offset || 0, ln = obj.range.length || obj.size - off;
+      headers.set('Content-Range', `bytes ${off}-${off + ln - 1}/${obj.size}`);
+      headers.set('Content-Length', String(ln));
+      return new Response(obj.body, { status: 206, headers });
+    }
+    headers.set('Content-Length', String(obj.size));
+    return new Response(obj.body, { headers });
   }
 
   return json({ error: 'Not found' }, 404);
@@ -93,6 +150,9 @@ function cleanEndpoint(v) {
   const s = String(v || '');
   if (s.length > 1000 || !/^https:\/\/[^\s]+$/.test(s)) return '';
   return s;
+}
+function cleanKey(v) {
+  return String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
 }
 function cleanText(v, max) {
   return String(v || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
