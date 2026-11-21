@@ -373,6 +373,38 @@
     .sc-foot b { color: var(--accent-text); font-size: 15px; }
     .stock-card.crit .sc-foot b { color: var(--red); }
 
+
+    /* ---------- NAV ICONS / ADMIN / AKTIVITAS ---------- */
+    .brand-icon { position: relative; }
+    .status-dot { position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; border-radius: 50%; background: #34C759; border: 2.5px solid var(--bg); }
+    .status-dot.offline { background: #FF3B30; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .nav-actions { display: flex; gap: 8px; flex: none; }
+    .nav-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--fill); color: var(--text2); font-size: 15px; display: inline-flex; align-items: center; justify-content: center; }
+    .nav-icon:active { opacity: .6; }
+    .offline-banner { background: var(--red); color: #fff; font-size: 14px; font-weight: 700; text-align: center; padding: 8px 16px; }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 17px; font-weight: 600; min-height: 44px; padding: 0 4px; margin-top: 4px; }
+    .narrow { max-width: 680px; }
+    .divider { height: .5px; background: var(--sep); margin: 14px 0; }
+    .who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .who-btn { min-height: 84px; border-radius: 18px; background: #fff; font-size: 22px; font-weight: 800; box-shadow: var(--shadow); }
+    .who-btn:active { transform: scale(.97); background: var(--accent-soft); }
+    .act-date { padding: 10px 16px 6px; font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .03em; background: var(--bg); }
+    .act-row { display: flex; gap: 12px; padding: 13px 16px; position: relative; }
+    .act-row + .act-row::before { content: ''; position: absolute; top: 0; left: 64px; right: 0; height: .5px; background: var(--sep); }
+    .act-ava { width: 38px; height: 38px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 16px; }
+    .act-main { min-width: 0; flex: 1; }
+    .act-text { font-size: 16px; line-height: 1.4; }
+    .act-text b { font-weight: 800; }
+    .act-time { font-size: 13px; color: var(--text2); margin-top: 3px; }
+    .act-kind { display: inline-block; font-size: 12px; font-weight: 800; padding: 2px 7px; border-radius: 6px; margin-right: 6px; vertical-align: 1px; }
+    .k-add { background: var(--green-soft); color: var(--green); }
+    .k-edit { background: var(--amber-soft); color: var(--amber); }
+    .k-del { background: var(--red-soft); color: var(--red); }
+    .k-sys { background: #E6F0FD; color: var(--blue); }
+    .field-label + .search, .field-label + select { margin-top: 0; }
+    span.field-label[style*="margin-top"] { display: block; }
+
     /* ---------- TABBAR ---------- */
     .tabbar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
@@ -476,14 +508,18 @@
     <header class="navbar" id="navbar">
       <div class="nav-inner">
         <div class="brand">
-          <div class="brand-icon"><i class="fas fa-mug-hot"></i></div>
+          <div class="brand-icon"><i class="fas fa-mug-hot"></i><span id="cloudStatusBadge" class="status-dot" title="Status koneksi"><span id="cloudStatusText" class="sr-only">Online</span></span></div>
           <div style="min-width:0">
             <div class="brand-name">Thai Tea Kasir</div>
             <div class="brand-date" id="currentDateHeader"></div>
           </div>
         </div>
-        <span id="cloudStatusBadge" class="status"><span class="dot"></span><span id="cloudStatusText">Online</span></span>
+        <div class="nav-actions">
+          <button type="button" class="nav-icon" onclick="switchTab('tab-aktivitas')" aria-label="Catatan Aktivitas" title="Catatan Aktivitas"><i class="fas fa-list-check"></i></button>
+          <button type="button" class="nav-icon" onclick="switchTab('tab-admin')" aria-label="Admin" title="Admin"><i class="fas fa-gear"></i></button>
+        </div>
       </div>
+      <div id="offlineBanner" class="offline-banner hidden"><i class="fas fa-wifi"></i> Tidak ada internet. Data akan terkirim saat online lagi.</div>
     </header>
 
     <!-- TOAST -->
@@ -538,10 +574,8 @@
                 <input type="date" id="orderInputDate" class="input">
               </label>
 
-              <label class="field">
-                <span class="field-label">Catatan (boleh kosong)</span>
-                <input type="text" id="orderNote" placeholder="Contoh: manis sedikit" class="input">
-              </label>
+              <!-- Catatan pesanan disembunyikan (tetap kosong) -->
+              <input type="hidden" id="orderNote" value="">
 
               <button onclick="saveActiveOrder()" class="btn btn-primary btn-lg btn-block" style="margin-top:6px">
                 <i class="fas fa-circle-check"></i> Simpan Transaksi
@@ -550,43 +584,22 @@
           </div>
         </div>
 
-        <!-- Rekap periode -->
-        <div class="section-label"><span>Rekap Penjualan</span><span id="dailyCupsBadge" class="count">0 cup</span></div>
-        <div class="card">
-          <div class="date-range">
-            <label class="field">
-              <span class="field-label">Dari</span>
-              <input type="date" id="orderStartDate" onchange="updateDailyOrdersView()" class="input">
-            </label>
-            <label class="field">
-              <span class="field-label">Sampai</span>
-              <input type="date" id="orderEndDate" onchange="updateDailyOrdersView()" class="input">
-            </label>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <div class="search" style="flex:1">
-              <i class="fas fa-magnifying-glass"></i>
-              <input type="text" id="searchDailyOrdersInput" oninput="updateDailyOrdersView()" placeholder="Cari menu / catatan" class="input">
-            </div>
-            <button type="button" onclick="resetFilterDateToToday()" class="btn btn-tinted btn-sm" style="min-height:48px">Hari Ini</button>
-          </div>
-          <div class="row-between" style="margin-top:14px;background:var(--green-soft);border-radius:14px;padding:12px 16px">
-            <span style="font-weight:600;color:#14532d">Total Omzet</span>
-            <span id="dailyGrossIncome" style="font-size:22px;font-weight:800;color:var(--green)">Rp 0</span>
-          </div>
-          <p class="card-sub" id="periodTableSubtitle" style="margin-top:10px">Daftar transaksi yang terekam pada periode di atas</p>
+        <!-- Rekap periode (disembunyikan; sudah ada di tab Riwayat). Tetap ada agar logika lama berjalan. -->
+        <div class="hidden" aria-hidden="true">
+          <span id="dailyCupsBadge"></span>
+          <input type="date" id="orderStartDate" onchange="updateDailyOrdersView()">
+          <input type="date" id="orderEndDate" onchange="updateDailyOrdersView()">
+          <input type="text" id="searchDailyOrdersInput">
+          <span id="dailyGrossIncome"></span>
+          <p id="periodTableSubtitle"></p>
+          <div id="dailyOrdersTableBody"></div>
         </div>
-        <div id="dailyOrdersTableBody" class="list" style="margin-top:12px"></div>
       </section>
 
       <!-- ================= TAB 2: PENGELUARAN ================= -->
       <section id="tab-pengeluaran" class="tab-content hidden">
-        <div class="row-between">
-          <h1 class="large-title">Pengeluaran</h1>
-          <!-- Tombol rahasia '...' : Portal Biaya Aset -->
-          <button type="button" onclick="openSecretAssetModal()" title="Portal Rahasia Biaya Aset" class="round-btn"><i class="fas fa-ellipsis"></i></button>
-        </div>
-        <p class="page-sub">Catat belanja bahan baku harian atau operasional.</p>
+        <h1 class="large-title">Pengeluaran</h1>
+        <p class="page-sub">Catat uang belanja hari ini.</p>
 
         <div class="split-rev">
           <!-- FORM -->
@@ -610,15 +623,15 @@
                 </div>
 
                 <div id="detailedExpenseBox" class="field">
-                  <span class="field-label">Nama Barang / Keperluan</span>
+                  <span class="field-label">Nama Barang</span>
                   <div class="tag-grid">
                     <button type="button" onclick="setExpenseTag('Es Batu')" class="tag-btn">🧊 Es Batu</button>
-                    <button type="button" onclick="setExpenseTag('Susu SKM / Evaporasi')" class="tag-btn">🥛 Susu / Krimer</button>
-                    <button type="button" onclick="setExpenseTag('Cup, Sedotan & Kresek')" class="tag-btn">🥤 Cup & Sedotan</button>
-                    <button type="button" onclick="setExpenseTag('Bubuk Teh & Bubuk Rasa')" class="tag-btn">🍵 Bubuk Teh/Rasa</button>
+                    <button type="button" onclick="setExpenseTag('Susu / Krimer')" class="tag-btn">🥛 Susu / Krimer</button>
+                    <button type="button" onclick="setExpenseTag('Keju')" class="tag-btn">🧀 Keju</button>
+                    <button type="button" onclick="setExpenseTag('Gula')" class="tag-btn">🍚 Gula</button>
                   </div>
                   <div style="position:relative">
-                    <input type="text" id="expenseItemName" oninput="handleExpenseItemInput(this.value)" placeholder="Contoh: Es batu 2 bungkus" class="input" autocomplete="off">
+                    <input type="text" id="expenseItemName" oninput="handleExpenseItemInput(this.value)" placeholder="Atau ketik nama barang" class="input" autocomplete="off">
                     <div id="expenseItemSuggestions" class="suggest hidden"></div>
                   </div>
                 </div>
@@ -647,10 +660,8 @@
                   <input type="text" inputmode="numeric" autocomplete="off" id="expenseAmount" placeholder="0" class="input input-money">
                 </label>
 
-                <label class="field">
-                  <span class="field-label">Keterangan (boleh kosong)</span>
-                  <input type="text" id="expenseNote" placeholder="Contoh: beli di minimarket" class="input">
-                </label>
+                <!-- Keterangan disembunyikan (tetap kosong) -->
+                <input type="hidden" id="expenseNote" value="">
 
                 <button onclick="saveExpenseRecord()" class="btn btn-red btn-lg btn-block">
                   <i class="fas fa-circle-plus"></i> Simpan Pengeluaran
@@ -685,35 +696,10 @@
                 <button type="button" onclick="setExpenseDay(hariIniWIB())" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
                 <button type="button" onclick="resetExpenseFilter()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
               </div>
-              <div style="display:flex;gap:10px;margin-top:12px">
-                <select id="expenseMonthSelect" onchange="filterExpenseByMonth()" class="input" style="flex:1">
-                  <option value="">📅 Pilih Bulan...</option>
-                  <option value="2026-01">Januari 2026</option>
-                  <option value="2026-02">Februari 2026</option>
-                  <option value="2026-03">Maret 2026</option>
-                  <option value="2026-04">April 2026</option>
-                  <option value="2026-05">Mei 2026</option>
-                  <option value="2026-06">Juni 2026</option>
-                  <option value="2026-07">Juli 2026</option>
-                  <option value="2026-08">Agustus 2026</option>
-                  <option value="2026-09">September 2026</option>
-                  <option value="2026-10">Oktober 2026</option>
-                  <option value="2026-11">November 2026</option>
-                  <option value="2026-12">Desember 2026</option>
-                </select>
-              </div>
-              <div class="search" style="margin-top:12px">
-                <i class="fas fa-magnifying-glass"></i>
-                <input type="text" id="searchExpensesInput" oninput="renderExpensesList()" placeholder="Cari keperluan" class="input">
-              </div>
               <div class="row-between" style="margin-top:12px;background:var(--red-soft);border-radius:14px;padding:12px 16px">
                 <span id="expenseCountLabel" style="font-weight:600;color:#7f1d1d">0 catatan</span>
                 <span id="expenseTotalLabel" style="font-size:20px;font-weight:800;color:var(--red)">Rp 0</span>
               </div>
-              <label class="toggle-row" style="margin-top:6px">
-                <span class="toggle-title" style="font-size:16px">Tampilkan Aset</span>
-                <span class="switch"><input type="checkbox" id="toggleShowAssetsExpense" onchange="renderExpensesList()"><span class="slider"></span></span>
-              </label>
             </div>
             <div id="expensesTableBody" class="list" style="margin-top:12px"></div>
           </div>
@@ -731,45 +717,7 @@
             <button onclick="setAnalysisPeriod('this-month')" id="btn-period-this-month" class="period-btn">Bulan Ini</button>
             <button onclick="setAnalysisPeriod('all')" id="btn-period-all" class="period-btn">Semua</button>
           </div>
-          <select id="analysisMonthDropdown" onchange="setAnalysisMonthCustom(this.value)" class="input" style="margin-top:12px">
-            <option value="">📅 Pilih Bulan...</option>
-            <option value="2026-01">Januari 2026</option>
-            <option value="2026-02">Februari 2026</option>
-            <option value="2026-03">Maret 2026</option>
-            <option value="2026-04">April 2026</option>
-            <option value="2026-05">Mei 2026</option>
-            <option value="2026-06">Juni 2026</option>
-            <option value="2026-07">Juli 2026</option>
-            <option value="2026-08">Agustus 2026</option>
-            <option value="2026-09">September 2026</option>
-            <option value="2026-10">Oktober 2026</option>
-            <option value="2026-11">November 2026</option>
-            <option value="2026-12">Desember 2026</option>
-          </select>
-          <div class="date-range" style="margin-top:12px">
-            <label class="field">
-              <span class="field-label">Dari</span>
-              <input type="date" id="analysisCustomStart" onchange="setAnalysisCustomRange()" class="input">
-            </label>
-            <label class="field">
-              <span class="field-label">Sampai</span>
-              <input type="date" id="analysisCustomEnd" onchange="setAnalysisCustomRange()" class="input">
-            </label>
-          </div>
-        </div>
-
-        <!-- Toggle ROI / BEP -->
-        <div class="card" style="margin-top:12px">
-          <label class="toggle-row">
-            <div style="display:flex;gap:12px;align-items:center">
-              <span class="icon-badge ib-orange"><i class="fas fa-calculator"></i></span>
-              <div>
-                <div class="toggle-title">Hitung Balik Modal (BEP)</div>
-                <div class="toggle-desc">Gabungkan biaya aset tetap untuk lihat sudah balik modal atau belum.</div>
-              </div>
-            </div>
-            <span class="switch"><input type="checkbox" id="toggleMergeAssetROI" onchange="calculateAndRenderAnalytics()"><span class="slider"></span></span>
-          </label>
+          <p id="analysisPeriodNote" class="card-sub hidden" style="margin:10px 2px 0;font-weight:600;color:var(--accent-text)"></p>
         </div>
 
         <div class="section-label"><span>Ringkasan Keuangan</span></div>
@@ -808,21 +756,9 @@
             </div>
           </div>
           <div>
-            <div class="section-label"><span>Grafik</span></div>
+            <div class="section-label"><span>Topping Terjual</span></div>
             <div class="card">
-              <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-orange"><i class="fas fa-chart-pie"></i></span> Kategori Terjual</h4>
-              <div class="chart-box"><canvas id="categorySalesChart"></canvas></div>
-            </div>
-            <div class="card">
-              <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-green"><i class="fas fa-chart-line"></i></span> Perbandingan Penjualan</h4>
-              <div class="segmented" style="margin-top:12px">
-                <button onclick="setTrendInterval('daily')" id="btn-trend-daily" class="active">Harian</button>
-                <button onclick="setTrendInterval('monthly')" id="btn-trend-monthly">Bulanan</button>
-              </div>
-              <div class="chart-box"><canvas id="salesTrendLineChart"></canvas></div>
-            </div>
-            <div class="card">
-              <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-amber"><i class="fas fa-cookie-bite"></i></span> Topping Terjual (+3rb)</h4>
+              <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-amber"><i class="fas fa-cookie-bite"></i></span> Topping (+3rb)</h4>
               <div id="toppingStatGrid" class="topping-grid"></div>
             </div>
           </div>
@@ -834,65 +770,31 @@
         <h1 class="large-title">Riwayat</h1>
         <p class="page-sub">Transaksi per tanggal. Geser ‹ › untuk ganti hari.</p>
 
-        <div class="split">
-          <div>
-            <div class="card">
-              <span class="field-label">Tanggal Transaksi</span>
-              <div class="day-nav">
-                <button type="button" class="day-arrow" onclick="shiftHistoryDate(-1)" aria-label="Hari sebelumnya">‹</button>
-                <label class="day-pick">
-                  <span id="historyDateLabel">Hari Ini</span>
-                  <input type="date" id="historyDate" onchange="filterHistoryTable()">
-                </label>
-                <button type="button" class="day-arrow" onclick="shiftHistoryDate(1)" aria-label="Hari berikutnya">›</button>
-              </div>
-              <div style="display:flex;gap:10px;margin-top:10px">
-                <button type="button" onclick="setHistoryToday()" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
-                <button type="button" onclick="setHistoryAllDates()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
-              </div>
-              <div class="search" style="margin-top:12px">
-                <i class="fas fa-magnifying-glass"></i>
-                <input type="text" id="searchHistoryInput" oninput="filterHistoryTable()" placeholder="Cari menu di tanggal ini" class="input">
-              </div>
-              <div class="row-between" style="margin-top:12px;background:var(--green-soft);border-radius:14px;padding:12px 16px">
-                <span id="historyCountLabel" style="font-weight:600;color:#14532d">0 transaksi</span>
-                <span id="historyTotalLabel" style="font-size:20px;font-weight:800;color:var(--green)">Rp 0</span>
-              </div>
-            </div>
-            <div id="allHistoryTableBody" class="list" style="margin-top:12px"></div>
-          </div>
-
-          <div class="sticky-col">
-            <div class="section-label" style="margin-top:24px"><span>Cadangan Data</span></div>
-            <div class="card stack">
-              <p class="card-sub" style="margin:0">Unduh data pembukuan untuk arsip ke Google Drive / HP.</p>
-              <button onclick="downloadCSVReport()" class="btn btn-green-tinted btn-block">
-                <i class="fas fa-file-excel"></i> Unduh Laporan Excel (CSV)
-              </button>
-              <button onclick="downloadJSONBackup()" class="btn btn-blue-tinted btn-block">
-                <i class="fas fa-file-code"></i> Unduh File Cadangan (JSON)
-              </button>
-            </div>
-
-            <div class="section-label"><span>Pulihkan Data</span></div>
-            <div class="card stack">
-              <label class="file-pick">
-                <span id="jsonFileName">Belum ada file dipilih</span>
-                <input type="file" id="jsonUploadInput" accept=".json" onchange="document.getElementById('jsonFileName').textContent = this.files.length ? this.files[0].name : 'Belum ada file dipilih'">
-                <span class="btn btn-gray btn-sm" style="flex:none;color:var(--text)">Pilih File</span>
+        <div class="narrow">
+          <div class="card">
+            <span class="field-label">Tanggal Transaksi</span>
+            <div class="day-nav">
+              <button type="button" class="day-arrow" onclick="shiftHistoryDate(-1)" aria-label="Hari sebelumnya">‹</button>
+              <label class="day-pick">
+                <span id="historyDateLabel">Hari Ini</span>
+                <input type="date" id="historyDate" onchange="filterHistoryTable()">
               </label>
-              <button onclick="restoreFromJSON()" class="btn btn-dark btn-block">
-                <i class="fas fa-upload"></i> Unggah & Muat Cadangan
-              </button>
+              <button type="button" class="day-arrow" onclick="shiftHistoryDate(1)" aria-label="Hari berikutnya">›</button>
             </div>
-
-            <div class="section-label"><span>Zona Bahaya</span></div>
-            <div class="card">
-              <button onclick="executeResetData()" class="btn btn-red-tinted btn-block">
-                <i class="fas fa-trash-can"></i> Reset Seluruh Data Cloud
-              </button>
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <button type="button" onclick="setHistoryToday()" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
+              <button type="button" onclick="setHistoryAllDates()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
+            </div>
+            <div class="search" style="margin-top:12px">
+              <i class="fas fa-magnifying-glass"></i>
+              <input type="text" id="searchHistoryInput" oninput="filterHistoryTable()" placeholder="Cari menu di tanggal ini" class="input">
+            </div>
+            <div class="row-between" style="margin-top:12px;background:var(--green-soft);border-radius:14px;padding:12px 16px">
+              <span id="historyCountLabel" style="font-weight:600;color:#14532d">0 transaksi</span>
+              <span id="historyTotalLabel" style="font-size:20px;font-weight:800;color:var(--green)">Rp 0</span>
             </div>
           </div>
+          <div id="allHistoryTableBody" class="list" style="margin-top:12px"></div>
         </div>
       </section>
 
@@ -912,6 +814,196 @@
           <p>• Setiap rasa punya stok bubuk sendiri (Matcha, Mangga, Coklat, Tarro, Cappuccino, Red Velvet, Vanilla, Lemon Tea, Peach Tea, Thai Tea Original).</p>
           <p>• Varian <b>Premium</b> maupun <b>Regular/Original</b> memakai bubuk rasa yang sama.</p>
           <p>• <b>Susu/Krimer</b> terpotong 50 ml per cup untuk semua Thai Tea / Milk Tea (Premium maupun Regular).</p>
+        </div>
+      </section>
+
+      <!-- ================= CATATAN AKTIVITAS (tombol kecil di kanan atas) ================= -->
+      <section id="tab-aktivitas" class="tab-content hidden">
+        <button type="button" class="back-btn" onclick="switchTab(lastMainTab)"><i class="fas fa-chevron-left"></i> Kembali</button>
+        <h1 class="large-title">Aktivitas</h1>
+        <p class="page-sub">Semua yang dicatat dari setiap HP: siapa, kapan, dan apa.</p>
+        <div class="narrow">
+          <div class="card">
+            <span class="field-label">Tanggal</span>
+            <div class="day-nav">
+              <button type="button" class="day-arrow" onclick="shiftActivityDate(-1)" aria-label="Hari sebelumnya">‹</button>
+              <label class="day-pick">
+                <span id="activityDateLabel">Hari Ini</span>
+                <input type="date" id="activityDate" onchange="renderActivityLog()">
+              </label>
+              <button type="button" class="day-arrow" onclick="shiftActivityDate(1)" aria-label="Hari berikutnya">›</button>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <button type="button" onclick="setActivityDate(hariIniWIB())" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
+              <button type="button" onclick="setActivityDate('')" class="btn btn-gray btn-sm" style="flex:1">Semua</button>
+            </div>
+          </div>
+          <div id="activityList" class="list" style="margin-top:12px"></div>
+        </div>
+      </section>
+
+      <!-- ================= ADMIN (ikon gerigi kecil di kanan atas) ================= -->
+      <section id="tab-admin" class="tab-content hidden">
+        <button type="button" class="back-btn" onclick="switchTab(lastMainTab)"><i class="fas fa-chevron-left"></i> Kembali</button>
+        <h1 class="large-title">Admin</h1>
+        <p class="page-sub">Pengaturan & fitur lanjutan. Semua yang diatur di sini langsung berlaku.</p>
+
+        <div class="narrow">
+          <!-- 1. HP INI -->
+          <div class="section-label"><span>① HP Ini</span></div>
+          <div class="card">
+            <div class="row-between">
+              <div>
+                <div class="toggle-title">Dipakai oleh</div>
+                <div class="toggle-desc">Nama ini muncul di Aktivitas & notifikasi.</div>
+              </div>
+              <span id="adminDeviceName" class="pill pill-orange" style="font-size:15px;padding:6px 12px">-</span>
+            </div>
+            <button type="button" class="btn btn-gray btn-block" style="margin-top:12px" onclick="openWhoSheet()"><i class="fas fa-user-pen"></i> Ganti Nama Pengguna</button>
+          </div>
+
+          <!-- 2. NOTIFIKASI -->
+          <div class="section-label"><span>② Notifikasi</span></div>
+          <div class="card">
+            <div class="toggle-title">Notifikasi saat ada catatan baru</div>
+            <div class="toggle-desc" id="pushStatusText">Mengecek…</div>
+            <button type="button" id="pushEnableBtn" class="btn btn-primary btn-block" style="margin-top:12px" onclick="aktifkanNotifikasi(true)"><i class="fas fa-bell"></i> Aktifkan di HP Ini</button>
+            <button type="button" class="btn btn-gray btn-block" style="margin-top:10px" onclick="kirimNotifTes()"><i class="fas fa-paper-plane"></i> Kirim Notifikasi Tes</button>
+            <p class="card-sub" style="margin-top:10px">iPhone: pasang dulu lewat Safari → Bagikan → <b>Tambah ke Layar Utama</b>, buka dari ikon itu, lalu aktifkan di sini. Android: Chrome → ⋮ → <b>Tambahkan ke layar utama</b>.</p>
+          </div>
+
+          <!-- 3. LAPORAN -->
+          <div class="section-label"><span>③ Laporan</span></div>
+          <div class="card">
+            <label class="toggle-row">
+              <div style="display:flex;gap:12px;align-items:center">
+                <span class="icon-badge ib-orange"><i class="fas fa-calculator"></i></span>
+                <div>
+                  <div class="toggle-title">Hitung Balik Modal (BEP)</div>
+                  <div class="toggle-desc">Gabungkan biaya aset tetap di tab Laporan untuk lihat sudah balik modal atau belum.</div>
+                </div>
+              </div>
+              <span class="switch"><input type="checkbox" id="toggleMergeAssetROI" onchange="calculateAndRenderAnalytics()"><span class="slider"></span></span>
+            </label>
+            <div class="divider"></div>
+            <span class="field-label">Periode khusus Laporan</span>
+            <select id="analysisMonthDropdown" onchange="setAnalysisMonthCustom(this.value)" class="input">
+              <option value="">📅 Pilih Bulan...</option>
+              <option value="2026-01">Januari 2026</option>
+              <option value="2026-02">Februari 2026</option>
+              <option value="2026-03">Maret 2026</option>
+              <option value="2026-04">April 2026</option>
+              <option value="2026-05">Mei 2026</option>
+              <option value="2026-06">Juni 2026</option>
+              <option value="2026-07">Juli 2026</option>
+              <option value="2026-08">Agustus 2026</option>
+              <option value="2026-09">September 2026</option>
+              <option value="2026-10">Oktober 2026</option>
+              <option value="2026-11">November 2026</option>
+              <option value="2026-12">Desember 2026</option>
+            </select>
+            <div class="date-range" style="margin-top:12px">
+              <label class="field">
+                <span class="field-label">Dari</span>
+                <input type="date" id="analysisCustomStart" onchange="setAnalysisCustomRange()" class="input">
+              </label>
+              <label class="field">
+                <span class="field-label">Sampai</span>
+                <input type="date" id="analysisCustomEnd" onchange="setAnalysisCustomRange()" class="input">
+              </label>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <button type="button" class="btn btn-gray btn-sm" style="flex:1" onclick="setAnalysisPeriod('today')">Reset ke Hari Ini</button>
+              <button type="button" class="btn btn-tinted btn-sm" style="flex:1" onclick="switchTab('tab-analisis')">Lihat Laporan</button>
+            </div>
+          </div>
+
+          <!-- 4. GRAFIK -->
+          <div class="section-label"><span>④ Grafik Penjualan</span></div>
+          <div class="card">
+            <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-orange"><i class="fas fa-chart-pie"></i></span> Kategori Terjual</h4>
+            <p class="card-sub">Mengikuti periode di tab Laporan.</p>
+            <div class="chart-box"><canvas id="categorySalesChart"></canvas></div>
+          </div>
+          <div class="card">
+            <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-green"><i class="fas fa-chart-line"></i></span> Perbandingan Penjualan</h4>
+            <div class="segmented" style="margin-top:12px">
+              <button onclick="setTrendInterval('daily')" id="btn-trend-daily" class="active">Harian</button>
+              <button onclick="setTrendInterval('monthly')" id="btn-trend-monthly">Bulanan</button>
+            </div>
+            <div class="chart-box"><canvas id="salesTrendLineChart"></canvas></div>
+          </div>
+
+          <!-- 5. PENGELUARAN -->
+          <div class="section-label"><span>⑤ Pengeluaran</span></div>
+          <div class="card">
+            <span class="field-label">Cari keperluan di Riwayat Belanja</span>
+            <div class="search">
+              <i class="fas fa-magnifying-glass"></i>
+              <input type="text" id="searchExpensesInput" oninput="renderExpensesList()" placeholder="Cari keperluan" class="input">
+            </div>
+            <span class="field-label" style="margin-top:14px">Tampilkan satu bulan</span>
+            <select id="expenseMonthSelect" onchange="filterExpenseByMonth()" class="input">
+              <option value="">📅 Pilih Bulan...</option>
+              <option value="2026-01">Januari 2026</option>
+              <option value="2026-02">Februari 2026</option>
+              <option value="2026-03">Maret 2026</option>
+              <option value="2026-04">April 2026</option>
+              <option value="2026-05">Mei 2026</option>
+              <option value="2026-06">Juni 2026</option>
+              <option value="2026-07">Juli 2026</option>
+              <option value="2026-08">Agustus 2026</option>
+              <option value="2026-09">September 2026</option>
+              <option value="2026-10">Oktober 2026</option>
+              <option value="2026-11">November 2026</option>
+              <option value="2026-12">Desember 2026</option>
+            </select>
+            <div class="divider"></div>
+            <label class="toggle-row">
+              <div>
+                <div class="toggle-title">Tampilkan Aset</div>
+                <div class="toggle-desc">Ikut tampilkan biaya aset di Riwayat Belanja.</div>
+              </div>
+              <span class="switch"><input type="checkbox" id="toggleShowAssetsExpense" onchange="renderExpensesList()"><span class="slider"></span></span>
+            </label>
+            <div class="divider"></div>
+            <div style="display:flex;gap:10px">
+              <button type="button" class="btn btn-gray btn-sm" style="flex:1" onclick="resetAdminExpenseFilter()">Reset Filter</button>
+              <button type="button" class="btn btn-tinted btn-sm" style="flex:1" onclick="switchTab('tab-pengeluaran')">Lihat Belanja</button>
+            </div>
+            <button type="button" class="btn btn-dark btn-block" style="margin-top:12px" onclick="openSecretAssetModal()"><i class="fas fa-building" style="color:#FFC24B"></i> Catat Biaya Aset / Tetap</button>
+          </div>
+
+          <!-- 6. DATA -->
+          <div class="section-label"><span>⑥ Cadangkan Data</span></div>
+          <div class="card stack">
+            <p class="card-sub" style="margin:0">Unduh data pembukuan untuk arsip ke Google Drive / HP.</p>
+            <button onclick="downloadCSVReport()" class="btn btn-green-tinted btn-block">
+              <i class="fas fa-file-excel"></i> Unduh Laporan Excel (CSV)
+            </button>
+            <button onclick="downloadJSONBackup()" class="btn btn-blue-tinted btn-block">
+              <i class="fas fa-file-code"></i> Unduh File Cadangan (JSON)
+            </button>
+          </div>
+
+          <div class="section-label"><span>⑦ Pulihkan Data</span></div>
+          <div class="card stack">
+            <label class="file-pick">
+              <span id="jsonFileName">Belum ada file dipilih</span>
+              <input type="file" id="jsonUploadInput" accept=".json" onchange="document.getElementById('jsonFileName').textContent = this.files.length ? this.files[0].name : 'Belum ada file dipilih'">
+              <span class="btn btn-gray btn-sm" style="flex:none;color:var(--text)">Pilih File</span>
+            </label>
+            <button onclick="restoreFromJSON()" class="btn btn-dark btn-block">
+              <i class="fas fa-upload"></i> Unggah & Muat Cadangan
+            </button>
+          </div>
+
+          <div class="section-label"><span>⑧ Zona Bahaya</span></div>
+          <div class="card">
+            <button onclick="executeResetData()" class="btn btn-red-tinted btn-block">
+              <i class="fas fa-trash-can"></i> Reset Seluruh Data Cloud
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1168,6 +1260,32 @@
       </div>
     </div>
 
+    <!-- SHEET: SIAPA YANG MEMAKAI HP INI -->
+    <div id="whoSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeSheet('whoSheet')">
+      <div class="sheet">
+        <div class="sheet-grabber"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="sheet-title">Siapa yang pakai HP ini?</div>
+            <div class="sheet-sub">Supaya tercatat siapa yang menambah atau mengubah data.</div>
+          </div>
+        </div>
+        <div class="sheet-body">
+          <div class="who-grid">
+            <button type="button" class="who-btn" onclick="pilihNama('Ibu')">👩 Ibu</button>
+            <button type="button" class="who-btn" onclick="pilihNama('Ayah')">👨 Ayah</button>
+          </div>
+          <div class="white-group" style="margin-top:12px">
+            <label class="field">
+              <span class="field-label">Atau ketik nama lain</span>
+              <input type="text" id="whoCustomName" class="input" maxlength="20" placeholder="Contoh: Kak Hadzmi">
+            </label>
+            <button type="button" class="btn btn-primary btn-block" onclick="pilihNama(document.getElementById('whoCustomName').value)">Simpan Nama</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ALERT ala iOS (pengganti confirm/prompt bawaan) -->
     <div id="iosAlert" class="alert-backdrop hidden">
       <div class="alert-box">
@@ -1280,6 +1398,7 @@
 
     /* ===== Helper tampilan (UI saja, tidak mengubah data) ===== */
     let currentTab = 'tab-penjualan';
+    let lastMainTab = 'tab-penjualan';
 
     const TW_COLORS = {
       'amber-500': '#f59e0b', 'amber-600': '#d97706', 'amber-700': '#b45309', 'amber-900': '#78350f', 'amber-950': '#451a03',
@@ -1437,7 +1556,7 @@
       if (baru === hariAktif) return;
       const lama = hariAktif;
       hariAktif = baru;
-      ['orderStartDate', 'orderEndDate', 'orderInputDate', 'expenseDate', 'assetDate', 'historyDate', 'expenseStartDate', 'expenseEndDate'].forEach(id => {
+      ['orderStartDate', 'orderEndDate', 'orderInputDate', 'expenseDate', 'assetDate', 'historyDate', 'expenseStartDate', 'expenseEndDate', 'activityDate'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.value === lama) el.value = baru;
       });
@@ -1445,14 +1564,201 @@
       updateDailyOrdersView();
       renderExpensesList();
       updateExpenseSummaries();
-      if (!document.getElementById('tab-analisis').classList.contains('hidden')) calculateAndRenderAnalytics();
+      if (analyticsVisible()) calculateAndRenderAnalytics();
       if (!document.getElementById('tab-riwayat').classList.contains('hidden')) renderFullHistoryTable();
+      renderActivityLog();
       triggerToast(`Hari baru: ${fmtTgl(baru)}`);
     }
     setInterval(cekGantiHari, 30000);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') cekGantiHari(); });
     window.addEventListener('focus', cekGantiHari);
     window.addEventListener('pageshow', cekGantiHari);
+
+    /* ===== ADMIN, CATATAN AKTIVITAS & NOTIFIKASI ===== */
+    let offlineTimer = null;
+    function analyticsVisible() {
+      return !document.getElementById('tab-analisis').classList.contains('hidden') || !document.getElementById('tab-admin').classList.contains('hidden');
+    }
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+    // Identitas HP ini (disimpan di HP masing-masing)
+    let deviceId = lsGet('tt_device_id');
+    if (!deviceId) { deviceId = 'dev-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); lsSet('tt_device_id', deviceId); }
+    let deviceName = lsGet('tt_device_name') || '';
+    function openWhoSheet() {
+      document.getElementById('whoCustomName').value = '';
+      openSheet('whoSheet');
+    }
+    function pilihNama(n) {
+      n = (n || '').trim().slice(0, 20);
+      if (!n) { triggerToast('Pilih atau ketik nama dulu', true); return; }
+      deviceName = n;
+      lsSet('tt_device_name', n);
+      document.getElementById('adminDeviceName').textContent = n;
+      closeSheet('whoSheet');
+      triggerToast(`HP ini dipakai oleh ${n}`);
+      if (pushDidukung() && Notification.permission === 'default') setTimeout(tawarkanNotifikasi, 450);
+      else if (pushDidukung() && Notification.permission === 'granted') aktifkanNotifikasi(false);
+    }
+    async function tawarkanNotifikasi() {
+      const ya = await iosConfirm('Nyalakan notifikasi supaya HP ini dapat kabar saat ada pesanan atau belanja baru dari HP lain?', { title: '🔔 Notifikasi', okText: 'Nyalakan', cancelText: 'Nanti' });
+      if (ya) aktifkanNotifikasi(true);
+    }
+
+    // Catatan Aktivitas: siapa menambah / mengubah / menghapus apa
+    const activityRef = db.ref('thaitea/activity_log');
+    let activityList = [];
+    const activityLoadedAt = Date.now();
+    const seenActivity = new Set();
+    function ringkasItem(items) {
+      return (items || []).map(i => `${i.qty}x ${i.name}${i.toppings && i.toppings.length ? ` (+${i.toppings.join(', ')})` : ''}`).join(', ') || '-';
+    }
+    function logAktivitas(kind, text, notify = false) {
+      const ts = Date.now();
+      const id = 'LOG-' + ts + '-' + Math.random().toString(36).slice(2, 6);
+      const entry = { id, ts, kind, by: deviceName || 'Seseorang', dev: deviceId, text, date: hariIniWIB() };
+      activityRef.child(id).set(entry).catch(() => {});
+      if (notify) kirimNotif(`${entry.by} ${text.charAt(0).toLowerCase() + text.slice(1)}`);
+    }
+    function warnaNama(n) {
+      const warna = ['#EA6A0A', '#0A84FF', '#34C759', '#AF52DE', '#FF2D55', '#5856D6', '#FF9500', '#30B0C7'];
+      let h = 0; for (const c of String(n || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return warna[h % warna.length];
+    }
+    function setActivityDate(v) {
+      document.getElementById('activityDate').value = v;
+      renderActivityLog();
+    }
+    function shiftActivityDate(days) {
+      const base = document.getElementById('activityDate').value || hariIniWIB();
+      const d = new Date(base + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() + days);
+      setActivityDate(d.toISOString().split('T')[0]);
+    }
+    function renderActivityLog() {
+      const box = document.getElementById('activityList');
+      if (!box) return;
+      const d = document.getElementById('activityDate').value;
+      const today = hariIniWIB();
+      document.getElementById('activityDateLabel').textContent = !d ? 'Semua Tanggal' : (d === today ? `Hari Ini · ${fmtTgl(d)}` : fmtTgl(d));
+      const list = activityList.filter(a => !d || a.date === d);
+      if (!list.length) {
+        box.innerHTML = `<div class="empty"><i class="fas fa-list-check"></i>Belum ada aktivitas${d ? ' di tanggal ' + fmtTgl(d) : ''}.</div>`;
+        return;
+      }
+      const JENIS = { add: ['k-add', 'Tambah'], edit: ['k-edit', 'Ubah'], del: ['k-del', 'Hapus'], sys: ['k-sys', 'Sistem'] };
+      let html = '', lastDate = null;
+      list.forEach(a => {
+        if (!d && a.date !== lastDate) { html += `<div class="act-date">${fmtTgl(a.date)}</div>`; lastDate = a.date; }
+        const jam = new Date((a.ts || 0) + 7 * 3600 * 1000).toISOString().slice(11, 16).replace(':', '.');
+        const j = JENIS[a.kind] || ['k-sys', 'Info'];
+        const t = String(a.text || '');
+        html += `<div class="act-row">
+            <div class="act-ava" style="background:${warnaNama(a.by)}">${esc(String(a.by || '?').charAt(0).toUpperCase())}</div>
+            <div class="act-main">
+              <div class="act-text"><span class="act-kind ${j[0]}">${j[1]}</span><b>${esc(a.by)}</b> ${esc(t.charAt(0).toLowerCase() + t.slice(1))}</div>
+              <div class="act-time">Jam ${jam} WIB${a.dev === deviceId ? ' · dari HP ini' : ''}</div>
+            </div>
+          </div>`;
+      });
+      box.innerHTML = html;
+    }
+
+    function resetAdminExpenseFilter() {
+      document.getElementById('searchExpensesInput').value = '';
+      document.getElementById('toggleShowAssetsExpense').checked = false;
+      setExpenseDay(hariIniWIB());
+      triggerToast('Filter pengeluaran kembali ke hari ini');
+    }
+
+    // Notifikasi (Web Push lewat server /api/thaitea/*)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    let pushEndpoint = lsGet('tt_push_ep') || '';
+    function pushDidukung() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+    function isStandalone() { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+    function b64uToU8(b) {
+      const pad = '='.repeat((4 - b.length % 4) % 4);
+      const raw = atob((b + pad).replace(/-/g, '+').replace(/_/g, '/'));
+      return Uint8Array.from(raw, c => c.charCodeAt(0));
+    }
+    async function swSiap() {
+      const reg = await navigator.serviceWorker.register('sw.js', { scope: './' });
+      if (reg.active) return reg;
+      await new Promise(res => {
+        const w = reg.installing || reg.waiting;
+        if (!w) return res();
+        w.addEventListener('statechange', () => { if (w.state === 'activated') res(); });
+        setTimeout(res, 6000);
+      });
+      return reg;
+    }
+    async function aktifkanNotifikasi(interaktif) {
+      try {
+        if (!pushDidukung()) {
+          if (interaktif) iosDialog({ title: 'Belum bisa', message: isIOS ? 'Di iPhone: buka web ini di Safari → Bagikan → Tambah ke Layar Utama. Lalu buka dari ikon itu dan aktifkan lagi di Admin.' : 'Browser ini belum mendukung notifikasi. Pakai Google Chrome, lalu Tambahkan ke layar utama.', okText: 'Mengerti', cancelText: 'Tutup' });
+          refreshPushStatus();
+          return false;
+        }
+        let perm = Notification.permission;
+        if (perm === 'default' && interaktif) perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          if (interaktif) triggerToast(perm === 'denied' ? 'Notifikasi diblokir di pengaturan browser' : 'Notifikasi belum diizinkan', true);
+          refreshPushStatus();
+          return false;
+        }
+        const reg = await swSiap();
+        const cfg = await fetch('/api/thaitea/config', { cache: 'no-store' }).then(r => r.json());
+        if (!cfg.vapidPublicKey) throw new Error('Kunci push belum ada');
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToU8(cfg.vapidPublicKey) });
+        const r = await fetch('/api/thaitea/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint, name: deviceName || 'Seseorang' }) });
+        if (!r.ok) throw new Error('subscribe ' + r.status);
+        pushEndpoint = sub.endpoint;
+        lsSet('tt_push_ep', pushEndpoint);
+        if (interaktif) triggerToast('Notifikasi aktif di HP ini 🔔');
+        refreshPushStatus();
+        return true;
+      } catch (e) {
+        console.warn('push', e);
+        if (interaktif) triggerToast('Gagal mengaktifkan notifikasi. Coba lagi nanti.', true);
+        refreshPushStatus();
+        return false;
+      }
+    }
+    function refreshPushStatus() {
+      const t = document.getElementById('pushStatusText'), b = document.getElementById('pushEnableBtn');
+      if (!t || !b) return;
+      if (!pushDidukung()) {
+        t.textContent = isIOS && !isStandalone() ? 'iPhone: buka dari ikon di Layar Utama dulu supaya bisa menerima notifikasi.' : 'Browser ini tidak mendukung notifikasi.';
+        return;
+      }
+      const p = Notification.permission;
+      if (p === 'granted' && pushEndpoint) {
+        t.textContent = '✅ Aktif. HP ini dapat kabar saat HP lain menambah pesanan, belanja, atau aset.';
+        b.innerHTML = '<i class="fas fa-rotate"></i> Sambungkan Ulang';
+      } else if (p === 'denied') {
+        t.textContent = '⛔ Diblokir. Buka pengaturan browser → Izin situs → Notifikasi → Izinkan, lalu coba lagi.';
+        b.innerHTML = '<i class="fas fa-bell"></i> Coba Aktifkan Lagi';
+      } else {
+        t.textContent = 'Belum aktif di HP ini.';
+        b.innerHTML = '<i class="fas fa-bell"></i> Aktifkan di HP Ini';
+      }
+    }
+    function kirimNotif(body, title = 'Thai Tea', termasukSendiri = false) {
+      fetch('/api/thaitea/notify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body, from: termasukSendiri ? '' : pushEndpoint })
+      }).catch(() => {});
+    }
+    async function kirimNotifTes() {
+      if (!pushEndpoint || !pushDidukung() || Notification.permission !== 'granted') {
+        const ok = await aktifkanNotifikasi(true);
+        if (!ok) return;
+      }
+      kirimNotif(`Tes notifikasi dari ${deviceName || 'HP ini'} 👋`, 'Thai Tea', true);
+      triggerToast('Notifikasi tes dikirim ke semua HP');
+    }
 
     /* 3. INISIALISASI HALAMAN & LISTENERS */
     window.addEventListener('DOMContentLoaded', () => {
@@ -1467,6 +1773,7 @@
       document.getElementById('historyDate').value = todayISO;
       document.getElementById('expenseStartDate').value = todayISO;
       document.getElementById('expenseEndDate').value = todayISO;
+      document.getElementById('activityDate').value = todayISO;
 
       const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       document.getElementById('currentDateHeader').textContent = tanggalPanjang(todayISO);
@@ -1480,6 +1787,9 @@
         const on = snap.val() === true;
         document.getElementById('cloudStatusBadge').classList.toggle('offline', !on);
         document.getElementById('cloudStatusText').textContent = on ? 'Online' : 'Offline';
+        clearTimeout(offlineTimer);
+        if (on) document.getElementById('offlineBanner').classList.add('hidden');
+        else offlineTimer = setTimeout(() => document.getElementById('offlineBanner').classList.remove('hidden'), 3000);
       });
 
       if (typeof Chart !== 'undefined') {
@@ -1496,7 +1806,7 @@
         ordersList = data ? Object.values(data).sort((a, b) => b.orderId > a.orderId ? 1 : -1) : [];
         updateDailyOrdersView();
         renderInventoryUI();
-        if (!document.getElementById('tab-analisis').classList.contains('hidden')) calculateAndRenderAnalytics();
+        if (analyticsVisible()) calculateAndRenderAnalytics();
         if (!document.getElementById('tab-riwayat').classList.contains('hidden')) renderFullHistoryTable();
       });
 
@@ -1505,14 +1815,14 @@
         expensesList = data ? Object.values(data).sort((a, b) => b.expenseId > a.expenseId ? 1 : -1) : [];
         renderExpensesList();
         updateExpenseSummaries();
-        if (!document.getElementById('tab-analisis').classList.contains('hidden')) calculateAndRenderAnalytics();
+        if (analyticsVisible()) calculateAndRenderAnalytics();
       });
 
       assetsRef.on('value', (snapshot) => {
         const data = snapshot.val();
         assetsList = data ? Object.values(data).sort((a, b) => b.assetId > a.assetId ? 1 : -1) : [];
         renderExpensesList();
-        if (!document.getElementById('tab-analisis').classList.contains('hidden')) calculateAndRenderAnalytics();
+        if (analyticsVisible()) calculateAndRenderAnalytics();
       });
 
       inventoryRef.on('value', (snapshot) => {
@@ -1520,6 +1830,23 @@
         if (data) inventoryData = { ...inventoryData, ...data };
         renderInventoryUI();
       });
+
+      // Catatan aktivitas (500 terakhir) + kabar di layar kalau HP lain menambah/mengubah data
+      activityRef.limitToLast(500).on('value', (snapshot) => {
+        const data = snapshot.val();
+        activityList = data ? Object.values(data).sort((a, b) => (b.ts || 0) - (a.ts || 0)) : [];
+        activityList.forEach(a => {
+          if (seenActivity.has(a.id)) return;
+          seenActivity.add(a.id);
+          if (a.ts > activityLoadedAt && a.dev !== deviceId && document.visibilityState === 'visible') triggerToast(`${a.by}: ${a.text}`);
+        });
+        if (!document.getElementById('tab-aktivitas').classList.contains('hidden')) renderActivityLog();
+      });
+
+      document.getElementById('adminDeviceName').textContent = deviceName || '-';
+      if (!deviceName) setTimeout(openWhoSheet, 700);
+      else if (pushDidukung() && Notification.permission === 'granted') aktifkanNotifikasi(false);
+      refreshPushStatus();
     });
 
     function resetFilterDateToToday() {
@@ -1554,7 +1881,8 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
       document.getElementById(targetId).classList.remove('hidden');
-      document.getElementById('btn-' + targetId).classList.add('active');
+      const tabBtn = document.getElementById('btn-' + targetId);
+      if (tabBtn) { tabBtn.classList.add('active'); lastMainTab = targetId; }
       currentTab = targetId;
       document.getElementById('thaiTeaAppRoot').scrollTop = 0;
       updateCartBar();
@@ -1562,6 +1890,8 @@
       if (targetId === 'tab-analisis') calculateAndRenderAnalytics();
       else if (targetId === 'tab-riwayat') renderFullHistoryTable();
       else if (targetId === 'tab-stok') renderInventoryUI();
+      else if (targetId === 'tab-admin') { calculateAndRenderAnalytics(); refreshPushStatus(); document.getElementById('adminDeviceName').textContent = deviceName || '-'; }
+      else if (targetId === 'tab-aktivitas') renderActivityLog();
     }
 
     /* 4. TAB 1: MENU & ORDERING LOGIC WITH EXACT FLAVOR STOK DEDUCTION */
@@ -1825,6 +2155,7 @@
         document.getElementById('orderNote').value = '';
         renderCartUI();
         triggerToast(`Terekap ${totalCups} cup & stok rasa terpotong!`);
+        logAktivitas('add', `Menambahkan pesanan ${ringkasItem(newOrder.items)} · ${formatRp(totalPrice)} (${payMethod})`, true);
       }).catch((err) => {
         triggerToast('Gagal menyimpan ke server!', true);
       });
@@ -1951,7 +2282,10 @@
         inventoryRef.set(inventoryData);
       }
 
-      ordersRef.child(orderId).remove().then(() => triggerToast('Pesanan dihapus & stok dikembalikan')).catch(err => triggerToast('Gagal menghapus!', true));
+      ordersRef.child(orderId).remove().then(() => {
+        triggerToast('Pesanan dihapus & stok dikembalikan');
+        if (orderToDel) logAktivitas('del', `Menghapus pesanan ${fmtTgl(orderToDel.date)} jam ${orderToDel.time || '-'}: ${ringkasItem(orderToDel.items)} · ${formatRp(orderToDel.totalPrice)}`);
+      }).catch(err => triggerToast('Gagal menghapus!', true));
     }
 
     /* EDIT ORDER MODAL */
@@ -2059,6 +2393,8 @@
       const totalCups = editingOrderItems.reduce((acc, i) => acc + i.qty, 0);
       const totalPrice = isFree ? 0 : editingOrderItems.reduce((acc, i) => acc + i.total, 0);
 
+      const orderLama = ordersList.find(o => o.orderId === editingOrderId);
+      const itemBaru = JSON.parse(JSON.stringify(editingOrderItems));
       ordersRef.child(editingOrderId).update({
         date: updatedDate,
         time: updatedTime,
@@ -2071,6 +2407,17 @@
       }).then(() => {
         closeEditModal();
         triggerToast('Pesanan berhasil diperbarui di Cloud!');
+        if (orderLama) {
+          const ubah = [];
+          if (ringkasItem(orderLama.items) !== ringkasItem(itemBaru)) ubah.push(`menu ${ringkasItem(orderLama.items)} → ${ringkasItem(itemBaru)}`);
+          if ((orderLama.totalPrice || 0) !== totalPrice) ubah.push(`total ${formatRp(orderLama.totalPrice)} → ${formatRp(totalPrice)}`);
+          if ((orderLama.method || 'Tunai') !== updatedMethod) ubah.push(`bayar ${orderLama.method || 'Tunai'} → ${updatedMethod}`);
+          if (orderLama.date !== updatedDate) ubah.push(`tanggal ${fmtTgl(orderLama.date)} → ${fmtTgl(updatedDate)}`);
+          if ((orderLama.time || '') !== updatedTime) ubah.push(`jam ${orderLama.time || '-'} → ${updatedTime || '-'}`);
+          if (!!orderLama.isFreeDrink !== isFree) ubah.push(isFree ? 'ditandai Free Drink' : 'batal Free Drink');
+          if ((orderLama.note || '') !== updatedNote) ubah.push(`catatan "${orderLama.note || ''}" → "${updatedNote}"`);
+          logAktivitas('edit', `Mengedit pesanan ${fmtTgl(orderLama.date)} jam ${orderLama.time || '-'}: ${ubah.length ? ubah.join('; ') : 'tidak ada perubahan'}`);
+        }
       }).catch(err => triggerToast('Gagal memperbarui!', true));
     }
 
@@ -2155,6 +2502,7 @@
           document.getElementById('expenseQty').value = '';
           if (!isQuick) document.getElementById('expenseItemName').value = '';
           triggerToast(`Biaya Aset ${formatRp(amt)} disimpan ke Database Aset!`);
+          logAktivitas('add', `Menambahkan biaya aset ${title} ${formatRp(amt)}`, true);
         }).catch(err => triggerToast('Gagal menyimpan aset!', true));
         return;
       }
@@ -2198,6 +2546,7 @@
         document.getElementById('expenseQty').value = '';
         if (!isQuick) document.getElementById('expenseItemName').value = '';
         triggerToast(`Pengeluaran ${formatRp(amt)} disimpan & stok terupdate!`);
+        logAktivitas('add', `Menambahkan pengeluaran ${title} ${formatRp(amt)}`, true);
       }).catch(err => triggerToast('Gagal menyimpan!', true));
     }
 
@@ -2233,6 +2582,7 @@
         document.getElementById('assetNote').value = '';
         closeSecretAssetModal();
         triggerToast('Biaya aset tetap tersimpan di Database Terpisah!');
+        logAktivitas('add', `Menambahkan biaya aset ${aTitle} ${formatRp(aAmt)}`, true);
       }).catch(err => triggerToast('Gagal menyimpan aset!', true));
     }
 
@@ -2291,7 +2641,7 @@
       const dayLabel = (!startF && !endF) ? 'Semua Tanggal'
         : (startF === endF ? (startF === todayISO ? `Hari Ini · ${fmtTgl(startF)}` : fmtTgl(startF))
         : `${fmtTgl(startF).slice(0, 6)} – ${fmtTgl(endF)}`);
-      document.getElementById('expenseDateLabel').textContent = 'Menampilkan: ' + dayLabel;
+      document.getElementById('expenseDateLabel').textContent = 'Menampilkan: ' + dayLabel + (searchKw ? ` · cari "${searchKw}"` : '') + (showAssets ? ' · termasuk aset' : '');
       document.getElementById('expenseCountLabel').textContent = `${list.length} catatan`;
       document.getElementById('expenseTotalLabel').textContent = formatRp(list.reduce((acc, e) => acc + (e.amount || 0), 0));
 
@@ -2363,6 +2713,7 @@
       }
 
       const targetRef = editingExpenseIsAsset ? assetsRef.child(editingExpenseId) : expensesRef.child(editingExpenseId);
+      const expLama = editingExpenseIsAsset ? assetsList.find(a => a.assetId === editingExpenseId) : expensesList.find(e => e.expenseId === editingExpenseId);
 
       targetRef.update({
         date: newDate,
@@ -2374,6 +2725,13 @@
       }).then(() => {
         closeEditExpenseModal();
         triggerToast('Pengeluaran berhasil diperbarui di Cloud!');
+        if (expLama) {
+          const ubah = [];
+          if ((expLama.title || '') !== newTitle) ubah.push(`nama "${expLama.title}" → "${newTitle}"`);
+          if ((expLama.amount || 0) !== newAmt) ubah.push(`nominal ${formatRp(expLama.amount)} → ${formatRp(newAmt)}`);
+          if (expLama.date !== newDate) ubah.push(`tanggal ${fmtTgl(expLama.date)} → ${fmtTgl(newDate)}`);
+          logAktivitas('edit', `Mengedit ${expLama.isAsset ? 'biaya aset' : 'pengeluaran'} ${expLama.title || ''} (${fmtTgl(expLama.date)}): ${ubah.length ? ubah.join('; ') : 'tidak ada perubahan'}`);
+        }
       }).catch(err => triggerToast('Gagal memperbarui!', true));
     }
 
@@ -2413,7 +2771,11 @@
     async function deleteSingleExpense(expId, isAsset = false) {
       if (!(await iosConfirm('Hapus catatan pengeluaran ini dari Cloud?', { title: 'Hapus Pengeluaran?', okText: 'Hapus', destructive: true }))) return;
       const ref = isAsset ? assetsRef : expensesRef;
-      ref.child(expId).remove().then(() => triggerToast('Pengeluaran dihapus')).catch(err => triggerToast('Gagal menghapus!', true));
+      const expDel = isAsset ? assetsList.find(a => a.assetId === expId) : expensesList.find(e => e.expenseId === expId);
+      ref.child(expId).remove().then(() => {
+        triggerToast('Pengeluaran dihapus');
+        if (expDel) logAktivitas('del', `Menghapus ${isAsset ? 'biaya aset' : 'pengeluaran'} ${expDel.title || ''} ${formatRp(expDel.amount)} (${fmtTgl(expDel.date)})`);
+      }).catch(err => triggerToast('Gagal menghapus!', true));
     }
 
     /* 6. TAB 3: ANALISIS & LABA BERSIH WITH ROI/BEP TOGGLE */
@@ -2541,6 +2903,13 @@
         document.getElementById('statExpenseSubtitle').textContent = `Belanja harian & Operasional`;
         document.getElementById('statNetSubtitle').textContent = `Kotor - Operasional`;
       }
+
+      const noteEl = document.getElementById('analysisPeriodNote');
+      if (activePeriod === 'custom-month' || activePeriod === 'custom-range') {
+        const cs = document.getElementById('analysisCustomStart').value, ce = document.getElementById('analysisCustomEnd').value;
+        noteEl.textContent = `Periode khusus (diatur di Admin): ${cs ? fmtTgl(cs) : 'awal'} – ${ce ? fmtTgl(ce) : 'sekarang'}`;
+        noteEl.classList.remove('hidden');
+      } else noteEl.classList.add('hidden');
 
       renderBestSellerRank(itemMap, cups);
       renderToppingRank(toppingMap);
@@ -2808,6 +3177,7 @@
 
             db.ref().update(updates).then(() => {
               triggerToast('Data berhasil dipulihkan!');
+              logAktivitas('sys', `Memulihkan data dari file cadangan (${parsed.orders.length} pesanan)`);
               fileIn.value = '';
               document.getElementById('jsonFileName').textContent = 'Belum ada file dipilih';
             });
@@ -2823,6 +3193,7 @@
           ordersList = []; expensesList = []; assetsList = []; cartItems = [];
           renderCartUI(); renderInventoryUI();
           triggerToast('Data cloud berhasil dibersihkan!');
+          logAktivitas('sys', 'Mereset seluruh data cloud');
         });
       }
     }
@@ -2887,8 +3258,11 @@
         return;
       }
 
+      const stokLama = inventoryData[key] || 0;
       inventoryData[key] = newVal;
       inventoryRef.set(inventoryData).then(() => {
+        const namaBahan = document.getElementById('manualStockItemKey').selectedOptions[0].textContent;
+        logAktivitas('edit', `Mengubah stok ${namaBahan}: ${stokLama} → ${newVal}`);
         closeManualStockModal();
         document.getElementById('manualStockNewVal').value = '';
         renderInventoryUI();
