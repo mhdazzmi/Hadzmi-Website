@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light only">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Stardom">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="STARDOM — your own private social universe.">
+  <title>Stardom</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+</head>
+<body>
+  <div id="lock" class="lock hidden">
+    <div class="lock-card">
+      <span class="logo-mark big"><svg class="ic" viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3.8 2.5 5.1 5.6.8-4 4 1 5.5-5.1-2.7-5 2.7.9-5.5-4-4 5.6-.8z"/></svg></span>
+      <span class="wordmark">Stardom</span>
+      <div class="lock-sub">Your own social universe.<br>Enter the same PIN you use for Nexa.</div>
+      <div class="pin-dots" id="pin-dots"></div>
+      <div class="pin-pad" id="pin-pad">
+        <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+        <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+        <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+        <span></span><button data-d="0">0</button><button data-del="1">Delete</button>
+      </div>
+      <div class="lock-err" id="lock-err"></div>
+      <a class="lock-back" href="../">Back to Nexa</a>
+    </div>
+  </div>
+  <div id="app" class="hidden"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

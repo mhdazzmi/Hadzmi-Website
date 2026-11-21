@@ -15,7 +15,9 @@
 
 import { healthcareAi } from './healthcare.js';
 import { handleNexo } from './nexo.js';
+import { handleStardom, pokeStardom } from './stardom/index.js';
 export { NexoHub } from './nexo.js';
+export { StardomHub } from './stardom/index.js';
 
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const MAX_EVENTS = 400;
@@ -51,6 +53,8 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runCron(env).catch(err => console.error('cron error', err && err.stack || err)));
     ctx.waitUntil(checkStorageAlerts(env).catch(err => console.error('storage alert error', err)));
+    // STARDOM: keep the background simulation alarm alive (every 15 minutes)
+    if (new Date(event.scheduledTime || Date.now()).getUTCMinutes() % 15 === 0) ctx.waitUntil(pokeStardom(env).catch(err => console.error('stardom poke', err)));
   }
 };
 
@@ -68,6 +72,9 @@ async function handleApi(request, env, url, ctx) {
 
   // ---- Nexo Games (akun teman sendiri, tidak memakai login Firebase pemilik) ----
   if (path.startsWith('/api/nexo/')) return handleNexo(request, env, url);
+
+  // ---- STARDOM (private social universe; owner login, same PIN as Nexa) ----
+  if (path.startsWith('/api/stardom/')) return handleStardom(request, env, url, requireAuth);
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
   if (path === '/api/pending' && method === 'GET') {
