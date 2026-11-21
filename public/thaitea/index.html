@@ -670,18 +670,17 @@
 
             <div class="section-label"><span>Riwayat Belanja</span></div>
             <div class="card">
-              <span class="field-label">Tanggal Belanja</span>
-              <div class="day-nav">
-                <button type="button" class="day-arrow" onclick="shiftExpenseDate(-1)" aria-label="Hari sebelumnya">‹</button>
-                <label class="day-pick">
-                  <span id="expenseDateLabel">Hari Ini</span>
-                  <input type="date" id="expenseDayPick" onchange="setExpenseDay(this.value)">
+              <div class="date-range">
+                <label class="field">
+                  <span class="field-label">Dari</span>
+                  <input type="date" id="expenseStartDate" onchange="document.getElementById('expenseMonthSelect').value=''; renderExpensesList()" class="input">
                 </label>
-                <button type="button" class="day-arrow" onclick="shiftExpenseDate(1)" aria-label="Hari berikutnya">›</button>
+                <label class="field">
+                  <span class="field-label">Sampai</span>
+                  <input type="date" id="expenseEndDate" onchange="document.getElementById('expenseMonthSelect').value=''; renderExpensesList()" class="input">
+                </label>
               </div>
-              <!-- rentang filter asli (dipakai logika), diatur lewat tombol di atas -->
-              <input type="date" id="expenseStartDate" onchange="renderExpensesList()" class="hidden">
-              <input type="date" id="expenseEndDate" onchange="renderExpensesList()" class="hidden">
+              <p class="card-sub" id="expenseDateLabel" style="margin:8px 2px 0;font-weight:600">Hari Ini</p>
               <div style="display:flex;gap:10px;margin-top:10px">
                 <button type="button" onclick="setExpenseDay(new Date().toISOString().split('T')[0])" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
                 <button type="button" onclick="resetExpenseFilter()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
@@ -2255,8 +2254,7 @@
       const dayLabel = (!startF && !endF) ? 'Semua Tanggal'
         : (startF === endF ? (startF === todayISO ? `Hari Ini · ${fmtTgl(startF)}` : fmtTgl(startF))
         : `${fmtTgl(startF).slice(0, 6)} – ${fmtTgl(endF)}`);
-      document.getElementById('expenseDateLabel').textContent = dayLabel;
-      document.getElementById('expenseDayPick').value = startF || '';
+      document.getElementById('expenseDateLabel').textContent = 'Menampilkan: ' + dayLabel;
       document.getElementById('expenseCountLabel').textContent = `${list.length} catatan`;
       document.getElementById('expenseTotalLabel').textContent = formatRp(list.reduce((acc, e) => acc + (e.amount || 0), 0));
 
