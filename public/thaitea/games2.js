@@ -158,14 +158,14 @@
       if (myTurn) action = `<div class="sk-turn">Giliranmu! Sambung kata di atas</div>
         <form class="sk-form" id="skForm" autocomplete="off"><span class="sk-pre">${esc(st.need.toUpperCase())}</span><input id="skIn" class="sk-in" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="lanjutkan…" maxlength="16"><button type="submit" class="btn btn-primary sk-send">Kirim</button></form>
         <div id="skErr" class="sk-err"></div>
-        <div class="sk-row"><button type="button" class="btn btn-tinted sk-help" id="skHelp">💡 Bantu (poin ½)</button><div class="sk-timer"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" id="skRing"/></svg><b id="skSec">30</b></div></div>
+        <div class="sk-row"><button type="button" class="btn btn-tinted sk-help" id="skHelp"><svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align:-5px"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" fill="#FFC107"/><rect x="8.5" y="18" width="7" height="2" rx="1" fill="#8E8E93"/><rect x="9.5" y="21" width="5" height="1.6" rx=".8" fill="#8E8E93"/></svg> Bantu (poin ½)</button><div class="sk-timer"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" id="skRing"/></svg><b id="skSec">30</b></div></div>
         <div id="skSug" class="sk-sug"></div>`;
       else action = `<div class="sk-wait"><span class="sk-dots"><i></i><i></i><i></i></span>${esc(seatName(ctx, st.turn))} sedang berpikir…<div class="sk-timer small"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" id="skRing"/></svg><b id="skSec">30</b></div></div>`;
     }
     box.innerHTML = `<div class="gp-others">${chips}</div>
       <div class="sk-meta"><span class="sk-pill">${st.mode === 'suku' ? 'Mode Seru · suku kata' : 'Mode Mudah · huruf terakhir'}</span><span class="sk-pill">Putaran ${round}/${st.rounds}</span></div>
       <div class="sk-card ${pop ? 'pop' : ''}"><div class="sk-lbl">Kata sebelumnya</div><div class="sk-word">${tiles(prevWord, hiFrom, pop ? 'in' : '')}</div>
-        <div class="sk-arrow">⬇</div><div class="sk-lbl">Kata berikutnya diawali</div><div class="sk-need">${tiles(st.need, 0, 'need')}</div>${st.mudah ? '<div class="sk-note">Suku katanya sulit, cukup huruf terakhir.</div>' : ''}</div>
+        <div class="sk-arrow"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 4v15m-6-6l6 6 6-6" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="sk-lbl">Kata berikutnya diawali</div><div class="sk-need">${tiles(st.need, 0, 'need')}</div>${st.mudah ? '<div class="sk-note">Suku katanya sulit, cukup huruf terakhir.</div>' : ''}</div>
       ${info}${action}
       <div class="sk-hist-lbl">Rantai kata</div><div class="sk-hist">${hist}</div>
       ${H.resultHtml(ctx, st.winner, st.reason)}`;
@@ -479,24 +479,73 @@
     el.style.transition = roll ? 'transform .75s cubic-bezier(.15,.85,.25,1)' : 'none';
     el.style.transform = `rotateX(${bx + fx}deg) rotateY(${by + fy}deg)`;
   }
+  /* ---------- ikon & landmark SVG (tanpa emoji) ---------- */
+  const SV = (body, vb) => `<svg viewBox="${vb || '0 0 40 40'}" aria-hidden="true">${body}</svg>`;
+  const MP_ICON = {
+    start: SV('<rect x="11" y="6" width="2.6" height="30" rx="1.3" fill="#6E4A2A"/><g><rect x="13.5" y="7" width="20" height="14" rx="2" fill="#fff" stroke="#1C1C1E" stroke-width="1.2"/><rect x="13.5" y="7" width="5" height="3.5" fill="#1C1C1E"/><rect x="23.5" y="7" width="5" height="3.5" fill="#1C1C1E"/><rect x="18.5" y="10.5" width="5" height="3.5" fill="#1C1C1E"/><rect x="28.5" y="10.5" width="5" height="3.5" fill="#1C1C1E"/><rect x="13.5" y="14" width="5" height="3.5" fill="#1C1C1E"/><rect x="23.5" y="14" width="5" height="3.5" fill="#1C1C1E"/><rect x="18.5" y="17.5" width="5" height="3.5" fill="#1C1C1E"/><rect x="28.5" y="17.5" width="5" height="3.5" fill="#1C1C1E"/></g><ellipse cx="12.3" cy="36" rx="6" ry="1.6" fill="#000" opacity=".15"/>'),
+    penjara: SV('<rect x="6" y="12" width="28" height="22" rx="3" fill="#8E8E93"/><path d="M4 13l16-8 16 8z" fill="#636366"/><rect x="10" y="16" width="20" height="14" rx="2" fill="#2C2C2E"/><g fill="#C7C7CC"><rect x="12" y="16" width="2.2" height="14"/><rect x="17" y="16" width="2.2" height="14"/><rect x="22" y="16" width="2.2" height="14"/><rect x="27" y="16" width="2.2" height="14"/></g>'),
+    parkir: SV('<rect x="18.5" y="22" width="3" height="14" fill="#8E8E93"/><rect x="7" y="4" width="26" height="22" rx="5" fill="#0A84FF"/><path d="M15 9h6a5 5 0 0 1 0 10h-3v4h-3zm3 3v4h3a2 2 0 0 0 0-4z" fill="#fff"/>'),
+    kepenjara: SV('<path d="M8 20c0-7 5.5-12 12-12s12 5 12 12z" fill="#1E3A8A"/><rect x="6" y="19" width="28" height="5" rx="2.5" fill="#142659"/><path d="M14 24h12l-2 6h-8z" fill="#1C1C1E"/><circle cx="20" cy="14" r="3.2" fill="#FFD60A"/><path d="M20 11.5l.8 1.7 1.8.2-1.3 1.2.4 1.8-1.7-.9-1.7.9.4-1.8-1.3-1.2 1.8-.2z" fill="#B8860B"/>'),
+    kesempatan: SV('<rect x="9" y="5" width="22" height="30" rx="4" fill="#FF9F0A" transform="rotate(-8 20 20)"/><rect x="11" y="7" width="22" height="30" rx="4" fill="#FFB340" stroke="#fff" stroke-width="1.5"/><path d="M18.5 15.5a3.6 3.6 0 1 1 5.4 3.1c-1.3.8-1.9 1.4-1.9 2.9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="22" cy="27" r="1.7" fill="#fff"/>'),
+    dana: SV('<rect x="7" y="17" width="26" height="17" rx="3" fill="#E84393"/><rect x="5" y="12" width="30" height="7" rx="2" fill="#FD79A8"/><rect x="18" y="12" width="4" height="22" fill="#FFE27A"/><path d="M20 12c-3-6-9-6-8-2s8 2 8 2zm0 0c3-6 9-6 8-2s-8 2-8 2z" fill="#FFE27A"/>'),
+    pajak: SV('<path d="M10 4h20v32l-3-2-3 2-4-2-4 2-3-2-3 2z" fill="#fff" stroke="#8E8E93" stroke-width="1.4"/><g stroke="#8E8E93" stroke-width="1.6" stroke-linecap="round"><path d="M14 11h12M14 16h12M14 21h8"/></g><path d="M14 27h12" stroke="#E53935" stroke-width="2.2" stroke-linecap="round"/>'),
+    mewah: SV('<path d="M10 8h20l6 8-16 18L4 16z" fill="#64D2FF"/><path d="M10 8l4 8h12l4-8M4 16h32M14 16l6 18 6-18" stroke="#fff" stroke-width="1.3" fill="none" stroke-linejoin="round"/>'),
+    // landmark kota
+    Padang: SV('<path d="M3 18c4 1 8-1 10-7 1 4 4 6 7 6s6-2 7-6c2 6 6 8 10 7l-3 4H6z" fill="#7B3F00"/><rect x="7" y="21" width="26" height="11" fill="#C47A2C"/><g fill="#8E4B12"><rect x="10" y="24" width="4" height="5"/><rect x="18" y="24" width="4" height="8"/><rect x="26" y="24" width="4" height="5"/></g><rect x="5" y="32" width="30" height="3" fill="#6E4A2A"/>'),
+    Bukittinggi: SV('<rect x="14" y="13" width="12" height="22" fill="#F2E8D5" stroke="#C9B48A" stroke-width=".8"/><path d="M11 14c2-1 3-5 3-8 1 3 3 4 6 4s5-1 6-4c0 3 1 7 3 8z" fill="#8E2C2C"/><circle cx="20" cy="19" r="4" fill="#fff" stroke="#1C1C1E" stroke-width="1"/><path d="M20 17v2.3l1.6 1" stroke="#1C1C1E" stroke-width="1" fill="none"/><rect x="17.5" y="28" width="5" height="7" rx="2.5" fill="#C9B48A"/><rect x="11" y="35" width="18" height="2" fill="#8E8E93"/>'),
+    Palembang: SV('<rect x="2" y="27" width="36" height="5" fill="#C62828"/><rect x="9" y="8" width="4" height="24" fill="#E53935"/><rect x="27" y="8" width="4" height="24" fill="#E53935"/><rect x="8" y="12" width="6" height="2" fill="#B71C1C"/><rect x="26" y="12" width="6" height="2" fill="#B71C1C"/><path d="M11 9L2 27M11 9l9 18M29 9l-9 18M29 9l9 18" stroke="#B71C1C" stroke-width="1"/><path d="M0 34c4-2 8 2 12 0s8 2 12 0 8 2 12 0 4 0 4 0v4H0z" fill="#29B6F6"/>'),
+    Lampung: SV('<path d="M20 4l3 6 6-3-1 7 6 1-4 5h-20l-4-5 6-1-1-7 6 3z" fill="#F5B700"/><rect x="11" y="19" width="18" height="16" fill="#FFD54F"/><rect x="8" y="35" width="24" height="2" fill="#8E8E93"/><g fill="#E53935"><rect x="14" y="23" width="3" height="5"/><rect x="18.5" y="23" width="3" height="5"/><rect x="23" y="23" width="3" height="5"/></g><circle cx="20" cy="8" r="1.6" fill="#E53935"/>'),
+    Medan: SV('<rect x="6" y="20" width="28" height="15" fill="#F7D774"/><path d="M14 20a6 6 0 0 1 12 0z" fill="#2E7D32"/><rect x="19.4" y="9" width="1.2" height="6" fill="#2E7D32"/><path d="M6 20a3 3 0 0 1 6 0zm22 0a3 3 0 0 1 6 0z" fill="#2E7D32"/><g fill="#B8860B"><rect x="9" y="24" width="3" height="7" rx="1.5"/><rect x="15" y="24" width="3" height="7" rx="1.5"/><rect x="22" y="24" width="3" height="7" rx="1.5"/><rect x="28" y="24" width="3" height="7" rx="1.5"/></g><rect x="4" y="35" width="32" height="2" fill="#8E8E93"/>'),
+    Batam: SV('<rect x="2" y="27" width="36" height="3" fill="#90A4AE"/><path d="M14 6v24M26 6v24" stroke="#ECEFF1" stroke-width="3"/><path d="M14 7L3 27M14 7l-6 20M14 7l6 20M26 7l-6 20M26 7l6 20M26 7l11 20" stroke="#B0BEC5" stroke-width=".9"/><path d="M0 32c4-2 8 2 12 0s8 2 12 0 8 2 12 0 4 0 4 0v6H0z" fill="#29B6F6"/>'),
+    Bandung: SV('<rect x="4" y="22" width="32" height="13" fill="#F5F5F0" stroke="#D6D3C4" stroke-width=".8"/><rect x="15" y="14" width="10" height="21" fill="#FAFAF5" stroke="#D6D3C4" stroke-width=".8"/><path d="M14 14l6-4 6 4z" fill="#E57373"/><path d="M20 10V3" stroke="#555" stroke-width="1"/><g fill="#555"><circle cx="20" cy="4" r="1"/><circle cx="20" cy="6" r="1"/><circle cx="20" cy="8" r="1"/></g><path d="M3 22l3-3h28l3 3z" fill="#E57373"/><g fill="#90A4AE"><rect x="7" y="26" width="3" height="5"/><rect x="11" y="26" width="3" height="5"/><rect x="26" y="26" width="3" height="5"/><rect x="30" y="26" width="3" height="5"/><rect x="18.5" y="27" width="3" height="8"/></g>'),
+    Yogyakarta: SV('<rect x="12" y="30" width="16" height="5" fill="#E0E0E0"/><rect x="14" y="20" width="12" height="10" fill="#FAFAFA" stroke="#CFCFCF" stroke-width=".8"/><path d="M16 20l1-8h6l1 8z" fill="#FAFAFA" stroke="#CFCFCF" stroke-width=".8"/><path d="M20 4c3 3 3 6 0 8-3-2-3-5 0-8z" fill="#F5B700"/><rect x="17" y="12" width="6" height="1.6" fill="#F5B700"/><rect x="15" y="23" width="10" height="1.4" fill="#2E7D32"/><rect x="10" y="35" width="20" height="2" fill="#8E8E93"/>'),
+    Semarang: SV('<rect x="5" y="18" width="30" height="17" fill="#F3EDE2" stroke="#D8CBB3" stroke-width=".8"/><rect x="6" y="10" width="7" height="25" fill="#F7F1E6" stroke="#D8CBB3" stroke-width=".8"/><rect x="27" y="10" width="7" height="25" fill="#F7F1E6" stroke="#D8CBB3" stroke-width=".8"/><path d="M5.5 10a4 4 0 0 1 8 0zM26.5 10a4 4 0 0 1 8 0z" fill="#8D6E63"/><g fill="#8D6E63"><path d="M15 24a2 2 0 0 1 4 0v6h-4zM21 24a2 2 0 0 1 4 0v6h-4z"/><rect x="8" y="16" width="3" height="4"/><rect x="29" y="16" width="3" height="4"/></g><path d="M4 18h32" stroke="#B71C1C" stroke-width="1.5"/>'),
+    Surabaya: SV('<path d="M17 34l1.5-26h3L23 34z" fill="#ECEFF1" stroke="#B0BEC5" stroke-width=".8"/><path d="M15.5 9h9l-1-3h-7z" fill="#CFD8DC"/><path d="M20 3v3" stroke="#E53935" stroke-width="1.4"/><path d="M20.7 3h4l-1 1.2 1 1.2h-4z" fill="#E53935"/><rect x="10" y="34" width="20" height="3" rx="1" fill="#90A4AE"/>'),
+    Makassar: SV('<path d="M4 27h32l-5 7H9z" fill="#8D5524"/><rect x="19.3" y="4" width="1.4" height="23" fill="#5D3A1A"/><rect x="11.3" y="9" width="1.2" height="18" fill="#5D3A1A"/><path d="M20.7 5l11 20h-11zM12.5 10l6 15h-6z" fill="#FFF8E1"/><path d="M19.3 6L9 24h10.3z" fill="#FFECB3"/><path d="M0 34c4-2 8 2 12 0s8 2 12 0 8 2 12 0 4 0 4 0v6H0z" fill="#29B6F6"/>'),
+    Bali: SV('<path d="M4 35V20l3-2v-4l3-2V8l4-3v30z" fill="#6D4C41"/><path d="M36 35V20l-3-2v-4l-3-2V8l-4-3v30z" fill="#6D4C41"/><path d="M4 20h10M4 14h10M30 20h6M26 14h10" stroke="#3E2723" stroke-width="1"/><rect x="16" y="28" width="8" height="7" fill="#81C784"/><circle cx="20" cy="25" r="3" fill="#FFB74D"/><rect x="2" y="35" width="36" height="2" fill="#8E8E93"/>'),
+    Jakarta: SV('<rect x="8" y="31" width="24" height="5" fill="#ECEFF1" stroke="#B0BEC5" stroke-width=".7"/><rect x="11" y="28" width="18" height="3" fill="#ECEFF1" stroke="#B0BEC5" stroke-width=".7"/><path d="M18 28l1-19h2l1 19z" fill="#FAFAFA" stroke="#B0BEC5" stroke-width=".7"/><rect x="17" y="8" width="6" height="2" fill="#B0BEC5"/><path d="M20 1c3 3 2 5 0 7-2-2-3-4 0-7z" fill="#FFC107"/>'),
+    Pekanbaru: SV('<rect x="8" y="22" width="24" height="13" fill="#FAFAF5" stroke="#D6D3C4" stroke-width=".8"/><path d="M12 22a8 8 0 0 1 16 0z" fill="#2E7D32"/><path d="M20 10v4" stroke="#C9A227" stroke-width="1.2"/><circle cx="20" cy="9.5" r="1.3" fill="#C9A227"/><path d="M8 22a3 3 0 0 1 6 0zM26 22a3 3 0 0 1 6 0z" fill="#43A047"/><rect x="3" y="12" width="3" height="23" fill="#FAFAF5" stroke="#D6D3C4" stroke-width=".7"/><rect x="34" y="12" width="3" height="23" fill="#FAFAF5" stroke="#D6D3C4" stroke-width=".7"/><path d="M3 12l1.5-4 1.5 4zM34 12l1.5-4 1.5 4z" fill="#2E7D32"/><path d="M18 35v-6a2 2 0 0 1 4 0v6z" fill="#8D6E63"/>')
+  };
+  const MP_UI = {
+    coin: SV('<circle cx="12" cy="12" r="9" fill="#FFC107"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#FFE082" stroke-width="1.4"/><path d="M12 7.5v9M14.3 9.5c-.6-.8-1.4-1-2.3-1-1.3 0-2.2.7-2.2 1.7 0 2.3 4.7 1.2 4.7 3.6 0 1-.9 1.8-2.4 1.8-1 0-1.9-.4-2.5-1.1" stroke="#9C6B00" stroke-width="1.4" fill="none" stroke-linecap="round"/>', '0 0 24 24'),
+    pay: SV('<rect x="2" y="6" width="20" height="13" rx="2.5" fill="#34C759"/><circle cx="12" cy="12.5" r="3.2" fill="#fff" opacity=".85"/><path d="M5 9.5h2M17 15.5h2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>', '0 0 24 24'),
+    house: SV('<path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="#FF9500"/><path d="M1.5 12L12 3l10.5 9" stroke="#C93400" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>', '0 0 24 24'),
+    jail: SV('<rect x="3" y="4" width="18" height="16" rx="2" fill="#636366"/><g fill="#D1D1D6"><rect x="6" y="4" width="2" height="16"/><rect x="11" y="4" width="2" height="16"/><rect x="16" y="4" width="2" height="16"/></g>', '0 0 24 24'),
+    boom: SV('<path d="M12 1l2.2 5.6 5.8-2-2.3 5.6 5.3 2.8-5.9 1.4 1.6 5.8-5-3.4L12 23l-1.7-6.2-5 3.4 1.6-5.8L1 13l5.3-2.8L4 4.6l5.8 2z" fill="#FF3B30"/><circle cx="12" cy="12" r="4" fill="#FFD60A"/>', '0 0 24 24'),
+    dice: SV('<rect x="3" y="3" width="18" height="18" rx="4.5" fill="#fff"/><g fill="#1C1C1E"><circle cx="8" cy="8" r="1.7"/><circle cx="16" cy="16" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="16" cy="8" r="1.7"/><circle cx="8" cy="16" r="1.7"/></g>', '0 0 24 24'),
+    side: SV('<path d="M3 15l9-5 9 5-9 5z" fill="currentColor" opacity=".35"/><path d="M3 15l9-5 9 5-9 5zM12 10V4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><circle cx="12" cy="4" r="2" fill="currentColor"/>', '0 0 24 24'),
+    top: SV('<rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="8" y="8" width="8" height="8" rx="1" fill="currentColor" opacity=".35"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>', '0 0 24 24'),
+    skip: SV('<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>', '0 0 24 24'),
+    wait: SV('<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>', '0 0 24 24')
+  };
+  const tileIcon = (tl, i) => tl.t === 'kota' ? MP_ICON[tl.n] : tl.t === 'pajak' ? (i === 20 ? MP_ICON.mewah : MP_ICON.pajak) : MP_ICON[tl.t] || '';
+  const pawnSvg = (s, top) => top
+    ? `<svg viewBox="0 0 30 30" class="mp-disc"><ellipse cx="15" cy="17" rx="12" ry="11" fill="rgba(0,0,0,.25)"/><circle cx="15" cy="15" r="11" fill="${MP_DARK[s]}"/><circle cx="15" cy="14" r="9.5" fill="${MP_COL[s]}"/><circle cx="15" cy="14" r="5.2" fill="${MP_DARK[s]}" opacity=".45"/><circle cx="11.5" cy="10.5" r="2.6" fill="#fff" opacity=".7"/></svg>`
+    : `<svg viewBox="0 0 30 44" class="mp-pin"><ellipse cx="15" cy="41" rx="10" ry="3" fill="rgba(0,0,0,.28)"/><path d="M6 39c0-4 4-6 5-10l1-6h6l1 6c1 4 5 6 5 10z" fill="${MP_DARK[s]}"/><path d="M7.5 38.5c0-3.4 3.6-5.3 4.6-9l.9-5.5h4l.9 5.5c1 3.7 4.6 5.6 4.6 9z" fill="${MP_COL[s]}"/><circle cx="15" cy="13" r="9" fill="${MP_DARK[s]}"/><circle cx="15" cy="12.4" r="8" fill="${MP_COL[s]}"/><circle cx="12" cy="9.5" r="2.6" fill="#fff" opacity=".75"/></svg>`;
+  let mpView = (() => { try { return localStorage.getItem('tt_mp_view') || 'side'; } catch (e) { return 'side'; } })();
+  let mpLast = null;
   function renderMono(box, st, ctx) {
+    mpLast = [box, st, ctx];
+    box.classList.add('mp-mode');
     st = Mono.norm(clone(st));
     const A = ctx.anim || {};
     const pos = A.pos || st.pos;
+    const cash = A.cash || st.cash;
     const me = ctx.mySeat;
+    const top = mpView === 'top';
     const myTurn = ctx.canAct && st.turn === me && st.winner === null && !ctx.spectator && !ctx.anim;
-    const chips = Array.from({ length: st.n }, (_, s) => `<div class="gp-chip mp-chip ${st.turn === s && st.winner === null ? 'turn' : ''} ${st.out[s] ? 'out' : ''}" style="--c:${MP_COL[s]}"><span class="mp-pawn sm" style="--c:${MP_COL[s]};--d:${MP_DARK[s]}"></span><div><b>${esc(seatName(ctx, s))}</b><small>${st.out[s] ? 'Bangkrut' : fmt((A.cash || st.cash)[s])}</small></div></div>`).join('');
-    // papan
+    const chips = Array.from({ length: st.n }, (_, s) => `<div class="mp-chip ${st.turn === s && st.winner === null ? 'turn' : ''} ${st.out[s] ? 'out' : ''}" style="--c:${MP_COL[s]}"><span class="mp-chip-pawn">${pawnSvg(s, true)}</span><span class="mp-chip-t"><b>${esc(seatName(ctx, s))}</b><small>${st.out[s] ? 'Bangkrut' : fmt(cash[s])}</small></span></div>`).join('');
     let cells = '';
     MP_TILES.forEach((tl, i) => {
       const [r, c] = mpCell(i);
       const o = st.own[i];
       const corner = i % 6 === 0;
-      const hi = A.hi === i || (!A.hi && A.hi !== 0 && st.winner === null && i === pos[st.turn]);
-      cells += `<div class="mp-cell ${corner ? 'corner' : ''} t-${tl.t} ${hi ? 'hi' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}">
+      const hi = A.hi !== undefined ? A.hi === i : (st.winner === null && i === pos[st.turn]);
+      const side = r === 6 ? 'b' : c === 0 ? 'l' : r === 0 ? 't' : 'r';
+      cells += `<div class="mp-cell s-${side} ${corner ? 'corner' : ''} t-${tl.t} ${hi ? 'hi' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}">
         ${tl.g ? `<span class="mp-band" style="background:${MP_GRP[tl.g]}"></span>` : ''}
-        ${tl.ic ? `<span class="mp-ic">${tl.ic}</span>` : ''}<span class="mp-nm">${tl.sn || tl.n}</span>
-        ${tl.t === 'kota' ? `<span class="mp-pr">${o !== undefined ? '' : tl.p}</span>` : ''}
+        <span class="mp-lm">${tileIcon(tl, i)}</span><span class="mp-nm">${tl.sn || tl.n}</span>
+        ${tl.t === 'kota' && o === undefined ? `<span class="mp-pr">${tl.p}</span>` : ''}
         ${o !== undefined ? `<span class="mp-own" style="background:${MP_COL[o]}"></span>` : ''}</div>`;
     });
     const cnt = {}; pos.forEach((p, s) => { if (!st.out[s]) cnt[p] = (cnt[p] || 0) + 1; });
@@ -505,55 +554,61 @@
       if (st.out[s]) return '';
       const k = seen[p] = (seen[p] || 0); seen[p]++;
       const [x, y] = mpTokenXY(p, k, cnt[p]);
-      const hop = A.hop === s;
-      return `<span class="mp-tok ${hop ? 'hop' : ''} ${st.turn === s ? 'cur' : ''}" style="left:${x}%;top:${y}%"><span class="mp-pawn" style="--c:${MP_COL[s]};--d:${MP_DARK[s]}"></span></span>`;
+      return `<span class="mp-tok ${A.hop === s ? 'hop' : ''} ${st.turn === s && st.winner === null ? 'cur' : ''}" style="left:${x}%;top:${y}%">${pawnSvg(s, top)}</span>`;
     }).join('');
-    // panel petak saat ini
-    const curPos = pos[st.turn], tl = MP_TILES[curPos];
-    const own = st.own[curPos];
-    let tileInfo = `<div class="mp-tcard" style="--g:${tl.g ? MP_GRP[tl.g] : '#8E8E93'}"><div class="mp-tband">${tl.ic || '🏙️'} ${tl.n}</div><div class="mp-tbody">`;
-    if (tl.t === 'kota') tileInfo += `<div>Harga <b>${fmt(tl.p)}</b></div><div>Sewa <b>${fmt(Math.round(tl.p * .35 / 5) * 5)}</b> <small>(×2 jika punya 2 kota sewarna)</small></div><div>Pemilik: <b>${own !== undefined ? esc(seatName(ctx, own)) : 'belum ada'}</b></div>`;
-    else if (tl.t === 'pajak') tileInfo += `<div>Bayar pajak <b>${fmt(tl.p)}</b></div>`;
-    else if (tl.t === 'start') tileInfo += `<div>Lewat START dapat gaji <b>${fmt(MP_SALARY)}</b></div>`;
-    else if (tl.t === 'penjara') tileInfo += `<div>Hanya mampir 👋</div>`;
-    else if (tl.t === 'kepenjara') tileInfo += `<div>Langsung masuk penjara!</div>`;
-    else if (tl.t === 'parkir') tileInfo += `<div>Istirahat sebentar ☕</div>`;
-    else tileInfo += `<div>Ambil kartu ${tl.n}</div>`;
-    tileInfo += '</div></div>';
-    // tombol
-    let actions = '', status = '';
+    const curPos = pos[st.turn], tl = MP_TILES[curPos], own = st.own[curPos];
+    let det = '';
+    if (tl.t === 'kota') det = `Harga <b>${fmt(tl.p)}</b> · Sewa <b>${fmt(Math.round(tl.p * .35 / 5) * 5)}</b><br>Pemilik: <b>${own !== undefined ? esc(seatName(ctx, own)) : 'belum ada'}</b>`;
+    else if (tl.t === 'pajak') det = `Bayar pajak <b>${fmt(tl.p)}</b>`;
+    else if (tl.t === 'start') det = `Lewat START dapat gaji <b>${fmt(MP_SALARY)}</b>`;
+    else if (tl.t === 'penjara') det = 'Hanya mampir';
+    else if (tl.t === 'kepenjara') det = 'Langsung masuk penjara!';
+    else if (tl.t === 'parkir') det = 'Istirahat sebentar';
+    else det = `Ambil kartu ${tl.n}`;
+    let status = '';
     const l = st.last;
-    if (st.winner === null && !ctx.anim) {
-      if (l) {
-        const who = esc(seatName(ctx, l.s));
-        const bits = [];
-        if (l.dice) bits.push(`${who} dapat ${l.dice[0] + l.dice[1]}`);
-        if (l.salary) bits.push(`gaji +${fmt(MP_SALARY)}`);
-        if (l.buy !== undefined) bits.push(`${who} membeli ${MP_TILES[l.buy].n} 🏠`);
-        if (l.rent) bits.push(`bayar sewa ${fmt(l.rent.amt)} ke ${esc(seatName(ctx, l.rent.to))}`);
-        if (l.tax) bits.push(`bayar pajak ${fmt(l.tax)}`);
-        if (l.card) bits.push(`kartu: “${MP_CARD[l.card.t][l.card.i].x}”`);
-        if (l.jail) bits.push(`${who} masuk penjara 🚔`);
-        if (l.waitJail) bits.push(`${who} menunggu di penjara`);
-        if (l.payJail) bits.push(`${who} bayar ${fmt(50)} keluar penjara`);
-        if (l.bankrupt !== undefined) bits.push(`💥 ${esc(seatName(ctx, l.bankrupt))} BANGKRUT`);
-        status = bits.join(' · ');
-      }
-      if (myTurn) {
-        if (st.phase === 'roll') actions = `<button type="button" class="btn btn-primary btn-lg btn-block mp-btn" id="mpRoll">🎲 Lempar Dadu</button><div class="mp-hint" id="mpHint"></div>`;
-        else if (st.phase === 'buy') actions = `<div class="mp-q">Beli <b>${tl.n}</b> seharga <b>${fmt(tl.p)}</b>?</div><div class="mp-two"><button type="button" class="btn btn-gray btn-lg" id="mpSkip">Lewati</button><button type="button" class="btn btn-primary btn-lg" id="mpBuy">🏠 Beli</button></div><div class="mp-hint" id="mpHint"></div>`;
-        else if (st.phase === 'jail') actions = `<div class="mp-q">Kamu di penjara 🚔</div><div class="mp-two"><button type="button" class="btn btn-gray btn-lg" id="mpWait">Tunggu 1 giliran</button><button type="button" class="btn btn-primary btn-lg" id="mpPay" ${st.cash[me] < 50 ? 'disabled' : ''}>Bayar ${fmt(50)}</button></div><div class="mp-hint" id="mpHint"></div>`;
-      } else actions = `<div class="mp-wait">${st.phase === 'buy' ? `${esc(seatName(ctx, st.turn))} sedang menimbang beli ${tl.n}…` : st.phase === 'jail' ? `${esc(seatName(ctx, st.turn))} di penjara…` : `Giliran ${esc(seatName(ctx, st.turn))}…`}</div>`;
+    if (st.winner === null && !ctx.anim && l) {
+      const who = esc(seatName(ctx, l.s)); const bits = [];
+      if (l.dice) bits.push(`${who} dapat ${l.dice[0] + l.dice[1]}`);
+      if (l.buy !== undefined) bits.push(`${who} membeli ${MP_TILES[l.buy].n}`);
+      if (l.rent) bits.push(`bayar sewa ${fmt(l.rent.amt)} ke ${esc(seatName(ctx, l.rent.to))}`);
+      if (l.tax) bits.push(`bayar pajak ${fmt(l.tax)}`);
+      if (l.card) bits.push(`kartu: ${MP_CARD[l.card.t][l.card.i].x}`);
+      if (l.jail) bits.push(`${who} masuk penjara`);
+      if (l.waitJail) bits.push(`${who} menunggu di penjara`);
+      if (l.payJail) bits.push(`${who} bayar ${fmt(50)} keluar penjara`);
+      if (l.bankrupt !== undefined) bits.push(`${esc(seatName(ctx, l.bankrupt))} BANGKRUT`);
+      status = bits.join(' · ');
     }
-    const card = A.card ? `<div class="mp-cardpop"><div class="mp-flip ${A.cardOpen ? 'open' : ''}"><div class="mp-cf back ${A.card.t}">${A.card.t === 'dana' ? '💝<b>DANA UMUM</b>' : '❓<b>KESEMPATAN</b>'}</div><div class="mp-cf front ${A.card.t}"><small>${A.card.t === 'dana' ? 'Dana Umum' : 'Kesempatan'}</small><b>${MP_CARD[A.card.t][A.card.i].x}</b></div></div></div>` : '';
-    const flash = A.flash ? `<div class="mp-flash">${A.flash}</div>` : '';
-    box.innerHTML = `<div class="gp-others">${chips}</div><div class="gp-status mp-status">${status || (st.winner === null ? `Putaran ${st.round}` : '')}</div>
-      <div class="mp-stage"><div class="mp-board">${cells}<div class="mp-center"><div class="mp-logo">MONOPOLI<br><span>Nusantara</span></div><div class="mp-dice">${dieHtml('mpD1')}${dieHtml('mpD2')}</div></div>${tokens}</div>${card}${flash}</div>
-      ${tileInfo}<div class="mp-act">${actions}</div>
-      ${H.resultHtml(ctx, st.winner, st.reason)}`;
+    let actions = '';
+    if (st.winner === null && !ctx.anim) {
+      if (myTurn && st.phase === 'roll') actions = `<button type="button" class="btn btn-primary mp-btn" id="mpRoll">${MP_UI.dice} Lempar Dadu</button>`;
+      else if (myTurn && st.phase === 'buy') actions = `<div class="mp-two"><button type="button" class="btn btn-gray mp-btn" id="mpSkip">${MP_UI.skip} Lewati</button><button type="button" class="btn btn-primary mp-btn" id="mpBuy">${MP_UI.house} Beli ${fmt(tl.p)}</button></div>`;
+      else if (myTurn && st.phase === 'jail') actions = `<div class="mp-two"><button type="button" class="btn btn-gray mp-btn" id="mpWait">${MP_UI.wait} Tunggu</button><button type="button" class="btn btn-primary mp-btn" id="mpPay" ${st.cash[me] < 50 ? 'disabled' : ''}>${MP_UI.pay} Bayar ${fmt(50)}</button></div>`;
+      else actions = `<div class="mp-wait">${st.phase === 'buy' ? `${esc(seatName(ctx, st.turn))} menimbang beli ${tl.n}…` : st.phase === 'jail' ? `${esc(seatName(ctx, st.turn))} di penjara…` : `Giliran ${esc(seatName(ctx, st.turn))}…`}</div>`;
+    } else if (ctx.anim) actions = '<div class="mp-wait">…</div>';
+    const card = A.card ? `<div class="mp-cardpop"><div class="mp-flip ${A.cardOpen ? 'open' : ''}"><div class="mp-cf back ${A.card.t}">${MP_ICON[A.card.t]}<b>${A.card.t === 'dana' ? 'DANA UMUM' : 'KESEMPATAN'}</b></div><div class="mp-cf front ${A.card.t}"><small>${A.card.t === 'dana' ? 'Dana Umum' : 'Kesempatan'}</small><b>${MP_CARD[A.card.t][A.card.i].x}</b></div></div></div>` : '';
+    const flash = A.flash ? `<div class="mp-flash">${MP_UI[A.flash[0]] || ''}<span>${A.flash[1]}</span></div>` : '';
+    box.innerHTML = `<div class="mp-screen">
+      <div class="mp-topbar"><div class="mp-chips">${chips}</div><button type="button" class="mp-view" id="mpView" aria-label="Ganti sudut pandang">${top ? MP_UI.top : MP_UI.side}<span>${top ? 'Atas' : 'Samping'}</span></button></div>
+      <div class="mp-status">${status || (st.winner === null ? `Putaran ${st.round}` : '')}</div>
+      <div class="mp-stage ${top ? 'top' : 'side'}" id="mpStage"><div class="mp-board" id="mpBoard">${cells}<div class="mp-center"><div class="mp-logo">MONOPOLI<span>Nusantara</span></div><div class="mp-dice">${dieHtml('mpD1')}${dieHtml('mpD2')}</div></div>${tokens}</div>${card}${flash}</div>
+      <div class="mp-bottom"><div class="mp-tile" style="--g:${tl.g ? MP_GRP[tl.g] : '#8E8E93'}"><span class="mp-tile-lm">${tileIcon(tl, curPos)}</span><div class="mp-tile-t"><div class="mp-tile-n">${tl.n}</div><div class="mp-tile-d">${det}</div></div></div>
+        <div class="mp-act">${actions}<div class="mp-hint" id="mpHint"></div></div></div>
+      ${st.winner !== null ? H.resultHtml(ctx, st.winner, st.reason) : ''}</div>`;
+    // ukuran papan pas 1 layar
+    const fit = () => {
+      const stage = $('mpStage'), board = $('mpBoard'); if (!stage || !board) return;
+      const w = stage.clientWidth, h = stage.clientHeight;
+      const size = Math.max(200, Math.min(w, top ? h : h * 1.1));
+      board.style.width = board.style.height = size + 'px';
+      board.style.setProperty('--u', size / 7 + 'px');
+    };
+    fit(); requestAnimationFrame(fit);
     const d = A.dice || st.dice;
     dieShow('mpD1', d[0], false); dieShow('mpD2', d[1], false);
     if (A.rolling) { dieShow('mpD1', d[0], true); dieShow('mpD2', d[1], true); }
+    $('mpView').onclick = () => { mpView = top ? 'side' : 'top'; try { localStorage.setItem('tt_mp_view', mpView); } catch (e) { } SFX.tap(); if (mpLast) renderMono(...mpLast); };
     if (!myTurn) return;
     const go = mv => { SFX.unlock(); SFX.tap(); clearInterval(H.autoTick); ctx.act(mv); };
     if ($('mpRoll')) $('mpRoll').onclick = () => go({ roll: true });
@@ -568,6 +623,7 @@
     tick(); H.autoTick = setInterval(tick, 300);
     ctx.auto(() => ctx.act({ timeout: true }), Math.max(400, until - now()));
   }
+  window.addEventListener('resize', () => { if (mpLast && mpLast[0].isConnected && document.getElementById('mpBoard')) renderMono(...mpLast); });
   async function animMono(prev, next, redraw) {
     const l = next.last;
     if (!prev || prev.gid !== next.gid || !l) { redraw(next); return; }
@@ -580,7 +636,7 @@
         redraw(next, { pos, cash, dice: l.dice, hop: l.s, hi: p });
         SFX.step(); await sleep(230);
       }
-      if (l.salary) { S.coin(); redraw(next, { pos, cash, dice: l.dice, hi: pos[l.s], flash: `💰 Lewat START +${fmt(MP_SALARY)}` }); await sleep(900); }
+      if (l.salary) { S.coin(); redraw(next, { pos, cash, dice: l.dice, hi: pos[l.s], flash: ['coin', `Lewat START +${fmt(MP_SALARY)}`] }); await sleep(900); }
     }
     if (l.card) {
       const A = { pos, cash, hi: pos[l.s], card: l.card, cardOpen: false };
@@ -588,11 +644,11 @@
       A.cardOpen = true; redraw(next, A); S.magic(); await sleep(1900);
       if (l.jump) { pos[l.s] = l.jump.to; redraw(next, { pos, cash, hop: l.s, hi: l.jump.to }); SFX.step(); await sleep(500); }
     }
-    if (l.rent) { S.cash(); redraw(next, { pos: next.pos, hi: next.pos[l.s], flash: `💸 Sewa ${fmt(l.rent.amt)}` }); await sleep(1000); }
-    if (l.tax) { S.cash(); redraw(next, { pos: next.pos, hi: next.pos[l.s], flash: `🧾 Pajak ${fmt(l.tax)}` }); await sleep(900); }
-    if (l.buy !== undefined) { S.cash(); redraw(next, { pos: next.pos, hi: l.buy, flash: `🏠 ${MP_TILES[l.buy].n} terbeli!` }); await sleep(950); }
-    if (l.jail) { S.jail(); redraw(next, { pos: next.pos, hi: MP_JAIL, flash: '🚔 Masuk penjara!' }); await sleep(1100); }
-    if (l.bankrupt !== undefined) { SFX.capture(); redraw(next, { flash: '💥 Bangkrut!' }); await sleep(1300); }
+    if (l.rent) { S.cash(); redraw(next, { pos: next.pos, hi: next.pos[l.s], flash: ['pay', `Sewa ${fmt(l.rent.amt)}`] }); await sleep(1000); }
+    if (l.tax) { S.cash(); redraw(next, { pos: next.pos, hi: next.pos[l.s], flash: ['pay', `Pajak ${fmt(l.tax)}`] }); await sleep(900); }
+    if (l.buy !== undefined) { S.cash(); redraw(next, { pos: next.pos, hi: l.buy, flash: ['house', `${MP_TILES[l.buy].n} terbeli!`] }); await sleep(950); }
+    if (l.jail) { S.jail(); redraw(next, { pos: next.pos, hi: MP_JAIL, flash: ['jail', 'Masuk penjara!'] }); await sleep(1100); }
+    if (l.bankrupt !== undefined) { SFX.capture(); redraw(next, { flash: ['boom', 'Bangkrut!'] }); await sleep(1300); }
     redraw(next);
     if (next.winner !== null && next.winner !== undefined) SFX.win();
   }
@@ -601,56 +657,72 @@
     meta: { name: 'Monopoli', desc: 'Keliling Nusantara, beli kota', bg: 'linear-gradient(160deg,#34C77B,#12865A)', min: 2, max: 4, nNote: 'Lewat START dapat gaji. Berhenti di kota orang bayar sewa. Main sampai tinggal 1 pemain yang tidak bangkrut.' },
     engine: Mono, render: renderMono, anim: animMono, icon: iconMono,
     css: `
+    .gv-body.mp-mode{display:flex;flex-direction:column;overflow:hidden;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 10px)}
+    .mp-screen{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+    .mp-topbar{display:flex;gap:8px;align-items:stretch;flex:none}
+    .mp-chips{flex:1;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+    .mp-chip{display:flex;align-items:center;gap:6px;background:#fff;border-radius:12px;padding:5px 8px;box-shadow:var(--shadow);min-width:0}
+    .mp-chip.turn{box-shadow:inset 0 0 0 2.5px var(--c),var(--shadow)}
     .mp-chip.out{opacity:.45;filter:grayscale(1)}
-    .mp-status{font-weight:700;color:#1C1C1E;min-height:40px}
-    .mp-stage{position:relative;perspective:1100px;margin:6px auto 0;width:min(100%,560px)}
-    .mp-board{position:relative;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);gap:3px;aspect-ratio:1;background:linear-gradient(160deg,#CFEFD9,#A9DFBF);border-radius:18px;padding:5px;transform:rotateX(24deg);transform-origin:50% 60%;box-shadow:0 26px 30px -10px rgba(0,60,30,.45),0 6px 0 #6BB98A,inset 0 0 0 2px rgba(255,255,255,.6)}
-    .mp-cell{position:relative;background:#FFFDF7;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.12);padding:2px;min-width:0}
-    .mp-cell.corner{background:linear-gradient(160deg,#FFF4D6,#FFE1A6)}
+    .mp-chip-pawn svg{width:22px;height:22px;display:block}
+    .mp-chip-t{min-width:0;line-height:1.15}.mp-chip-t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mp-chip-t small{font-size:12.5px;color:var(--text2);font-weight:700}
+    .mp-view{flex:none;width:62px;border-radius:12px;background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#12865A;font-size:11px;font-weight:800}
+    .mp-view svg{width:24px;height:24px}
+    .mp-status{flex:none;text-align:center;font-size:14px;font-weight:700;color:#1C1C1E;min-height:19px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .mp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;perspective:1000px}
+    .mp-board{position:relative;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);gap:2px;background:linear-gradient(160deg,#CFEFD9,#A9DFBF);border-radius:16px;padding:4px;box-shadow:0 6px 0 #6BB98A,0 16px 26px -8px rgba(0,60,30,.4),inset 0 0 0 2px rgba(255,255,255,.6);transition:transform .6s cubic-bezier(.2,.9,.3,1)}
+    .mp-stage.side .mp-board{transform:rotateX(34deg) scale(.95);transform-origin:50% 50%;box-shadow:0 10px 0 #6BB98A,0 34px 34px -12px rgba(0,60,30,.5),inset 0 0 0 2px rgba(255,255,255,.6)}
+    .mp-cell{position:relative;background:#FFFDF7;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;overflow:hidden;box-shadow:0 1.5px 0 rgba(0,0,0,.12);padding:calc(var(--u,50px)*.1) 1px 1px;min-width:0}
+    .mp-cell.corner{background:linear-gradient(160deg,#FFF4D6,#FFE1A6);justify-content:center;padding-top:1px}
     .mp-cell.t-kesempatan{background:#FFF1E0}.mp-cell.t-dana{background:#FCE8F3}.mp-cell.t-pajak{background:#EEF0F4}
-    .mp-cell.hi{box-shadow:0 0 0 3px #FFD60A,0 4px 10px rgba(255,180,0,.6);z-index:2;animation:mphi 1s ease-in-out infinite}
-    @keyframes mphi{50%{box-shadow:0 0 0 3px #FF9F0A,0 4px 14px rgba(255,140,0,.8)}}
-    .mp-band{position:absolute;left:0;right:0;top:0;height:22%}
-    .mp-ic{font-size:clamp(12px,4vw,20px);line-height:1}
-    .mp-nm{font-size:clamp(7px,2.1vw,10.5px);font-weight:800;line-height:1.05;margin-top:22%;color:#1C1C1E;word-break:normal;overflow-wrap:normal;hyphens:manual;-webkit-hyphens:manual}
-    .mp-cell.corner .mp-nm,.mp-cell:not(.t-kota) .mp-nm{margin-top:2px}
-    .mp-pr{font-size:clamp(6px,1.8vw,9px);color:#6E6E73;font-weight:700}
-    .mp-own{position:absolute;left:3px;right:3px;bottom:3px;height:5px;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.3)}
-    .mp-center{grid-row:2/7;grid-column:2/7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10%;background:radial-gradient(circle at 50% 40%,#E9FBF0,#C3EBD2);border-radius:12px}
-    .mp-logo{font-weight:900;font-size:clamp(16px,5vw,28px);color:#C62828;text-align:center;line-height:1;letter-spacing:.04em;transform:rotate(-8deg);text-shadow:0 2px 0 #fff,0 4px 0 rgba(0,0,0,.12)}
-    .mp-logo span{font-size:.62em;color:#12865A;letter-spacing:.02em}
-    .mp-dice{display:flex;gap:14px}
-    .mp-die{width:clamp(32px,9vw,46px);height:clamp(32px,9vw,46px);perspective:400px}
+    .mp-cell.hi{box-shadow:0 0 0 2.5px #FFD60A,0 3px 10px rgba(255,180,0,.6);z-index:2;animation:mphi 1s ease-in-out infinite}
+    @keyframes mphi{50%{box-shadow:0 0 0 2.5px #FF9F0A,0 3px 14px rgba(255,140,0,.85)}}
+    .mp-band{position:absolute;left:0;right:0;top:0;height:calc(var(--u,50px)*.09)}
+    .mp-lm{display:block;width:calc(var(--u,50px)*.56);height:calc(var(--u,50px)*.5);flex:none}
+    .mp-cell.corner .mp-lm{width:calc(var(--u,50px)*.62);height:calc(var(--u,50px)*.58)}
+    .mp-lm svg{width:100%;height:100%;display:block}
+    .mp-nm{font-size:calc(var(--u,50px)*.175);font-weight:800;line-height:1.02;color:#1C1C1E;word-break:normal;overflow-wrap:normal;hyphens:manual;-webkit-hyphens:manual;max-width:100%}
+    .mp-pr{font-size:calc(var(--u,50px)*.15);color:#6E6E73;font-weight:800;line-height:1}
+    .mp-own{position:absolute;left:2px;right:2px;bottom:2px;height:calc(var(--u,50px)*.09);border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .mp-center{grid-row:2/7;grid-column:2/7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u,50px)*.35);background:radial-gradient(circle at 50% 40%,#E9FBF0,#C3EBD2);border-radius:12px}
+    .mp-logo{font-weight:900;font-size:calc(var(--u,50px)*.5);color:#C62828;text-align:center;line-height:1;letter-spacing:.04em;transform:rotate(-8deg);text-shadow:0 2px 0 #fff,0 4px 0 rgba(0,0,0,.12)}
+    .mp-logo span{display:block;font-size:.6em;color:#12865A;letter-spacing:.02em;margin-top:2px}
+    .mp-dice{display:flex;gap:calc(var(--u,50px)*.3)}
+    .mp-die{--ds:calc(var(--u,50px)*.8);width:var(--ds);height:var(--ds);perspective:400px}
     .mp-cube{position:relative;width:100%;height:100%;transform-style:preserve-3d}
     .mp-f{position:absolute;inset:0;background:linear-gradient(145deg,#fff,#ECECEC);border-radius:20%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:14%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
     .mp-f i{width:62%;height:62%;margin:auto;border-radius:50%}
     .mp-f i.on{background:radial-gradient(circle at 35% 35%,#555,#111)}
     .mp-f.f1 i.on{background:radial-gradient(circle at 35% 35%,#FF6B6B,#C62828)}
-    .mp-f.f1{transform:translateZ(calc(clamp(32px,9vw,46px)/2))}.mp-f.f6{transform:rotateY(180deg) translateZ(calc(clamp(32px,9vw,46px)/2))}
-    .mp-f.f2{transform:rotateY(90deg) translateZ(calc(clamp(32px,9vw,46px)/2))}.mp-f.f5{transform:rotateY(-90deg) translateZ(calc(clamp(32px,9vw,46px)/2))}
-    .mp-f.f3{transform:rotateX(90deg) translateZ(calc(clamp(32px,9vw,46px)/2))}.mp-f.f4{transform:rotateX(-90deg) translateZ(calc(clamp(32px,9vw,46px)/2))}
+    .mp-f.f1{transform:translateZ(calc(var(--ds)/2))}.mp-f.f6{transform:rotateY(180deg) translateZ(calc(var(--ds)/2))}
+    .mp-f.f2{transform:rotateY(90deg) translateZ(calc(var(--ds)/2))}.mp-f.f5{transform:rotateY(-90deg) translateZ(calc(var(--ds)/2))}
+    .mp-f.f3{transform:rotateX(90deg) translateZ(calc(var(--ds)/2))}.mp-f.f4{transform:rotateX(-90deg) translateZ(calc(var(--ds)/2))}
     .mp-tok{position:absolute;width:0;height:0;z-index:5;transition:left .2s ease,top .2s ease}
-    .mp-tok .mp-pawn{position:absolute;left:0;top:0;transform:translate(-50%,-88%) rotateX(-24deg)}
-    .mp-tok.hop .mp-pawn{animation:mphop .23s ease-out}
-    .mp-tok.cur .mp-pawn{filter:drop-shadow(0 0 6px rgba(255,214,10,.95))}
-    @keyframes mphop{50%{transform:translate(-50%,-150%) rotateX(-24deg)}}
-    .mp-pawn{display:inline-block;width:clamp(14px,4.2vw,22px);height:clamp(20px,6vw,30px);background:radial-gradient(circle at 50% 22%,#fff 0 6%,transparent 7%),radial-gradient(circle at 50% 24%,var(--c) 0 30%,transparent 31%),radial-gradient(ellipse at 50% 100%,var(--d) 0 48%,transparent 50%),linear-gradient(90deg,transparent 28%,var(--c) 29% 71%,transparent 72%);background-repeat:no-repeat;background-size:100% 100%,100% 100%,100% 40%,100% 70%;background-position:0 0,0 0,0 100%,0 30%;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
-    .mp-pawn.sm{width:16px;height:24px;flex:none;margin-left:6px}
-    .mp-tcard{margin-top:16px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
-    .mp-tband{background:var(--g);color:#fff;font-weight:900;font-size:19px;padding:10px 14px;text-shadow:0 1px 2px rgba(0,0,0,.25)}
-    .mp-tbody{padding:10px 14px 12px;font-size:16px;line-height:1.55}
-    .mp-tbody small{color:var(--text2)}
-    .mp-act{margin-top:12px}
-    .mp-btn{font-size:20px;min-height:60px}
-    .mp-q{text-align:center;font-size:18px;margin-bottom:10px}
-    .mp-two{display:flex;gap:10px}.mp-two .btn{flex:1;min-height:58px;font-size:18px}
-    .mp-hint{text-align:center;color:var(--text2);font-size:13px;margin-top:8px}
-    .mp-wait{text-align:center;color:var(--text2);font-size:17px;font-weight:700;padding:12px}
+    .mp-tok svg{position:absolute;left:0;top:0;display:block}
+    .mp-tok .mp-pin{width:calc(var(--u,50px)*.46);height:calc(var(--u,50px)*.68);transform:translate(-50%,-90%) rotateX(-34deg);transform-origin:50% 100%}
+    .mp-tok .mp-disc{width:calc(var(--u,50px)*.48);height:calc(var(--u,50px)*.48);transform:translate(-50%,-50%)}
+    .mp-tok.hop .mp-pin{animation:mphop .23s ease-out}
+    .mp-tok.hop .mp-disc{animation:mphopt .23s ease-out}
+    .mp-tok.cur svg{filter:drop-shadow(0 0 5px rgba(255,214,10,.95))}
+    @keyframes mphop{50%{transform:translate(-50%,-150%) rotateX(-34deg)}}
+    @keyframes mphopt{50%{transform:translate(-50%,-50%) scale(1.35)}}
+    .mp-bottom{flex:none;display:flex;flex-direction:column;gap:8px}
+    .mp-tile{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:8px 12px;box-shadow:var(--shadow);border-left:6px solid var(--g)}
+    .mp-tile-lm{width:50px;height:50px;flex:none}.mp-tile-lm svg{width:100%;height:100%}
+    .mp-tile-t{min-width:0;line-height:1.3}.mp-tile-n{font-size:18px;font-weight:900}.mp-tile-d{font-size:14px;color:#3A3A3C}
+    .mp-act{min-height:58px}
+    .mp-btn{width:100%;min-height:56px;font-size:19px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .mp-btn svg{width:26px;height:26px}
+    .mp-two{display:flex;gap:10px}.mp-two .mp-btn{flex:1;font-size:17px}
+    .mp-hint{text-align:center;color:var(--text2);font-size:12.5px;margin-top:4px;min-height:15px}
+    .mp-wait{text-align:center;color:var(--text2);font-size:17px;font-weight:700;padding:14px 4px}
+    .mp-screen .gp-result{position:absolute;left:0;right:0;bottom:0;z-index:12}
     .mp-cardpop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:9;perspective:900px}
-    .mp-flip{width:min(72%,300px);aspect-ratio:1.45;position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.9,.3,1);animation:mpcardin .45s cubic-bezier(.2,1.3,.4,1)}
+    .mp-flip{width:min(74%,300px);aspect-ratio:1.45;position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.9,.3,1);animation:mpcardin .45s cubic-bezier(.2,1.3,.4,1)}
     .mp-flip.open{transform:rotateY(180deg)}
     @keyframes mpcardin{from{transform:translateY(60px) scale(.4) rotate(-10deg);opacity:0}}
-    .mp-cf{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.35);font-size:34px}
+    .mp-cf{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+    .mp-cf svg{width:64px;height:64px}
     .mp-cf b{font-size:18px;letter-spacing:.06em}
     .mp-cf.back.kesempatan{background:linear-gradient(150deg,#FFB340,#EA6A0A);color:#fff}
     .mp-cf.back.dana{background:linear-gradient(150deg,#FF7EB3,#D63384);color:#fff}
@@ -658,19 +730,35 @@
     .mp-cf.front.dana{border-color:#D63384}
     .mp-cf.front small{font-size:13px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
     .mp-cf.front b{font-size:19px;letter-spacing:0;line-height:1.3}
-    .mp-flash{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:10;background:rgba(28,28,30,.88);color:#fff;font-weight:900;font-size:20px;padding:14px 20px;border-radius:18px;white-space:nowrap;animation:mpflash 1s cubic-bezier(.2,1.3,.4,1) both}
+    .mp-flash{position:absolute;left:50%;top:46%;z-index:10;display:flex;align-items:center;gap:10px;background:rgba(28,28,30,.9);color:#fff;font-weight:900;font-size:20px;padding:12px 18px;border-radius:18px;white-space:nowrap;animation:mpflash 1s cubic-bezier(.2,1.3,.4,1) both}
+    .mp-flash svg{width:30px;height:30px;flex:none}
     @keyframes mpflash{0%{transform:translate(-50%,-20%) scale(.5);opacity:0}25%{transform:translate(-50%,-50%) scale(1.05);opacity:1}100%{transform:translate(-50%,-60%) scale(1);opacity:1}}
     `
   });
-
   /* =====================================================================
      3. WEREWOLF (5–8 pemain, kursi kosong diisi bot; tanpa diskusi)
      ===================================================================== */
+  const WSV = b => `<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
+  const WI = {
+    wolf: WSV('<path d="M3 3l5 4h8l5-4-1 8c0 6-4 10-8 10s-8-4-8-10z" fill="#5E5E6E"/><path d="M8 13l2 1M16 13l-2 1" stroke="#FFD60A" stroke-width="1.8" stroke-linecap="round"/><path d="M9.5 17.5c1.5 1 3.5 1 5 0l-2.5 2z" fill="#1C1C1E"/><path d="M5 5l2 4M19 5l-2 4" stroke="#3A3A46" stroke-width="1.3"/>'),
+    seer: WSV('<circle cx="12" cy="10.5" r="7.5" fill="#B388FF"/><circle cx="9.5" cy="8" r="2.4" fill="#fff" opacity=".6"/><path d="M6 19h12l-1.5 3h-9z" fill="#6A3FB5"/><path d="M14 11l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="#fff"/>'),
+    doctor: WSV('<path d="M12 2l8 3v6c0 5.5-3.6 9.5-8 11-4.4-1.5-8-5.5-8-11V5z" fill="#0A84FF"/><path d="M10.5 7.5h3v3h3v3h-3v3h-3v-3h-3v-3h3z" fill="#fff"/>'),
+    villager: WSV('<ellipse cx="12" cy="7.5" rx="10" ry="2.6" fill="#E0B44C"/><path d="M7 7.5c0-3 2.2-5 5-5s5 2 5 5z" fill="#F2CB61"/><circle cx="12" cy="11" r="4" fill="#F5C9A0"/><path d="M4 22c0-4.5 3.6-7 8-7s8 2.5 8 7z" fill="#43A047"/>'),
+    skull: WSV('<path d="M12 2c5 0 8.5 3.4 8.5 8 0 2.8-1.4 4.6-3 5.6V19a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 19v-3.4C4.9 14.6 3.5 12.8 3.5 10c0-4.6 3.5-8 8.5-8z" fill="#F2F2F7" stroke="#8E8E93" stroke-width="1"/><circle cx="9" cy="10.5" r="2.2" fill="#1C1C1E"/><circle cx="15" cy="10.5" r="2.2" fill="#1C1C1E"/><path d="M11 15h2l-1-1.8z" fill="#1C1C1E"/>'),
+    vote: WSV('<rect x="3" y="11" width="18" height="10" rx="2" fill="#0A84FF"/><path d="M7 4h10v9H7z" fill="#fff" stroke="#8E8E93" stroke-width="1"/><path d="M9.5 8.5l1.8 1.8 3.4-3.6" stroke="#34C759" stroke-width="1.8" fill="none" stroke-linecap="round"/><rect x="6" y="13" width="12" height="1.6" rx=".8" fill="#0057B8"/>'),
+    moon: WSV('<path d="M15.5 2.5A9.5 9.5 0 1 0 21.5 17 8 8 0 0 1 15.5 2.5z" fill="#FFE08A"/>'),
+    sun: WSV('<circle cx="12" cy="12" r="5" fill="#FFC107"/><g stroke="#FFC107" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g>'),
+    scale: WSV('<path d="M12 3v17M5 20h14M4 7h16" stroke="#8D6E63" stroke-width="2" stroke-linecap="round"/><path d="M4 7l-3 6h6zM20 7l-3 6h6z" fill="#FFB74D"/>'),
+    house: WSV('<path d="M3 11L12 3.5 21 11v9.5a1 1 0 0 1-1 1h-5.5V15h-5v6.5H4a1 1 0 0 1-1-1z" fill="#FF9500"/><path d="M1.5 11.5L12 2.5l10.5 9" stroke="#C93400" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'),
+    unknown: WSV('<path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.1-1.5 2.4" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="12" cy="18" r="1.4" fill="currentColor"/>'),
+    clock: WSV('<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>')
+  };
+  const WW_HOUSES = `<svg viewBox="0 0 160 40" class="ww-hs"><g fill="currentColor"><path d="M10 40V22l14-12 14 12v18z"/><path d="M60 40V18l18-14 18 14v22z"/><path d="M116 40V24l13-10 13 10v16z"/></g><g fill="#FFD54F" class="ww-win-l"><rect x="20" y="26" width="7" height="7"/><rect x="72" y="22" width="9" height="9"/><rect x="125" y="28" width="7" height="6"/></g></svg>`;
   const WW_ROLE = {
-    w: { n: 'Serigala', ic: '🐺', c: '#C62828', d: 'Tiap malam pilih 1 warga untuk dimangsa. Jangan sampai ketahuan!' },
-    s: { n: 'Peramal', ic: '🔮', c: '#7B3FE4', d: 'Tiap malam intip peran 1 orang. Bantu warga menemukan serigala.' },
-    d: { n: 'Dokter', ic: '💉', c: '#0A84FF', d: 'Tiap malam lindungi 1 orang (boleh diri sendiri) dari serigala.' },
-    v: { n: 'Warga', ic: '🧑‍🌾', c: '#2E7D32', d: 'Siang hari pilih siapa yang dicurigai sebagai serigala.' }
+    w: { n: 'Serigala', ic: WI.wolf, c: '#C62828', d: 'Tiap malam pilih 1 warga untuk dimangsa. Jangan sampai ketahuan!' },
+    s: { n: 'Peramal', ic: WI.seer, c: '#7B3FE4', d: 'Tiap malam intip peran 1 orang. Bantu warga menemukan serigala.' },
+    d: { n: 'Dokter', ic: WI.doctor, c: '#0A84FF', d: 'Tiap malam lindungi 1 orang (boleh diri sendiri) dari serigala.' },
+    v: { n: 'Warga', ic: WI.villager, c: '#2E7D32', d: 'Siang hari pilih siapa yang dicurigai sebagai serigala.' }
   };
   const WW_ACT = 30000;
   const WW = {
@@ -802,7 +890,7 @@
       const me = ctx.mySeat;
       const iWin = !ctx.spectator && me !== null && me !== undefined && ((st.roles[me] === 'w') === wolfWin);
       const list = Array.from({ length: st.n }, (_, i) => { const r = WW_ROLE[st.roles[i]]; const win = (st.roles[i] === 'w') === wolfWin; return `<div class="ww-end ${win ? 'win' : ''} ${st.alive[i] ? '' : 'dead'}">${seatAva(ctx, i)}<span class="ww-en">${esc(seatName(ctx, i))}</span><span class="ww-badge" style="--rc:${r.c}">${r.ic} ${r.n}</span></div>`; }).join('');
-      return { iWin, html: `<div class="ww-win ${wolfWin ? 'wolf' : 'vil'}"><div class="ww-win-ic">${wolfWin ? '🐺' : '🏡'}</div><div class="pd-title" style="color:#fff">${wolfWin ? 'Serigala Menang!' : 'Warga Menang!'}</div><div class="pd-sub" style="color:rgba(255,255,255,.85)">${esc(st.reason || '')}${ctx.spectator ? '' : iWin ? ' · Timmu menang 🎉' : ' · Timmu kalah'}</div></div><div class="ww-endlist">${list}</div>` };
+      return { iWin, html: `<div class="ww-win ${wolfWin ? 'wolf' : 'vil'}"><div class="ww-win-ic">${wolfWin ? WI.wolf : WI.house}</div><div class="pd-title" style="color:#fff">${wolfWin ? 'Serigala Menang!' : 'Warga Menang!'}</div><div class="pd-sub" style="color:rgba(255,255,255,.85)">${esc(st.reason || '')}${ctx.spectator ? '' : iWin ? ' · Timmu menang!' : ' · Timmu kalah'}</div></div><div class="ww-endlist">${list}</div>` };
     }
   };
   function renderWW(box, st, ctx) {
@@ -827,23 +915,23 @@
       const votedBy = (st.phase === 'vote' || st.phase === 'verdict') ? Object.keys(st.votes).filter(k => st.votes[k] === i).length : 0;
       const voting = st.phase === 'vote' && st.turn === i && st.winner === null;
       return `<button type="button" class="ww-p ${can ? 'can' : ''} ${dead ? 'dead' : ''} ${justDied ? 'die' : ''} ${i === me ? 'me' : ''} ${voting ? 'voting' : ''}" data-i="${i}" ${can ? '' : 'disabled'}>
-        <span class="ww-av">${seatAva(ctx, i).replace('width:32px;height:32px', 'width:54px;height:54px;font-size:22px')}${dead ? '<span class="ww-skull">💀</span>' : ''}</span>
+        <span class="ww-av">${seatAva(ctx, i).replace('width:32px;height:32px', 'width:54px;height:54px;font-size:22px')}${dead ? `<span class="ww-skull">${WI.skull}</span>` : ''}</span>
         <span class="ww-nm">${esc(seatName(ctx, i))}</span>
-        ${show ? `<span class="ww-badge" style="--rc:${r.c}">${r.ic} ${r.n}</span>` : '<span class="ww-badge unk">❔</span>'}
-        ${votedBy ? `<span class="ww-votes">${'🗳️'.repeat(Math.min(votedBy, 4))}${votedBy > 4 ? '+' : ''}</span>` : ''}</button>`;
+        ${show ? `<span class="ww-badge" style="--rc:${r.c}">${r.ic} ${r.n}</span>` : `<span class="ww-badge unk">${WI.unknown}</span>`}
+        ${votedBy ? `<span class="ww-votes">${WI.vote}<b>${votedBy}</b></span>` : ''}</button>`;
     }).join('');
     let head = '', sub = '';
     const nm = i => esc(seatName(ctx, i));
-    if (st.winner !== null) { head = st.winner === 'w' ? '🐺 Serigala menang' : '🏡 Warga menang'; }
-    else if (st.phase === 'intro') { head = `🌙 Malam ke-${st.night} tiba`; sub = 'Lihat peranmu. Rahasiakan dari yang lain!'; }
-    else if (st.phase === 'wolf') { head = myAct ? '🐺 Pilih mangsamu malam ini' : '🐺 Serigala sedang berburu…'; sub = myAct ? 'Ketuk satu warga.' : 'Semua warga tertidur 😴'; }
-    else if (st.phase === 'seer') { head = myAct ? '🔮 Pilih 1 orang untuk diintip' : '🔮 Peramal sedang meramal…'; sub = myAct ? 'Perannya akan terlihat hanya olehmu.' : 'Semua warga tertidur 😴'; }
-    else if (st.phase === 'doctor') { head = myAct ? '💉 Pilih 1 orang untuk dilindungi' : '💉 Dokter sedang berjaga…'; sub = myAct ? 'Boleh melindungi diri sendiri.' : 'Semua warga tertidur 😴'; }
+    if (st.winner !== null) { head = st.winner === 'w' ? `${WI.wolf} Serigala menang` : `${WI.house} Warga menang`; }
+    else if (st.phase === 'intro') { head = `${WI.moon} Malam ke-${st.night} tiba`; sub = 'Lihat peranmu. Rahasiakan dari yang lain!'; }
+    else if (st.phase === 'wolf') { head = myAct ? `${WI.wolf} Pilih mangsamu malam ini` : `${WI.wolf} Serigala sedang berburu…`; sub = myAct ? 'Ketuk satu warga.' : 'Semua warga tertidur…'; }
+    else if (st.phase === 'seer') { head = myAct ? `${WI.seer} Pilih 1 orang untuk diintip` : `${WI.seer} Peramal sedang meramal…`; sub = myAct ? 'Perannya akan terlihat hanya olehmu.' : 'Semua warga tertidur…'; }
+    else if (st.phase === 'doctor') { head = myAct ? `${WI.doctor} Pilih 1 orang untuk dilindungi` : `${WI.doctor} Dokter sedang berjaga…`; sub = myAct ? 'Boleh melindungi diri sendiri.' : 'Semua warga tertidur…'; }
     else if (st.phase === 'dawn') {
-      head = '☀️ Pagi hari';
-      sub = st.dawn && st.dawn.killed >= 0 ? `Semalam <b>${nm(st.dawn.killed)}</b> dimangsa serigala… Ia adalah <b>${WW_ROLE[st.roles[st.dawn.killed]].n}</b>.` : st.dawn && st.dawn.saved ? 'Serigala menyerang, tapi Dokter berhasil menyelamatkan! 🎉' : 'Malam ini tidak ada korban. 🎉';
-    } else if (st.phase === 'vote') { head = myAct ? '🗳️ Giliranmu memilih' : `🗳️ ${nm(st.turn)} sedang memilih…`; sub = myAct ? 'Ketuk orang yang kamu curigai sebagai serigala.' : 'Siapa yang paling dicurigai?'; }
-    else if (st.phase === 'verdict') { head = '⚖️ Hasil pemilihan'; sub = st.verdict && st.verdict.out >= 0 ? `<b>${nm(st.verdict.out)}</b> diusir dari desa (${st.verdict.n} suara). Ia adalah <b>${WW_ROLE[st.roles[st.verdict.out]].ic} ${WW_ROLE[st.roles[st.verdict.out]].n}</b>.` : 'Suara seri, tidak ada yang diusir.'; }
+      head = `${WI.sun} Pagi hari`;
+      sub = st.dawn && st.dawn.killed >= 0 ? `Semalam <b>${nm(st.dawn.killed)}</b> dimangsa serigala… Ia adalah <b>${WW_ROLE[st.roles[st.dawn.killed]].n}</b>.` : st.dawn && st.dawn.saved ? 'Serigala menyerang, tapi Dokter berhasil menyelamatkan!' : 'Malam ini tidak ada korban.';
+    } else if (st.phase === 'vote') { head = myAct ? `${WI.vote} Giliranmu memilih` : `${WI.vote} ${nm(st.turn)} sedang memilih…`; sub = myAct ? 'Ketuk orang yang kamu curigai sebagai serigala.' : 'Siapa yang paling dicurigai?'; }
+    else if (st.phase === 'verdict') { head = `${WI.scale} Hasil pemilihan`; sub = st.verdict && st.verdict.out >= 0 ? `<b>${nm(st.verdict.out)}</b> diusir dari desa (${st.verdict.n} suara). Ia adalah <b>${WW_ROLE[st.roles[st.verdict.out]].ic} ${WW_ROLE[st.roles[st.verdict.out]].n}</b>.` : 'Suara seri, tidak ada yang diusir.'; }
     // info rahasia
     let secret = '';
     if (myRole && st.winner === null) {
@@ -853,10 +941,10 @@
       if (myRole === 's') { const sn = Object.keys(st.seen[me] || {}); if (sn.length) extra = sn.map(k => `${nm(+k)}: ${WW_ROLE[st.seen[me][k]].ic} ${WW_ROLE[st.seen[me][k]].n}`).join(' · '); }
       secret = `<div class="ww-me" style="--rc:${r.c}"><span class="ww-me-ic">${r.ic}</span><div><small>Peranmu ${alive ? '' : '(sudah tersingkir)'}</small><b>${r.n}</b>${extra ? `<div class="ww-me-x">${extra}</div>` : ''}</div></div>`;
     }
-    const intro = st.phase === 'intro' && myRole ? `<div class="ww-rolecard"><div class="ww-flip"><div class="ww-rf back">🌙<b>PERANMU</b></div><div class="ww-rf front" style="--rc:${WW_ROLE[myRole].c}"><span>${WW_ROLE[myRole].ic}</span><b>${WW_ROLE[myRole].n}</b><small>${WW_ROLE[myRole].d}</small></div></div></div>` : '';
+    const intro = st.phase === 'intro' && myRole ? `<div class="ww-rolecard"><div class="ww-flip"><div class="ww-rf back">${WI.moon}<b>PERANMU</b></div><div class="ww-rf front" style="--rc:${WW_ROLE[myRole].c}"><span>${WW_ROLE[myRole].ic}</span><b>${WW_ROLE[myRole].n}</b><small>${WW_ROLE[myRole].d}</small></div></div></div>` : '';
     const stars = Array.from({ length: 26 }, (_, k) => `<i style="left:${(k * 37) % 100}%;top:${(k * 53) % 60}%;animation-delay:${(k % 7) * .3}s"></i>`).join('');
     box.innerHTML = `<div class="ww-scene ${isNight || st.phase === 'intro' ? 'night' : 'day'} ${st.phase}">
-        <div class="ww-sky"><div class="ww-stars">${stars}</div><div class="ww-moon"></div><div class="ww-sun"></div><div class="ww-hill h1"></div><div class="ww-hill h2"></div><div class="ww-houses">🏠🏡🏠</div></div>
+        <div class="ww-sky"><div class="ww-stars">${stars}</div><div class="ww-moon"></div><div class="ww-sun"></div><div class="ww-hill h1"></div><div class="ww-hill h2"></div><div class="ww-houses">${WW_HOUSES}</div></div>
         <div class="ww-head"><div class="ww-h">${head}</div>${sub ? `<div class="ww-sub">${sub}</div>` : ''}<div class="ww-timer" id="wwT"></div></div>
         ${intro}${secret}
         <div class="ww-grid">${cards}</div>
@@ -870,7 +958,7 @@
       clearInterval(H.autoTick); ctx.act({ target: +b.dataset.i });
     });
     const tEl = $('wwT');
-    const tick = () => { const left = Math.max(0, Math.ceil((st.deadline - now()) / 1000)); if (tEl) tEl.textContent = `⏳ ${left} detik (otomatis dipilih acak)`; };
+    const tick = () => { const left = Math.max(0, Math.ceil((st.deadline - now()) / 1000)); if (tEl) tEl.innerHTML = `${WI.clock} ${left} detik (otomatis dipilih acak)`; };
     tick(); H.autoTick = setInterval(tick, 300);
     ctx.auto(() => ctx.act({ timeout: true }), Math.max(500, st.deadline - now()));
   }
@@ -916,7 +1004,7 @@
     .ww-hill.h1{left:-20%;width:90%;height:140px}.ww-hill.h2{right:-25%;width:95%;height:120px}
     .ww-scene.night .ww-hill.h1{background:#14173F}.ww-scene.night .ww-hill.h2{background:#1A1E4E}
     .ww-scene.day .ww-hill.h1{background:#7ED492}.ww-scene.day .ww-hill.h2{background:#5CC274}
-    .ww-houses{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:30px;letter-spacing:18px;opacity:.9}
+    .ww-houses{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);opacity:.95}
     .ww-head{text-align:center;padding:4px 70px 4px 4px;min-height:74px}
     .ww-h{font-size:21px;font-weight:900;line-height:1.25;animation:gpop .5s}
     .ww-sub{font-size:16px;margin-top:6px;opacity:.9;line-height:1.4}
@@ -926,7 +1014,7 @@
     .ww-me-ic{font-size:34px}
     .ww-me small{display:block;font-size:12px;opacity:.8;font-weight:700}
     .ww-me b{font-size:19px}
-    .ww-me-x{font-size:13px;margin-top:2px;opacity:.9}
+    .ww-me-x{font-size:13px;margin-top:2px;opacity:.9}.ww-me-x svg{width:15px;height:15px;vertical-align:-3px}
     .ww-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:14px}
     .ww-p{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 10px;border-radius:20px;background:rgba(255,255,255,.12);color:inherit;transition:transform .2s,box-shadow .2s,opacity .4s,filter .4s}
     .ww-scene.day .ww-p{background:rgba(255,255,255,.8);box-shadow:0 4px 14px rgba(0,80,140,.12)}
@@ -944,6 +1032,17 @@
     .ww-badge{font-size:12px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--rc);color:#fff;white-space:nowrap}
     .ww-badge.unk{background:rgba(128,128,128,.35)}
     .ww-votes{position:absolute;top:4px;right:6px;font-size:13px;animation:gpop .3s}
+    .ww-h svg{width:26px;height:26px;vertical-align:-5px;margin-right:2px}
+    .ww-badge svg{width:14px;height:14px;vertical-align:-2.5px}
+    .ww-me-ic svg{width:40px;height:40px;display:block}
+    .ww-skull svg{width:24px;height:24px;display:block}
+    .ww-votes{display:flex;align-items:center;gap:2px;background:#fff;color:#0A84FF;border-radius:999px;padding:1px 6px 1px 3px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+    .ww-votes svg{width:16px;height:16px}.ww-votes b{font-size:12px}
+    .ww-timer svg{width:14px;height:14px;vertical-align:-2px}
+    .ww-rf svg{width:72px;height:72px}
+    .ww-win-ic svg{width:92px;height:92px}
+    .ww-hs{width:200px;height:50px;display:block}
+    .ww-scene.night .ww-hs{color:#0B0E2A}.ww-scene.day .ww-hs{color:#B23B1E}.ww-scene.day .ww-win-l{fill:#FFF3E0}
     .ww-legend{text-align:center;font-size:13px;opacity:.75;margin-top:14px;font-weight:700}
     .ww-rolecard{display:flex;justify-content:center;margin:10px 0;perspective:900px}
     .ww-flip{width:200px;height:250px;position:relative;transform-style:preserve-3d;animation:wwflip 1.4s .5s cubic-bezier(.2,.9,.3,1) both}
