@@ -19,6 +19,9 @@
      POST /api/pesan/paid                 { cid, id, payerName }  customer sudah bayar
      POST /api/pesan/cancel               { cid, id }             batalkan (hanya yang belum dibayar)
      GET  /api/pesan/orders?cid=          riwayat pesanan HP ini
+   Cron tiap menit (nudgeKasir): pesanan berstatus "cek" yang belum ditangani kasir
+   dikirimi notifikasi ulang ke HP kasir tiap menit, maksimal NUDGE_MAX kali.
+   Daftarnya disimpan di KV pesan_cek (kosong = tidak ada pekerjaan, tanpa baca Firebase).
    Variabel opsional (Dashboard Cloudflare):
      TT_FIREBASE_URL     URL Realtime Database kasir (bawaan: kasir-thai-tea)
      TT_FIREBASE_SECRET  (Secret) database secret, wajib diisi kalau rules Firebase kasir dikunci
@@ -42,6 +45,8 @@ const MAX_CUPS = 30;
 const MAX_UNPAID = 2;              // pesanan belum dibayar per HP
 const ORDERS_PER_MIN = 20;         // semua customer
 const TOPPING_PRICE = 3000;
+const NUDGE_MAX = 10;              // jumlah notifikasi ke kasir per pesanan (termasuk yang pertama)
+const NUDGE_KEY = 'pesan_cek';
 
 // Sama dengan MENU_DATABASE di public/thaitea/index.html (Es Teler sudah tidak dijual)
 const MENU = [
@@ -158,11 +163,11 @@ export async function handlePesan(request, env, url, ctx) {
     const patch = { status: 'cek', paidClaimAt: Date.now(), payerName: cleanText(b.payerName, 40) };
     await fb(env, 'PATCH', 'online_orders/' + order.id, patch);
     Object.assign(order, patch);
-    await pushKasir(env, ctx, {
-      title: '🔔 PESANAN ONLINE BARU #' + order.no,
-      body: `${order.name} · ${rp(order.totalPrice)} · jemput ${order.pickupLabel}. Cek pembayaran QRIS${patch.payerName ? ' a.n. ' + patch.payerName : ''}.`,
-      urgent: true
-    }).catch(() => {});
+    await pushKasir(env, ctx, notifPesanan(order, 1)).catch(() => {});
+    // masuk daftar pengingat: dikirim ulang tiap menit oleh cron sampai kasir menanganinya
+    const list = ((await env.HUB_KV.get(NUDGE_KEY, 'json')) || []).filter(x => x.id !== order.id);
+    list.push({ id: order.id, sent: 1, last: Date.now() });
+    await env.HUB_KV.put(NUDGE_KEY, JSON.stringify(list.slice(-30)));
     return json({ order: publicOrder(order) });
   }
 
@@ -192,6 +197,31 @@ export async function handlePesan(request, env, url, ctx) {
   }
 
   return json({ error: 'Not found' }, 404);
+}
+
+// ---------- notifikasi berulang ke HP kasir ----------
+function notifPesanan(order, ke) {
+  return {
+    title: (ke > 1 ? `⏰ PENGINGAT ${ke}/${NUDGE_MAX} · ` : '🔔 ') + 'PESANAN ONLINE #' + order.no,
+    body: `${order.name} · ${rp(order.totalPrice)} · jemput ${order.pickupLabel}. ` + (ke > 1 ? 'Belum dicek! ' : '') + `Cek pembayaran QRIS${order.payerName ? ' a.n. ' + order.payerName : ''}.`,
+    urgent: true, tag: 'online-' + order.id
+  };
+}
+export async function nudgeKasir(env, ctx) {
+  if (!env.HUB_KV) return;
+  const list = await env.HUB_KV.get(NUDGE_KEY, 'json');
+  if (!list || !list.length) return;
+  const now = Date.now(), next = [];
+  for (const it of list) {
+    if (now - it.last < 50000) { next.push(it); continue; }
+    const order = await fb(env, 'GET', 'online_orders/' + it.id).catch(() => undefined);
+    if (order === undefined) { next.push(it); continue; }        // Firebase gagal: coba menit depan
+    if (!order || order.status !== 'cek') continue;               // sudah ditangani / dihapus
+    const ke = it.sent + 1;
+    await pushKasir(env, ctx, notifPesanan(order, ke)).catch(() => {});
+    if (ke < NUDGE_MAX) next.push({ ...it, sent: ke, last: now });
+  }
+  await env.HUB_KV.put(NUDGE_KEY, JSON.stringify(next));
 }
 
 // ---------- data ----------

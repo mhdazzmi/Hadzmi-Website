@@ -708,6 +708,9 @@
     .on-store { box-shadow: inset 0 0 0 2px var(--red-soft), var(--shadow); }
     .on-store.open { box-shadow: inset 0 0 0 2px #34C759, var(--shadow); }
     .on-sound { margin-top: 12px; background: var(--amber-soft); }
+    .on-wake { margin-top: 10px; border-radius: 14px; padding: 10px 14px; font-size: 14.5px; font-weight: 600; }
+    .on-wake.ok { background: var(--green-soft); color: var(--green); }
+    .on-wake.warn { background: var(--amber-soft); color: var(--amber); }
     .on-link { font-size: 15px; font-weight: 700; color: var(--accent-text); margin-top: 6px; word-break: break-all; }
     .on-group { margin-top: 18px; }
     .on-group-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--text2); margin: 0 6px 8px; display: flex; align-items: center; gap: 8px; }
@@ -1123,6 +1126,7 @@
                 <span class="switch"><input type="checkbox" id="onOpenToggle" onchange="setTokoOnline(this.checked)"><span class="slider"></span></span>
               </label>
             </div>
+            <div id="onWakeStatus" class="on-wake hidden"></div>
             <div class="card on-sound hidden" id="onSoundBox">
               <div class="toggle-title">🔇 Suara alarm belum aktif di HP ini</div>
               <div class="toggle-desc">Browser butuh satu sentuhan dulu supaya alarm pesanan baru bisa berbunyi keras.</div>
@@ -1157,7 +1161,7 @@
                 <a class="btn btn-gray btn-sm" href="/pesan/" target="_blank" rel="noopener" style="text-decoration:none"><i class="fas fa-arrow-up-right-from-square"></i> Buka</a>
               </div>
               <button type="button" class="btn btn-gray btn-block btn-sm" style="margin-top:10px" onclick="tesAlarmOnline()"><i class="fas fa-bell"></i> Tes Bunyi Alarm</button>
-              <p class="card-sub" style="margin-top:10px">Alarm berbunyi kalau web kasir ini <b>sedang terbuka</b>. Biarkan terbuka di satu HP/tablet selama jam jualan. Notifikasi HP (Pengaturan → Notifikasi) tetap masuk walau web tertutup.</p>
+              <p class="card-sub" style="margin-top:10px">Alarm keras berbunyi kalau web kasir ini <b>sedang terbuka</b>. Kalau layar mati / web tertutup, <b>notifikasi HP</b> dikirim ulang <b>tiap 1 menit (maks. 10 kali)</b> sampai pesanan dicek. Aktifkan di Pengaturan → Notifikasi.</p>
             </div>
             <div class="card">
               <div class="toggle-title">Topping tersedia</div>
@@ -4850,6 +4854,7 @@
       renderOnlineStore();
       document.getElementById('onLinkText').textContent = location.origin + '/pesan/';
       document.getElementById('onSoundBox').classList.toggle('hidden', !!(onAc && onAc.state === 'running'));
+      renderWakeStatus();
       document.getElementById('onAktifPane').classList.toggle('hidden', onlinePane !== 'aktif');
       document.getElementById('onRiwayatPane').classList.toggle('hidden', onlinePane !== 'riwayat');
       const by = st => onlineList.filter(o => onStatus(o) === st);
@@ -5072,16 +5077,46 @@
       mulaiAlarm('Ini hanya tes bunyi alarm.\nSentuh layar untuk mematikan.');
     }
 
-    /* ---------- layar tetap menyala saat pesanan online dibuka ---------- */
-    let wakeLock = null;
+    /* ---------- layar tetap menyala saat pesanan online dibuka & web kasir terbuka ---------- */
+    // 1) Wake Lock API (Chrome Android, iPhone iOS 16.4+)  2) cadangan: video senyap kecil diputar berulang
+    let wakeLock = null, wakeVideo = null, wakeMode = '';
+    function perluLayarNyala() { return onlineSettings.open === true && document.visibilityState === 'visible'; }
     async function aturWakeLock() {
+      const perlu = perluLayarNyala();
+      if (!perlu) {
+        try { if (wakeLock) await wakeLock.release(); } catch (e) {}
+        wakeLock = null;
+        if (wakeVideo) wakeVideo.pause();
+        wakeMode = ''; renderWakeStatus(); return;
+      }
+      if ('wakeLock' in navigator) {
+        try {
+          if (!wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; if (perluLayarNyala()) setTimeout(aturWakeLock, 500); }); }
+          wakeMode = 'api'; renderWakeStatus(); return;
+        } catch (e) { wakeLock = null; }
+      }
+      // cadangan: butuh sentuhan layar dulu (aturan browser), dicoba lagi di setiap sentuhan
       try {
-        if (!('wakeLock' in navigator)) return;
-        const perlu = onlineSettings.open === true && document.visibilityState === 'visible';
-        if (perlu && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
-        else if (!perlu && wakeLock) { await wakeLock.release(); wakeLock = null; }
-      } catch (e) { wakeLock = null; }
+        if (!wakeVideo) {
+          wakeVideo = document.createElement('video');
+          wakeVideo.src = 'wake.mp4'; wakeVideo.muted = true; wakeVideo.loop = true;
+          wakeVideo.setAttribute('playsinline', ''); wakeVideo.setAttribute('muted', '');
+          wakeVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;bottom:0;left:0';
+          document.body.appendChild(wakeVideo);
+        }
+        await wakeVideo.play();
+        wakeMode = 'video';
+      } catch (e) { wakeMode = 'gagal'; }
+      renderWakeStatus();
     }
+    function renderWakeStatus() {
+      const el = document.getElementById('onWakeStatus'); if (!el) return;
+      if (onlineSettings.open !== true) { el.className = 'on-wake hidden'; return; }
+      const ok = wakeMode === 'api' || wakeMode === 'video';
+      el.className = 'on-wake ' + (ok ? 'ok' : 'warn');
+      el.innerHTML = ok ? '🔆 Layar dijaga tetap menyala selama halaman ini terbuka.' : '⚠️ Layar bisa mati sendiri. Sentuh layar sekali, atau atur waktu layar mati HP lebih lama.';
+    }
+    document.addEventListener('pointerdown', () => { if (perluLayarNyala() && !wakeLock && wakeMode !== 'video') aturWakeLock(); }, true);
     document.addEventListener('visibilitychange', () => { aturWakeLock(); if (document.visibilityState === 'visible') cekAlarmOnline(); });
 
     // Notifikasi "pesanan online" disentuh → buka tab Online

@@ -130,7 +130,7 @@ export async function handleThaiTea(request, env, url, ctx) {
 
 // Kirim notifikasi ke HP kasir. Dipakai /api/thaitea/notify dan pesanan online (/api/pesan/*).
 // urgent = notifikasi tetap tampil sampai disentuh (pesanan online baru)
-export async function pushKasir(env, ctx, { title, body, to, from, urgent }) {
+export async function pushKasir(env, ctx, { title, body, to, from, urgent, tag }) {
   title = cleanText(title, 60) || 'Thai Tea';
   body = cleanText(body, 240);
   if (!body) return { error: 'Isi kosong', status: 400 };
@@ -138,7 +138,7 @@ export async function pushKasir(env, ctx, { title, body, to, from, urgent }) {
   const now = Date.now();
   const outbox = await kvGet(env, OUTBOX, []);
   if (outbox.filter(i => i.ts > now - 60000).length >= RATE_PER_MIN) return { error: 'Terlalu banyak notifikasi', status: 429 };
-  outbox.push({ id: 'tt-' + now + '-' + Math.random().toString(36).slice(2, 6), ts: now, title, body, to: to || undefined, urgent: urgent ? true : undefined });
+  outbox.push({ id: 'tt-' + now + '-' + Math.random().toString(36).slice(2, 6), ts: now, title, body, to: to || undefined, urgent: urgent ? true : undefined, tag: tag ? String(tag).slice(0, 80) : undefined });
   await env.HUB_KV.put(OUTBOX, JSON.stringify(outbox.slice(-OUTBOX_MAX)));
 
   from = cleanEndpoint(from);
