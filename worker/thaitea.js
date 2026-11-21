@@ -9,7 +9,7 @@
      POST /api/thaitea/unsubscribe  { endpoint }
      POST /api/thaitea/notify       { title, body, from }   (from = endpoint pengirim, tidak ikut dikirimi)
      GET  /api/thaitea/pending?endpoint=&since=
-     POST /api/thaitea/upload       (body = file mentah; Content-Type image/* atau audio/*) → { url }
+     POST /api/thaitea/upload       (body = file mentah; Content-Type image/* (maks 4 MB) atau audio/* (maks 60 MB)) → { url }
      GET  /api/thaitea/file/<id>    → foto / pesan suara chat & foto profil (Cloudflare R2, folder thaitea/)
    ========================================================= */
 import { getVapid, sendPush } from './index.js';
@@ -19,7 +19,8 @@ const OUTBOX = 'tt_outbox';
 const MAX_SUBS = 60;
 const OUTBOX_MAX = 40;
 const RATE_PER_MIN = 30;
-const MAX_UPLOAD = 4 * 1024 * 1024;               // 4 MB per file (foto sudah dikecilkan di HP)
+const MAX_UPLOAD = 4 * 1024 * 1024;               // 4 MB per foto (foto sudah dikecilkan di HP)
+const MAX_AUDIO = 60 * 1024 * 1024;               // 60 MB per suara (lagu / bacaan ayat di menu Hiburan)
 const UPLOAD_PER_MIN = 40;
 const R2_SAFE_LIMIT = 9 * 1024 * 1024 * 1024;     // sama dengan batas aman Nexa (kuota gratis 10 GB)
 const FILE_ID_RE = /^[0-9a-f-]{36}\.(jpg|webp|png|webm|m4a|ogg|mp3|aac)$/;
@@ -106,16 +107,17 @@ export async function handleThaiTea(request, env, url, ctx) {
     const ext = TYPES[type];
     if (!ext) return json({ error: 'Jenis file tidak didukung' }, 415);
     const len = Number(request.headers.get('Content-Length') || 0);
-    if (len > MAX_UPLOAD) return json({ error: 'File terlalu besar' }, 413);
+    const maxSize = type.startsWith('audio/') ? MAX_AUDIO : MAX_UPLOAD;
+    if (len > maxSize) return json({ error: 'File terlalu besar (maks ' + Math.round(maxSize / 1048576) + ' MB)' }, 413);
     // batas unggahan per menit (mencegah penyalahgunaan)
     const minute = Math.floor(Date.now() / 60000);
     const rate = await kvGet(env, 'tt_upload_rate', { minute: 0, count: 0 });
     if (rate.minute === minute && rate.count >= UPLOAD_PER_MIN) return json({ error: 'Terlalu banyak unggahan, coba sebentar lagi' }, 429);
     await env.HUB_KV.put('tt_upload_rate', JSON.stringify({ minute, count: rate.minute === minute ? rate.count + 1 : 1 }));
     const used = Number(await env.HUB_KV.get('r2_bytes')) || 0;
-    if (used + (len || MAX_UPLOAD) > R2_SAFE_LIMIT) return json({ error: 'Penyimpanan hampir penuh' }, 507);
+    if (used + (len || maxSize) > R2_SAFE_LIMIT) return json({ error: 'Penyimpanan hampir penuh' }, 507);
     const buf = await request.arrayBuffer();
-    if (!buf.byteLength || buf.byteLength > MAX_UPLOAD) return json({ error: 'File kosong atau terlalu besar' }, 413);
+    if (!buf.byteLength || buf.byteLength > maxSize) return json({ error: 'File kosong atau terlalu besar' }, 413);
     const id = crypto.randomUUID() + '.' + ext;
     await env.FILES.put('thaitea/' + id, buf, { httpMetadata: { contentType: type } });
     await env.HUB_KV.put('r2_bytes', String(used + buf.byteLength));
