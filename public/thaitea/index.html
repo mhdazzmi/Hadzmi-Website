@@ -265,9 +265,9 @@
       color: #fff; font-size: 32px; position: relative; box-shadow: inset 0 -12px 24px rgba(0, 0, 0, .12);
     }
     .mt-badge { position: absolute; top: 7px; left: 7px; font-size: 11px; font-weight: 800; letter-spacing: .02em; background: rgba(255, 255, 255, .92); color: #8A4B00; padding: 3px 7px; border-radius: 7px; }
-    .mt-name { font-size: 16px; font-weight: 700; margin-top: 10px; line-height: 1.25; min-height: 40px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0 2px; }
+    .mt-name { font-size: 16px; font-weight: 700; margin-top: 10px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding: 0 2px; }
     .mt-cat { font-size: 13px; color: var(--text2); padding: 0 2px; margin-top: 2px; }
-    .mt-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 0 2px; }
+    .mt-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; padding: 0 2px; }
     .mt-price { font-size: 17px; font-weight: 800; color: var(--accent); }
     .mt-plus { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 600; line-height: 1; }
 
@@ -3363,7 +3363,6 @@
             ${item.category.includes('premium') ? '<span class="mt-badge">PREMIUM</span>' : ''}
           </div>
           <div class="mt-name">${item.name}</div>
-          <div class="mt-cat">${labelKategori(item.catLabel)}</div>
           <div class="mt-foot">
             <span class="mt-price">${formatRp(item.price)}</span>
             <span class="mt-plus">+</span>
