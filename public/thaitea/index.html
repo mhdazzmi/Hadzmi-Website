@@ -134,7 +134,8 @@
     @media (min-width: 900px) {
       .split { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 20px; align-items: start; }
       .split-rev { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
-      .sticky-col { position: sticky; top: 84px; }
+      .sticky-col { position: sticky; top: 84px; max-height: calc(100vh - 84px - var(--tabbar-h) - var(--safe-b) - 12px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+      .sticky-col > .section-label:first-child { margin-top: 4px !important; }
     }
 
     /* ---------- BUTTONS ---------- */
@@ -254,6 +255,10 @@
       display: flex; flex-direction: column; transition: transform .12s;
     }
     .menu-tile:active { transform: scale(.96); }
+    .menu-tile { width: 100%; min-width: 0; align-items: stretch; cursor: pointer; -webkit-user-select: none; user-select: none; }
+    .menu-tile > * { width: 100%; box-sizing: border-box; }
+    .mt-foot { gap: 8px; }
+    .mt-plus { flex: none; }
     .mt-art {
       height: 84px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
       color: #fff; font-size: 32px; position: relative; box-shadow: inset 0 -12px 24px rgba(0, 0, 0, .12);
@@ -2262,10 +2267,10 @@
     let tambahKeEdit = false;
     function bukaPilihMenuEdit() {
       const grid = document.getElementById('menuPickGrid');
-      grid.innerHTML = MENU_DATABASE.map(m => `<button type="button" class="menu-tile" onclick="pilihMenuUntukEdit('${m.id}')">
+      grid.innerHTML = MENU_DATABASE.map(m => `<div role="button" tabindex="0" class="menu-tile" onclick="pilihMenuUntukEdit('${m.id}')">
           <div class="mt-art" style="background:${gradCss(m.grad)};height:56px">${m.category.includes('premium') ? '<span class="mt-badge">PREMIUM</span>' : ''}</div>
           <div class="mt-name" style="min-height:0">${m.name}</div>
-          <div class="mt-foot"><span class="mt-price">${formatRp(m.price)}</span><span class="mt-plus">+</span></div></button>`).join('');
+          <div class="mt-foot"><span class="mt-price">${formatRp(m.price)}</span><span class="mt-plus">+</span></div></div>`).join('');
       openSheet('menuPickSheet');
     }
     function pilihMenuUntukEdit(id) {
@@ -2867,8 +2872,10 @@
       if (!items.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1">Menu "${esc(menuSearchQ)}" tidak ditemukan.</div>`; return; }
 
       items.forEach(item => {
-        const div = document.createElement('button');
-        div.type = 'button';
+        // <div> (bukan <button>) supaya isi kartu melebar penuh di Safari iPad
+        const div = document.createElement('div');
+        div.setAttribute('role', 'button');
+        div.tabIndex = 0;
         div.className = 'menu-tile';
         div.onclick = () => openCustomizeModal(item.id);
 
