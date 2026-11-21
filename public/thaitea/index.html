@@ -430,6 +430,10 @@
     .icon-act.edit { background: var(--accent-soft); color: var(--accent-text); }
     .icon-act.del { background: var(--red-soft); color: var(--red); }
     .icon-act:active { transform: scale(.92); }
+    .icon-act { position: relative; }
+    .icon-act.locked { opacity: .75; }
+    .lock-badge { position: absolute; right: -5px; top: -5px; width: 20px; height: 20px; border-radius: 50%; background: #1C1C1E; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+    .lock-badge svg { width: 11px !important; height: 11px !important; }
 
     /* ---------- CARI MENU ---------- */
     .menu-search { display: flex; gap: 8px; align-items: center; }
@@ -1159,6 +1163,12 @@
 
           <div class="section-label"><span>Keamanan Admin</span></div>
           <div class="card stack">
+            <div>
+              <div class="toggle-title">🔒 Sandi Ubah/Hapus Data Lama</div>
+              <div class="toggle-desc">Transaksi kemarin & sebelumnya hanya bisa diubah atau dihapus dengan sandi ini (siapa pun yang tahu sandinya). Transaksi hari ini tetap bebas.</div>
+              <div class="toggle-desc" id="oldPinStatus" style="margin-top:6px;font-weight:600"></div>
+            </div>
+            <button type="button" class="btn btn-tinted btn-block" onclick="aturSandiDataLama()"><i class="fas fa-key"></i> Atur Sandi Data Lama</button>
             <button type="button" class="btn btn-gray btn-block" onclick="gantiPinAdmin()"><i class="fas fa-key"></i> Ganti PIN Admin</button>
             <button type="button" class="btn btn-gray btn-block" onclick="kunciAdmin()"><i class="fas fa-lock"></i> Kunci Bagian Admin</button>
           </div>
@@ -2194,6 +2204,43 @@
       triggerToast('Bagian admin dikunci');
     }
 
+    /* ===== DATA LAMA TERKUNCI =====
+       Transaksi kemarin & sebelumnya hanya bisa diubah/dihapus dengan sandi yang dibuat admin.
+       Transaksi hari ini bebas. Admin yang sudah membuka bagian Admin tidak perlu sandi. */
+    const LOCK_BADGE = '<span class="lock-badge"><svg viewBox="0 0 24 24"><path fill="#fff" d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg></span>';
+    let izinLamaSampai = 0;   // setelah sandi benar, berlaku 5 menit di HP ini
+    function dataLama(date) { return !!date && date < hariIniWIB(); }
+    async function izinDataLama(date, aksi) {
+      if (!dataLama(date)) return true;
+      if (adminTerbuka()) return true;
+      if (Date.now() < izinLamaSampai) return true;
+      if (!appSettings.oldDataPinHash) {
+        await iosDialog({ title: '🔒 Data Terkunci', message: `Transaksi tanggal ${fmtTgl(date)} sudah lewat, jadi tidak bisa diubah atau dihapus. Minta admin membuat sandi di Pengaturan → Admin.`, okText: 'Mengerti', cancelText: 'Tutup' });
+        return false;
+      }
+      const p = await iosPrompt(`Transaksi ${fmtTgl(date)} sudah terkunci. Masukkan sandi untuk ${aksi}:`, { title: '🔒 Data Lama', okText: 'Buka', password: true });
+      if (p === null) return false;
+      if ((await sha256('thaitea-lama:' + p)) !== appSettings.oldDataPinHash) { triggerToast('Sandi salah', true); return false; }
+      izinLamaSampai = Date.now() + 5 * 60 * 1000;
+      logAktivitas('sys', `Membuka kunci data lama (${fmtTgl(date)}) untuk ${aksi}`);
+      return true;
+    }
+    async function aturSandiDataLama() {
+      if (!adminTerbuka()) return;
+      const p1 = await iosPrompt('Buat sandi untuk mengubah/menghapus transaksi lama (4–6 angka):', { title: 'Sandi Data Lama', okText: 'Lanjut', password: true });
+      if (p1 === null) return;
+      if (!/^\d{4,6}$/.test(p1)) { triggerToast('Sandi harus 4–6 angka', true); return; }
+      const p2 = await iosPrompt('Ketik ulang sandi yang sama:', { title: 'Konfirmasi Sandi', okText: 'Simpan', password: true });
+      if (p2 !== p1) { triggerToast('Sandi tidak sama, coba lagi', true); return; }
+      await settingsRef.child('oldDataPinHash').set(await sha256('thaitea-lama:' + p1));
+      triggerToast('Sandi data lama disimpan');
+      logAktivitas('sys', 'Mengatur sandi data lama');
+    }
+    function renderSandiLamaStatus() {
+      const el = document.getElementById('oldPinStatus');
+      if (el) el.textContent = appSettings.oldDataPinHash ? '✅ Sandi sudah dibuat. Berikan ke orang yang boleh mengubah data lama.' : '⚠️ Belum ada sandi: transaksi lama tidak bisa diubah/dihapus siapa pun selain admin.';
+    }
+
     /* ===== UNGGAH FOTO / SUARA (Cloudflare R2 lewat /api/thaitea/upload) ===== */
     async function unggahBerkas(blob, type) {
       const res = await fetch('/api/thaitea/upload', { method: 'POST', headers: { 'Content-Type': type }, body: blob });
@@ -2573,6 +2620,7 @@
       settingsRef.on('value', snap => {
         appSettings = snap.val() || {};
         renderAdminVisibility();
+        renderSandiLamaStatus();
         if (!document.getElementById('tab-admin').classList.contains('hidden')) renderCartoonPickers();
       });
       db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = Number(snap.val()) || 0; });
@@ -2997,8 +3045,8 @@
             <div class="lc-body">${desc}</div>
             ${o.note ? `<div class="lc-note">“${esc(o.note)}”</div>` : ''}
             <div class="lc-actions icons">
-              <button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit" aria-label="Ubah pesanan">${ICON_EDIT}</button>
-              <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
+              <button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit${dataLama(o.date) ? ' locked' : ''}" aria-label="Ubah pesanan">${ICON_EDIT}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
+              <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del${dataLama(o.date) ? ' locked' : ''}" aria-label="Hapus pesanan">${ICON_TRASH}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
             </div>
           `;
           tableBody.appendChild(cell);
@@ -3011,6 +3059,8 @@
 
     /* FITUR RESTORE STOK OTOMATIS SAAT ORDER DIHAPUS */
     async function deleteSingleOrder(orderId) {
+      const cekOrder = ordersList.find(o => o.orderId === orderId);
+      if (cekOrder && !(await izinDataLama(cekOrder.date, 'menghapus pesanan ini'))) return;
       if (!(await iosConfirm('Hapus transaksi ini dari Sistem dan kembalikan stok semula?', { title: 'Hapus Transaksi?', okText: 'Hapus', destructive: true }))) return;
 
       const orderToDel = ordersList.find(o => o.orderId === orderId);
@@ -3062,9 +3112,10 @@
     }
 
     /* EDIT ORDER MODAL */
-    function openEditOrderModal(orderId, fromHistoryTab = false) {
+    async function openEditOrderModal(orderId, fromHistoryTab = false) {
       const order = ordersList.find(o => o.orderId === orderId);
       if (!order) return;
+      if (!(await izinDataLama(order.date, 'mengubah pesanan ini'))) return;
 
       editingOrderId = orderId;
       isEditingFromHistoryTab = fromHistoryTab;
@@ -3456,15 +3507,17 @@
           </div>
           ${e.note ? `<div class="lc-note">${esc(e.note)}</div>` : ''}
           <div class="lc-actions icons">
-            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="icon-act edit" aria-label="Ubah pengeluaran">${ICON_EDIT}</button>
-            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="icon-act del" aria-label="Hapus pengeluaran">${ICON_TRASH}</button>
+            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="icon-act edit${dataLama(e.date) ? ' locked' : ''}" aria-label="Ubah pengeluaran">${ICON_EDIT}${dataLama(e.date) ? LOCK_BADGE : ''}</button>
+            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="icon-act del${dataLama(e.date) ? ' locked' : ''}" aria-label="Hapus pengeluaran">${ICON_TRASH}${dataLama(e.date) ? LOCK_BADGE : ''}</button>
           </div>
         `;
         tbody.appendChild(cell);
       });
     }
 
-    function openEditExpenseModal(id, isAsset = false) {
+    async function openEditExpenseModal(id, isAsset = false) {
+      const cekExp = isAsset ? assetsList.find(a => a.assetId === id) : expensesList.find(e => e.expenseId === id);
+      if (cekExp && !(await izinDataLama(cekExp.date, 'mengubah pengeluaran ini'))) return;
       editingExpenseId = id;
       editingExpenseIsAsset = isAsset;
 
@@ -3559,6 +3612,8 @@
     }
 
     async function deleteSingleExpense(expId, isAsset = false) {
+      const cekDel = isAsset ? assetsList.find(a => a.assetId === expId) : expensesList.find(e => e.expenseId === expId);
+      if (cekDel && !(await izinDataLama(cekDel.date, 'menghapus pengeluaran ini'))) return;
       if (!(await iosConfirm('Hapus catatan pengeluaran ini dari Sistem?', { title: 'Hapus Pengeluaran?', okText: 'Hapus', destructive: true }))) return;
       const ref = isAsset ? assetsRef : expensesRef;
       const expDel = isAsset ? assetsList.find(a => a.assetId === expId) : expensesList.find(e => e.expenseId === expId);
@@ -3907,8 +3962,8 @@
           </div>
           <div class="lc-body">${esc(detailStr)}</div>
           <div class="lc-actions icons">
-            <button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit" aria-label="Ubah pesanan / free drink">${ICON_EDIT}</button>
-            <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
+            <button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit${dataLama(o.date) ? ' locked' : ''}" aria-label="Ubah pesanan / free drink">${ICON_EDIT}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
+            <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del${dataLama(o.date) ? ' locked' : ''}" aria-label="Hapus pesanan">${ICON_TRASH}${dataLama(o.date) ? LOCK_BADGE : ''}</button>
           </div>
         `;
         tbody.appendChild(cell);
