@@ -19,10 +19,15 @@
   ],
   // === NEXO GAMES: server realtime (chat + game) — Durable Object SQLite, termasuk paket gratis ===
   "durable_objects": {
-    "bindings": [{ "name": "NEXO", "class_name": "NexoHub" }]
+    "bindings": [
+      { "name": "NEXO", "class_name": "NexoHub" },
+      // === STARDOM: private AI social universe (SQLite database + background simulation alarm) ===
+      { "name": "STARDOM", "class_name": "StardomHub" }
+    ]
   },
   "migrations": [
-    { "tag": "nexo-v1", "new_sqlite_classes": ["NexoHub"] }
+    { "tag": "nexo-v1", "new_sqlite_classes": ["NexoHub"] },
+    { "tag": "stardom-v1", "new_sqlite_classes": ["StardomHub"] }
   ],
   "vars": {
     "FIREBASE_PROJECT_ID": "web-hadzmi-new"

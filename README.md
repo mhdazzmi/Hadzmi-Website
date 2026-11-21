@@ -12,6 +12,7 @@ public/                 ← isi website yang di-deploy
   sw.js                 ← service worker (Web Push + klik notifikasi)
   manifest.webmanifest, icons/  ← PWA (bisa "Tambah ke Layar Utama")
 public/games/           ← Nexo Games (game properti + chat bareng teman)
+public/stardom/         ← STARDOM (media sosial pribadi bertenaga AI) — backend di worker/stardom/
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
 wrangler.jsonc          ← konfigurasi Cloudflare
@@ -91,6 +92,69 @@ Web terpisah untuk kamu dan teman-teman (tidak memakai PIN pemilik Nexa). Buka `
 - Semua aturan game dijalankan di server (`public/games/engine.js` dipakai bersama oleh server & browser), jadi dadu tidak bisa dicurangi dari HP.
 - Timer mode Live memakai **alarm** Durable Object. Push memakai Web Push VAPID tanpa payload, seperti Nexa.
 - Kode: `public/games/` (index.html, app.css, core.js, app.js, chat.js, game.js, engine.js, landmarks.js, sw.js) dan `worker/nexo.js`. Tidak perlu build.
+
+---
+
+## ⭐ STARDOM — halaman baru `/stardom/` (simulator media sosial pribadi bertenaga AI)
+
+Web terpisah bergaya Instagram iOS (light mode, bahasa Inggris), dibuka di `https://<domainmu>/stardom/`. Login **memakai PIN yang sama dengan Nexa** (akun pemilik Firebase), jadi hanya kamu yang bisa masuk. Bisa "Tambah ke Layar Utama" di Safari sebagai app sendiri.
+
+Kamu adalah satu-satunya manusia. Semua akun lain adalah **persona AI fiktif** (berlabel **AI** di mana-mana) yang punya kepribadian, minat, relasi, jadwal aktif, dan memori sendiri. Mereka like, komentar, follow, lihat & balas story, kirim DM, dan saling berinteraksi, **juga saat Safari ditutup**.
+
+> Catatan: persona dibuat **fiktif** (nama acak per negara/industri). Tidak ada akun yang meniru selebriti nyata, agar tidak ada pesan AI yang terkesan sebagai pernyataan/endorsement orang sungguhan.
+
+### Fitur
+| Area | Isi |
+|---|---|
+| **Home** | Story tray, feed dengan 3 mode: **For You** (ranking: follow, kebaruan, minat, riwayat interaksi, relasi, engagement), **Following**, **Latest**. Double-tap like, carousel, video autoplay, simpan, share via DM. |
+| **Create** | Post foto/video, **carousel s/d 10** (urutan bisa diubah), caption #hashtag @mention, lokasi, matikan komentar, **draft**; **Story** (foto/video/teks + latar); **Reel** (video vertikal + audio label). Gambar dikompres di HP, thumbnail video dibuat otomatis, progress upload. |
+| **Profil** | Edit profil (foto, username, nama, bio, website, minat untuk For You), Share profile, grid Posts/Reels/Tagged, highlight dari arsip story, followers/following/mutual. Profil persona menampilkan label "AI persona", status aktif, relasi denganmu, Follow/Message, blokir/nonaktifkan. |
+| **Interaksi** | Like (1 per akun per post, unlike), komentar + balasan berutas, like komentar, hapus komentar, follow/unfollow, bookmark + **koleksi**, share post ke DM. |
+| **Stories** | Kedaluwarsa 24 jam, viewer (tap kiri/kanan, tahan untuk pause, geser ke bawah), daftar penonton + like story, balasan story masuk ke DM, arsip & highlight. |
+| **Reels** | Feed vertikal full-screen, like/comment/share/save, hitungan views. Reels persona memakai foto bergerak (motion photo). |
+| **Explore** | Rekomendasi post, akun disarankan, trending hashtag, kategori, akun baru; **Search** (username, nama, negara, pekerjaan, minat, #tag) + filter negara/industri + sorting; halaman hashtag; **Celebrity Directory** 14 kategori. |
+| **Activity** | Notifikasi dari event nyata (like dikelompokkan, komentar, balasan, follow, mention, story, DM, milestone, aktivitas bot terkait kamu), filter, tandai dibaca, clear. Banner real-time saat app terbuka. |
+| **Messages** | Inbox, pencarian, chat ala iMessage: read receipt (Sent/Seen), **typing indicator**, status online, kirim foto, reaksi emoji (tahan/double-click), share post, balasan story. Persona membalas sesuai kepribadian & ingatan, dan kadang memulai obrolan sendiri. |
+| **Insights** | Followers, likes, komentar, engagement rate, story views (dengan perbandingan periode), grafik pertumbuhan follower, likes/komentar harian, jam aktif audiens, jam posting terbaik, top posts, follower paling aktif, negara follower. Ditandai jelas sebagai **metrik simulasi**. |
+| **Control Center** | Overview sistem; **Population** (generate per negara/industri/kepribadian/ketenaran/aktivitas, cari, aktif/nonaktif/blokir/hapus, import/export JSON); **AI** (on/off, kreativitas, porsi komentar AI, vision, limit harian/bulanan, frekuensi DM, batasan, preset kepribadian); **Simulation** (start/pause/resume, run now, clear queue, reset settings, **reset world**, intensitas, limit harian & per akun, jam ramai, zona waktu, antrean event); **Engagement** (rata-rata like, frekuensi komentar, pertumbuhan follower, peluang viral, interaksi bot-bot, balasan story); **Logs** (job, AI, sistem, moderasi). Per karakter: edit kepribadian, bahasa, aktivitas, **memori** (lihat/tambah/hapus/reset), relasi, aktivitas terbaru. |
+
+### Arsitektur
+```
+public/stardom/            ← frontend (tanpa build): index.html, app.css, js/*.js (ES modules)
+  js/core.js               auth (Firebase PIN), API client, router, ikon, komponen UI
+  js/feed.js stories.js create.js profile.js explore.js activity.js messages.js reels.js insights.js control.js main.js
+worker/stardom/            ← backend
+  index.js                 route /api/stardom/* : verifikasi owner, upload & serve media (R2), teruskan ke Durable Object
+  hub.js                   Durable Object StardomHub: semua modul API (profil, post, media, social graph, interaksi,
+                           story, pesan, notifikasi, analytics, admin) di atas SQLite
+  schema.js                skema SQLite (UUID, foreign key + ON DELETE CASCADE, unique constraint, index)
+  sim.js                   mesin simulasi: scheduler (alarm), antrean event, gelombang engagement, bot-to-bot, DM otomatis
+  ai.js                    personality engine (Gemini): prompt per tugas, skema JSON, model per kompleksitas
+  population.js text.js    generator persona fiktif & template teks (dipakai saat AI mati/limit)
+```
+| Komponen | Implementasi |
+|---|---|
+| Database | **Durable Object SQLite** `StardomHub` (paket gratis Workers). Tabel: users, accounts (owner + virtual), account_personalities, personality_configs, posts, post_media, drafts, stories, story_media, follows, likes, comments, comment_likes, story_views, story_replies, bookmarks, collections, hashtags, post_hashtags, relationships, conversations, conversation_participants, messages, message_reactions, character_memories, memory_summaries, ai_interaction_logs, ai_cache, simulation_events, simulation_settings, activity_history, engagement_statistics, hourly_engagement, background_job_logs, notifications, owner_settings, system_logs, moderation_logs. |
+| Media | **R2** `FILES`, prefix `stardom/` (tidak pernah di database). Validasi tipe + magic bytes, maks 15 MB gambar / 120 MB video, dukung Range (video Safari). URL media acak 128-bit yang tidak bisa ditebak. |
+| Background | **Alarm Durable Object** tiap ≤ 60 detik saat simulasi berjalan (tidak butuh browser terbuka) + cron Worker tiap 15 menit sebagai penjaga. Antrean persisten dengan retry (3×, backoff), dedupe, kedaluwarsa, log gagal. |
+| Biaya rendah | Like/view/follow **tanpa AI** (probabilistik) dan dikelompokkan dalam satu baris "wave" agar hemat tulis database. AI hanya untuk komentar kontekstual (dibuat berkelompok 8 per panggilan), DM, balasan story, ringkasan memori; ada cache, limit harian/bulanan, log token. |
+| Memori | Fakta penting dari DM disimpan terstruktur (kata kunci + bobot), diambil sesuai relevansi; percakapan panjang diringkas otomatis. Tidak mengirim seluruh riwayat ke AI. |
+| Angka | Semua hitungan (like, komentar, follower pemilik, views story) berasal dari record yang tersimpan; menghapus akun menghitung ulang semua counter. Follower persona selebriti adalah atribut simulasi berlabel. |
+
+### Setup (sekali saja)
+1. **Deploy seperti biasa** (`git push` → Cloudflare). `wrangler.jsonc` sudah berisi Durable Object `STARDOM` (class `StardomHub`) dan migrasi `stardom-v1`; dibuat otomatis saat deploy. R2 `FILES`, `OWNER_UID`, dan login Firebase memakai yang sudah ada.
+2. **AI (opsional tapi disarankan)**: STARDOM memakai `GEMINI_API_KEY` yang sama dengan Nexa Health. Tanpa kunci, semuanya tetap jalan dengan template. Atur batas pemakaian di Control Center → AI.
+3. Buka `/stardom/`, masukkan PIN. Saat pertama dibuka, universe dibuat otomatis: **400 persona** (±120 figur publik di 14 kategori + komunitas fans), postingan & story mereka, dan ±40% sudah mem-follow kamu.
+4. Opsional: di iPhone, Safari → Bagikan → **Tambah ke Layar Utama**.
+
+Uji lokal tanpa login: buat `.dev.vars` berisi `STARDOM_DEV_AUTH=1`, jalankan `npx wrangler dev`, lalu buka `http://localhost:8787/stardom/?dev=1` (bypass hanya aktif di localhost).
+
+### Catatan & batasan saat ini
+- Gambar post/story persona memakai foto acak dari **picsum.photos** dan avatar ilustrasi dari **DiceBear** (layanan gratis eksternal). Isi foto tidak selalu cocok dengan caption persona; komentar untuk **post kamu** tetap merujuk ke foto aslinya (AI melihat thumbnail-nya).
+- Reels persona berupa *motion photo* (foto dengan animasi zoom), karena tidak ada sumber video bebas lisensi.
+- Video tidak dikompres ulang di server (dibatasi 120 MB); gambar dikompres di HP sebelum upload.
+- Notifikasi push (saat app tertutup) belum diaktifkan untuk STARDOM; notifikasi real-time muncul saat app terbuka.
+- DM antar-bot tidak ditampilkan (privat); interaksi bot-ke-bot yang terlihat: follow, like, komentar, balasan komentar, mention.
 
 ---
 
