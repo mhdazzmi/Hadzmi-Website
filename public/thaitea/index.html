@@ -623,7 +623,7 @@
                   </div>
                 </div>
 
-                <div class="grid-2 field">
+                <div class="grid-2 field" id="expenseQtyUnitBox">
                   <label>
                     <span class="field-label">Jumlah / Berat</span>
                     <input type="number" inputmode="decimal" id="expenseQty" placeholder="Cth: 1000" class="input">
@@ -1045,7 +1045,7 @@
               <span class="field-label">Keperluan / Nama Barang</span>
               <input type="text" id="editExpenseTitle" class="input">
             </label>
-            <div class="grid-2 field">
+            <div class="grid-2 field" id="editExpenseQtyUnitBox">
               <label>
                 <span class="field-label">Jumlah / Berat</span>
                 <input type="number" inputmode="decimal" id="editExpenseQty" placeholder="Cth: 1000" class="input">
@@ -2035,9 +2035,14 @@
 
       if (isQuick) {
         box.classList.add('is-disabled');
+        // Total belanja saja: sembunyikan jumlah/berat & satuan (dikosongkan supaya tidak menambah stok)
+        document.getElementById('expenseQtyUnitBox').classList.add('hidden');
+        document.getElementById('expenseQty').value = '';
+        document.getElementById('expenseUnit').value = 'Operasional/Tanpa Stok';
         itemInput.value = 'Belanja Bahan Baku (Borongan)';
       } else {
         box.classList.remove('is-disabled');
+        document.getElementById('expenseQtyUnitBox').classList.remove('hidden');
         itemInput.value = '';
       }
     }
@@ -2263,6 +2268,8 @@
 
       document.getElementById('editExpenseQty').value = target.qty !== undefined ? target.qty : '';
       document.getElementById('editExpenseUnit').value = target.unit || (isAsset ? 'Aset' : 'Operasional/Tanpa Stok');
+      // Catatan "Total Belanja Saja": kolom jumlah/berat & satuan disembunyikan juga saat diedit
+      document.getElementById('editExpenseQtyUnitBox').classList.toggle('hidden', !!target.isQuick);
 
       openSheet('editExpenseModal');
     }
