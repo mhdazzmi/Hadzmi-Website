@@ -682,7 +682,7 @@
               </div>
               <p class="card-sub" id="expenseDateLabel" style="margin:8px 2px 0;font-weight:600">Hari Ini</p>
               <div style="display:flex;gap:10px;margin-top:10px">
-                <button type="button" onclick="setExpenseDay(new Date().toISOString().split('T')[0])" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
+                <button type="button" onclick="setExpenseDay(hariIniWIB())" class="btn btn-tinted btn-sm" style="flex:1">Hari Ini</button>
                 <button type="button" onclick="resetExpenseFilter()" class="btn btn-gray btn-sm" style="flex:1">Semua Tanggal</button>
               </div>
               <div style="display:flex;gap:10px;margin-top:12px">
@@ -1418,9 +1418,46 @@
       document.getElementById('cartCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+
+    /* ===== HARI JUALAN (WIB, ganti hari jam 02.00) =====
+       Jam 00.00–01.59 WIB masih dihitung hari sebelumnya; tepat 02.00 WIB pindah ke hari baru.
+       Pakai jam internet absolut + 7 jam, jadi tetap benar walau zona waktu HP salah. */
+    const GANTI_HARI_JAM = 2;
+    function hariIniWIB() {
+      return new Date(Date.now() + (7 - GANTI_HARI_JAM) * 3600 * 1000).toISOString().split('T')[0];
+    }
+    function tanggalPanjang(iso) {
+      return new Date(iso + 'T12:00:00Z').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+    }
+    // Cek tiap 30 detik (dan saat aplikasi dibuka lagi): kalau sudah lewat 02.00 WIB, semua tampilan pindah ke hari baru
+    let hariAktif = null;
+    function cekGantiHari() {
+      const baru = hariIniWIB();
+      if (hariAktif === null) { hariAktif = baru; return; }
+      if (baru === hariAktif) return;
+      const lama = hariAktif;
+      hariAktif = baru;
+      ['orderStartDate', 'orderEndDate', 'orderInputDate', 'expenseDate', 'assetDate', 'historyDate', 'expenseStartDate', 'expenseEndDate'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value === lama) el.value = baru;
+      });
+      document.getElementById('currentDateHeader').textContent = tanggalPanjang(baru);
+      updateDailyOrdersView();
+      renderExpensesList();
+      updateExpenseSummaries();
+      if (!document.getElementById('tab-analisis').classList.contains('hidden')) calculateAndRenderAnalytics();
+      if (!document.getElementById('tab-riwayat').classList.contains('hidden')) renderFullHistoryTable();
+      triggerToast(`Hari baru: ${fmtTgl(baru)}`);
+    }
+    setInterval(cekGantiHari, 30000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') cekGantiHari(); });
+    window.addEventListener('focus', cekGantiHari);
+    window.addEventListener('pageshow', cekGantiHari);
+
     /* 3. INISIALISASI HALAMAN & LISTENERS */
     window.addEventListener('DOMContentLoaded', () => {
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = hariIniWIB();
+      hariAktif = todayISO;
 
       document.getElementById('orderStartDate').value = todayISO;
       document.getElementById('orderEndDate').value = todayISO;
@@ -1432,7 +1469,7 @@
       document.getElementById('expenseEndDate').value = todayISO;
 
       const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById('currentDateHeader').textContent = new Date().toLocaleDateString('id-ID', dateOpts);
+      document.getElementById('currentDateHeader').textContent = tanggalPanjang(todayISO);
 
       // Garis tipis navbar saat discroll (ala iOS)
       const root = document.getElementById('thaiTeaAppRoot');
@@ -1486,7 +1523,7 @@
     });
 
     function resetFilterDateToToday() {
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = hariIniWIB();
       document.getElementById('orderStartDate').value = todayISO;
       document.getElementById('orderEndDate').value = todayISO;
       updateDailyOrdersView();
@@ -1724,7 +1761,7 @@
         return;
       }
 
-      const recDate = document.getElementById('orderInputDate').value || new Date().toISOString().split('T')[0];
+      const recDate = document.getElementById('orderInputDate').value || hariIniWIB();
       const totalCups = cartItems.reduce((acc, c) => acc + c.qty, 0);
       const totalPrice = cartItems.reduce((acc, c) => acc + c.total, 0);
       const payMethod = document.getElementById('paymentMethod').value;
@@ -2209,7 +2246,7 @@
       renderExpensesList();
     }
     function shiftExpenseDate(days) {
-      const base = document.getElementById('expenseStartDate').value || new Date().toISOString().split('T')[0];
+      const base = document.getElementById('expenseStartDate').value || hariIniWIB();
       const d = new Date(base + 'T00:00:00Z');
       d.setUTCDate(d.getUTCDate() + days);
       setExpenseDay(d.toISOString().split('T')[0]);
@@ -2250,7 +2287,7 @@
         });
       }
 
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = hariIniWIB();
       const dayLabel = (!startF && !endF) ? 'Semua Tanggal'
         : (startF === endF ? (startF === todayISO ? `Hari Ini · ${fmtTgl(startF)}` : fmtTgl(startF))
         : `${fmtTgl(startF).slice(0, 6)} – ${fmtTgl(endF)}`);
@@ -2357,7 +2394,7 @@
     }
 
     function updateExpenseSummaries() {
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = hariIniWIB();
       const curMonth = todayISO.substring(0, 7);
 
       let dayExp = 0, monthExp = 0, totalExp = 0;
@@ -2410,7 +2447,7 @@
     }
 
     function filterByPeriod(arr, period) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = hariIniWIB();
       const monthPrefix = today.substring(0, 7);
 
       if (period === 'today') return arr.filter(x => x.date === today);
@@ -2657,7 +2694,7 @@
 
     // Tab Riwayat: default hanya hari ini, bisa pilih tanggal lain
     function setHistoryToday() {
-      document.getElementById('historyDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('historyDate').value = hariIniWIB();
       filterHistoryTable();
     }
     function setHistoryAllDates() {
@@ -2666,7 +2703,7 @@
     }
     function shiftHistoryDate(days) {
       const inp = document.getElementById('historyDate');
-      const base = inp.value || new Date().toISOString().split('T')[0];
+      const base = inp.value || hariIniWIB();
       const d = new Date(base + 'T00:00:00Z');
       d.setUTCDate(d.getUTCDate() + days);
       inp.value = d.toISOString().split('T')[0];
@@ -2677,7 +2714,7 @@
       const tbody = document.getElementById('allHistoryTableBody');
       tbody.innerHTML = '';
 
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = hariIniWIB();
       const pickedDate = document.getElementById('historyDate').value;
       document.getElementById('historyDateLabel').textContent = !pickedDate ? 'Semua Tanggal' : (pickedDate === todayISO ? `Hari Ini · ${fmtTgl(pickedDate)}` : fmtTgl(pickedDate));
 
@@ -2734,7 +2771,7 @@
       });
       const link = document.createElement('a');
       link.href = encodeURI(csv);
-      link.download = `Laporan_ThaiTea_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `Laporan_ThaiTea_${hariIniWIB()}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -2745,7 +2782,7 @@
       const dataObj = { app: 'ThaiTea_POS', date: new Date().toISOString(), orders: ordersList, expenses: expensesList, assets: assetsList, inventory: inventoryData };
       const link = document.createElement('a');
       link.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
-      link.download = `Backup_ThaiTea_${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `Backup_ThaiTea_${hariIniWIB()}.json`;
       document.body.appendChild(link);
       link.click();
       link.remove();
