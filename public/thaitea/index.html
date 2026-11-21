@@ -394,7 +394,12 @@
     .nav-icon:active { opacity: .6; }
     .offline-banner { background: var(--red); color: #fff; font-size: 14px; font-weight: 700; text-align: center; padding: 8px 16px; }
     .back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 17px; font-weight: 600; min-height: 44px; padding: 0 4px; margin-top: 4px; }
-    .narrow { max-width: 680px; }
+    .narrow { max-width: 760px; margin-left: auto; margin-right: auto; }
+    @media (min-width: 900px) {
+      .riwayat-split { max-width: none; display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px; align-items: start; }
+      .riwayat-split > .card { position: sticky; top: 84px; }
+      .riwayat-split > .list { margin-top: 0 !important; }
+    }
     .divider { height: .5px; background: var(--sep); margin: 14px 0; }
     .who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .who-btn { min-height: 84px; border-radius: 18px; background: #fff; font-size: 22px; font-weight: 800; box-shadow: var(--shadow); }
@@ -911,7 +916,7 @@
         <h1 class="large-title">Riwayat</h1>
         <p class="page-sub">Transaksi per tanggal. Geser ‹ › untuk ganti hari.</p>
 
-        <div class="narrow">
+        <div class="narrow riwayat-split">
           <div class="card">
             <span class="field-label">Tanggal Transaksi</span>
             <div class="day-nav">
