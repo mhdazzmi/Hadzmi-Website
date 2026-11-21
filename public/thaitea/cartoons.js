@@ -55,7 +55,7 @@
       boba +
       `<path d="M${cx - tw - 6 * k} ${y0} Q${cx - tw - 6 * k} ${top - 4 * k} ${cx} ${top - 6 * k} Q${cx + tw + 6 * k} ${top - 4 * k} ${cx + tw + 6 * k} ${y0} Z" fill="#fff" ${SW}/>` +
       `<rect x="${cx - tw - 9 * k}" y="${y0 - 3 * k}" width="${(tw + 9 * k) * 2}" height="${9 * k}" rx="${4.5 * k}" fill="#fff" ${SW}/>` +
-      face(cx, y0 + 46 * k, k, mood);
+      (opts.noFace ? '' : face(cx, y0 + 46 * k, k, mood));
   }
   function arm(x1, y1, x2, y2) { return `<path d="M${x1} ${y1} Q${(x1 + x2) / 2} ${Math.min(y1, y2) - 8} ${x2} ${y2}" fill="none" stroke="${O}" stroke-width="6" stroke-linecap="round"/>`; }
   function hand(x, y) { return `<circle cx="${x}" cy="${y}" r="7" fill="${CREAM}" ${SW}/>`; }
@@ -120,5 +120,8 @@
     svg(bg() + note(52, 40, 96, 52, -8) + `<rect x="32" y="70" width="136" height="92" rx="12" fill="#fff" ${SW}/><path d="M32 78 l68 46 l68 -46" fill="none" ${SW}/>` + coin(100, 132, 16))
   ];
 
-  window.TT_CARTOONS = { order, expense };
+  // Logo "Chat Semua": gelas thai tea tanpa wajah
+  const chatLogo = svg(`<circle cx="100" cy="100" r="100" fill="#FFE7C9"/>` + cup(100, 46, 1.05, 'smile', { noFace: true }));
+
+  window.TT_CARTOONS = { order, expense, chatLogo };
 })();

@@ -409,6 +409,8 @@
     /* ---------- AVATAR / PROFIL ---------- */
     .ava { width: 42px; height: 42px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 17px; background: #C7C7CC center/cover no-repeat; position: relative; }
     .ava-lg { width: 72px; height: 72px; font-size: 30px; }
+    .ava-logo { background: #FFE7C9; overflow: hidden; }
+    .ava-logo svg { width: 100%; height: 100%; }
     .ava .on-dot { position: absolute; right: -1px; bottom: -1px; width: 13px; height: 13px; border-radius: 50%; background: #34C759; border: 2.5px solid #fff; }
     .profile-ava { position: relative; cursor: pointer; flex: none; }
     .profile-cam { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; }
@@ -2005,9 +2007,12 @@
 
     /* ===== POP-UP BERHASIL ===== */
     let appSettings = {};
+    // Pilihan default: pesanan No. 1, pengeluaran No. 4 (bisa diganti di Admin)
+    const DEFAULT_KARTUN = { order: 0, expense: 3 };
     function tampilkanSukses(jenis, detail) {
       const lib = window.TT_CARTOONS || { order: [], expense: [] };
-      const idx = Number(jenis === 'order' ? appSettings.cartoonOrder : appSettings.cartoonExpense) || 0;
+      const pilih = jenis === 'order' ? appSettings.cartoonOrder : appSettings.cartoonExpense;
+      const idx = (pilih === undefined || pilih === null) ? DEFAULT_KARTUN[jenis] : (Number(pilih) || 0);
       const arr = lib[jenis] || [];
       document.getElementById('spArt').innerHTML = arr[idx] || arr[0] || '';
       document.getElementById('spTitle').textContent = jenis === 'order' ? 'Pesanan Sudah Ditambahkan ke Sistem' : 'Pengeluaran Sudah Ditambahkan ke Sistem';
@@ -2028,7 +2033,7 @@
       [['order', 'cartoonPickOrder', 'cartoonOrder'], ['expense', 'cartoonPickExpense', 'cartoonExpense']].forEach(([jenis, boxId, key]) => {
         const box = document.getElementById(boxId);
         if (!box) return;
-        const cur = Number(appSettings[key]) || 0;
+        const cur = (appSettings[key] === undefined || appSettings[key] === null) ? DEFAULT_KARTUN[jenis] : (Number(appSettings[key]) || 0);
         box.innerHTML = lib[jenis].map((svg, i) => `<button type="button" class="${i === cur ? 'active' : ''}" onclick="pilihKartun('${key}', ${i})"><span>${i + 1}</span>${svg}</button>`).join('');
       });
     }
@@ -2288,6 +2293,7 @@
       if (!myKey) return;
       Object.keys(usersData).forEach(k => { if (k !== myKey && usersData[k] && usersData[k].name) dengarRoom(roomIdWith(k)); });
     }
+    function chatLogoSvg() { return (window.TT_CARTOONS && window.TT_CARTOONS.chatLogo) || '🧋'; }
     function previewPesan(m) {
       if (!m) return '';
       if (m.type === 'image') return '📷 Foto';
@@ -2304,7 +2310,7 @@
       const lastAll = allMsgs[allMsgs.length - 1];
       const onlineCount = Object.keys(usersData).filter(isOnline).length;
       rows.push({ room: ROOM_ALL, ts: Infinity, html: `<button type="button" class="room-row" onclick="bukaChat('${ROOM_ALL}')">
-          <span class="ava" style="background:linear-gradient(145deg,#FF9F43,#E25C00)">👨‍👩‍👧</span>
+          <span class="ava ava-logo">${chatLogoSvg()}</span>
           <div class="room-main"><div class="room-top"><span class="room-name">Chat Semua</span><span class="room-time">${lastAll ? jamWIB(lastAll.ts) : ''}</span></div>
           <div class="room-bottom"><span class="room-last">${lastAll ? esc(lastAll.name + ': ' + previewPesan(lastAll)) : esc(onlineCount + ' orang online')}</span>${unreadCount(ROOM_ALL) ? `<span class="room-unread">${unreadCount(ROOM_ALL)}</span>` : ''}</div></div></button>` });
       Object.entries(usersData).filter(([k, u]) => k !== myKey && u && u.name).forEach(([k, u]) => {
@@ -2328,7 +2334,7 @@
         const on = Object.entries(usersData).filter(([k]) => isOnline(k)).map(([, u]) => u.name);
         stEl.textContent = on.length ? `Online: ${on.join(', ')}` : 'Belum ada yang online';
         stEl.classList.toggle('on', on.length > 0);
-        avaEl.outerHTML = `<span id="chatHeadAva" class="ava" style="background:linear-gradient(145deg,#FF9F43,#E25C00)">👨‍👩‍👧</span>`;
+        avaEl.outerHTML = `<span id="chatHeadAva" class="ava ava-logo">${chatLogoSvg()}</span>`;
       } else {
         const k = otherOfRoom(currentRoom), u = usersData[k] || {};
         nameEl.textContent = u.name || k;
