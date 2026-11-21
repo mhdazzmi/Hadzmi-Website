@@ -230,7 +230,7 @@ function renderKasData() {
   const filtered = getFilteredKas();
   filtered.forEach(k => { if (k.jenis === 'Lebih') totalLebih += k.jumlah; else totalKurang += k.jumlah; });
   list.innerHTML = filtered.length === 0
-    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan plus minus${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
+    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan ledger${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
     : filtered.map(k => {
       const plus = k.jenis === 'Lebih';
       return `<div class="row">

@@ -1106,8 +1106,8 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-focus', 'Focus')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5856D6,#AF52DE)"><i class="fas fa-moon"></i></span><span class="app-label" data-label="hub.focus">Focus</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-hub', 'sub-wallet', 'Wallet')"><span class="icon-tile" style="background:linear-gradient(160deg,#1C1C1E,#3A3A3C)"><i class="fas fa-wallet"></i></span><span class="app-label" data-label="hub.wallet">Wallet</span></button>
               <a class="app-icon" href="healthcare/" style="color:inherit"><span class="icon-tile" style="background:linear-gradient(145deg,#34C759,#00C7BE)"><i class="fas fa-leaf"></i></span><span class="app-label">Nexa Health</span></a>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Foto Bukti')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Foto Bukti</span></button>
-              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Plus Minus')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Plus Minus</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-photos', 'Bukas')"><span class="icon-tile bg-orange"><i class="fas fa-camera"></i></span><span class="app-label" data-label="work.photos">Bukas</span></button>
+              <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-kas', 'Ledger')"><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span><span class="app-label" data-label="work.kas">Ledger</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-worknotes', 'Catatan Kerja')"><span class="icon-tile bg-brown"><i class="fas fa-clipboard"></i></span><span class="app-label" data-label="work.notes">Catatan Kerja</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-docs', 'Gudang File')"><span class="icon-tile bg-indigo" style="background:linear-gradient(135deg,#5E5CE6,#30B0C7)"><i class="fas fa-box-archive"></i></span><span class="app-label" data-label="work.docs">Gudang File</span></button>
               <button class="app-icon" onclick="navigateFromQuickMenu('tab-workfin', 'sub-upload', 'Upload Drive')"><span class="icon-tile bg-green" style="background:linear-gradient(135deg,#34A853,#4285F4)"><i class="fab fa-google-drive"></i></span><span class="app-label" data-label="work.upload">Upload Drive</span></button>
@@ -1132,7 +1132,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do')" style="text-align:left"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div><div class="num" id="dashStatTasks">0</div><div class="lbl">Tugas Pending</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-todo','To-Do'); taSetFilter('today')" style="text-align:left"><span class="icon-tile bg-purple"><i class="fas fa-calendar-day"></i></span><div><div class="num" id="dashStatAgendaToday">0</div><div class="lbl">Agenda Hari Ini</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-hub','sub-notes','Mind Dump')" style="text-align:left"><span class="icon-tile bg-yellow"><i class="fas fa-note-sticky"></i></span><div><div class="num" id="dashStatNotes">0</div><div class="lbl">Catatan</div></div></button>
-          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Plus Minus')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Plus Minus</div></div></button>
+          <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-kas','Ledger')" style="text-align:left"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div><div class="num sm" id="dashStatKas">Rp 0</div><div class="lbl">Net Ledger</div></div></button>
           <button class="stat" onclick="navigateFromQuickMenu('tab-workfin','sub-focus','Focus')" style="text-align:left"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div><div class="num sm" id="dashStatFocusTime">0 mins</div><div class="lbl">Total Fokus</div></div></button>
         </div>
 
@@ -1471,11 +1471,11 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
 
       <!-- ================= 4. KERJA ================= -->
       <section id="tab-workfin" class="tab-content hidden" data-title="Kerja">
-        <div class="page-head"><div><div class="page-eyebrow" data-label="work.space">Work Space</div><h1 class="t-large" id="workTitle">Foto Bukti</h1></div></div>
+        <div class="page-head"><div><div class="page-eyebrow" data-label="work.space">Work Space</div><h1 class="t-large" id="workTitle">Bukas</h1></div></div>
         <div class="subnav">
           <div class="seg lg scroll no-scrollbar">
-            <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos" class="active" data-label="work.photos">Foto Bukti</button>
-            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" data-label="work.kas">Plus Minus</button>
+            <button onclick="switchWorkFinSubTab('sub-photos')" id="btn-sub-photos" class="active" data-label="work.photos">Bukas</button>
+            <button onclick="switchWorkFinSubTab('sub-kas')" id="btn-sub-kas" data-label="work.kas">Ledger</button>
             <button onclick="switchWorkFinSubTab('sub-worknotes')" id="btn-sub-worknotes" data-label="work.notes">Catatan Kerja</button>
             <button onclick="switchWorkFinSubTab('sub-docs')" id="btn-sub-docs" data-label="work.docs">Gudang File</button>
             <button onclick="switchWorkFinSubTab('sub-upload')" id="btn-sub-upload" data-label="work.upload">Upload Drive</button>
@@ -1483,7 +1483,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
         </div>
 
-        <!-- Foto Bukti -->
+        <!-- Bukas -->
         <div id="sub-photos" class="workfin-sub-content stack-16">
           <input type="file" id="photoCameraInput" accept="image/*" capture="environment" class="hidden" onchange="onPhotosPicked(event)">
           <input type="file" id="photoGalleryInput" accept="image/*" multiple class="hidden" onchange="onPhotosPicked(event)">
@@ -1507,7 +1507,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           </div>
         </div>
 
-        <!-- Plus Minus -->
+        <!-- Ledger -->
         <div id="sub-kas" class="workfin-sub-content hidden stack-16">
           <div class="sum-tiles">
             <div class="sum-tile tint-green"><div class="s-l">Total Plus</div><div class="s-v" id="kasTotalLebih">Rp 0</div></div>
@@ -1517,7 +1517,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
           <div class="split">
             <div class="stack-16">
               <form id="tellerKasForm" onsubmit="saveKasRecord(event)" class="card card-pad stack">
-                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span> Catat Plus Minus</h3></div>
+                <div class="card-head" style="margin:0"><h3><span class="icon-tile bg-mint"><i class="fas fa-scale-unbalanced"></i></span> Catat Ledger</h3></div>
                 <div class="seg lg" id="kasJenisSeg">
                   <button type="button" class="active" data-v="Kurang" onclick="setKasJenis('Kurang')">Minus (−)</button>
                   <button type="button" data-v="Lebih" onclick="setKasJenis('Lebih')">Plus (+)</button>
@@ -1541,7 +1541,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
               </div>
             </div>
             <div>
-              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Plus Minus</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
+              <div class="flex justify-between items-center" style="padding:0 4px 10px"><h2 class="t-title3">Riwayat Ledger</h2><span class="t-foot muted" id="kasCountLabel"></span></div>
               <div id="kasTableBody" class="list inset-icon"></div>
             </div>
           </div>
@@ -1650,7 +1650,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
                 <div class="row"><span class="icon-tile bg-blue"><i class="fas fa-list-check"></i></span><div class="flex-1 row-title">Deadline To-Do</div><label class="switch"><input type="checkbox" data-notif="tasks" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-purple"><i class="fas fa-hourglass-half"></i></span><div class="flex-1 row-title">Event Countdown</div><label class="switch"><input type="checkbox" data-notif="countdowns" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-indigo"><i class="fas fa-stopwatch"></i></span><div class="flex-1 row-title">Focus & Sleep Timer</div><label class="switch"><input type="checkbox" data-notif="focus" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
-                <div class="row"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div class="flex-1"><div class="row-title">Pengingat Plus Minus</div><div class="row-sub">Jam 20:00 jika hari ini belum ada entri</div></div><label class="switch"><input type="checkbox" data-notif="kas" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
+                <div class="row"><span class="icon-tile bg-mint"><i class="fas fa-wallet"></i></span><div class="flex-1"><div class="row-title">Pengingat Ledger</div><div class="row-sub">Jam 20:00 jika hari ini belum ada entri</div></div><label class="switch"><input type="checkbox" data-notif="kas" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-sun"></i></span><div class="flex-1"><div class="row-title">Ringkasan Pagi</div><div class="row-sub">Jumlah agenda hari ini (07:00)</div></div><label class="switch"><input type="checkbox" data-notif="digest" onchange="setNotifPref(this)"><span class="slider"></span></label></div>
                 <div class="row"><span class="icon-tile bg-gray"><i class="fas fa-stopwatch-20"></i></span><div class="flex-1 row-title">Ingatkan sebelum</div>
                   <select class="select" id="notifLeadSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setNotifLead(this.value)">
@@ -1687,7 +1687,7 @@ input[type=date].field, input[type=time].field { min-height: 46px; }
             <div>
               <div class="section-label">Privasi Bukti Foto</div>
               <div class="list inset-icon">
-                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-clock-rotate-left"></i></span><div class="flex-1"><div class="row-title">Hapus otomatis foto lama</div><div class="row-sub">Foto Bukti dihapus setelah umur tertentu</div></div>
+                <div class="row"><span class="icon-tile bg-orange"><i class="fas fa-clock-rotate-left"></i></span><div class="flex-1"><div class="row-title">Hapus otomatis foto lama</div><div class="row-sub">Bukas dihapus setelah umur tertentu</div></div>
                   <select class="select" id="photoRetentionSelect" style="width:auto; padding:8px 30px 8px 12px; font-size:14px" onchange="setPhotoRetention(this.value)">
                     <option value="0">Tidak</option><option value="7">7 hari</option><option value="30">30 hari</option><option value="60">60 hari</option><option value="90">90 hari</option>
                   </select></div>
@@ -2701,7 +2701,7 @@ const LABEL_GROUPS = [
   ['Tab Bawah', [['tab.home', 'Home'], ['tab.music', 'Media'], ['tab.hub', 'Planner'], ['tab.work', 'Kerja'], ['tab.settings', 'Settings']]],
   ['Menu Media', [['media.music', 'Music'], ['media.gallery', 'Galeri']]],
   ['Menu Hub', [['hub.space', 'Productivity', 'Judul kecil Hub'], ['hub.notes', 'Mind Dump'], ['hub.todo', 'To-Do'], ['hub.links', 'Bookmarks'], ['hub.countdown', 'Countdown'], ['hub.focus', 'Focus'], ['hub.wallet', 'Wallet']]],
-  ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Foto Bukti'], ['work.kas', 'Plus Minus'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
+  ['Menu Kerja', [['work.space', 'Work Space', 'Judul kecil Kerja'], ['work.photos', 'Bukas'], ['work.kas', 'Ledger'], ['work.notes', 'Catatan Kerja'], ['work.docs', 'Gudang File'], ['work.upload', 'Upload Drive'], ['work.contacts', 'Kontak WA']]]
 ];
 const LABEL_DEFAULTS = {};
 LABEL_GROUPS.forEach(([, items]) => items.forEach(([k, d]) => { LABEL_DEFAULTS[k] = d; }));
@@ -2827,8 +2827,8 @@ const SEARCH_MAP = [
   { label: 'Countdown', icon: 'fa-hourglass-half', color: 'bg-purple', keys: ['countdown', 'timer', 'event'], action: () => navigateFromQuickMenu('tab-hub', 'sub-countdown') },
   { label: 'Focus & Sleep', icon: 'fa-moon', color: 'bg-indigo', keys: ['focus', 'pomodoro', 'stopwatch', 'sleep', 'tidur'], action: () => navigateFromQuickMenu('tab-hub', 'sub-focus') },
   { label: 'Wallet', icon: 'fa-wallet', color: 'bg-indigo', keys: ['wallet', 'kartu', 'member', 'qr', 'barcode', 'dompet'], action: () => navigateFromQuickMenu('tab-hub', 'sub-wallet') },
-  { key: 'work.kas', label: 'Plus Minus', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['plus', 'minus', 'over', 'short', 'kas', 'cash', 'selisih', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
-  { key: 'work.photos', label: 'Foto Bukti', icon: 'fa-camera', color: 'bg-orange', keys: ['foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
+  { key: 'work.kas', label: 'Ledger', icon: 'fa-scale-unbalanced', color: 'bg-mint', keys: ['ledger', 'plus', 'minus', 'over', 'short', 'kas', 'cash', 'selisih', 'uang'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-kas') },
+  { key: 'work.photos', label: 'Bukas', icon: 'fa-camera', color: 'bg-orange', keys: ['bukas', 'foto', 'photo', 'ktp', 'bukti', 'nasabah', 'galeri'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-photos') },
   { key: 'work.notes', label: 'Catatan Kerja', icon: 'fa-clipboard', color: 'bg-brown', keys: ['kerja', 'catatan kerja', 'work'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-worknotes') },
   { key: 'work.docs', label: 'Gudang File', icon: 'fa-box-archive', color: 'bg-indigo', keys: ['gudang', 'pdf', 'materi', 'dokumen', 'file'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-docs') },
   { key: 'work.upload', label: 'Upload Drive', icon: 'fa-cloud-arrow-up', color: 'bg-green', keys: ['upload', 'drive'], action: () => navigateFromQuickMenu('tab-workfin', 'sub-upload') },
@@ -5345,7 +5345,7 @@ function renderKasData() {
   const filtered = getFilteredKas();
   filtered.forEach(k => { if (k.jenis === 'Lebih') totalLebih += k.jumlah; else totalKurang += k.jumlah; });
   list.innerHTML = filtered.length === 0
-    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan plus minus${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
+    ? `<div class="empty"><i class="fas fa-receipt"></i><div class="e-sub">Belum ada catatan ledger${$('kasFilterAwal').value || $('kasFilterAkhir').value ? ' pada periode ini' : ''}.</div></div>`
     : filtered.map(k => {
       const plus = k.jenis === 'Lebih';
       return `<div class="row">
@@ -5838,7 +5838,7 @@ function buildReminderEvents(now, horizonDays) {
   }
 
   if (prefs.kas && !appState.kas.some(k => k.tanggal === today)) {
-    add({ key: 'kas_' + today, at: wibToEpoch(today, '20:00'), until: endOfWibDay(today), title: '💰 Catat plus minus hari ini', body: 'Belum ada entri Plus Minus untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
+    add({ key: 'kas_' + today, at: wibToEpoch(today, '20:00'), until: endOfWibDay(today), title: '💰 Catat ledger hari ini', body: 'Belum ada entri Ledger untuk hari ini.', icon: 'fa-wallet', color: 'bg-mint', pref: 'kas', action: { tab: 'tab-workfin', sub: 'sub-kas' } });
   }
 
   if (prefs.digest) {
@@ -6068,12 +6068,12 @@ function pdfCountdown(id) {
 }
 function pdfKasReport() {
   const list = getFilteredKas();
-  if (!list.length) return showToast('Tidak ada catatan plus minus pada periode ini.', false);
+  if (!list.length) return showToast('Tidak ada catatan ledger pada periode ini.', false);
   let lebih = 0, kurang = 0; list.forEach(k => { if (k.jenis === 'Lebih') lebih += k.jumlah; else kurang += k.jumlah; });
   const a = $('kasFilterAwal').value, b = $('kasFilterAkhir').value;
   const period = a || b ? `${a ? prettyDate(a) : 'awal'} s/d ${b ? prettyDate(b) : 'sekarang'}` : 'Semua periode';
   makeAndShowPdf({
-    title: 'Laporan Plus Minus', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-plus-minus-' + wibDateStr()),
+    title: 'Laporan Ledger', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-ledger-' + wibDateStr()),
     blocks: [
       { stats: [['Total Plus', rupiah(lebih), [228, 247, 234]], ['Total Minus', rupiah(kurang), [253, 232, 232]], ['Net', rupiah(lebih - kurang), [229, 238, 255]]] },
       { heading: 'Rincian' },
@@ -6970,7 +6970,7 @@ function openStorageGuide(kind) {
     $('guideTitle').textContent = 'Aktifkan Cloudflare R2';
     $('guideBody').innerHTML = `
       <div class="card card-pad"><div class="flex items-center gap-10"><span class="icon-tile lg" style="background:#F38020"><i class="fas fa-cloud"></i></span><div><div class="t-headline">Status: ${st.r2 ? '<span class="c-green">Aktif ✓</span>' : '<span class="c-orange">Belum aktif</span>'}</div><div class="t-foot muted">Gratis 10 GB/bulan · upload otomatis berhenti di 9 GB</div></div></div></div>
-      ${st.r2 ? `<div class="list"><div class="row" style="padding:16px"><span class="icon-tile bg-green"><i class="fas fa-check"></i></span><div class="flex-1 t-sub" style="line-height:1.45"><b>R2 sudah aktif — tidak perlu langkah apa pun lagi.</b><br>Semua upload baru (lagu, Galeri, Foto Bukti, Gudang File) otomatis masuk R2. Kamu akan dapat notifikasi di 7 GB & 8,5 GB, dan upload berhenti otomatis di 9 GB supaya tetap gratis.</div></div></div>` : guideSteps([
+      ${st.r2 ? `<div class="list"><div class="row" style="padding:16px"><span class="icon-tile bg-green"><i class="fas fa-check"></i></span><div class="flex-1 t-sub" style="line-height:1.45"><b>R2 sudah aktif — tidak perlu langkah apa pun lagi.</b><br>Semua upload baru (lagu, Galeri, Bukas, Gudang File) otomatis masuk R2. Kamu akan dapat notifikasi di 7 GB & 8,5 GB, dan upload berhenti otomatis di 9 GB supaya tetap gratis.</div></div></div>` : guideSteps([
         'Buka <b>dash.cloudflare.com</b> → menu kiri <b>Storage & Databases → R2 Object Storage</b>.',
         'Tap <b>Purchase R2 Plan</b> / <b>Add payment method</b> → masukkan kartu debit/kredit atau PayPal → pilih paket <b>Free</b>. Tidak ada tagihan selama di bawah 10 GB.',
         'Buka GitHub repo <b>Hadzmi-Website</b> → file <b>wrangler.jsonc</b> → tap ✏️ (Edit).',
