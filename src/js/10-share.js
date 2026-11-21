@@ -174,12 +174,12 @@ function pdfCountdown(id) {
 }
 function pdfKasReport() {
   const list = getFilteredKas();
-  if (!list.length) return showToast('Tidak ada catatan plus minus pada periode ini.', false);
+  if (!list.length) return showToast('Tidak ada catatan ledger pada periode ini.', false);
   let lebih = 0, kurang = 0; list.forEach(k => { if (k.jenis === 'Lebih') lebih += k.jumlah; else kurang += k.jumlah; });
   const a = $('kasFilterAwal').value, b = $('kasFilterAkhir').value;
   const period = a || b ? `${a ? prettyDate(a) : 'awal'} s/d ${b ? prettyDate(b) : 'sekarang'}` : 'Semua periode';
   makeAndShowPdf({
-    title: 'Laporan Plus Minus', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-plus-minus-' + wibDateStr()),
+    title: 'Laporan Ledger', subtitle: `Periode: ${period} · ${list.length} entri`, fileName: pdfName('laporan-ledger-' + wibDateStr()),
     blocks: [
       { stats: [['Total Plus', rupiah(lebih), [228, 247, 234]], ['Total Minus', rupiah(kurang), [253, 232, 232]], ['Net', rupiah(lebih - kurang), [229, 238, 255]]] },
       { heading: 'Rincian' },
