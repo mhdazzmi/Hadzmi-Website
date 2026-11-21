@@ -16,7 +16,7 @@
 import { healthcareAi } from './healthcare.js';
 import { handleNexo } from './nexo.js';
 import { handleThaiTea } from './thaitea.js';
-import { handlePesan } from './pesan.js';
+import { handlePesan, nudgeKasir } from './pesan.js';
 export { NexoHub } from './nexo.js';
 
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
@@ -53,6 +53,7 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runCron(env).catch(err => console.error('cron error', err && err.stack || err)));
     ctx.waitUntil(checkStorageAlerts(env).catch(err => console.error('storage alert error', err)));
+    ctx.waitUntil(nudgeKasir(env, ctx).catch(err => console.error('pesan nudge error', err && err.stack || err)));
   }
 };
 

@@ -35,7 +35,7 @@ async function handlePush() {
   }
   // Pesanan online (urgent): tetap tampil sampai disentuh + getar panjang
   await Promise.all(items.map(i => self.registration.showNotification(i.title || 'Thai Tea', i.urgent ? {
-    body: i.body || '', icon: ICON, badge: ICON, tag: i.id, requireInteraction: true, renotify: true,
+    body: i.body || '', icon: ICON, badge: ICON, tag: i.tag || i.id, requireInteraction: true, renotify: true,
     vibrate: [600, 200, 600, 200, 600, 200, 600, 200, 900], data: { url: './#online' }
   } : {
     body: i.body || '', icon: ICON, badge: ICON, tag: i.id, renotify: false

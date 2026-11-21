@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Pesan Thai Tea</title>
   <meta name="description" content="Pesan Thai Tea online, bayar QRIS, tinggal jemput di Jln Swakarya, Pekanbaru.">
-  <meta name="theme-color" content="#EA6A0A">
+  <meta name="theme-color" content="#F6F3EF">
   <meta name="color-scheme" content="light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -18,16 +18,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    /* Gaya iOS (SF Pro di iPhone, Inter di Android), warna oranye Kedai Thai Tea */
     :root {
       --bg: #F6F3EF;
       --card: #FFFFFF;
       --fill: rgba(118, 118, 128, .12);
+      --fill2: rgba(118, 118, 128, .2);
       --text: #1C1C1E;
-      --text2: #6C6C70;
-      --text3: #AEAEB2;
-      --sep: rgba(60, 60, 67, .14);
+      --text2: rgba(60, 60, 67, .6);
+      --text3: rgba(60, 60, 67, .3);
+      --sep: rgba(60, 60, 67, .2);
       --accent: #EA6A0A;
-      --accent-press: #C95705;
       --accent-soft: #FFF0E2;
       --accent-text: #A84A00;
       --green: #1E9E4A;
@@ -38,309 +39,397 @@
       --amber-soft: #FFF5DC;
       --blue: #0A6CDB;
       --blue-soft: #E6F0FD;
-      --tabbar-h: 62px;
+      --tabbar-h: 54px;
       --safe-b: env(safe-area-inset-bottom, 0px);
-      --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .05);
+      --safe-t: env(safe-area-inset-top, 0px);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 6px 18px rgba(0, 0, 0, .05);
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; padding: 0; background: var(--bg); }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: var(--text); font-size: 16px; line-height: 1.4; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
-      overflow-x: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, sans-serif;
+      color: var(--text); font-size: 17px; line-height: 1.35; letter-spacing: -.01em;
+      -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; overflow-x: hidden;
     }
-    button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; touch-action: manipulation; }
-    input, select { font: inherit; color: inherit; }
+    button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; touch-action: manipulation; letter-spacing: inherit; }
+    input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+    a { color: inherit; text-decoration: none; }
     .hidden { display: none !important; }
     img { display: block; max-width: 100%; }
+    svg.i { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* ---------- tombol & form ---------- */
-    .btn { min-height: 52px; border-radius: 14px; padding: 0 18px; font-size: 17px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center; transition: transform .12s, opacity .15s; user-select: none; }
-    .btn:active { transform: scale(.97); opacity: .85; }
+    /* ---------- tombol ---------- */
+    .btn { min-height: 50px; border-radius: 14px; padding: 0 18px; font-size: 17px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center; transition: transform .12s, opacity .15s; user-select: none; }
+    .btn:active { transform: scale(.97); opacity: .8; }
+    .btn svg.i { width: 20px; height: 20px; }
     .btn-block { width: 100%; }
-    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(234, 106, 10, .3); }
-    .btn-primary.off { background: #D9CFC6; box-shadow: none; color: #fff; }
-    .btn-gray { background: var(--fill); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary.off { background: #D9CFC6; }
+    .btn-gray { background: var(--fill); color: var(--accent); }
     .btn-tinted { background: var(--accent-soft); color: var(--accent-text); }
-    .btn-green { background: var(--green); color: #fff; box-shadow: 0 4px 14px rgba(30, 158, 74, .28); }
-    .btn-red-tinted { background: var(--red-soft); color: var(--red); }
-    .btn-sm { min-height: 42px; font-size: 15px; padding: 0 14px; border-radius: 12px; }
-    .link { color: var(--accent-text); font-weight: 700; font-size: 15px; min-height: 36px; display: inline-flex; align-items: center; }
-    .field { display: block; margin-bottom: 14px; }
-    .field-label { display: block; font-size: 15px; font-weight: 700; color: var(--text2); margin: 0 2px 7px; }
-    .field-label b { color: var(--red); }
-    .input { width: 100%; min-height: 52px; background: #fff; border: 2px solid var(--sep); border-radius: 13px; padding: 12px 14px; font-size: 17px; font-weight: 600; outline: none; -webkit-appearance: none; appearance: none; }
-    .input:focus { border-color: var(--accent); }
-    .input.err { border-color: var(--red); background: #FFF8F7; }
-    select.input { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 16px center; padding-right: 44px; }
-    .segmented { display: flex; background: var(--fill); border-radius: 13px; padding: 3px; gap: 3px; }
-    .segmented button { flex: 1; min-height: 46px; border-radius: 10px; font-size: 15px; font-weight: 600; }
-    .segmented button.active { background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .12); font-weight: 800; color: var(--accent-text); }
-    .segmented button:disabled { opacity: .4; }
-    .segmented.err { box-shadow: inset 0 0 0 2px var(--red); }
-    .card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: var(--shadow); }
-    .card + .card { margin-top: 12px; }
-    .muted { color: var(--text2); font-size: 14px; }
-    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: var(--fill); color: var(--text2); white-space: nowrap; }
-    .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .btn-green { background: #34C759; color: #fff; }
+    .btn-red { background: transparent; color: var(--red); }
+    .btn-sm { min-height: 40px; font-size: 15px; padding: 0 14px; border-radius: 11px; gap: 6px; }
+    .btn-sm svg.i { width: 17px; height: 17px; }
+    .link { color: var(--accent); font-size: 17px; min-height: 44px; display: inline-flex; align-items: center; gap: 2px; }
+
+    /* ---------- grup ala Pengaturan iOS ---------- */
+    .ios-head { font-size: 13px; color: var(--text2); text-transform: uppercase; letter-spacing: .01em; margin: 26px 16px 7px; }
+    .ios-foot { font-size: 13px; color: var(--text2); margin: 7px 16px 0; line-height: 1.35; }
+    .ios-group { background: var(--card); border-radius: 12px; overflow: hidden; }
+    .ios-row { display: flex; align-items: center; min-height: 46px; padding: 8px 16px; gap: 12px; position: relative; width: 100%; text-align: left; }
+    .ios-row + .ios-row::before { content: ''; position: absolute; top: 0; left: var(--inset, 16px); right: 0; border-top: .5px solid var(--sep); }
+    button.ios-row:active, a.ios-row:active { background: #E5E5EA; }
+    .ios-row .grow { flex: 1; min-width: 0; }
+    .ios-row .sub { display: block; font-size: 14px; color: var(--text2); margin-top: 1px; }
+    .ios-row .val { color: var(--text2); white-space: nowrap; font-size: 15px; }
+    .ios-label { font-size: 17px; flex: none; width: 96px; }
+    .ios-input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font-size: 17px; padding: 6px 0; -webkit-appearance: none; appearance: none; text-align: right; }
+    .ios-input.left { text-align: left; }
+    .ios-input::placeholder { color: var(--text3); }
+    select.ios-input { color: var(--accent); cursor: pointer; text-align-last: right; }
+    .chev { color: var(--text3); width: 14px !important; height: 14px !important; stroke-width: 3 !important; }
+    .ios-check { justify-content: space-between; }
+    .ios-check .tick { width: 20px; height: 20px; color: var(--accent); opacity: 0; stroke-width: 2.8; }
+    .ios-check.on .tick { opacity: 1; }
+    .ico-sq { width: 30px; height: 30px; border-radius: 7px; color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+    .ico-sq svg.i { width: 18px; height: 18px; }
+    .err-ring { box-shadow: inset 0 0 0 2px var(--red); }
+
+    /* segmented control iOS */
+    .seg { display: flex; background: var(--fill); border-radius: 9px; padding: 2px; }
+    .seg button { flex: 1; min-height: 32px; border-radius: 7px; font-size: 14px; font-weight: 500; padding: 0 6px; white-space: nowrap; }
+    .seg button.active { background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .12), 0 3px 1px rgba(0, 0, 0, .04); font-weight: 600; }
+    .seg button:disabled { opacity: .35; }
+    .seg.big button { min-height: 36px; font-size: 15px; }
+
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 20px; background: var(--fill); color: var(--text2); white-space: nowrap; }
+    .pill svg.i { width: 14px; height: 14px; }
+    .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
     .pill-green { background: var(--green-soft); color: var(--green); }
     .pill-red { background: var(--red-soft); color: var(--red); }
     .pill-amber { background: var(--amber-soft); color: var(--amber); }
     .pill-blue { background: var(--blue-soft); color: var(--blue); }
     .pill-orange { background: var(--accent-soft); color: var(--accent-text); }
-    .warn { background: var(--red-soft); color: var(--red); border-radius: 12px; padding: 10px 12px; font-size: 14.5px; font-weight: 600; margin-top: 10px; }
+    .warn { background: var(--red-soft); color: var(--red); border-radius: 12px; padding: 10px 12px; font-size: 15px; font-weight: 500; display: flex; gap: 8px; align-items: flex-start; }
+    .warn svg.i { width: 18px; height: 18px; margin-top: 1px; }
     @keyframes shake { 0%, 100% { transform: none; } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
     .shake { animation: shake .35s; }
 
-    /* ---------- layout ---------- */
-    .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
-    .topbar { position: sticky; top: 0; z-index: 40; background: rgba(246, 243, 239, .9); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); padding-top: env(safe-area-inset-top, 0px); border-bottom: .5px solid transparent; }
-    .topbar.scrolled { border-bottom-color: var(--sep); }
-    .topbar-in { max-width: 640px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
-    .logo { width: 42px; height: 42px; border-radius: 12px; flex: none; background: linear-gradient(145deg, #FF9F43, #E25C00); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 2px 6px rgba(226, 92, 0, .3); }
-    .hello { flex: 1; min-width: 0; }
-    .hello b { display: block; font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .hello span { font-size: 13px; color: var(--text2); }
-    .hello button { color: var(--accent-text); font-weight: 700; font-size: 13px; }
-    main.wrap { padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 96px); }
-    .title { font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin: 8px 2px 2px; }
-    .sub { font-size: 15px; color: var(--text2); margin: 0 2px 14px; }
-    .section-label { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin: 22px 4px 8px; }
+    /* ---------- kerangka ---------- */
+    .wrap { max-width: 640px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+    .navbar { position: sticky; top: 0; z-index: 40; padding-top: var(--safe-t); background: rgba(246, 243, 239, .82); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid transparent; transition: border-color .2s; }
+    .navbar.scrolled { border-bottom-color: var(--sep); }
+    .nav-in { max-width: 640px; margin: 0 auto; height: 44px; padding: 0 16px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+    .nav-title { font-size: 17px; font-weight: 600; opacity: 0; transition: opacity .2s; white-space: nowrap; }
+    .navbar.scrolled .nav-title { opacity: 1; }
+    .nav-right { justify-self: end; }
+    .nav-left { justify-self: start; }
+    .large-title { font-size: 34px; font-weight: 700; letter-spacing: -.025em; margin: 2px 0 2px; line-height: 1.15; }
+    .lead { font-size: 15px; color: var(--text2); margin: 0 0 16px; }
+    main.wrap { padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 100px); }
 
     /* ---------- menu ---------- */
-    .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; scrollbar-width: none; }
-    .chips::-webkit-scrollbar { display: none; }
-    .chip { flex: none; min-height: 40px; padding: 0 16px; border-radius: 20px; background: #fff; font-size: 15px; font-weight: 600; box-shadow: inset 0 0 0 1px var(--sep); }
-    .chip.active { background: var(--accent); color: #fff; box-shadow: 0 3px 10px rgba(234, 106, 10, .28); }
-    .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
     @media (min-width: 560px) { .menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .menu-card { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; text-align: left; position: relative; }
-    .menu-card:active { transform: scale(.98); }
-    .menu-card .ph { aspect-ratio: 1 / 1; background: #fff; display: flex; align-items: center; justify-content: center; }
+    .menu-card { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; text-align: left; position: relative; transition: transform .12s; }
+    .menu-card:active { transform: scale(.97); }
+    .menu-card .ph { aspect-ratio: 1 / 1; background: #fff; }
     .menu-card .ph img { width: 100%; height: 100%; object-fit: contain; }
-    .menu-card .mc-body { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
-    .menu-card .mc-name { font-size: 15.5px; font-weight: 700; line-height: 1.25; }
+    .menu-card .mc-body { padding: 6px 12px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .menu-card .mc-name { font-size: 15px; font-weight: 600; line-height: 1.25; }
     .menu-card .mc-row { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 6px; }
-    .menu-card .mc-price { font-size: 16px; font-weight: 800; color: var(--accent-text); }
-    .menu-card .mc-add { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1; }
-    .menu-card .mc-qty { position: absolute; top: 8px; right: 8px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-    .closed-box { text-align: center; padding: 34px 20px; }
-    .closed-box .big { font-size: 56px; line-height: 1; }
-    .closed-box h2 { font-size: 22px; margin: 12px 0 6px; }
+    .menu-card .mc-price { font-size: 15px; font-weight: 600; color: var(--text2); }
+    .menu-card .mc-add { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .menu-card .mc-add svg.i { width: 16px; height: 16px; stroke-width: 3; }
+    .menu-card .mc-qty { position: absolute; top: 8px; right: 8px; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .closed { text-align: center; padding: 34px 20px 26px; }
+    .closed svg.big { width: 60px; height: 60px; margin: 0 auto; color: var(--accent); display: block; stroke-width: 1.6; }
+    .closed h2 { font-size: 22px; margin: 12px 0 6px; font-weight: 700; }
+    .closed p { color: var(--text2); font-size: 15px; margin: 0 0 14px; }
 
-    /* ---------- cart bar & tabbar ---------- */
-    .cartbar { position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar-h) + var(--safe-b) + 10px); z-index: 45; max-width: 616px; margin: 0 auto; background: var(--accent); color: #fff; border-radius: 18px; min-height: 60px; padding: 8px 10px 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; box-shadow: 0 10px 26px rgba(234, 106, 10, .4); }
-    .cartbar b { font-size: 17px; }
-    .cartbar small { display: block; font-size: 13px; opacity: .9; font-weight: 600; }
-    .cartbar .go { background: #fff; color: var(--accent-text); font-weight: 800; border-radius: 12px; padding: 10px 14px; font-size: 15px; white-space: nowrap; }
-    .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 46; background: rgba(255, 255, 255, .92); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); padding-bottom: var(--safe-b); }
+    /* ---------- bilah keranjang & tab bar ---------- */
+    .cartbar { position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar-h) + var(--safe-b) + 10px); z-index: 45; max-width: 616px; margin: 0 auto; background: var(--accent); color: #fff; border-radius: 16px; min-height: 58px; padding: 8px 8px 8px 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 26px rgba(234, 106, 10, .38); }
+    .cartbar .cb-ico { width: 38px; height: 38px; border-radius: 50%; background: rgba(255, 255, 255, .2); display: flex; align-items: center; justify-content: center; position: relative; flex: none; }
+    .cartbar .cb-n { position: absolute; top: -4px; right: -6px; background: #fff; color: var(--accent-text); font-size: 12px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .cartbar .cb-t { flex: 1; text-align: left; font-weight: 700; font-size: 17px; }
+    .cartbar .cb-go { background: #fff; color: var(--accent-text); font-weight: 600; border-radius: 11px; padding: 9px 10px 9px 12px; font-size: 15px; display: flex; align-items: center; gap: 2px; }
+    .cartbar .cb-go svg.i { width: 14px; height: 14px; stroke-width: 3; }
+    .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 46; background: rgba(250, 249, 247, .9); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--sep); padding-bottom: var(--safe-b); }
     .tabbar-in { max-width: 640px; margin: 0 auto; display: flex; }
-    .tab { flex: 1; min-height: var(--tabbar-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #8E8E93; font-size: 12.5px; font-weight: 700; }
-    .tab svg { width: 25px; height: 25px; }
+    .tab { flex: 1; min-height: var(--tabbar-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #999; font-size: 10.5px; font-weight: 500; letter-spacing: .01em; }
+    .tab svg.i { width: 27px; height: 27px; stroke-width: 1.8; }
     .tab.active { color: var(--accent); }
+    .tab.active svg.i { stroke-width: 2.2; }
     .tab .ico { position: relative; display: inline-flex; }
-    .badge { position: absolute; top: -5px; right: -12px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: #FF3B30; color: #fff; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+    .badge { position: absolute; top: -3px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #FF3B30; color: #fff; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 
-    /* ---------- sheets ---------- */
-    .sheet-bg { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0); display: flex; align-items: flex-end; justify-content: center; transition: background .28s; }
-    .sheet-bg.show { background: rgba(0, 0, 0, .42); }
-    .sheet { width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; background: var(--bg); border-radius: 24px 24px 0 0; transform: translateY(100%); transition: transform .32s cubic-bezier(.2, .85, .25, 1); display: flex; flex-direction: column; padding-bottom: var(--safe-b); }
+    /* ---------- sheet (modal iOS) ---------- */
+    .sheet-bg { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0); display: flex; align-items: flex-end; justify-content: center; transition: background .3s; }
+    .sheet-bg.show { background: rgba(0, 0, 0, .4); }
+    .sheet { width: 100%; max-width: 560px; max-height: calc(100vh - var(--safe-t) - 12px); max-height: calc(100dvh - var(--safe-t) - 12px); background: var(--bg); border-radius: 14px 14px 0 0; transform: translateY(100%); transition: transform .35s cubic-bezier(.2, .9, .25, 1); display: flex; flex-direction: column; padding-bottom: var(--safe-b); }
     .sheet-bg.show .sheet { transform: none; }
-    .grabber { width: 40px; height: 5px; border-radius: 3px; background: #C7C7CC; margin: 8px auto 0; flex: none; }
-    .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 16px; flex: none; }
-    .sheet-title { font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
-    .sheet-body { overflow-y: auto; padding: 0 16px 16px; flex: 1; -webkit-overflow-scrolling: touch; }
-    .sheet-foot { padding: 12px 16px 14px; border-top: .5px solid var(--sep); flex: none; }
-    .x-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--fill); color: var(--text2); font-size: 20px; display: flex; align-items: center; justify-content: center; flex: none; }
+    .sheet-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 56px; padding: 0 16px; flex: none; }
+    .sheet-nav .t { font-size: 17px; font-weight: 600; }
+    .sheet-body { overflow-y: auto; padding: 0 16px 18px; flex: 1; -webkit-overflow-scrolling: touch; }
+    .sheet-foot { padding: 10px 16px 12px; flex: none; background: var(--bg); }
     @media (min-width: 700px) {
       .sheet-bg { align-items: center; padding: 24px; }
-      .sheet { border-radius: 24px; padding-bottom: 0; transform: translateY(30px) scale(.97); opacity: 0; transition: transform .28s, opacity .2s; }
+      .sheet { border-radius: 14px; padding-bottom: 0; transform: translateY(30px) scale(.97); opacity: 0; transition: transform .28s, opacity .2s; }
       .sheet-bg.show .sheet { opacity: 1; }
-      .grabber { display: none; }
     }
-    .item-hero { display: flex; gap: 14px; align-items: center; background: #fff; border-radius: 18px; padding: 10px; }
-    .item-hero img { width: 86px; height: 86px; object-fit: contain; flex: none; }
-    .tops { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .top-opt { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 14px; padding: 8px 10px; min-height: 58px; text-align: left; box-shadow: inset 0 0 0 2px transparent; }
-    .top-opt img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; }
-    .top-opt b { display: block; font-size: 15.5px; }
-    .top-opt small { color: var(--text2); font-weight: 600; font-size: 13px; }
-    .top-opt.on { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
-    .stepper { display: inline-flex; align-items: center; background: var(--fill); border-radius: 12px; }
-    .stepper button { width: 46px; height: 44px; font-size: 24px; font-weight: 600; color: var(--accent-text); }
-    .stepper span { min-width: 36px; text-align: center; font-size: 19px; font-weight: 800; }
-    .qty-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: 16px; padding: 10px 10px 10px 16px; margin-top: 14px; }
-    .line { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: .5px solid var(--sep); }
-    .line:last-child { border-bottom: 0; }
-    .line img { width: 52px; height: 52px; object-fit: contain; flex: none; background: #fff; border-radius: 10px; }
-    .line .l-main { flex: 1; min-width: 0; }
-    .line .l-name { font-weight: 700; font-size: 15.5px; }
-    .line .l-sub { font-size: 13px; color: var(--text2); }
-    .line .l-price { font-weight: 800; font-size: 15px; }
-    .line .stepper button { width: 36px; height: 36px; font-size: 20px; }
-    .line .stepper span { min-width: 26px; font-size: 16px; }
-    .total-row { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; font-size: 20px; margin-top: 6px; }
-    .total-row span:last-child { color: var(--accent-text); font-size: 24px; }
+    .hero { display: flex; gap: 14px; align-items: center; }
+    .hero img { width: 88px; height: 88px; object-fit: contain; background: #fff; border-radius: 16px; flex: none; }
+    .hero b { display: block; font-size: 20px; font-weight: 700; }
+    .hero span { color: var(--text2); font-size: 16px; }
+    .thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; }
+    .thumb-sq { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; background: #fff; flex: none; box-shadow: inset 0 0 0 .5px var(--sep); }
+    .stepper { display: inline-flex; align-items: center; background: var(--fill); border-radius: 9px; flex: none; }
+    .stepper button { width: 40px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--text); }
+    .stepper button svg.i { width: 15px; height: 15px; stroke-width: 2.6; }
+    .stepper span { min-width: 30px; text-align: center; font-size: 16px; font-weight: 600; }
+    .total-row { display: flex; justify-content: space-between; align-items: baseline; }
+    .total-row b { font-size: 22px; font-weight: 700; }
 
-    /* ---------- layar penuh (bayar & terima kasih) ---------- */
-    .screen { position: fixed; inset: 0; z-index: 90; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(env(safe-area-inset-top, 0px) + 12px) 0 calc(var(--safe-b) + 24px); }
-    .qr-card { background: #fff; border-radius: 22px; padding: 18px 16px; text-align: center; box-shadow: var(--shadow); }
-    .qr-card .qris-logo { font-weight: 900; font-size: 22px; letter-spacing: .02em; }
-    .qr-card .qris-logo span { color: var(--red); }
-    .qr-card canvas { width: 100%; max-width: 280px; height: auto; margin: 10px auto; image-rendering: pixelated; display: block; }
-    .qr-amount { font-size: 32px; font-weight: 900; letter-spacing: -.02em; }
-    .countdown { display: inline-flex; gap: 6px; align-items: center; font-weight: 700; font-size: 14px; color: var(--amber); background: var(--amber-soft); padding: 6px 12px; border-radius: 20px; margin-top: 6px; }
-    .steps { margin: 0; padding: 0 0 0 4px; list-style: none; counter-reset: s; }
-    .steps li { counter-increment: s; position: relative; padding: 6px 0 6px 36px; font-size: 15px; }
-    .steps li::before { content: counter(s); position: absolute; left: 0; top: 5px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-    .thanks-hero { text-align: center; padding: 18px 8px 6px; }
-    .thanks-hero .big { font-size: 64px; line-height: 1; }
-    .thanks-hero h1 { font-size: 26px; letter-spacing: -.02em; margin: 12px 0 8px; }
-    .thanks-hero p { font-size: 16.5px; margin: 0; color: #3A3A3C; }
+    /* ---------- layar penuh ---------- */
+    .screen { position: fixed; inset: 0; z-index: 90; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-b) + 28px); }
+    .qr-card { background: #fff; border-radius: 20px; padding: 20px 16px 18px; text-align: center; box-shadow: var(--shadow); margin-top: 8px; }
+    .qris-logo { font-weight: 900; font-size: 22px; letter-spacing: .02em; }
+    .qris-logo span { color: var(--red); }
+    .qr-card canvas { width: 100%; max-width: 270px; height: auto; margin: 10px auto 6px; image-rendering: pixelated; display: block; }
+    .qr-amount { font-size: 34px; font-weight: 700; letter-spacing: -.02em; }
+    .countdown { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; font-size: 14px; color: var(--amber); background: var(--amber-soft); padding: 6px 12px; border-radius: 20px; margin-top: 8px; }
+    .countdown svg.i { width: 16px; height: 16px; }
+    .num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex: none; align-self: flex-start; margin-top: 2px; }
+    .thanks-pop { position: fixed; inset: 0; z-index: 95; background: linear-gradient(165deg, #FF9F43 0%, #EA6A0A 55%, #C95705 100%); color: #fff; display: flex; align-items: center; justify-content: center; padding: calc(var(--safe-t) + 24px) 24px calc(var(--safe-b) + 24px); text-align: center; }
+    .tp-in { width: 100%; max-width: 440px; animation: tpIn .5s cubic-bezier(.2, .9, .3, 1.2); }
+    @keyframes tpIn { from { opacity: 0; transform: scale(.9) translateY(20px); } }
+    .tp-check { width: 96px; height: 96px; margin: 0 auto; border-radius: 50%; background: rgba(255, 255, 255, .22); display: flex; align-items: center; justify-content: center; animation: tpPop 1.8s ease-in-out infinite; }
+    .tp-check svg.i { width: 56px; height: 56px; stroke-width: 2.6; }
+    @keyframes tpPop { 50% { transform: scale(1.07); } }
+    .thanks-pop h1 { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 22px 0 12px; line-height: 1.15; }
+    .thanks-pop p { font-size: 18px; line-height: 1.5; margin: 0; opacity: .95; }
+    .tp-ok { width: 100%; margin-top: 36px; background: #fff; color: var(--accent-text); font-size: 17px; min-height: 54px; box-shadow: 0 10px 26px rgba(0, 0, 0, .18); }
+    .done-hero { text-align: center; padding: 8px 0 4px; }
+    .done-hero .ok { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: #34C759; color: #fff; display: flex; align-items: center; justify-content: center; }
+    .done-hero .ok svg.i { width: 40px; height: 40px; stroke-width: 3; }
+    .done-hero h1 { font-size: 24px; font-weight: 700; margin: 12px 0 2px; }
 
-    /* ---------- pesananku ---------- */
-    .ord { background: #fff; border-radius: 20px; padding: 16px; box-shadow: var(--shadow); }
-    .ord + .ord { margin-top: 12px; }
+    /* ---------- pesanan ---------- */
+    .ord { background: var(--card); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
+    .ord + .ord { margin-top: 10px; }
     .ord-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .ord-no { font-size: 13px; font-weight: 700; color: var(--text2); }
-    .ord-name { font-size: 18px; font-weight: 800; }
-    .ord-items { font-size: 14.5px; color: #3A3A3C; margin: 8px 0; }
+    .ord-no { font-size: 13px; color: var(--text2); }
+    .ord-name { font-size: 18px; font-weight: 700; }
+    .ord-items { font-size: 15px; color: #3A3A3C; margin: 8px 0; line-height: 1.45; }
     .ord-meta { display: flex; flex-wrap: wrap; gap: 6px; }
     .track { display: flex; margin: 14px 0 4px; }
-    .track .st { flex: 1; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--text3); position: relative; padding-top: 30px; }
-    .track .st::before { content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border-radius: 50%; background: #E5E5EA; z-index: 1; }
-    .track .st::after { content: ''; position: absolute; top: 13px; left: -50%; width: 100%; height: 4px; background: #E5E5EA; }
+    .track .st { flex: 1; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--text3); position: relative; padding-top: 28px; }
+    .track .st::before { content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 18px; height: 18px; border-radius: 50%; background: #E5E5EA; z-index: 1; }
+    .track .st::after { content: ''; position: absolute; top: 11px; left: -50%; width: 100%; height: 4px; background: #E5E5EA; }
     .track .st:first-child::after { display: none; }
     .track .st.done { color: var(--green); }
-    .track .st.done::before { background: var(--green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/12px no-repeat; }
-    .track .st.done::after, .track .st.now::after { background: var(--green); }
+    .track .st.done::before { background: #34C759 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/11px no-repeat; }
+    .track .st.done::after, .track .st.now::after { background: #34C759; }
     .track .st.now { color: var(--accent-text); }
     .track .st.now::before { background: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); animation: pulse 1.4s infinite; }
     @keyframes pulse { 50% { box-shadow: 0 0 0 9px rgba(234, 106, 10, .12); } }
-    .ready-banner { background: var(--green); color: #fff; border-radius: 14px; padding: 12px 14px; font-weight: 700; margin-top: 10px; font-size: 15px; }
+    .ready { background: #34C759; color: #fff; border-radius: 12px; padding: 11px 13px; font-weight: 600; margin-top: 10px; font-size: 15px; display: flex; gap: 8px; align-items: flex-start; }
+    .ready svg.i { width: 20px; height: 20px; margin-top: 1px; }
     .ord-actions { display: flex; gap: 8px; margin-top: 12px; }
     .ord-actions .btn { flex: 1; }
-    .empty { text-align: center; color: var(--text2); padding: 30px 10px; }
-    .empty .big { font-size: 48px; }
-    .install-tip { background: var(--blue-soft); color: #0B4C9A; border-radius: 16px; padding: 12px 14px; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
-    .install-tip button { margin-left: auto; color: #0B4C9A; font-size: 18px; flex: none; }
+    .ord-note { color: var(--text2); font-size: 14px; margin: 8px 0 0; }
+    .empty { text-align: center; color: var(--text2); padding: 30px 16px; }
+    .empty svg.big { width: 48px; height: 48px; margin: 0 auto 8px; color: var(--text3); display: block; stroke-width: 1.6; }
+    .tip { background: var(--blue-soft); color: #0B4C9A; border-radius: 14px; padding: 12px 14px; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; }
+    .tip svg.i { width: 20px; height: 20px; }
+    .tip .x { margin-left: auto; color: #0B4C9A; flex: none; }
+    .tip .x svg.i { width: 16px; height: 16px; }
 
-    /* ---------- onboarding ---------- */
-    .onboard { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: calc(env(safe-area-inset-top, 0px) + 24px) 0 calc(var(--safe-b) + 24px); }
-    .onboard .logo { width: 72px; height: 72px; border-radius: 20px; font-size: 38px; margin: 0 auto 14px; }
-    .onboard h1 { text-align: center; font-size: 28px; letter-spacing: -.02em; margin: 0 0 6px; }
-    .onboard p.lead { text-align: center; color: var(--text2); margin: 0 0 22px; }
-    .gender { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .gender button { background: #fff; border-radius: 16px; padding: 14px 10px; min-height: 92px; box-shadow: inset 0 0 0 2px var(--sep); font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .gender button span { font-size: 32px; line-height: 1; }
-    .gender button small { color: var(--text2); font-weight: 600; }
-    .gender button.on { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent-text); }
+    /* ---------- chat (ala iMessage) ---------- */
+    .chat-head { display: flex; align-items: center; gap: 12px; margin: 6px 0 4px; }
+    .chat-ava { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(145deg, #FF9F43, #E25C00); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+    .chat-ava svg.i { width: 26px; height: 26px; }
+    .chat-head b { display: block; font-size: 17px; font-weight: 600; }
+    .chat-head span { font-size: 13px; color: var(--text2); }
+    .msgs { padding: 6px 0 70px; }
+    .m-time { text-align: center; font-size: 12px; color: var(--text2); margin: 14px 0 6px; font-weight: 500; }
+    .m-row { display: flex; margin-top: 2px; }
+    .m-row.me { justify-content: flex-end; }
+    .m-row.gap { margin-top: 10px; }
+    .bubble { max-width: 78%; padding: 8px 13px; border-radius: 19px; font-size: 16.5px; line-height: 1.32; word-wrap: break-word; white-space: pre-wrap; }
+    .m-row.me .bubble { background: var(--accent); color: #fff; }
+    .m-row.them .bubble { background: #E9E9EB; color: var(--text); }
+    .bubble img { border-radius: 14px; max-width: 220px; }
+    .bubble.media { padding: 0; background: transparent !important; }
+    .bubble audio { max-width: 240px; }
+    .m-name { font-size: 12px; color: var(--text2); margin: 8px 0 2px 12px; }
+    .m-status { text-align: right; font-size: 11.5px; color: var(--text2); margin: 3px 4px 0; }
+    .chat-empty { text-align: center; color: var(--text2); font-size: 15px; padding: 40px 16px; }
+    .chat-empty svg.i { width: 46px; height: 46px; color: var(--text3); margin: 0 auto 8px; display: block; stroke-width: 1.6; }
+    .composer { position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar-h) + var(--safe-b)); z-index: 44; background: rgba(250, 249, 247, .92); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-top: .5px solid var(--sep); }
+    .composer-in { max-width: 640px; margin: 0 auto; padding: 8px 12px; display: flex; gap: 8px; align-items: flex-end; }
+    .composer textarea { flex: 1; min-width: 0; resize: none; border: .5px solid var(--text3); border-radius: 19px; padding: 8px 14px; font-size: 16.5px; line-height: 1.3; max-height: 120px; background: #fff; outline: none; }
+    .send { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; margin-bottom: 1px; }
+    .send:disabled { background: #D9CFC6; }
+    .send svg.i { width: 18px; height: 18px; stroke-width: 2.8; }
+
+    /* ---------- kenalan ---------- */
+    .onboard { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: calc(var(--safe-t) + 28px) 0 calc(var(--safe-b) + 28px); }
+    .ob-in { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 20px; }
+    .app-ico { width: 76px; height: 76px; border-radius: 18px; margin: 0 auto 16px; background: linear-gradient(145deg, #FF9F43, #E25C00); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(226, 92, 0, .28); }
+    .app-ico svg.i { width: 44px; height: 44px; stroke-width: 1.8; }
+    .onboard h1 { text-align: center; font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 6px; }
+    .onboard p.lead { text-align: center; margin: 0 8px 22px; font-size: 16px; }
 
     /* ---------- toast & dialog ---------- */
-    .toast { position: fixed; z-index: 300; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 12px); transform: translate(-50%, -170%); transition: transform .35s cubic-bezier(.2, .9, .3, 1.15); background: rgba(28, 28, 30, .94); color: #fff; padding: 13px 18px; border-radius: 20px; font-size: 15.5px; font-weight: 700; max-width: calc(100vw - 32px); width: max-content; box-shadow: 0 12px 30px rgba(0, 0, 0, .25); pointer-events: none; }
-    .toast.show { transform: translate(-50%, 0); }
-    .dlg-bg { position: fixed; inset: 0; z-index: 250; background: rgba(0, 0, 0, .4); display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .dlg { width: 100%; max-width: 330px; background: #F8F8FA; border-radius: 18px; overflow: hidden; text-align: center; }
-    .dlg-text { padding: 20px 18px 16px; }
-    .dlg-title { font-size: 18px; font-weight: 800; }
-    .dlg-msg { font-size: 15.5px; margin-top: 6px; }
-    .dlg-btns { display: flex; border-top: .5px solid rgba(60, 60, 67, .3); }
-    .dlg-btns button { flex: 1; min-height: 52px; font-size: 17px; color: var(--blue); }
-    .dlg-btns button + button { border-left: .5px solid rgba(60, 60, 67, .3); font-weight: 700; }
-    .spinner { width: 22px; height: 22px; border: 3px solid rgba(255, 255, 255, .4); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+    .toast { position: fixed; z-index: 300; left: 50%; top: calc(var(--safe-t) + 10px); transform: translate(-50%, -170%); transition: transform .35s cubic-bezier(.2, .9, .3, 1.15); background: rgba(28, 28, 30, .92); color: #fff; padding: 12px 18px; border-radius: 22px; font-size: 15px; font-weight: 600; max-width: calc(100vw - 32px); width: max-content; box-shadow: 0 12px 30px rgba(0, 0, 0, .25); pointer-events: none; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+    .toast:not(.show) { opacity: 0; visibility: hidden; transition: transform .35s, opacity .2s, visibility 0s .35s; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+    .dlg-bg { position: fixed; inset: 0; z-index: 250; background: rgba(0, 0, 0, .35); display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .dlg { width: 270px; background: rgba(242, 242, 245, .97); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); border-radius: 14px; overflow: hidden; text-align: center; }
+    .dlg-text { padding: 19px 16px 17px; }
+    .dlg-title { font-size: 17px; font-weight: 600; }
+    .dlg-msg { font-size: 13.5px; margin-top: 4px; line-height: 1.35; }
+    .dlg-btns { display: flex; border-top: .5px solid rgba(60, 60, 67, .29); }
+    .dlg-btns button { flex: 1; min-height: 44px; font-size: 17px; color: #0A84FF; }
+    .dlg-btns button + button { border-left: .5px solid rgba(60, 60, 67, .29); font-weight: 600; }
+    .spinner { width: 20px; height: 20px; border: 2.5px solid rgba(255, 255, 255, .4); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading { text-align: center; padding: 60px 0; color: var(--text2); }
   </style>
 </head>
 <body>
+  <!-- Kumpulan ikon SVG (dipakai lewat <use href="#i-...">) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-cup" viewBox="0 0 24 24"><path d="M6.5 8h11l-1.4 11.3a2 2 0 0 1-2 1.7H9.9a2 2 0 0 1-2-1.7L6.5 8z"/><path d="M5 8h14"/><path d="M7.5 8a4.5 4.5 0 0 1 9 0"/><path d="M12.5 8 15 2.5"/><circle cx="10" cy="16.5" r=".6"/><circle cx="12.5" cy="17.5" r=".6"/><circle cx="14" cy="15.5" r=".6"/><circle cx="11.2" cy="14.3" r=".6"/></symbol>
+      <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5.5 7.5h13l-1 12.6a1 1 0 0 1-1 .9h-9a1 1 0 0 1-1-.9l-1-12.6z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-2.5-1.6L13 21l-2.5-1.6L8 21l-2-1.3V3z"/><path d="M9 8h6M9 12h6M9 16h3.5"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M12 3.5c-4.9 0-8.8 3.4-8.8 7.6 0 2.4 1.3 4.6 3.4 6L5.8 20.5l4-2.1c.7.2 1.4.3 2.2.3 4.9 0 8.8-3.4 8.8-7.6S16.9 3.5 12 3.5z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5L20 7"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 4l8 8-8 8"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21.5s-7-6.1-7-11.5a7 7 0 0 1 14 0c0 5.4-7 11.5-7 11.5z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+      <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></symbol>
+      <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5V20h16V9.5"/><path d="M3 9.5 5 4h14l2 5.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M10 20v-5h4v5"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3.5v12m0 0-4.5-4.5m4.5 4.5 4.5-4.5"/><path d="M4.5 20.5h15"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.5 8.5 0 1 1 9.4 4a6.8 6.8 0 0 0 10.6 10.6z"/></symbol>
+      <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2.5 20.5 6 17 9.5"/><path d="M3.5 11.5V10a4 4 0 0 1 4-4h13"/><path d="M7 21.5 3.5 18 7 14.5"/><path d="M20.5 12.5V14a4 4 0 0 1-4 4h-13"/></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5m0 0L8 7.5m4-4 4 4"/><path d="M8 11H6.5a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.2v.3"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
+      <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1"/><path d="M14 14h2.5v2.5H14zM18 18h2.5v2.5H18zM14 18.5v2M18.5 14h2"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+      <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+    </defs>
+  </svg>
 
   <!-- ============ KENALAN DULU (pertama kali buka) ============ -->
   <section id="onboard" class="hidden">
-    <div class="wrap onboard">
-      <div class="logo">🧋</div>
-      <h1>Halo, selamat datang!</h1>
-      <p class="lead">Kenalan dulu yuk, biar pesananmu gampang dikenali di Kedai Thai Tea.</p>
-      <label class="field">
-        <span class="field-label">Nama panggilan</span>
-        <input id="obNick" class="input" maxlength="24" placeholder="mis. Dika" autocomplete="given-name">
-      </label>
-      <div class="field">
-        <span class="field-label">Jenis kelamin</span>
-        <div class="gender" id="obGender">
-          <button type="button" data-g="L"><span>👦</span>Laki-laki<small>dipanggil Bang</small></button>
-          <button type="button" data-g="P"><span>👧</span>Perempuan<small>dipanggil Kak</small></button>
+    <div class="onboard">
+      <div class="ob-in">
+        <div class="app-ico"><svg class="i"><use href="#i-cup"/></svg></div>
+        <h1>Selamat Datang</h1>
+        <p class="lead">Kenalan dulu yuk, biar pesananmu gampang dikenali di Kedai Thai Tea.</p>
+        <div class="ios-group">
+          <label class="ios-row"><span class="ios-label" style="width:70px">Nama</span><input id="obNick" class="ios-input left" maxlength="24" placeholder="Nama panggilan" autocomplete="given-name"></label>
+        </div>
+        <div class="ios-foot">Nama ini dipakai untuk memanggilmu saat pesanan siap.</div>
+        <div class="ios-head">Jenis Kelamin</div>
+        <div class="ios-group" id="obGender">
+          <button type="button" class="ios-row ios-check" data-g="L">Laki-laki<svg class="i tick"><use href="#i-check"/></svg></button>
+          <button type="button" class="ios-row ios-check" data-g="P">Perempuan<svg class="i tick"><use href="#i-check"/></svg></button>
+        </div>
+        <div id="obWarn" class="warn hidden" style="margin-top:14px"></div>
+        <div style="margin-top:28px">
+          <button type="button" class="btn btn-primary btn-block" onclick="simpanProfil()">Mulai Pesan</button>
+          <button type="button" id="obCancel" class="btn btn-gray btn-block hidden" style="margin-top:10px" onclick="tutupOnboard()">Batal</button>
         </div>
       </div>
-      <div id="obWarn" class="warn hidden"></div>
-      <button type="button" class="btn btn-primary btn-block" style="margin-top:16px" onclick="simpanProfil()">Mulai Pesan</button>
-      <button type="button" id="obCancel" class="btn btn-gray btn-block hidden" style="margin-top:10px" onclick="tutupOnboard()">Batal</button>
     </div>
   </section>
 
   <!-- ============ APLIKASI ============ -->
   <div id="app" class="hidden">
-    <header class="topbar" id="topbar">
-      <div class="topbar-in">
-        <div class="logo">🧋</div>
-        <div class="hello">
-          <b id="helloName">Halo!</b>
-          <span>Kedai Thai Tea · <button type="button" onclick="bukaOnboard(true)">Ubah profil</button></span>
-        </div>
-        <span id="storePill" class="pill">…</span>
+    <header class="navbar" id="navbar">
+      <div class="nav-in">
+        <span class="nav-left"></span>
+        <span class="nav-title" id="navTitle">Menu</span>
+        <span class="nav-right" id="storePill"></span>
       </div>
     </header>
 
     <main class="wrap">
       <!-- MENU -->
       <section id="paneMenu">
-        <h1 class="title">Mau pesan apa?</h1>
-        <p class="sub">Pesan online, bayar QRIS, tinggal jemput. Buka jam 12.00 – 23.40.</p>
+        <h1 class="large-title">Menu</h1>
+        <p class="lead"><span id="helloText">Halo!</span> · <button type="button" class="link" style="font-size:15px;min-height:0" onclick="bukaOnboard(true)">Ubah profil</button></p>
         <div id="menuLoading" class="loading">Memuat menu…</div>
-        <div id="closedBox" class="card closed-box hidden">
-          <div class="big">🌙</div>
+        <div id="closedBox" class="ios-group closed hidden">
+          <svg class="i big"><use href="#i-moon"/></svg>
           <h2>Kedai sedang tutup</h2>
-          <p class="muted" id="closedMsg"></p>
-          <button type="button" class="btn btn-tinted btn-sm" style="margin-top:10px" onclick="muatInfo(true)">Cek Lagi</button>
+          <p id="closedMsg"></p>
+          <button type="button" class="btn btn-tinted btn-sm" onclick="muatInfo(true)">Cek Lagi</button>
         </div>
         <div id="menuBox" class="hidden">
-          <div class="chips" id="catChips">
-            <button type="button" class="chip active" data-cat="all">Semua</button>
-            <button type="button" class="chip" data-cat="thai-premium">Premium</button>
-            <button type="button" class="chip" data-cat="thai-regular">Original</button>
-            <button type="button" class="chip" data-cat="tea">Tea Buah</button>
+          <div class="seg big" id="catSeg">
+            <button type="button" class="active" data-cat="all">Semua</button>
+            <button type="button" data-cat="thai-premium">Premium</button>
+            <button type="button" data-cat="thai-regular">Original</button>
+            <button type="button" data-cat="tea">Tea Buah</button>
           </div>
           <div class="menu-grid" id="menuGrid"></div>
         </div>
       </section>
 
-      <!-- PESANANKU -->
+      <!-- PESANAN -->
       <section id="paneOrders" class="hidden">
-        <h1 class="title">Pesananku</h1>
-        <p class="sub">Pantau pesananmu di sini. Jemput saat statusnya <b>Siap Dijemput</b>.</p>
-        <div id="installTip" class="install-tip hidden">
-          <span>📌</span>
-          <span><b>Biar riwayat pesanan tidak hilang</b>, tambahkan halaman ini ke Layar Utama: iPhone → Bagikan → <b>Tambah ke Layar Utama</b>. Android → ⋮ → <b>Tambahkan ke layar utama</b>.</span>
-          <button type="button" aria-label="Tutup" onclick="tutupTip()">✕</button>
+        <h1 class="large-title">Pesanan</h1>
+        <p class="lead">Jemput saat statusnya <b>Siap Dijemput</b>.</p>
+        <div id="installTip" class="tip hidden">
+          <svg class="i"><use href="#i-share"/></svg>
+          <span><b>Biar riwayat tidak hilang</b>, tambahkan halaman ini ke Layar Utama. iPhone: Bagikan → <b>Tambah ke Layar Utama</b>. Android: ⋮ → <b>Tambahkan ke layar utama</b>.</span>
+          <button type="button" class="x" aria-label="Tutup" onclick="tutupTip()"><svg class="i"><use href="#i-x"/></svg></button>
         </div>
+        <div class="ios-head">Sedang Berjalan</div>
         <div id="activeOrders"></div>
-        <div class="section-label" id="historyLabel">Riwayat</div>
+        <div class="ios-head" id="historyLabel">Riwayat</div>
         <div id="historyOrders"></div>
+      </section>
+
+      <!-- CHAT RESTO -->
+      <section id="paneChat" class="hidden">
+        <div class="chat-head">
+          <span class="chat-ava"><svg class="i"><use href="#i-cup"/></svg></span>
+          <div><b>Kedai Thai Tea</b><span>Tanya menu, pesanan, atau apa saja</span></div>
+        </div>
+        <div class="msgs" id="msgs"><div class="loading">Memuat chat…</div></div>
       </section>
     </main>
 
+    <div id="composer" class="composer hidden">
+      <div class="composer-in">
+        <textarea id="chatInput" rows="1" maxlength="600" placeholder="Tulis pesan" oninput="ketikChat()"></textarea>
+        <button type="button" id="sendBtn" class="send" disabled aria-label="Kirim" onclick="kirimChat()"><svg class="i"><use href="#i-up"/></svg></button>
+      </div>
+    </div>
+
     <button type="button" id="cartBar" class="cartbar hidden" onclick="bukaCheckout()">
-      <span><b id="cartBarTotal">Rp0</b><small id="cartBarCups">0 cup</small></span>
-      <span class="go">Lanjut Pesan ›</span>
+      <span class="cb-ico"><svg class="i"><use href="#i-bag"/></svg><span class="cb-n" id="cartBarCups">0</span></span>
+      <span class="cb-t" id="cartBarTotal">Rp0</span>
+      <span class="cb-go">Keranjang<svg class="i"><use href="#i-chev-r"/></svg></span>
     </button>
 
     <nav class="tabbar">
       <div class="tabbar-in">
-        <button type="button" class="tab active" id="tabMenu" onclick="gantiTab('menu')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1.2 12.1a2 2 0 0 1-2 1.9H9.2a2 2 0 0 1-2-1.9L6 8z"/><path d="M5 8h14"/><path d="M12 8 14.5 2"/></svg>Menu
-        </button>
-        <button type="button" class="tab" id="tabOrders" onclick="gantiTab('orders')">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span id="ordersBadge" class="badge hidden">0</span></span>Pesananku
-        </button>
+        <button type="button" class="tab active" id="tabMenu" onclick="gantiTab('menu')"><span class="ico"><svg class="i"><use href="#i-cup"/></svg></span>Menu</button>
+        <button type="button" class="tab" id="tabOrders" onclick="gantiTab('orders')"><span class="ico"><svg class="i"><use href="#i-receipt"/></svg><span id="ordersBadge" class="badge hidden">0</span></span>Pesanan</button>
+        <button type="button" class="tab" id="tabChat" onclick="gantiTab('chat')"><span class="ico"><svg class="i"><use href="#i-chat"/></svg><span id="chatBadge" class="badge hidden">0</span></span>Chat Resto</button>
       </div>
     </nav>
   </div>
@@ -348,22 +437,20 @@
   <!-- SHEET: PILIH TOPPING & JUMLAH -->
   <div id="itemSheet" class="sheet-bg hidden" onclick="if(event.target===this) tutupSheet('itemSheet')">
     <div class="sheet">
-      <div class="grabber"></div>
-      <div class="sheet-head">
-        <div class="sheet-title">Tambah ke pesanan</div>
-        <button type="button" class="x-btn" aria-label="Tutup" onclick="tutupSheet('itemSheet')">✕</button>
+      <div class="sheet-nav">
+        <button type="button" class="link" style="justify-self:start" onclick="tutupSheet('itemSheet')">Batal</button>
+        <span class="t">Tambah Pesanan</span><span></span>
       </div>
       <div class="sheet-body">
-        <div class="item-hero">
-          <img id="isPhoto" alt="">
-          <div><div id="isName" style="font-size:19px;font-weight:800"></div><div id="isPrice" style="font-weight:800;color:var(--accent-text);margin-top:2px"></div></div>
-        </div>
-        <div class="section-label">Topping (opsional, +Rp3.000/topping)</div>
-        <div class="tops" id="isTops"></div>
-        <div id="isNoTops" class="muted hidden">Topping sedang habis semua.</div>
-        <div class="qty-row">
-          <b>Jumlah cup</b>
-          <div class="stepper"><button type="button" onclick="ubahQtySheet(-1)" aria-label="Kurangi">−</button><span id="isQty">1</span><button type="button" onclick="ubahQtySheet(1)" aria-label="Tambah">+</button></div>
+        <div class="hero"><img id="isPhoto" alt=""><div><b id="isName"></b><span id="isPrice"></span></div></div>
+        <div class="ios-head">Topping · +Rp3.000 per topping</div>
+        <div class="ios-group" id="isTops" style="--inset:64px"></div>
+        <div id="isNoTops" class="ios-foot hidden">Topping sedang habis semua.</div>
+        <div class="ios-head">Jumlah</div>
+        <div class="ios-group">
+          <div class="ios-row"><span class="grow">Cup</span>
+            <span class="stepper"><button type="button" onclick="ubahQtySheet(-1)" aria-label="Kurangi"><svg class="i"><use href="#i-minus"/></svg></button><span id="isQty">1</span><button type="button" onclick="ubahQtySheet(1)" aria-label="Tambah"><svg class="i"><use href="#i-plus"/></svg></button></span>
+          </div>
         </div>
       </div>
       <div class="sheet-foot">
@@ -372,38 +459,37 @@
     </div>
   </div>
 
-  <!-- SHEET: CHECKOUT -->
+  <!-- SHEET: KERANJANG & CHECKOUT -->
   <div id="checkoutSheet" class="sheet-bg hidden" onclick="if(event.target===this) tutupSheet('checkoutSheet')">
     <div class="sheet">
-      <div class="grabber"></div>
-      <div class="sheet-head">
-        <div class="sheet-title">Pesananmu</div>
-        <button type="button" class="x-btn" aria-label="Tutup" onclick="tutupSheet('checkoutSheet')">✕</button>
+      <div class="sheet-nav">
+        <button type="button" class="link" style="justify-self:start" onclick="tutupSheet('checkoutSheet')">Tutup</button>
+        <span class="t">Keranjang</span><span></span>
       </div>
       <div class="sheet-body">
-        <div class="card" style="padding:6px 14px">
-          <div id="coLines"></div>
+        <div class="ios-group" id="coLines" style="--inset:76px"></div>
+        <div class="ios-head">Pemesan</div>
+        <div class="ios-group" id="coNameGroup">
+          <label class="ios-row"><span class="ios-label">Atas Nama</span><input id="coName" class="ios-input" maxlength="30" placeholder="Wajib diisi" autocomplete="name" oninput="cekCheckout(false)"></label>
         </div>
-        <div class="card" style="margin-top:12px">
-          <label class="field">
-            <span class="field-label">Pesanan atas nama <b>*</b></span>
-            <input id="coName" class="input" maxlength="30" placeholder="Nama yang dipanggil saat jemput" autocomplete="name" oninput="cekCheckout(false)">
-          </label>
-          <div class="field">
-            <span class="field-label">Dijemput jam berapa? <b>*</b></span>
-            <div class="segmented" id="coWhen">
-              <button type="button" data-w="now">⚡ Sekarang</button>
-              <button type="button" data-w="custom">🕒 Pilih Jam</button>
+        <div class="ios-head">Waktu Jemput</div>
+        <div class="ios-group" id="coWhenGroup">
+          <div class="ios-row">
+            <div class="seg grow" id="coWhen">
+              <button type="button" data-w="now">Sekarang</button>
+              <button type="button" data-w="custom">Pilih Jam</button>
             </div>
-            <select id="coTime" class="input hidden" style="margin-top:10px" onchange="cekCheckout(false)"></select>
-            <div class="muted" id="coWhenHint" style="margin-top:6px">Bisa dijemput jam 12.00 – 23.40, Senin – Minggu.</div>
           </div>
-          <div class="total-row"><span>Total</span><span id="coTotal">Rp0</span></div>
-          <div class="muted" style="margin-top:4px">Pembayaran hanya lewat <b>QRIS</b> (non tunai).</div>
+          <label class="ios-row hidden" id="coTimeRow"><span class="grow">Jam Jemput</span><select id="coTime" class="ios-input" onchange="cekCheckout(false)"></select></label>
         </div>
+        <div class="ios-foot" id="coWhenHint">Bisa dijemput jam 12.00 – 23.40, Senin – Minggu.</div>
+        <div class="ios-group" style="margin-top:22px">
+          <div class="ios-row total-row"><span>Total</span><b id="coTotal">Rp0</b></div>
+        </div>
+        <div class="ios-foot">Pembayaran hanya lewat <b>QRIS</b> (non tunai).</div>
       </div>
       <div class="sheet-foot">
-        <div id="coWarn" class="warn hidden" style="margin:0 0 10px"></div>
+        <div id="coWarn" class="warn hidden" style="margin-bottom:10px"></div>
         <button type="button" id="coGo" class="btn btn-primary btn-block off" onclick="lanjutBayar()">Lanjutkan Pembayaran</button>
       </div>
     </div>
@@ -411,61 +497,70 @@
 
   <!-- LAYAR BAYAR QRIS -->
   <section id="payScreen" class="screen hidden">
-    <div class="wrap">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <button type="button" class="link" onclick="tutupBayar()">‹ Kembali</button>
-        <span class="pill pill-orange" id="payNo">#0</span>
+    <header class="navbar scrolled">
+      <div class="nav-in">
+        <button type="button" class="link nav-left" onclick="tutupBayar()"><svg class="i" style="width:20px;height:20px;stroke-width:2.6"><use href="#i-chev-l"/></svg>Pesanan</button>
+        <span class="nav-title">Pembayaran</span>
+        <span class="nav-right pill pill-orange" id="payNo">#0</span>
       </div>
+    </header>
+    <div class="wrap">
       <div class="qr-card">
         <div class="qris-logo">QR<span>IS</span></div>
-        <div class="muted" style="font-weight:700;color:var(--text)" id="payMerchant"></div>
+        <div style="font-weight:600;font-size:15px" id="payMerchant"></div>
         <canvas id="qrCanvas" width="300" height="300" aria-label="Kode QRIS"></canvas>
-        <div class="muted">Total bayar</div>
+        <div style="color:var(--text2);font-size:14px">Total bayar</div>
         <div class="qr-amount" id="payAmount">Rp0</div>
-        <div class="countdown" id="payCountdown">⏳ Bayar dalam 20:00</div>
-        <button type="button" class="btn btn-tinted btn-block" style="margin-top:14px" onclick="simpanQris()">⬇️ Simpan Gambar QRIS</button>
+        <div class="countdown"><svg class="i"><use href="#i-clock"/></svg><span id="payCountdown">Bayar dalam 20:00</span></div>
+        <button type="button" class="btn btn-tinted btn-block" style="margin-top:14px" onclick="simpanQris()"><svg class="i"><use href="#i-down"/></svg>Simpan Gambar QRIS</button>
       </div>
-      <div class="card" style="margin-top:12px">
-        <b>Cara bayar</b>
-        <ol class="steps" style="margin-top:8px">
-          <li>Tekan <b>Simpan Gambar QRIS</b>, buka aplikasi e-wallet / m-banking (GoPay, OVO, DANA, ShopeePay, BCA, dll), pilih <b>Scan</b> → <b>ambil dari galeri</b>. Bisa juga scan dari HP lain.</li>
-          <li>Nominal sudah terisi otomatis. Pastikan jumlahnya <b id="payAmount2">Rp0</b> dan nama merchant <b>Thai Tea - Authentic Thai</b>.</li>
-          <li>Setelah berhasil, kembali ke sini lalu tekan <b>Saya Sudah Bayar</b>.</li>
-        </ol>
-        <label class="field" style="margin-top:12px">
-          <span class="field-label">Nama di akun pembayaran (isi kalau beda dari nama pesanan)</span>
-          <input id="payerName" class="input" maxlength="40" placeholder="mis. nama pemilik akun DANA / bank">
-        </label>
+      <div class="ios-head">Cara Bayar</div>
+      <div class="ios-group" style="--inset:52px">
+        <div class="ios-row"><span class="num">1</span><span class="grow" style="font-size:15px">Tekan <b>Simpan Gambar QRIS</b>, buka e-wallet / m-banking, pilih <b>Scan</b> → <b>ambil dari galeri</b>. Bisa juga scan dari HP lain.</span></div>
+        <div class="ios-row"><span class="num">2</span><span class="grow" style="font-size:15px">Nominal sudah terisi. Pastikan <b id="payAmount2">Rp0</b> dan merchant <b>Thai Tea - Authentic Thai</b>.</span></div>
+        <div class="ios-row"><span class="num">3</span><span class="grow" style="font-size:15px">Setelah berhasil, tekan <b>Saya Sudah Bayar</b>.</span></div>
       </div>
-      <button type="button" id="paidBtn" class="btn btn-green btn-block" style="margin-top:14px;min-height:58px;font-size:18px" onclick="sudahBayar()">✅ Saya Sudah Bayar</button>
-      <button type="button" class="btn btn-red-tinted btn-block" style="margin-top:10px" onclick="batalkanPesanan()">Batalkan Pesanan</button>
-      <p class="muted" style="text-align:center;margin-top:12px">Kasir akan mencocokkan pembayaranmu lalu langsung membuat pesanan.</p>
+      <div class="ios-head">Nama di Akun Pembayaran</div>
+      <div class="ios-group"><label class="ios-row"><input id="payerName" class="ios-input left" maxlength="40" placeholder="Isi kalau beda dari nama pesanan"></label></div>
+      <div class="ios-foot">Membantu kasir mencocokkan pembayaranmu.</div>
+      <button type="button" id="paidBtn" class="btn btn-green btn-block" style="margin-top:22px" onclick="sudahBayar()"><svg class="i"><use href="#i-check"/></svg>Saya Sudah Bayar</button>
+      <button type="button" class="btn btn-red btn-block" style="margin-top:6px" onclick="batalkanPesanan()">Batalkan Pesanan</button>
     </div>
   </section>
 
-  <!-- LAYAR TERIMA KASIH -->
+  <!-- POPUP UCAPAN TERIMA KASIH (layar penuh, tekan Oke untuk lanjut) -->
+  <section id="thanksPop" class="thanks-pop hidden">
+    <div class="tp-in">
+      <div class="tp-check"><svg class="i"><use href="#i-check"/></svg></div>
+      <h1 id="thanksTitle">Terima Kasih!</h1>
+      <p id="thanksMsg"></p>
+      <button type="button" class="btn tp-ok" onclick="okTerimaKasih()">Oke</button>
+    </div>
+  </section>
+
+  <!-- LAYAR SETELAH TERIMA KASIH -->
   <section id="thanksScreen" class="screen hidden">
-    <div class="wrap">
-      <div class="thanks-hero">
-        <div class="big">🎉</div>
-        <h1 id="thanksTitle">Terima Kasih!</h1>
-        <p id="thanksMsg"></p>
+    <div class="wrap" style="padding-top:calc(var(--safe-t) + 24px)">
+      <div class="done-hero">
+        <div class="ok"><svg class="i"><use href="#i-check"/></svg></div>
+        <h1>Pesanan <span id="thanksNo"></span> berhasil dibuat</h1>
+        <div style="color:var(--text2);font-size:15px">Sedang dicek kasir</div>
       </div>
-      <div class="card" style="margin-top:16px">
-        <b>📍 Pesanan <span id="thanksNo"></span> sedang dicek kasir</b>
-        <p class="muted" style="margin:6px 0 0">Pantau statusnya di menu <b>Pesananku</b>. Saat statusnya berubah jadi <b>Siap Dijemput</b>, langsung jemput ke kedai ya. Sebutkan nama pesananmu ke kasir.</p>
+      <div class="ios-head">Langkah Berikutnya</div>
+      <div class="ios-group" style="--inset:58px">
+        <div class="ios-row"><span class="ico-sq" style="background:var(--blue)"><svg class="i"><use href="#i-receipt"/></svg></span><span class="grow" style="font-size:15px">Pantau status di menu <b>Pesanan</b>.</span></div>
+        <div class="ios-row"><span class="ico-sq" style="background:#34C759"><svg class="i"><use href="#i-bell"/></svg></span><span class="grow" style="font-size:15px">Saat statusnya <b>Siap Dijemput</b>, langsung jemput ke kedai.</span></div>
+        <div class="ios-row"><span class="ico-sq" style="background:var(--accent)"><svg class="i"><use href="#i-person"/></svg></span><span class="grow" style="font-size:15px">Sebutkan nama pesananmu ke kasir.</span></div>
       </div>
-      <div class="card">
-        <b>🏠 Alamat Kedai Thai Tea</b>
-        <p style="margin:6px 0 10px" id="thanksAddr"></p>
-        <a id="thanksMaps" class="btn btn-tinted btn-block btn-sm" target="_blank" rel="noopener" style="text-decoration:none">🗺️ Buka di Google Maps</a>
+      <div class="ios-head">Alamat Kedai</div>
+      <div class="ios-group" style="--inset:58px">
+        <div class="ios-row"><span class="ico-sq" style="background:var(--red)"><svg class="i"><use href="#i-store"/></svg></span><span class="grow" id="thanksAddr" style="font-size:15px"></span></div>
+        <a class="ios-row" id="thanksMaps" target="_blank" rel="noopener"><span class="ico-sq" style="background:#34C759"><svg class="i"><use href="#i-map"/></svg></span><span class="grow" style="color:var(--accent)">Buka di Google Maps</span><svg class="i chev"><use href="#i-chev-r"/></svg></a>
       </div>
-      <div class="card" style="text-align:center">
-        <b>Mau simpan nota pesananmu?</b>
-        <p class="muted" style="margin:4px 0 12px">Nota disimpan sebagai gambar (JPG).</p>
-        <button type="button" class="btn btn-primary btn-block" onclick="simpanNota(thanksOrder)">🧾 Ya, Simpan Nota</button>
-        <button type="button" class="btn btn-gray btn-block" style="margin-top:10px" onclick="selesaiTerimaKasih()">Tidak, Lihat Pesananku</button>
-      </div>
+      <div class="ios-head">Nota</div>
+      <div class="ios-group"><div class="ios-row" style="font-size:15px">Mau simpan nota pesananmu? Nota disimpan sebagai gambar (JPG).</div></div>
+      <button type="button" class="btn btn-primary btn-block" style="margin-top:16px" onclick="simpanNota(thanksOrder)"><svg class="i"><use href="#i-down"/></svg>Ya, Simpan Nota</button>
+      <button type="button" class="btn btn-gray btn-block" style="margin-top:10px" onclick="selesaiTerimaKasih()">Tidak, Lihat Pesanan</button>
     </div>
   </section>
 
@@ -487,7 +582,8 @@
     };
     function buatCid() {
       if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      const a = new Uint8Array(16); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach((_, i) => a[i] = Math.random() * 256);
+      const a = new Uint8Array(16);
+      if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a); else a.forEach((_, i) => a[i] = Math.random() * 256);
       return Array.from(a, b => b.toString(16).padStart(2, '0')).join('').replace(/^(.{8})(.{4})(.{4})(.{4})/, '$1-$2-$3-$4-');
     }
     let cid = LS.get('tt_pesan_cid', '');
@@ -498,6 +594,7 @@
     let orders = [], ordersLoaded = false;
     let tab = 'menu', cat = 'all';
 
+    const ic = (n, cls = '') => `<svg class="i ${cls}"><use href="#i-${n}"/></svg>`;
     const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const rp = n => 'Rp' + Number(n || 0).toLocaleString('id-ID');
     const $ = id => document.getElementById(id);
@@ -510,6 +607,7 @@
       const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
       return d.getUTCDate() + ' ' + bln[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
     }
+    // Sapaan Bang/Kak hanya dipakai di popup terima kasih
     const sapa = () => profile && profile.gender === 'L' ? 'Bang' : 'Kak';
     const sapaPanjang = () => profile && profile.gender === 'L' ? 'Abang' : 'Kakak';
 
@@ -528,8 +626,12 @@
       });
     }
     function bukaSheet(id) { const el = $(id); el.classList.remove('hidden'); void el.offsetWidth; el.classList.add('show'); }
-    function tutupSheet(id) { const el = $(id); el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 300); }
+    function tutupSheet(id) { const el = $(id); el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 320); }
     function getar(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+    function peringatan(el, teks) {
+      el.innerHTML = ic('alert') + '<span>' + esc(teks) + '</span>';
+      el.classList.remove('hidden', 'shake'); void el.offsetWidth; el.classList.add('shake');
+    }
 
     async function api(path, body) {
       const opt = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' };
@@ -540,20 +642,20 @@
       return data;
     }
 
-    /* ============ SUARA (bunyi saat pesanan siap) ============ */
+    /* ============ SUARA ============ */
     let ac = null;
     function audio() {
       try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {}
       return ac;
     }
     document.addEventListener('pointerdown', audio, { once: true });
-    function dingDong() {
+    function dingDong(pendek) {
       const a = audio(); if (!a) return;
-      [[880, 0], [660, .28], [880, .7], [660, .98]].forEach(([f, t]) => {
+      (pendek ? [[1046, 0], [1318, .12]] : [[880, 0], [660, .28], [880, .7], [660, .98]]).forEach(([f, t]) => {
         const o = a.createOscillator(), g = a.createGain();
         o.type = 'sine'; o.frequency.value = f;
         g.gain.setValueAtTime(0.0001, a.currentTime + t);
-        g.gain.exponentialRampToValueAtTime(0.6, a.currentTime + t + .02);
+        g.gain.exponentialRampToValueAtTime(0.5, a.currentTime + t + .02);
         g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + t + .26);
         o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .3);
       });
@@ -580,18 +682,14 @@
       const kurang = [];
       if (!nick) kurang.push('nama panggilan');
       if (!obGender) kurang.push('jenis kelamin');
-      if (kurang.length) {
-        $('obWarn').textContent = 'Isi dulu ' + kurang.join(' dan ') + ' ya.';
-        $('obWarn').classList.remove('hidden'); $('obWarn').classList.remove('shake'); void $('obWarn').offsetWidth; $('obWarn').classList.add('shake');
-        return;
-      }
+      if (kurang.length) { peringatan($('obWarn'), 'Isi dulu ' + kurang.join(' dan ') + ' ya.'); return; }
       const baru = !profile;
       profile = { nick: nick.slice(0, 24), gender: obGender };
       LS.set('tt_pesan_profile', profile);
       tutupOnboard(); renderHello();
-      if (baru) toast(`Halo ${sapa()} ${profile.nick}! Silakan pilih menunya 🧋`);
+      if (baru) toast(`Halo, ${profile.nick}! Silakan pilih menunya`);
     }
-    function renderHello() { $('helloName').textContent = profile ? `Halo, ${sapa()} ${profile.nick}! 👋` : 'Halo!'; }
+    function renderHello() { $('helloText').textContent = profile ? `Halo, ${profile.nick}!` : 'Halo!'; }
 
     /* ============ INFO TOKO & MENU ============ */
     async function muatInfo(manual) {
@@ -599,25 +697,23 @@
         const d = await api('info');
         info = d; serverOffset = d.now - Date.now();
         renderToko(); renderMenu(); bersihkanKeranjang();
-        if (manual) toast(info.canOrder ? 'Kedai sudah buka! 🎉' : 'Kedai masih tutup');
+        if (manual) toast(info.canOrder ? 'Kedai sudah buka!' : 'Kedai masih tutup');
       } catch (e) {
-        if (!info) { $('menuLoading').textContent = e.message; }
+        if (!info) $('menuLoading').textContent = e.message;
         else if (manual) toast(e.message);
       }
     }
     function renderToko() {
       $('menuLoading').classList.add('hidden');
-      const p = $('storePill');
-      if (info.canOrder) { p.className = 'pill pill-green'; p.innerHTML = '<span class="dot"></span>Buka'; }
-      else { p.className = 'pill pill-red'; p.innerHTML = '<span class="dot"></span>Tutup'; }
+      $('storePill').innerHTML = info.canOrder ? '<span class="pill pill-green"><span class="dot"></span>Buka</span>' : '<span class="pill pill-red"><span class="dot"></span>Tutup</span>';
       $('closedBox').classList.toggle('hidden', info.canOrder);
       $('menuBox').classList.toggle('hidden', !info.canOrder);
       $('closedMsg').textContent = info.closedReason || '';
       renderCartBar();
     }
-    document.querySelectorAll('#catChips .chip').forEach(c => c.onclick = () => {
+    document.querySelectorAll('#catSeg button').forEach(c => c.onclick = () => {
       cat = c.dataset.cat;
-      document.querySelectorAll('#catChips .chip').forEach(x => x.classList.toggle('active', x === c));
+      document.querySelectorAll('#catSeg button').forEach(x => x.classList.toggle('active', x === c));
       renderMenu();
     });
     function renderMenu() {
@@ -629,20 +725,22 @@
           ${q ? `<span class="mc-qty">${q}</span>` : ''}
           <div class="ph"><img src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy"></div>
           <div class="mc-body"><span class="mc-name">${esc(m.name)}</span>
-            <span class="mc-row"><span class="mc-price">${rp(m.price)}</span><span class="mc-add">+</span></span></div>
+            <span class="mc-row"><span class="mc-price">${rp(m.price)}</span><span class="mc-add">${ic('plus')}</span></span></div>
         </button>`;
       }).join('');
     }
 
     /* ============ PILIH TOPPING & JUMLAH ============ */
     let sheetItem = null, sheetTops = [], sheetQty = 1;
+    const TOPPING_ORDER = tops => ['Keju', 'Boba', 'Cream', 'Jelly', 'Oreo'].filter(t => tops.includes(t));
     function bukaItem(id) {
       if (!info || !info.canOrder) return;
       sheetItem = info.menu.find(m => m.id === id); sheetTops = []; sheetQty = 1;
       $('isPhoto').src = sheetItem.photo; $('isName').textContent = sheetItem.name; $('isPrice').textContent = rp(sheetItem.price);
-      $('isTops').innerHTML = info.toppings.map(t => `<button type="button" class="top-opt" data-t="${esc(t.name)}"><img src="${esc(t.photo)}" alt=""><span><b>${esc(t.name)}</b><small>+${rp(t.price)}</small></span></button>`).join('');
+      $('isTops').innerHTML = info.toppings.map(t => `<button type="button" class="ios-row ios-check" data-t="${esc(t.name)}"><img class="thumb" src="${esc(t.photo)}" alt=""><span class="grow">${esc(t.name)}</span><span class="val">+${rp(t.price)}</span>${ic('check', 'tick')}</button>`).join('');
+      $('isTops').classList.toggle('hidden', !info.toppings.length);
       $('isNoTops').classList.toggle('hidden', info.toppings.length > 0);
-      $('isTops').querySelectorAll('.top-opt').forEach(b => b.onclick = () => {
+      $('isTops').querySelectorAll('.ios-check').forEach(b => b.onclick = () => {
         const t = b.dataset.t;
         sheetTops = sheetTops.includes(t) ? sheetTops.filter(x => x !== t) : [...sheetTops, t];
         b.classList.toggle('on', sheetTops.includes(t)); renderSheetTotal();
@@ -663,27 +761,25 @@
       simpanKeranjang(); tutupSheet('itemSheet');
       toast(`${sheetQty}x ${sheetItem.name} masuk keranjang`);
     }
-    const TOPPING_ORDER = tops => ['Keju', 'Boba', 'Cream', 'Jelly', 'Oreo'].filter(t => tops.includes(t));
 
     /* ============ KERANJANG ============ */
     function menuOf(id) { return info && info.menu.find(m => m.id === id); }
     function hargaBaris(c) { const m = menuOf(c.menuId); return m ? (m.price + c.toppings.length * 3000) * c.qty : 0; }
     function simpanKeranjang() { LS.set('tt_pesan_cart', cart); renderCartBar(); renderMenu(); }
     function bersihkanKeranjang() {
-      // buang menu / topping yang sudah tidak tersedia
       if (!info) return;
       const ada = new Set(info.toppings.map(t => t.name));
       const before = JSON.stringify(cart);
       cart = cart.filter(c => menuOf(c.menuId) && c.qty > 0).map(c => ({ ...c, toppings: c.toppings.filter(t => ada.has(t)) }));
       cart.forEach(c => c.key = c.menuId + '|' + c.toppings.join(','));
-      if (JSON.stringify(cart) !== before) { simpanKeranjang(); }
+      if (JSON.stringify(cart) !== before) simpanKeranjang();
       renderCartBar();
     }
     function renderCartBar() {
       const cups = cart.reduce((a, c) => a + c.qty, 0);
       const total = cart.reduce((a, c) => a + hargaBaris(c), 0);
       $('cartBar').classList.toggle('hidden', !cups || tab !== 'menu' || !info || !info.canOrder);
-      $('cartBarTotal').textContent = rp(total); $('cartBarCups').textContent = cups + ' cup';
+      $('cartBarTotal').textContent = rp(total); $('cartBarCups').textContent = cups;
     }
     function bukaCheckout() {
       if (!cart.length) return;
@@ -695,9 +791,9 @@
     function renderCheckout() {
       $('coLines').innerHTML = cart.map((c, i) => {
         const m = menuOf(c.menuId);
-        return `<div class="line"><img src="${esc(m.photo)}" alt="">
-          <div class="l-main"><div class="l-name">${esc(m.name)}</div><div class="l-sub">${c.toppings.length ? '+ ' + esc(c.toppings.join(', ')) : 'Tanpa topping'}</div><div class="l-price">${rp(hargaBaris(c))}</div></div>
-          <div class="stepper"><button type="button" onclick="ubahBaris(${i},-1)" aria-label="Kurangi">−</button><span>${c.qty}</span><button type="button" onclick="ubahBaris(${i},1)" aria-label="Tambah">+</button></div></div>`;
+        return `<div class="ios-row"><img class="thumb-sq" src="${esc(m.photo)}" alt="">
+          <span class="grow"><span style="font-weight:600">${esc(m.name)}</span><span class="sub">${c.toppings.length ? '+ ' + esc(c.toppings.join(', ')) : 'Tanpa topping'} · ${rp(hargaBaris(c))}</span></span>
+          <span class="stepper"><button type="button" onclick="ubahBaris(${i},-1)" aria-label="Kurangi">${ic('minus')}</button><span>${c.qty}</span><button type="button" onclick="ubahBaris(${i},1)" aria-label="Tambah">${ic('plus')}</button></span></div>`;
       }).join('');
       $('coTotal').textContent = rp(cart.reduce((a, c) => a + hargaBaris(c), 0));
     }
@@ -715,7 +811,7 @@
       if (b.disabled) return;
       when = b.dataset.w;
       document.querySelectorAll('#coWhen button').forEach(x => x.classList.toggle('active', x === b));
-      $('coTime').classList.toggle('hidden', when !== 'custom');
+      $('coTimeRow').classList.toggle('hidden', when !== 'custom');
       cekCheckout(false);
     });
     function siapkanJam() {
@@ -727,28 +823,25 @@
       $('coWhenHint').textContent = bisaSekarang ? 'Bisa dijemput jam 12.00 – 23.40, Senin – Minggu.' : `Kedai mulai melayani jam ${jam(o)}. Pilih jam jemput mulai ${jam(o)}.`;
       const start = Math.max(o, Math.ceil((m + 10) / 5) * 5);
       const sel = $('coTime'), prev = sel.value;
-      let html = '<option value="">— Pilih jam jemput —</option>';
-      for (let t = start; t <= c; t += 5) { const v = jam(t).replace('.', ':'); html += `<option value="${v}">${jam(t)}</option>`; }
+      let html = '<option value="">Pilih</option>';
+      for (let t = start; t <= c; t += 5) html += `<option value="${jam(t).replace('.', ':')}">${jam(t)}</option>`;
       sel.innerHTML = html;
       if (prev && [...sel.options].some(op => op.value === prev)) sel.value = prev;
-      const btnCustom = document.querySelector('#coWhen [data-w="custom"]');
-      btnCustom.disabled = start > c;
+      document.querySelector('#coWhen [data-w="custom"]').disabled = start > c;
     }
     function cekCheckout(tampil) {
       const kurang = [];
       const name = $('coName').value.trim();
+      const jamKosong = !when || (when === 'custom' && !$('coTime').value);
       if (!name) kurang.push('nama pemesan');
-      if (!when) kurang.push('jam jemput');
-      else if (when === 'custom' && !$('coTime').value) kurang.push('jam jemput');
+      if (jamKosong) kurang.push('jam jemput');
       $('coGo').classList.toggle('off', kurang.length > 0);
       if (tampil) {
-        $('coName').classList.toggle('err', !name);
-        $('coWhen').classList.toggle('err', !when);
-        $('coTime').classList.toggle('err', when === 'custom' && !$('coTime').value);
+        $('coNameGroup').classList.toggle('err-ring', !name);
+        $('coWhenGroup').classList.toggle('err-ring', jamKosong);
       } else {
-        if (name) $('coName').classList.remove('err');
-        if (when) $('coWhen').classList.remove('err');
-        if ($('coTime').value) $('coTime').classList.remove('err');
+        if (name) $('coNameGroup').classList.remove('err-ring');
+        if (!jamKosong) $('coWhenGroup').classList.remove('err-ring');
         if (!kurang.length) $('coWarn').classList.add('hidden');
       }
       return kurang;
@@ -758,13 +851,7 @@
     let sedangKirim = false;
     async function lanjutBayar() {
       const kurang = cekCheckout(true);
-      if (kurang.length) {
-        const w = $('coWarn');
-        w.textContent = '⚠️ Isi dulu ' + [...new Set(kurang)].join(' dan ') + ' sebelum lanjut ya.';
-        w.classList.remove('hidden', 'shake'); void w.offsetWidth; w.classList.add('shake');
-        getar(120);
-        return;
-      }
+      if (kurang.length) { peringatan($('coWarn'), 'Isi dulu ' + kurang.join(' dan ') + ' sebelum lanjut ya.'); getar(120); return; }
       if (sedangKirim) return;
       sedangKirim = true;
       const btn = $('coGo'); const old = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>';
@@ -781,7 +868,7 @@
         simpanOrderLokal(d.order);
         bukaBayar(d.order, d.qris);
       } catch (e) {
-        const w = $('coWarn'); w.textContent = e.message; w.classList.remove('hidden');
+        peringatan($('coWarn'), e.message);
         muatInfo();
       } finally { sedangKirim = false; btn.innerHTML = old; }
     }
@@ -794,7 +881,7 @@
     let payOrder = null, payQris = '', payTimer = null;
     function bukaBayar(o, qris) {
       payOrder = o; payQris = qris;
-      $('payNo').textContent = 'Pesanan #' + o.no;
+      $('payNo').textContent = '#' + o.no;
       $('payMerchant').textContent = (info && info.store.qrisName) || 'Thai Tea - Authentic Thai Milk Tea';
       $('payAmount').textContent = $('payAmount2').textContent = rp(o.totalPrice);
       $('payerName').value = '';
@@ -807,7 +894,7 @@
       if (!payOrder) return;
       const sisa = Math.max(0, payOrder.expiresAt - now());
       const mm = Math.floor(sisa / 60000), ss = Math.floor(sisa / 1000) % 60;
-      $('payCountdown').textContent = sisa > 0 ? `⏳ Bayar dalam ${mm}:${String(ss).padStart(2, '0')}` : '⌛ Waktu bayar habis';
+      $('payCountdown').textContent = sisa > 0 ? `Bayar dalam ${mm}:${String(ss).padStart(2, '0')}` : 'Waktu bayar habis';
     }
     function tutupBayar() {
       $('payScreen').classList.add('hidden'); document.body.style.overflow = '';
@@ -823,6 +910,7 @@
       g.fillStyle = '#fff'; g.fillRect(0, 0, size, size); g.fillStyle = '#000';
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
     }
+    const FONT = (w, s) => `${w} ${s}px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, Arial, sans-serif`;
     async function simpanQris() {
       if (!payOrder) return;
       const qc = document.createElement('canvas'); gambarQr(qc, payQris);
@@ -831,11 +919,11 @@
       const g = cv.getContext('2d');
       g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
       g.textAlign = 'center'; g.fillStyle = '#1C1C1E';
-      g.font = '900 44px Inter, Arial, sans-serif'; g.fillText('QRIS', W / 2, 70);
-      g.font = '700 26px Inter, Arial, sans-serif'; g.fillText((info && info.store.qrisName) || 'Thai Tea - Authentic Thai Milk Tea', W / 2, 112);
+      g.font = FONT(900, 44); g.fillText('QRIS', W / 2, 70);
+      g.font = FONT(700, 26); g.fillText((info && info.store.qrisName) || 'Thai Tea - Authentic Thai Milk Tea', W / 2, 112);
       g.imageSmoothingEnabled = false; g.drawImage(qc, pad, 140, qs, qs);
-      g.font = '800 54px Inter, Arial, sans-serif'; g.fillStyle = '#A84A00'; g.fillText(rp(payOrder.totalPrice), W / 2, qs + 210);
-      g.font = '600 24px Inter, Arial, sans-serif'; g.fillStyle = '#6C6C70';
+      g.font = FONT(800, 54); g.fillStyle = '#A84A00'; g.fillText(rp(payOrder.totalPrice), W / 2, qs + 210);
+      g.font = FONT(600, 24); g.fillStyle = '#6C6C70';
       g.fillText(`Pesanan #${payOrder.no} · a.n. ${payOrder.name}`, W / 2, qs + 255);
       g.fillText('Scan dari galeri di aplikasi e-wallet / m-banking', W / 2, qs + 295);
       await simpanGambar(cv, `QRIS-ThaiTea-${payOrder.no}.jpg`, 'QRIS Thai Tea');
@@ -870,12 +958,17 @@
     function bukaTerimaKasih(o) {
       thanksOrder = o;
       $('thanksTitle').textContent = `Terima Kasih Ya ${sapa()} ${profile.nick}!`;
-      $('thanksMsg').textContent = `${sapa()} ${profile.nick} sudah bertransaksi dan belanja di Kedai Thai Tea. Semoga ${sapaPanjang()} murah rezeki dan sehat selalu 🤲`;
+      $('thanksMsg').textContent = `${sapa()} ${profile.nick} sudah bertransaksi dan belanja di Kedai Thai Tea. Semoga ${sapaPanjang()} murah rezeki dan sehat selalu.`;
       $('thanksNo').textContent = '#' + o.no;
       $('thanksAddr').textContent = info ? info.store.address : 'Jln Swakarya, Kota Pekanbaru (dekat Jln HR Soebrantas)';
       $('thanksMaps').href = info ? info.store.maps : 'https://www.google.com/maps/search/?api=1&query=Jalan%20Swakarya%20Pekanbaru';
-      $('thanksScreen').classList.remove('hidden'); $('thanksScreen').scrollTop = 0;
+      $('thanksPop').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+      getar([80, 60, 80]);
+    }
+    function okTerimaKasih() {
+      $('thanksPop').classList.add('hidden');
+      $('thanksScreen').classList.remove('hidden'); $('thanksScreen').scrollTop = 0;
     }
     function selesaiTerimaKasih() {
       $('thanksScreen').classList.add('hidden'); document.body.style.overflow = '';
@@ -885,12 +978,12 @@
     /* ============ NOTA JPG ============ */
     const STATUS = {
       bayar: ['Menunggu Pembayaran', 'pill-amber'],
-      cek: ['Menunggu Konfirmasi Pembayaran', 'pill-blue'],
+      cek: ['Menunggu Konfirmasi', 'pill-blue'],
       proses: ['Sedang Disiapkan', 'pill-orange'],
       siap: ['Siap Dijemput', 'pill-green'],
-      selesai: ['Pesanan Selesai', 'pill-green'],
+      selesai: ['Selesai', 'pill-green'],
       batal: ['Dibatalkan', 'pill-red'],
-      kedaluwarsa: ['Kedaluwarsa (tidak dibayar)', 'pill']
+      kedaluwarsa: ['Kedaluwarsa', 'pill']
     };
     async function simpanNota(o) {
       if (!o) return;
@@ -898,17 +991,16 @@
       const H = 560 + items.reduce((a, it) => a + (it.toppings && it.toppings.length ? 74 : 46), 0) + 50;
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const g = cv.getContext('2d');
-      const F = (w, s) => `${w} ${s}px Inter, Arial, sans-serif`;
       g.fillStyle = '#FFFDF9'; g.fillRect(0, 0, W, H);
       g.fillStyle = '#EA6A0A'; g.fillRect(0, 0, W, 150);
       g.fillStyle = '#fff'; g.textAlign = 'center';
-      g.font = F(900, 44); g.fillText('KEDAI THAI TEA', W / 2, 68);
-      g.font = F(600, 21); g.fillText('Authentic Thai Milk Tea · Pesan Online', W / 2, 104);
-      g.font = F(500, 18); g.fillText('Jln Swakarya, Kota Pekanbaru (dekat Jln HR Soebrantas)', W / 2, 132);
+      g.font = FONT(800, 44); g.fillText('KEDAI THAI TEA', W / 2, 68);
+      g.font = FONT(600, 21); g.fillText('Authentic Thai Milk Tea · Pesan Online', W / 2, 104);
+      g.font = FONT(500, 18); g.fillText('Jln Swakarya, Kota Pekanbaru (dekat Jln HR Soebrantas)', W / 2, 132);
       let y = 200;
-      const row = (l, r, bold) => { g.textAlign = 'left'; g.fillStyle = '#6C6C70'; g.font = F(600, 22); g.fillText(l, P, y); g.textAlign = 'right'; g.fillStyle = '#1C1C1E'; g.font = F(bold ? 800 : 700, 22); g.fillText(r, W - P, y); y += 38; };
+      const row = (l, r) => { g.textAlign = 'left'; g.fillStyle = '#6C6C70'; g.font = FONT(500, 22); g.fillText(l, P, y); g.textAlign = 'right'; g.fillStyle = '#1C1C1E'; g.font = FONT(600, 22); g.fillText(r, W - P, y); y += 38; };
       const garis = () => { g.strokeStyle = '#D9CFC6'; g.setLineDash([8, 7]); g.lineWidth = 2; g.beginPath(); g.moveTo(P, y - 14); g.lineTo(W - P, y - 14); g.stroke(); g.setLineDash([]); y += 16; };
-      g.textAlign = 'center'; g.fillStyle = '#1C1C1E'; g.font = F(900, 34); g.fillText('NOTA PESANAN #' + o.no, W / 2, y); y += 50;
+      g.textAlign = 'center'; g.fillStyle = '#1C1C1E'; g.font = FONT(800, 34); g.fillText('NOTA PESANAN #' + o.no, W / 2, y); y += 50;
       row('Tanggal', `${tglDari(o.createdAt)} · ${jamDari(o.createdAt)}`);
       row('Atas nama', o.name);
       row('Jemput', o.pickupLabel === 'Sekarang' ? 'Sekarang' : 'Jam ' + o.pickupLabel);
@@ -916,18 +1008,18 @@
       row('Status', (STATUS[o.status] || ['-'])[0]);
       y += 6; garis();
       items.forEach(it => {
-        g.textAlign = 'left'; g.fillStyle = '#1C1C1E'; g.font = F(700, 23);
+        g.textAlign = 'left'; g.fillStyle = '#1C1C1E'; g.font = FONT(600, 23);
         g.fillText(`${it.qty}x ${it.name}`, P, y);
         g.textAlign = 'right'; g.fillText(rp(it.total), W - P, y);
-        if (it.toppings && it.toppings.length) { y += 30; g.textAlign = 'left'; g.fillStyle = '#6C6C70'; g.font = F(500, 19); g.fillText(`   + ${it.toppings.join(', ')} (@${rp(it.pricePerCup)}/cup)`, P, y); }
+        if (it.toppings && it.toppings.length) { y += 30; g.textAlign = 'left'; g.fillStyle = '#6C6C70'; g.font = FONT(500, 19); g.fillText(`   + ${it.toppings.join(', ')} (@${rp(it.pricePerCup)}/cup)`, P, y); }
         y += 44;
       });
       garis();
-      g.textAlign = 'left'; g.fillStyle = '#1C1C1E'; g.font = F(900, 30); g.fillText(`TOTAL (${o.totalCups} cup)`, P, y + 6);
+      g.textAlign = 'left'; g.fillStyle = '#1C1C1E'; g.font = FONT(800, 30); g.fillText(`TOTAL (${o.totalCups} cup)`, P, y + 6);
       g.textAlign = 'right'; g.fillStyle = '#A84A00'; g.fillText(rp(o.totalPrice), W - P, y + 6); y += 70;
-      g.textAlign = 'center'; g.fillStyle = '#1C1C1E'; g.font = F(700, 22);
-      g.fillText(`Terima kasih ${sapa()} ${profile ? profile.nick : ''}! 🧋`, W / 2, y); y += 34;
-      g.fillStyle = '#6C6C70'; g.font = F(500, 19);
+      g.textAlign = 'center'; g.fillStyle = '#1C1C1E'; g.font = FONT(600, 22);
+      g.fillText(`Terima kasih, ${profile ? profile.nick : ''}!`, W / 2, y); y += 34;
+      g.fillStyle = '#6C6C70'; g.font = FONT(500, 19);
       g.fillText('Semoga murah rezeki dan sehat selalu.', W / 2, y);
       await simpanGambar(cv, `Nota-ThaiTea-${o.no}-${o.date || ''}.jpg`, 'Nota Thai Tea');
     }
@@ -944,10 +1036,10 @@
       a.href = URL.createObjectURL(blob); a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast('Gambar disimpan ✅');
+      toast('Gambar disimpan');
     }
 
-    /* ============ PESANANKU (LACAK & RIWAYAT) ============ */
+    /* ============ PESANAN (LACAK & RIWAYAT) ============ */
     const AKTIF = ['bayar', 'cek', 'proses', 'siap'];
     let statusLama = LS.get('tt_pesan_seen', {});
     async function muatPesanan() {
@@ -955,7 +1047,6 @@
         const d = await api('orders?cid=' + encodeURIComponent(cid));
         serverOffset = d.now - Date.now();
         const baru = d.orders || [];
-        // bunyi + getar kalau ada pesanan yang baru berubah jadi Siap Dijemput
         let adaSiap = null;
         baru.forEach(o => { if (o.status === 'siap' && statusLama[o.id] && statusLama[o.id] !== 'siap') adaSiap = o; });
         const seen = {}; baru.forEach(o => seen[o.id] = o.status);
@@ -964,51 +1055,48 @@
         renderOrders();
         if (adaSiap) {
           dingDong(); getar([400, 150, 400, 150, 400]);
-          toast(`🎉 Pesanan #${adaSiap.no} sudah SIAP DIJEMPUT!`, 6000);
-          if (document.visibilityState === 'visible' && tab !== 'orders') gantiTab('orders');
+          toast(`Pesanan #${adaSiap.no} sudah SIAP DIJEMPUT!`, 6000);
+          if (document.visibilityState === 'visible' && tab === 'menu') gantiTab('orders');
         }
-      } catch (e) { if (tab === 'orders' && !ordersLoaded) $('activeOrders').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+      } catch (e) { if (tab === 'orders' && !ordersLoaded) $('activeOrders').innerHTML = `<div class="ios-group empty">${esc(e.message)}</div>`; }
     }
-    function ringkas(items) { return (items || []).map(i => `${i.qty}x ${esc(i.name)}${i.toppings && i.toppings.length ? ' <span style="color:var(--text2)">(+' + esc(i.toppings.join(', ')) + ')</span>' : ''}`).join('<br>'); }
+    function ringkas(items) { return (items || []).map(i => `${i.qty}x ${esc(i.name)}${i.toppings && i.toppings.length ? ' <span style="color:var(--text2)">+ ' + esc(i.toppings.join(', ')) + '</span>' : ''}`).join('<br>'); }
     function trackHtml(o) {
       const steps = [['cek', 'Dibayar'], ['proses', 'Disiapkan'], ['siap', 'Siap Dijemput'], ['selesai', 'Selesai']];
-      const urut = { bayar: -1, cek: 0, proses: 1, siap: 2, selesai: 3 };
-      const pos = urut[o.status];
+      const pos = { bayar: -1, cek: 0, proses: 1, siap: 2, selesai: 3 }[o.status];
       return `<div class="track">${steps.map(([k, l], i) => `<div class="st ${i < pos || o.status === 'selesai' ? 'done' : i === pos ? 'now' : ''}">${l}</div>`).join('')}</div>`;
     }
     function kartuPesanan(o) {
       const [label, cls] = STATUS[o.status] || ['-', 'pill'];
       const aktif = AKTIF.includes(o.status);
-      let extra = '';
-      if (o.status === 'bayar') extra = `<div class="ord-actions"><button type="button" class="btn btn-primary btn-sm" onclick="lanjutkanBayar('${o.id}')">Lanjutkan Bayar</button><button type="button" class="btn btn-red-tinted btn-sm" onclick="batalkanPesanan(orders.find(x=>x.id==='${o.id}'))">Batalkan</button></div>`;
-      else if (o.status === 'cek') extra = `<p class="muted" style="margin:8px 0 0">Kasir sedang mencocokkan pembayaranmu. Sebentar ya 🙏</p>`;
-      else if (o.status === 'proses') extra = `<p class="muted" style="margin:8px 0 0">Minumanmu sedang dibuat 🧋</p>`;
-      else if (o.status === 'siap') extra = `<div class="ready-banner">✅ Pesanan siap dijemput sejak jam ${jamDari(o.readyAt || now())}. Yuk jemput ke kedai, sebutkan nama <b>${esc(o.name)}</b>!</div>`;
-      else if (o.status === 'batal' && o.cancelReason) extra = `<p class="muted" style="margin:8px 0 0">${esc(o.cancelReason)}</p>`;
-      const bawah = !aktif ? `<div class="ord-actions">${o.status !== 'kedaluwarsa' && o.status !== 'batal' ? `<button type="button" class="btn btn-gray btn-sm" onclick="simpanNota(orders.find(x=>x.id==='${o.id}'))">🧾 Nota</button>` : ''}<button type="button" class="btn btn-tinted btn-sm" onclick="pesanLagi('${o.id}')">🔁 Pesan Lagi</button></div>`
-        : (o.status !== 'bayar' ? `<div class="ord-actions"><button type="button" class="btn btn-gray btn-sm" onclick="simpanNota(orders.find(x=>x.id==='${o.id}'))">🧾 Simpan Nota</button></div>` : '');
+      const nota = `<button type="button" class="btn btn-gray btn-sm" onclick="simpanNota(orders.find(x=>x.id==='${o.id}'))">${ic('down')}Nota</button>`;
+      let extra = '', aksi = '';
+      if (o.status === 'bayar') aksi = `<button type="button" class="btn btn-primary btn-sm" onclick="lanjutkanBayar('${o.id}')">${ic('qr')}Lanjutkan Bayar</button><button type="button" class="btn btn-gray btn-sm" style="color:var(--red)" onclick="batalkanPesanan(orders.find(x=>x.id==='${o.id}'))">Batalkan</button>`;
+      else if (o.status === 'cek') { extra = `<p class="ord-note">Kasir sedang mencocokkan pembayaranmu. Sebentar ya.</p>`; aksi = nota; }
+      else if (o.status === 'proses') { extra = `<p class="ord-note">Minumanmu sedang dibuat.</p>`; aksi = nota; }
+      else if (o.status === 'siap') { extra = `<div class="ready">${ic('bell')}<span>Siap dijemput sejak jam ${jamDari(o.readyAt || now())}. Yuk jemput ke kedai, sebutkan nama <b>${esc(o.name)}</b>.</span></div>`; aksi = nota; }
+      else {
+        if (o.status === 'batal' && o.cancelReason) extra = `<p class="ord-note">${esc(o.cancelReason)}</p>`;
+        aksi = (o.status === 'selesai' ? nota : '') + `<button type="button" class="btn btn-tinted btn-sm" onclick="pesanLagi('${o.id}')">${ic('repeat')}Pesan Lagi</button>`;
+      }
       return `<div class="ord">
-        <div class="ord-head"><div><div class="ord-no">Pesanan #${o.no} · ${tglDari(o.createdAt)} ${jamDari(o.createdAt)}</div><div class="ord-name">${esc(o.name)}</div></div><span class="pill ${cls}">${label}</span></div>
+        <div class="ord-head"><div><div class="ord-no">#${o.no} · ${tglDari(o.createdAt)}, ${jamDari(o.createdAt)}</div><div class="ord-name">${esc(o.name)}</div></div><span class="pill ${cls}">${label}</span></div>
         ${aktif && o.status !== 'bayar' ? trackHtml(o) : ''}
         <div class="ord-items">${ringkas(o.items)}</div>
-        <div class="ord-meta"><span class="pill">🕒 Jemput ${o.pickupLabel === 'Sekarang' ? 'sekarang' : 'jam ' + esc(o.pickupLabel)}</span><span class="pill">${o.totalCups} cup</span><span class="pill pill-orange">${rp(o.totalPrice)}</span>${o.readyAt ? `<span class="pill pill-green">Siap ${jamDari(o.readyAt)}</span>` : ''}${o.doneAt ? `<span class="pill">Diambil ${jamDari(o.doneAt)}</span>` : ''}</div>
-        ${extra}${bawah}
+        <div class="ord-meta"><span class="pill">${ic('clock')}${o.pickupLabel === 'Sekarang' ? 'Jemput sekarang' : 'Jemput ' + esc(o.pickupLabel)}</span><span class="pill">${o.totalCups} cup</span><span class="pill pill-orange">${rp(o.totalPrice)}</span>${o.doneAt ? `<span class="pill">Diambil ${jamDari(o.doneAt)}</span>` : ''}</div>
+        ${extra}${aksi ? `<div class="ord-actions">${aksi}</div>` : ''}
       </div>`;
     }
     function renderOrders() {
       const aktif = orders.filter(o => AKTIF.includes(o.status));
       const riwayat = orders.filter(o => !AKTIF.includes(o.status));
-      const nBadge = aktif.length;
-      $('ordersBadge').textContent = nBadge; $('ordersBadge').classList.toggle('hidden', !nBadge);
+      $('ordersBadge').textContent = aktif.length; $('ordersBadge').classList.toggle('hidden', !aktif.length);
       if (!ordersLoaded && !orders.length) { $('activeOrders').innerHTML = '<div class="loading">Memuat pesanan…</div>'; return; }
-      $('activeOrders').innerHTML = aktif.length ? aktif.map(kartuPesanan).join('') : `<div class="card empty"><div class="big">🧋</div>Belum ada pesanan aktif.<br><button type="button" class="btn btn-primary btn-sm" style="margin-top:12px" onclick="gantiTab('menu')">Pesan Sekarang</button></div>`;
+      $('activeOrders').innerHTML = aktif.length ? aktif.map(kartuPesanan).join('') : `<div class="ios-group empty"><svg class="i big"><use href="#i-receipt"/></svg>Belum ada pesanan yang berjalan.<br><button type="button" class="btn btn-tinted btn-sm" style="margin-top:12px" onclick="gantiTab('menu')">Pesan Sekarang</button></div>`;
       $('historyLabel').classList.toggle('hidden', !riwayat.length);
       $('historyOrders').innerHTML = riwayat.map(kartuPesanan).join('');
     }
-    function lanjutkanBayar(id) {
-      const o = orders.find(x => x.id === id);
-      if (o && o.qris) bukaBayar(o, o.qris);
-    }
+    function lanjutkanBayar(id) { const o = orders.find(x => x.id === id); if (o && o.qris) bukaBayar(o, o.qris); }
     function pesanLagi(id) {
       const o = orders.find(x => x.id === id);
       if (!o || !info) return;
@@ -1029,34 +1117,108 @@
       if (cart.length) bukaCheckout();
     }
 
+    /* ============ CHAT RESTO ============ */
+    let chatMsgs = [], chatLoaded = false, chatLastSeen = LS.get('tt_pesan_chat_seen', 0), kirimSedang = false;
+    async function muatChat() {
+      try {
+        const d = await api('chat?cid=' + encodeURIComponent(cid));
+        const sebelum = chatMsgs.length ? chatMsgs[chatMsgs.length - 1].id : null;
+        chatMsgs = d.msgs || []; chatLoaded = true;
+        const terakhir = chatMsgs.length ? chatMsgs[chatMsgs.length - 1] : null;
+        if (terakhir && sebelum && terakhir.id !== sebelum && !terakhir.me) { dingDong(true); getar(80); if (tab !== 'chat') toast('Pesan baru dari Kedai Thai Tea'); }
+        if (tab === 'chat' && document.visibilityState === 'visible') tandaiChatDibaca();
+        renderChat(); renderChatBadge();
+      } catch (e) { if (tab === 'chat' && !chatLoaded) $('msgs').innerHTML = `<div class="chat-empty">${esc(e.message)}</div>`; }
+    }
+    function tandaiChatDibaca() {
+      const last = chatMsgs.filter(m => !m.me).pop();
+      if (last && last.ts > chatLastSeen) { chatLastSeen = last.ts; LS.set('tt_pesan_chat_seen', chatLastSeen); }
+      renderChatBadge();
+    }
+    function renderChatBadge() {
+      const n = chatMsgs.filter(m => !m.me && m.ts > chatLastSeen).length;
+      $('chatBadge').textContent = n; $('chatBadge').classList.toggle('hidden', !n);
+    }
+    let chatSig = '';
+    function renderChat() {
+      if (tab !== 'chat') return;
+      const box = $('msgs');
+      if (!chatLoaded) { box.innerHTML = '<div class="loading">Memuat chat…</div>'; return; }
+      const sig = chatMsgs.map(m => m.id).join(',');
+      if (sig === chatSig && box.dataset.ready) return;   // tidak ada pesan baru: jangan gambar ulang
+      chatSig = sig;
+      if (!chatMsgs.length) { box.innerHTML = `<div class="chat-empty"><svg class="i"><use href="#i-chat"/></svg>Belum ada pesan.<br>Mau tanya menu atau pesanan? Tulis di bawah ya.</div>`; box.dataset.ready = '1'; return; }
+      const dekatBawah = window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
+      let html = '';
+      chatMsgs.forEach((m, i) => {
+        const prev = chatMsgs[i - 1];
+        if (!prev || m.ts - prev.ts > 15 * 60000 || tglDari(prev.ts) !== tglDari(m.ts)) html += `<div class="m-time">${tglDari(m.ts) === tglDari(now()) ? 'Hari ini' : tglDari(m.ts)} ${jamDari(m.ts)}</div>`;
+        const ganti = prev && prev.me !== m.me;
+        if (!m.me && (!prev || prev.me || m.ts - prev.ts > 15 * 60000)) html += `<div class="m-name">${esc(m.name || 'Kedai')}</div>`;
+        let body, cls = '';
+        if (m.type === 'image' && m.url) { body = `<img src="${esc(m.url)}" alt="Foto">`; cls = 'media'; }
+        else if (m.type === 'audio' && m.url) { body = `<audio controls preload="none" src="${esc(m.url)}"></audio>`; cls = 'media'; }
+        else body = esc(m.text);
+        html += `<div class="m-row ${m.me ? 'me' : 'them'} ${ganti ? 'gap' : ''}"><div class="bubble ${cls}">${body}</div></div>`;
+      });
+      if (chatMsgs[chatMsgs.length - 1].me) html += `<div class="m-status">Terkirim</div>`;
+      box.innerHTML = html;
+      if (dekatBawah || !box.dataset.ready) { box.dataset.ready = '1'; requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight)); }
+    }
+    function ketikChat() {
+      const t = $('chatInput');
+      t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight) + 'px';
+      $('sendBtn').disabled = !t.value.trim();
+    }
+    async function kirimChat() {
+      const t = $('chatInput'), text = t.value.trim();
+      if (!text || kirimSedang) return;
+      if (!profile) { bukaOnboard(false); return; }
+      kirimSedang = true; $('sendBtn').disabled = true;
+      try {
+        const d = await api('chat', { cid, nick: profile.nick, gender: profile.gender, text });
+        chatMsgs.push(d.msg); t.value = ''; ketikChat(); renderChat();
+        requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight));
+      } catch (e) { toast(e.message, 4000); $('sendBtn').disabled = false; }
+      finally { kirimSedang = false; }
+    }
+    $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !/Android|iPhone|iPad/i.test(navigator.userAgent)) { e.preventDefault(); kirimChat(); } });
+
     /* ============ TAB & SIKLUS ============ */
+    const JUDUL = { menu: 'Menu', orders: 'Pesanan', chat: 'Chat Resto' };
     function gantiTab(t) {
       tab = t;
       $('paneMenu').classList.toggle('hidden', t !== 'menu');
       $('paneOrders').classList.toggle('hidden', t !== 'orders');
+      $('paneChat').classList.toggle('hidden', t !== 'chat');
+      $('composer').classList.toggle('hidden', t !== 'chat');
       $('tabMenu').classList.toggle('active', t === 'menu');
       $('tabOrders').classList.toggle('active', t === 'orders');
+      $('tabChat').classList.toggle('active', t === 'chat');
+      $('navTitle').textContent = JUDUL[t];
       renderCartBar(); window.scrollTo(0, 0);
       if (t === 'orders') { renderOrders(); muatPesanan(); }
+      if (t === 'chat') { $('msgs').dataset.ready = ''; chatSig = ''; renderChat(); muatChat().then(tandaiChatDibaca); }
     }
     function tutupTip() { $('installTip').classList.add('hidden'); LS.set('tt_pesan_tip', 1); }
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (!standalone && !LS.get('tt_pesan_tip', 0)) $('installTip').classList.remove('hidden');
-    window.addEventListener('scroll', () => $('topbar').classList.toggle('scrolled', window.scrollY > 6), { passive: true });
+    window.addEventListener('scroll', () => $('navbar').classList.toggle('scrolled', window.scrollY > 30), { passive: true });
 
-    function siklus() {
+    let detik = 0;
+    setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      const adaAktif = orders.some(o => ['cek', 'proses', 'siap'].includes(o.status));
-      if (adaAktif || tab === 'orders') muatPesanan();
-    }
-    setInterval(siklus, 8000);
-    setInterval(() => { if (document.visibilityState === 'visible') muatInfo(); }, 60000);
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { muatInfo(); muatPesanan(); } });
+      detik += 4;
+      if (tab === 'chat' || detik % 20 === 0) muatChat();
+      if (detik % 8 === 0 && (orders.some(o => ['cek', 'proses', 'siap'].includes(o.status)) || tab === 'orders')) muatPesanan();
+      if (detik % 60 === 0) muatInfo();
+    }, 4000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { muatInfo(); muatPesanan(); muatChat(); } });
 
     // Mulai
-    if (!profile) bukaOnboard(false); else { $('app').classList.remove('hidden'); }
+    if (!profile) bukaOnboard(false); else $('app').classList.remove('hidden');
     renderHello();
-    muatInfo(); muatPesanan();
+    muatInfo(); muatPesanan(); muatChat();
   </script>
 </body>
 </html>

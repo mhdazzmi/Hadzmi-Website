@@ -19,6 +19,14 @@
      POST /api/pesan/paid                 { cid, id, payerName }  customer sudah bayar
      POST /api/pesan/cancel               { cid, id }             batalkan (hanya yang belum dibayar)
      GET  /api/pesan/orders?cid=          riwayat pesanan HP ini
+     GET  /api/pesan/chat?cid=            Chat Resto: pesan antara customer & kedai
+     POST /api/pesan/chat                 { cid, nick, gender, text }  kirim pesan ke kedai
+   Chat Resto disimpan di tempat yang sama dengan chat kasir supaya tampil di menu Chat kasir:
+     thaitea/chat/cs_<hash cid>/<id>    { id, ts, from: 'cs', name, text }  (balasan kasir: from = nama kasir)
+     thaitea/cs_rooms/cs_<hash cid>     { nick, gender, lastTs, lastText }
+   Cron tiap menit (nudgeKasir): pesanan berstatus "cek" yang belum ditangani kasir
+   dikirimi notifikasi ulang ke HP kasir tiap menit, maksimal NUDGE_MAX kali.
+   Daftarnya disimpan di KV pesan_cek (kosong = tidak ada pekerjaan, tanpa baca Firebase).
    Variabel opsional (Dashboard Cloudflare):
      TT_FIREBASE_URL     URL Realtime Database kasir (bawaan: kasir-thai-tea)
      TT_FIREBASE_SECRET  (Secret) database secret, wajib diisi kalau rules Firebase kasir dikunci
@@ -42,6 +50,8 @@ const MAX_CUPS = 30;
 const MAX_UNPAID = 2;              // pesanan belum dibayar per HP
 const ORDERS_PER_MIN = 20;         // semua customer
 const TOPPING_PRICE = 3000;
+const NUDGE_MAX = 10;              // jumlah notifikasi ke kasir per pesanan (termasuk yang pertama)
+const NUDGE_KEY = 'pesan_cek';
 
 // Sama dengan MENU_DATABASE di public/thaitea/index.html (Es Teler sudah tidak dijual)
 const MENU = [
@@ -158,11 +168,11 @@ export async function handlePesan(request, env, url, ctx) {
     const patch = { status: 'cek', paidClaimAt: Date.now(), payerName: cleanText(b.payerName, 40) };
     await fb(env, 'PATCH', 'online_orders/' + order.id, patch);
     Object.assign(order, patch);
-    await pushKasir(env, ctx, {
-      title: '🔔 PESANAN ONLINE BARU #' + order.no,
-      body: `${order.name} · ${rp(order.totalPrice)} · jemput ${order.pickupLabel}. Cek pembayaran QRIS${patch.payerName ? ' a.n. ' + patch.payerName : ''}.`,
-      urgent: true
-    }).catch(() => {});
+    await pushKasir(env, ctx, notifPesanan(order, 1)).catch(() => {});
+    // masuk daftar pengingat: dikirim ulang tiap menit oleh cron sampai kasir menanganinya
+    const list = ((await env.HUB_KV.get(NUDGE_KEY, 'json')) || []).filter(x => x.id !== order.id);
+    list.push({ id: order.id, sent: 1, last: Date.now() });
+    await env.HUB_KV.put(NUDGE_KEY, JSON.stringify(list.slice(-30)));
     return json({ order: publicOrder(order) });
   }
 
@@ -191,7 +201,76 @@ export async function handlePesan(request, env, url, ctx) {
     });
   }
 
+  if (path === '/api/pesan/chat' && method === 'GET') {
+    const cid = cleanCid(url.searchParams.get('cid'));
+    if (!cid) return json({ msgs: [] });
+    const room = await roomOf(cid);
+    const data = await fb(env, 'GET', 'chat/' + room, undefined, 'orderBy="$key"&limitToLast=150');
+    const msgs = Object.values(data || {}).filter(m => m && m.ts).sort((a, b) => a.ts - b.ts).map(m => ({
+      id: m.id, ts: m.ts, me: m.from === 'cs', name: m.from === 'cs' ? '' : (m.name || 'Kedai'),
+      type: m.type || 'text', text: m.text || '', url: safeFile(m.url), dur: m.dur || 0
+    }));
+    return json({ now: Date.now(), msgs });
+  }
+
+  if (path === '/api/pesan/chat' && method === 'POST') {
+    const b = await readJson(request);
+    const cid = cleanCid(b.cid);
+    const text = String(b.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, 600);
+    if (!cid) return json({ error: 'Data HP tidak dikenali, muat ulang halaman.' }, 400);
+    if (!text) return json({ error: 'Pesan kosong.' }, 400);
+    const nick = cleanText(b.nick, 24) || 'Customer';
+    const gender = b.gender === 'L' ? 'L' : b.gender === 'P' ? 'P' : '';
+    const minute = Math.floor(Date.now() / 60000);
+    const rate = (await env.HUB_KV.get('pesan_chat_rate', 'json')) || { minute: 0, count: 0 };
+    if (rate.minute === minute && rate.count >= 60) return json({ error: 'Lagi ramai, coba kirim lagi sebentar ya.' }, 429);
+    await env.HUB_KV.put('pesan_chat_rate', JSON.stringify({ minute, count: rate.minute === minute ? rate.count + 1 : 1 }));
+    const room = await roomOf(cid);
+    const ts = Date.now();
+    const id = 'M' + ts + Math.random().toString(36).slice(2, 6);
+    await fb(env, 'PUT', 'chat/' + room + '/' + id, { id, ts, from: 'cs', name: nick, text });
+    const meta = (await fb(env, 'GET', 'cs_rooms/' + room)) || {};
+    await fb(env, 'PATCH', 'cs_rooms/' + room, { nick, gender, lastTs: ts, lastText: text.slice(0, 80) });
+    // notifikasi ke HP kasir, paling sering sekali per 30 detik per customer
+    if (!meta.lastPush || ts - meta.lastPush > 30000) {
+      await fb(env, 'PATCH', 'cs_rooms/' + room, { lastPush: ts });
+      await pushKasir(env, ctx, { title: '💬 Chat Resto · ' + nick, body: text.slice(0, 200), tag: 'chat-' + room }).catch(() => {});
+    }
+    return json({ ok: true, msg: { id, ts, me: true, name: '', type: 'text', text } });
+  }
+
   return json({ error: 'Not found' }, 404);
+}
+
+async function roomOf(cid) {
+  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('tt-chat:' + cid)));
+  return 'cs_' + Array.from(h.slice(0, 10), x => x.toString(16).padStart(2, '0')).join('');
+}
+function safeFile(u) { return typeof u === 'string' && /^\/api\/thaitea\/file\/[0-9a-f-]{36}\.[a-z0-9]{2,4}$/.test(u) ? u : ''; }
+
+// ---------- notifikasi berulang ke HP kasir ----------
+function notifPesanan(order, ke) {
+  return {
+    title: (ke > 1 ? `⏰ PENGINGAT ${ke}/${NUDGE_MAX} · ` : '🔔 ') + 'PESANAN ONLINE #' + order.no,
+    body: `${order.name} · ${rp(order.totalPrice)} · jemput ${order.pickupLabel}. ` + (ke > 1 ? 'Belum dicek! ' : '') + `Cek pembayaran QRIS${order.payerName ? ' a.n. ' + order.payerName : ''}.`,
+    urgent: true, tag: 'online-' + order.id
+  };
+}
+export async function nudgeKasir(env, ctx) {
+  if (!env.HUB_KV) return;
+  const list = await env.HUB_KV.get(NUDGE_KEY, 'json');
+  if (!list || !list.length) return;
+  const now = Date.now(), next = [];
+  for (const it of list) {
+    if (now - it.last < 50000) { next.push(it); continue; }
+    const order = await fb(env, 'GET', 'online_orders/' + it.id).catch(() => undefined);
+    if (order === undefined) { next.push(it); continue; }        // Firebase gagal: coba menit depan
+    if (!order || order.status !== 'cek') continue;               // sudah ditangani / dihapus
+    const ke = it.sent + 1;
+    await pushKasir(env, ctx, notifPesanan(order, ke)).catch(() => {});
+    if (ke < NUDGE_MAX) next.push({ ...it, sent: ke, last: now });
+  }
+  await env.HUB_KV.put(NUDGE_KEY, JSON.stringify(next));
 }
 
 // ---------- data ----------
@@ -244,10 +323,12 @@ function publicOrder(o) {
   out.expiresAt = (o.createdAt || 0) + PAY_WINDOW_MIN * 60000;
   return out;
 }
-async function fb(env, method, path, body) {
+async function fb(env, method, path, body, query) {
   const base = String(env.TT_FIREBASE_URL || DB_URL).replace(/\/+$/, '');
-  let u = base + '/thaitea/' + path + '.json';
-  if (env.TT_FIREBASE_SECRET) u += '?auth=' + encodeURIComponent(env.TT_FIREBASE_SECRET);
+  const q = [];
+  if (query) q.push(query);
+  if (env.TT_FIREBASE_SECRET) q.push('auth=' + encodeURIComponent(env.TT_FIREBASE_SECRET));
+  const u = base + '/thaitea/' + path + '.json' + (q.length ? '?' + q.join('&') : '');
   const init = { method };
   if (body !== undefined) { init.body = JSON.stringify(body); init.headers = { 'Content-Type': 'application/json' }; }
   const res = await fetch(u, init);
