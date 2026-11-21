@@ -405,6 +405,109 @@
     .field-label + .search, .field-label + select { margin-top: 0; }
     span.field-label[style*="margin-top"] { display: block; }
 
+
+    /* ---------- AVATAR / PROFIL ---------- */
+    .ava { width: 42px; height: 42px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 17px; background: #C7C7CC center/cover no-repeat; position: relative; }
+    .ava-lg { width: 72px; height: 72px; font-size: 30px; }
+    .ava .on-dot { position: absolute; right: -1px; bottom: -1px; width: 13px; height: 13px; border-radius: 50%; background: #34C759; border: 2.5px solid #fff; }
+    .profile-ava { position: relative; cursor: pointer; flex: none; }
+    .profile-cam { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; }
+    .who-btn.has-ava { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 18px; min-height: 104px; }
+    .tab-ico { position: relative; display: inline-flex; }
+    .tab-badge { position: absolute; top: -6px; right: -12px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #FF3B30; color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+
+    /* ---------- PENANDA BAYAR & TOMBOL IKON ---------- */
+    .pay { display: inline-flex; align-items: center; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 7px; letter-spacing: .02em; }
+    .pay-tunai { background: #E5F6EB; color: #1E7B3E; }
+    .pay-qris { background: #E6F0FD; color: #0A5BC2; }
+    .pay-shopee { background: #FFE9E3; color: #D73211; }
+    .pay-lain { background: var(--fill); color: var(--text2); }
+    .lc-actions.icons { justify-content: space-between; margin-top: 10px; }
+    .icon-act { width: 46px; height: 46px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+    .icon-act svg { width: 22px; height: 22px; }
+    .icon-act.edit { background: var(--accent-soft); color: var(--accent-text); }
+    .icon-act.del { background: var(--red-soft); color: var(--red); }
+    .icon-act:active { transform: scale(.92); }
+
+    /* ---------- CARI MENU ---------- */
+    .menu-search { display: flex; gap: 8px; align-items: center; }
+    .menu-search .search { flex: 1; }
+    .menu-search .input { min-height: 46px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--sep); }
+    .chip-search { background: #fff; color: var(--text2); }
+
+    /* ---------- STATUS PENGGUNA ---------- */
+    .user-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; position: relative; }
+    .user-row + .user-row::before { content: ''; position: absolute; top: 0; left: 70px; right: 0; height: .5px; background: var(--sep); }
+    .user-row .un { font-size: 17px; font-weight: 700; }
+    .user-row .us { font-size: 14px; color: var(--text2); margin-top: 2px; }
+    .user-row .us.on { color: var(--green); font-weight: 700; }
+
+    /* ---------- CHAT ---------- */
+    .room-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; position: relative; cursor: pointer; width: 100%; text-align: left; }
+    .room-row + .room-row::before { content: ''; position: absolute; top: 0; left: 74px; right: 0; height: .5px; background: var(--sep); }
+    .room-row:active { background: var(--bg); }
+    .room-row .ava { width: 48px; height: 48px; font-size: 19px; }
+    .room-main { flex: 1; min-width: 0; }
+    .room-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .room-name { font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .room-time { font-size: 13px; color: var(--text2); flex: none; }
+    .room-bottom { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 2px; }
+    .room-last { font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .room-unread { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+    .chat-view { position: fixed; inset: 0; z-index: 1000000; background: #F7EFE6; display: flex; flex-direction: column; height: 100%; }
+    .chat-head { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 10px 4px; background: rgba(255, 255, 255, .92); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-bottom: .5px solid var(--sep); flex: none; }
+    .chat-back { width: 44px; height: 44px; color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+    .chat-head-name { font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-head-status { font-size: 13px; color: var(--text2); }
+    .chat-head-status.on { color: var(--green); font-weight: 700; }
+    .chat-msgs { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .msg-day { align-self: center; background: rgba(255, 255, 255, .85); color: var(--text2); font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 10px; margin: 10px 0 6px; }
+    .msg { display: flex; gap: 8px; align-items: flex-end; max-width: 86%; }
+    .msg.me { align-self: flex-end; flex-direction: row-reverse; }
+    .msg .ava { width: 30px; height: 30px; font-size: 13px; }
+    .msg.me .ava, .msg.cont .ava { visibility: hidden; }
+    .bubble { padding: 9px 13px 7px; border-radius: 20px; font-size: 17px; line-height: 1.35; background: #fff; color: var(--text); box-shadow: 0 1px 1.5px rgba(0, 0, 0, .08); word-wrap: break-word; overflow-wrap: anywhere; min-width: 64px; }
+    .msg:not(.me) .bubble { border-bottom-left-radius: 6px; }
+    .msg.me .bubble { background: linear-gradient(160deg, #FF9F43, #EA6A0A); color: #fff; border-bottom-right-radius: 6px; }
+    .bubble .who { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+    .bubble .t { font-size: 11.5px; opacity: .7; text-align: right; margin-top: 3px; }
+    .bubble img { display: block; max-width: 230px; max-height: 300px; width: 100%; border-radius: 14px; margin: 2px 0; cursor: zoom-in; background: #eee; }
+    .vn { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .vn button { width: 42px; height: 42px; border-radius: 50%; background: rgba(0, 0, 0, .08); display: flex; align-items: center; justify-content: center; flex: none; }
+    .msg.me .vn button { background: rgba(255, 255, 255, .25); }
+    .vn .bar { flex: 1; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; }
+    .msg.me .vn .bar { background: rgba(255, 255, 255, .35); }
+    .vn .bar i { display: block; height: 100%; width: 0; background: currentColor; }
+    .vn .d { font-size: 13px; font-weight: 700; min-width: 34px; }
+    .chat-compose { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px); background: rgba(255, 255, 255, .95); border-top: .5px solid var(--sep); flex: none; }
+    .chat-compose textarea { flex: 1; min-height: 46px; max-height: 120px; resize: none; border: 1.5px solid var(--sep); border-radius: 23px; padding: 11px 16px; font-size: 17px; line-height: 1.3; outline: none; background: #fff; font-family: inherit; }
+    .chat-compose textarea:focus { border-color: var(--accent); }
+    .cc-btn { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); flex: none; cursor: pointer; }
+    .cc-round { width: 46px; height: 46px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+    .chat-rec { display: flex; align-items: center; gap: 10px; padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px); background: #fff; border-top: .5px solid var(--sep); font-size: 17px; }
+    .chat-rec > span:nth-child(2) { flex: 1; }
+    .rec-dot { width: 12px; height: 12px; border-radius: 50%; background: #FF3B30; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: .2; } }
+    .img-viewer { position: fixed; inset: 0; z-index: 1000003; background: rgba(0, 0, 0, .92); display: flex; align-items: center; justify-content: center; }
+    .img-viewer img { max-width: 100%; max-height: 100%; }
+
+    /* ---------- POP-UP BERHASIL ---------- */
+    .success-pop { position: fixed; inset: 0; z-index: 1000004; background: radial-gradient(circle at 50% 35%, #FFF6EA, #FFE2C2); display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .sp-card { width: 100%; max-width: 420px; text-align: center; animation: popIn .45s cubic-bezier(.2, 1.3, .4, 1); position: relative; z-index: 2; }
+    .sp-art { width: min(68vw, 260px); height: min(68vw, 260px); margin: 0 auto; animation: bob 2.4s ease-in-out infinite; }
+    .sp-yey { font-size: 44px; font-weight: 900; color: var(--accent); letter-spacing: -.02em; margin-top: 6px; }
+    .sp-title { font-size: 26px; font-weight: 800; line-height: 1.25; margin: 4px 8px 0; }
+    .sp-detail { font-size: 17px; color: var(--text2); margin: 10px 8px 26px; line-height: 1.4; white-space: pre-line; }
+    @keyframes popIn { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes bob { 50% { transform: translateY(-8px); } }
+    .sp-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .sp-confetti i { position: absolute; top: -20px; width: 10px; height: 16px; border-radius: 3px; animation: fall linear forwards; }
+    @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+    .cartoon-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+    .cartoon-pick button { aspect-ratio: 1; border-radius: 14px; background: var(--bg); padding: 4px; position: relative; box-shadow: inset 0 0 0 2px transparent; }
+    .cartoon-pick button.active { background: var(--accent-soft); box-shadow: inset 0 0 0 3px var(--accent); }
+    .cartoon-pick button span { position: absolute; top: 3px; left: 6px; font-size: 11px; font-weight: 800; color: var(--text2); }
+
     /* ---------- TABBAR ---------- */
     .tabbar {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
@@ -466,6 +569,7 @@
     .white-group .input { background: var(--bg); }
 
     /* ---------- ALERT ala iOS ---------- */
+    .alert-backdrop:not(.show) { pointer-events: none; }
     .alert-backdrop { position: fixed; inset: 0; z-index: 1000001; background: rgba(0, 0, 0, .4); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; transition: opacity .2s; }
     .alert-backdrop.show { opacity: 1; }
     .alert-box { width: 100%; max-width: 320px; background: rgba(248, 248, 250, .98); border-radius: 18px; overflow: hidden; text-align: center; transform: scale(1.08); transition: transform .22s cubic-bezier(.2, .9, .3, 1.2); }
@@ -516,7 +620,7 @@
         </div>
         <div class="nav-actions">
           <button type="button" class="nav-icon" onclick="switchTab('tab-aktivitas')" aria-label="Catatan Aktivitas" title="Catatan Aktivitas"><i class="fas fa-list-check"></i></button>
-          <button type="button" class="nav-icon" onclick="switchTab('tab-admin')" aria-label="Admin" title="Admin"><i class="fas fa-gear"></i></button>
+          <button type="button" class="nav-icon" onclick="switchTab('tab-admin')" aria-label="Pengaturan" title="Pengaturan"><i class="fas fa-gear"></i></button>
         </div>
       </div>
       <div id="offlineBanner" class="offline-banner hidden"><i class="fas fa-wifi"></i> Tidak ada internet. Data akan terkirim saat online lagi.</div>
@@ -534,7 +638,15 @@
 
         <div class="split">
           <div>
-            <div class="chips">
+            <div id="menuSearchRow" class="menu-search hidden">
+              <div class="search">
+                <i class="fas fa-magnifying-glass"></i>
+                <input type="search" id="menuSearchInput" oninput="cariMenu(this.value)" placeholder="Cari menu, mis. mangga" class="input" autocomplete="off">
+              </div>
+              <button type="button" class="btn btn-gray btn-sm" style="min-height:46px" onclick="tutupCariMenu()">Tutup</button>
+            </div>
+            <div class="chips" id="chipsRow">
+              <button type="button" onclick="bukaCariMenu()" class="chip chip-search" aria-label="Cari menu">🔍 Cari</button>
               <button onclick="filterMenu('all', event)" class="chip cat-pill active">Semua</button>
               <button onclick="filterMenu('thai-premium', event)" class="chip cat-pill">Premium 15rb</button>
               <button onclick="filterMenu('thai-regular', event)" class="chip cat-pill">Regular 10rb</button>
@@ -564,7 +676,7 @@
                 <div class="segmented" data-target="paymentMethod">
                   <button type="button" data-val="Tunai" class="active">💵 Tunai</button>
                   <button type="button" data-val="QRIS">📱 QRIS</button>
-                  <button type="button" data-val="Transfer">💳 Transfer</button>
+                  <button type="button" data-val="Shopee">🛍️ Shopee</button>
                 </div>
                 <input type="hidden" id="paymentMethod" value="Tunai">
               </div>
@@ -789,22 +901,13 @@
         </div>
       </section>
 
-      <!-- ================= TAB 5: STOK ================= -->
-      <section id="tab-stok" class="tab-content hidden">
-        <h1 class="large-title">Stok Bahan</h1>
-        <p class="page-sub">Stok bubuk per rasa, susu, dan cup secara real-time.</p>
-
-        <button onclick="openManualStockUpdateModal()" class="btn btn-primary btn-block" style="margin-bottom:16px">
-          <i class="fas fa-pen-to-square"></i> Update Stok Manual
-        </button>
-
-        <div id="stockCardsGrid" class="stock-grid"></div>
-
-        <div class="info-box" style="margin-top:16px">
-          <h4><i class="fas fa-circle-info"></i> Aturan Potong & Tambah Stok</h4>
-          <p>• Setiap rasa punya stok bubuk sendiri (Matcha, Mangga, Coklat, Tarro, Cappuccino, Red Velvet, Vanilla, Lemon Tea, Peach Tea, Thai Tea Original).</p>
-          <p>• Varian <b>Premium</b> maupun <b>Regular/Original</b> memakai bubuk rasa yang sama.</p>
-          <p>• <b>Susu/Krimer</b> terpotong 50 ml per cup untuk semua Thai Tea / Milk Tea (Premium maupun Regular).</p>
+      <!-- ================= TAB 5: CHAT ================= -->
+      <section id="tab-chat" class="tab-content hidden">
+        <h1 class="large-title">Chat</h1>
+        <p class="page-sub">Kirim pesan, foto, dan pesan suara.</p>
+        <div class="narrow">
+          <div id="chatRoomList" class="list"></div>
+          <p class="card-sub" style="margin:12px 6px 0">Ketuk "Chat Semua" untuk mengobrol bersama, atau ketuk nama untuk chat pribadi.</p>
         </div>
       </section>
 
@@ -836,35 +939,68 @@
       <!-- ================= ADMIN (ikon gerigi kecil di kanan atas) ================= -->
       <section id="tab-admin" class="tab-content hidden">
         <button type="button" class="back-btn" onclick="switchTab(lastMainTab)"><i class="fas fa-chevron-left"></i> Kembali</button>
-        <h1 class="large-title">Admin</h1>
-        <p class="page-sub">Pengaturan & fitur lanjutan. Semua yang diatur di sini langsung berlaku.</p>
+        <h1 class="large-title">Pengaturan</h1>
+        <p class="page-sub">Profil, notifikasi, dan bagian admin.</p>
 
         <div class="narrow">
-          <!-- 1. HP INI -->
-          <div class="section-label"><span>① HP Ini</span></div>
+          <!-- PROFIL -->
+          <div class="section-label"><span>Profil Saya</span></div>
           <div class="card">
-            <div class="row-between">
-              <div>
-                <div class="toggle-title">Dipakai oleh</div>
-                <div class="toggle-desc">Nama ini muncul di Aktivitas & notifikasi.</div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <label class="profile-ava" title="Ganti foto">
+                <span id="profileAva" class="ava ava-lg"></span>
+                <span class="profile-cam"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="#fff" d="M9 4l-1.8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4H9zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg></span>
+                <input type="file" accept="image/*" onchange="gantiFotoProfil(this)" hidden>
+              </label>
+              <div style="min-width:0;flex:1">
+                <div id="adminDeviceName" style="font-size:22px;font-weight:800">-</div>
+                <div class="toggle-desc">Ketuk foto untuk mengganti. Nama ini muncul di Chat, Aktivitas & notifikasi.</div>
               </div>
-              <span id="adminDeviceName" class="pill pill-orange" style="font-size:15px;padding:6px 12px">-</span>
             </div>
-            <button type="button" class="btn btn-gray btn-block" style="margin-top:12px" onclick="openWhoSheet()"><i class="fas fa-user-pen"></i> Ganti Nama Pengguna</button>
+            <button type="button" class="btn btn-gray btn-block" style="margin-top:14px" onclick="openWhoSheet()"><i class="fas fa-user-pen"></i> Ganti Nama Pengguna</button>
           </div>
 
-          <!-- 2. NOTIFIKASI -->
-          <div class="section-label"><span>② Notifikasi</span></div>
+          <!-- NOTIFIKASI -->
+          <div class="section-label"><span>Notifikasi</span></div>
           <div class="card">
-            <div class="toggle-title">Notifikasi saat ada catatan baru</div>
+            <div class="toggle-title">Notifikasi pesanan, belanja & chat</div>
             <div class="toggle-desc" id="pushStatusText">Mengecek…</div>
             <button type="button" id="pushEnableBtn" class="btn btn-primary btn-block" style="margin-top:12px" onclick="aktifkanNotifikasi(true)"><i class="fas fa-bell"></i> Aktifkan di HP Ini</button>
             <button type="button" class="btn btn-gray btn-block" style="margin-top:10px" onclick="kirimNotifTes()"><i class="fas fa-paper-plane"></i> Kirim Notifikasi Tes</button>
             <p class="card-sub" style="margin-top:10px">iPhone: pasang dulu lewat Safari → Bagikan → <b>Tambah ke Layar Utama</b>, buka dari ikon itu, lalu aktifkan di sini. Android: Chrome → ⋮ → <b>Tambahkan ke layar utama</b>.</p>
           </div>
 
+          <!-- KUNCI ADMIN (hanya tampil untuk Azzmi) -->
+          <div id="adminLockBox" class="hidden">
+            <div class="section-label"><span>Admin</span></div>
+            <div class="card">
+              <div class="toggle-title">🔒 Bagian Admin terkunci</div>
+              <div class="toggle-desc" id="adminLockDesc">Masukkan PIN admin untuk membuka stok, laporan, pengguna, dan data.</div>
+              <button type="button" class="btn btn-dark btn-block" style="margin-top:12px" onclick="bukaAdmin()"><i class="fas fa-lock-open"></i> Buka Bagian Admin</button>
+            </div>
+          </div>
+
+          <div id="adminArea" class="hidden">
+          <!-- STATUS PENGGUNA -->
+          <div class="section-label"><span>Status Pengguna</span><button type="button" class="link-red" style="color:var(--text2);font-size:14px;min-height:30px" onclick="kunciAdmin()"><i class="fas fa-lock"></i> Kunci</button></div>
+          <div id="userStatusList" class="list"></div>
+          <p class="card-sub" style="margin:8px 6px 0">Online = sedang membuka web. Nama yang sama dianggap satu akun.</p>
+
+          <div class="section-label"><span>Stok Bahan</span></div>
+          <div class="card">
+            <button onclick="openManualStockUpdateModal()" class="btn btn-primary btn-block" style="margin-bottom:14px">
+              <i class="fas fa-pen-to-square"></i> Update Stok Manual
+            </button>
+            <div id="stockCardsGrid" class="stock-grid"></div>
+            <div class="info-box" style="margin-top:14px">
+              <h4><i class="fas fa-circle-info"></i> Aturan Potong Stok</h4>
+              <p>• Setiap rasa punya stok bubuk sendiri. Varian <b>Premium</b> maupun <b>Regular</b> memakai bubuk yang sama.</p>
+              <p>• <b>Susu/Krimer</b> terpotong 50 ml per cup Thai Tea. Cup terpotong 1 per cup.</p>
+            </div>
+          </div>
+
           <!-- 3. LAPORAN -->
-          <div class="section-label"><span>③ Laporan</span></div>
+          <div class="section-label"><span>Laporan</span></div>
           <div class="card">
             <label class="toggle-row">
               <div style="display:flex;gap:12px;align-items:center">
@@ -910,7 +1046,7 @@
           </div>
 
           <!-- 4. GRAFIK -->
-          <div class="section-label"><span>④ Grafik Penjualan</span></div>
+          <div class="section-label"><span>Grafik Penjualan</span></div>
           <div class="card">
             <h4 class="card-title" style="font-size:17px"><span class="icon-badge ib-orange"><i class="fas fa-chart-pie"></i></span> Kategori Terjual</h4>
             <p class="card-sub">Mengikuti periode di tab Laporan.</p>
@@ -926,7 +1062,7 @@
           </div>
 
           <!-- 5. PENGELUARAN -->
-          <div class="section-label"><span>⑤ Pengeluaran</span></div>
+          <div class="section-label"><span>Pengeluaran</span></div>
           <div class="card">
             <span class="field-label">Rentang tanggal Riwayat Belanja</span>
             <div class="date-range">
@@ -977,8 +1113,19 @@
             <button type="button" class="btn btn-dark btn-block" style="margin-top:12px" onclick="openSecretAssetModal()"><i class="fas fa-building" style="color:#FFC24B"></i> Catat Biaya Aset / Tetap</button>
           </div>
 
+          <!-- KARTUN POP-UP -->
+          <div class="section-label"><span>Kartun Pop-up Berhasil</span></div>
+          <div class="card">
+            <div class="toggle-title">Pesanan Sudah Ditambahkan</div>
+            <div id="cartoonPickOrder" class="cartoon-pick"></div>
+            <div class="divider"></div>
+            <div class="toggle-title">Pengeluaran Sudah Ditambahkan</div>
+            <div id="cartoonPickExpense" class="cartoon-pick"></div>
+            <p class="card-sub" style="margin-top:10px">Pilihan berlaku untuk semua HP.</p>
+          </div>
+
           <!-- 6. DATA -->
-          <div class="section-label"><span>⑥ Cadangkan Data</span></div>
+          <div class="section-label"><span>Cadangkan Data</span></div>
           <div class="card stack">
             <p class="card-sub" style="margin:0">Unduh data pembukuan untuk arsip ke Google Drive / HP.</p>
             <button onclick="downloadCSVReport()" class="btn btn-green-tinted btn-block">
@@ -989,7 +1136,7 @@
             </button>
           </div>
 
-          <div class="section-label"><span>⑦ Pulihkan Data</span></div>
+          <div class="section-label"><span>Pulihkan Data</span></div>
           <div class="card stack">
             <label class="file-pick">
               <span id="jsonFileName">Belum ada file dipilih</span>
@@ -1001,12 +1148,19 @@
             </button>
           </div>
 
-          <div class="section-label"><span>⑧ Zona Bahaya</span></div>
+          <div class="section-label"><span>Zona Bahaya</span></div>
           <div class="card">
             <button onclick="executeResetData()" class="btn btn-red-tinted btn-block">
-              <i class="fas fa-trash-can"></i> Reset Seluruh Data Cloud
+              <i class="fas fa-trash-can"></i> Reset Seluruh Data Sistem
             </button>
           </div>
+
+          <div class="section-label"><span>Keamanan Admin</span></div>
+          <div class="card stack">
+            <button type="button" class="btn btn-gray btn-block" onclick="gantiPinAdmin()"><i class="fas fa-key"></i> Ganti PIN Admin</button>
+            <button type="button" class="btn btn-gray btn-block" onclick="kunciAdmin()"><i class="fas fa-lock"></i> Kunci Bagian Admin</button>
+          </div>
+          </div><!-- /adminArea -->
         </div>
       </section>
 
@@ -1028,7 +1182,7 @@
         <button onclick="switchTab('tab-pengeluaran')" id="btn-tab-pengeluaran" class="tab-btn"><i class="fas fa-wallet"></i>Belanja</button>
         <button onclick="switchTab('tab-analisis')" id="btn-tab-analisis" class="tab-btn"><i class="fas fa-chart-pie"></i>Laporan</button>
         <button onclick="switchTab('tab-riwayat')" id="btn-tab-riwayat" class="tab-btn"><i class="fas fa-clock-rotate-left"></i>Riwayat</button>
-        <button onclick="switchTab('tab-stok')" id="btn-tab-stok" class="tab-btn"><i class="fas fa-boxes-stacked"></i>Stok</button>
+        <button onclick="switchTab('tab-chat')" id="btn-tab-chat" class="tab-btn"><span class="tab-ico"><i class="fas fa-comments"></i><span id="chatBadge" class="tab-badge hidden">0</span></span>Chat</button>
       </div>
     </nav>
 
@@ -1103,7 +1257,7 @@
               <div class="segmented" data-target="editPaymentMethod">
                 <button type="button" data-val="Tunai" class="active">💵 Tunai</button>
                 <button type="button" data-val="QRIS">📱 QRIS</button>
-                <button type="button" data-val="Transfer">💳 Transfer</button>
+                <button type="button" data-val="Shopee">🛍️ Shopee</button>
               </div>
               <input type="hidden" id="editPaymentMethod" value="Tunai">
             </div>
@@ -1125,7 +1279,7 @@
         </div>
         <div class="sheet-foot">
           <button type="button" onclick="closeEditModal()" class="btn btn-gray">Batal</button>
-          <button type="button" onclick="saveEditedOrder()" class="btn btn-primary grow">Simpan ke Cloud</button>
+          <button type="button" onclick="saveEditedOrder()" class="btn btn-primary grow">Simpan ke Sistem</button>
         </div>
       </div>
     </div>
@@ -1263,6 +1417,46 @@
       </div>
     </div>
 
+    <!-- CHAT: layar percakapan -->
+    <div id="chatView" class="chat-view hidden">
+      <div class="chat-head">
+        <button type="button" class="chat-back" onclick="tutupChat()" aria-label="Kembali"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span id="chatHeadAva" class="ava"></span>
+        <div style="min-width:0;flex:1">
+          <div id="chatHeadName" class="chat-head-name">Chat Semua</div>
+          <div id="chatHeadStatus" class="chat-head-status"></div>
+        </div>
+      </div>
+      <div id="chatMsgs" class="chat-msgs"></div>
+      <div id="chatRecBar" class="chat-rec hidden">
+        <span class="rec-dot"></span><span>Merekam <b id="chatRecTime">0:00</b></span>
+        <button type="button" class="btn btn-gray btn-sm" onclick="batalRekam()">Batal</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="selesaiRekam()">Kirim</button>
+      </div>
+      <div id="chatCompose" class="chat-compose">
+        <label class="cc-btn" aria-label="Kirim foto" title="Kirim foto">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M9 4l-1.8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4H9zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+          <input type="file" accept="image/*" onchange="kirimFoto(this)" hidden>
+        </label>
+        <textarea id="chatInput" rows="1" placeholder="Tulis pesan…" oninput="chatInputBerubah()"></textarea>
+        <button type="button" id="chatSendBtn" class="cc-round cc-send hidden" onclick="kirimTeks()" aria-label="Kirim"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="#fff" d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg></button>
+        <button type="button" id="chatMicBtn" class="cc-round" onclick="mulaiRekam()" aria-label="Pesan suara"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="#fff" d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12h-2z"/></svg></button>
+      </div>
+    </div>
+    <div id="imgViewer" class="img-viewer hidden" onclick="this.classList.add('hidden')"><img id="imgViewerImg" alt="Foto"></div>
+
+    <!-- POP-UP BERHASIL (layar penuh) -->
+    <div id="successPop" class="success-pop hidden">
+      <div class="sp-confetti" id="spConfetti"></div>
+      <div class="sp-card">
+        <div id="spArt" class="sp-art"></div>
+        <div class="sp-yey">Yey!</div>
+        <div id="spTitle" class="sp-title">Pesanan Sudah Ditambahkan ke Sistem</div>
+        <div id="spDetail" class="sp-detail"></div>
+        <button type="button" class="btn btn-primary btn-lg btn-block" style="font-size:22px;min-height:64px" onclick="tutupSukses()">OK</button>
+      </div>
+    </div>
+
     <!-- SHEET: SIAPA YANG MEMAKAI HP INI -->
     <div id="whoSheet" class="sheet-backdrop hidden" onclick="if(event.target===this) closeSheet('whoSheet')">
       <div class="sheet">
@@ -1274,7 +1468,7 @@
           </div>
         </div>
         <div class="sheet-body">
-          <div class="who-grid">
+          <div id="whoGrid" class="who-grid">
             <button type="button" class="who-btn" onclick="pilihNama('Ibu')">👩 Ibu</button>
             <button type="button" class="who-btn" onclick="pilihNama('Ayah')">👨 Ayah</button>
           </div>
@@ -1306,6 +1500,7 @@
 
   </div> <!-- END ROOT APP -->
 
+  <script src="cartoons.js"></script>
   <!-- LOGIKA APLIKASI POS & FIREBASE INTEGRATION -->
   <script>
     /* 1. DATA KATALOG LENGKAP MENU THAI TEA */
@@ -1439,8 +1634,10 @@
     }
 
     // Dialog ala iOS (pengganti confirm() & prompt())
-    function iosDialog({ title = 'Konfirmasi', message = '', input = false, okText = 'OK', cancelText = 'Batal', destructive = false }) {
+    let alertHideTimer = null;
+    function iosDialog({ title = 'Konfirmasi', message = '', input = false, okText = 'OK', cancelText = 'Batal', destructive = false, password = false }) {
       return new Promise(resolve => {
+        clearTimeout(alertHideTimer);
         const wrap = document.getElementById('iosAlert');
         const inp = document.getElementById('iosAlertInput');
         const okBtn = document.getElementById('iosAlertOk');
@@ -1451,6 +1648,8 @@
         cancelBtn.textContent = cancelText;
         okBtn.className = destructive ? 'destructive' : 'bold';
         inp.value = '';
+        inp.type = password ? 'password' : 'text';
+        inp.inputMode = password ? 'numeric' : 'text';
         inp.classList.toggle('hidden', !input);
         wrap.classList.remove('hidden');
         void wrap.offsetWidth;
@@ -1458,7 +1657,7 @@
         if (input) setTimeout(() => inp.focus(), 150);
         const finish = (val) => {
           wrap.classList.remove('show');
-          setTimeout(() => wrap.classList.add('hidden'), 200);
+          alertHideTimer = setTimeout(() => wrap.classList.add('hidden'), 200);
           okBtn.onclick = cancelBtn.onclick = null;
           resolve(val);
         };
@@ -1591,14 +1790,26 @@
     let deviceName = lsGet('tt_device_name') || '';
     function openWhoSheet() {
       document.getElementById('whoCustomName').value = '';
+      renderWhoGrid();
       openSheet('whoSheet');
     }
     function pilihNama(n) {
       n = (n || '').trim().slice(0, 20);
       if (!n) { triggerToast('Pilih atau ketik nama dulu', true); return; }
+      const keyBaru = userKeyOf(n);
+      if (!keyBaru) { triggerToast('Nama harus berisi huruf atau angka', true); return; }
+      // nama yang sama = akun yang sama (pakai ejaan nama yang sudah terdaftar)
+      if (usersData[keyBaru] && usersData[keyBaru].name) n = usersData[keyBaru].name;
+      if (myKey && myKey !== keyBaru) lepasPresence(myKey);
       deviceName = n;
+      myKey = keyBaru;
       lsSet('tt_device_name', n);
-      document.getElementById('adminDeviceName').textContent = n;
+      sessSet('tt_admin_ok', null);
+      daftarkanPengguna();
+      updatePresence();
+      siapkanRoomChat();
+      renderProfil();
+      renderAdminVisibility();
       closeSheet('whoSheet');
       triggerToast(`HP ini dipakai oleh ${n}`);
       if (pushDidukung() && Notification.permission === 'default') setTimeout(tawarkanNotifikasi, 450);
@@ -1715,7 +1926,7 @@
         if (!cfg.vapidPublicKey) throw new Error('Kunci push belum ada');
         let sub = await reg.pushManager.getSubscription();
         if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToU8(cfg.vapidPublicKey) });
-        const r = await fetch('/api/thaitea/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint, name: deviceName || 'Seseorang' }) });
+        const r = await fetch('/api/thaitea/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint, name: deviceName || 'Seseorang', user: myKey }) });
         if (!r.ok) throw new Error('subscribe ' + r.status);
         pushEndpoint = sub.endpoint;
         lsSet('tt_push_ep', pushEndpoint);
@@ -1748,10 +1959,10 @@
         b.innerHTML = '<i class="fas fa-bell"></i> Aktifkan di HP Ini';
       }
     }
-    function kirimNotif(body, title = 'Thai Tea', termasukSendiri = false) {
+    function kirimNotif(body, title = 'Thai Tea', termasukSendiri = false, to = '') {
       fetch('/api/thaitea/notify', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, from: termasukSendiri ? '' : pushEndpoint })
+        body: JSON.stringify({ title, body, from: termasukSendiri ? '' : pushEndpoint, to })
       }).catch(() => {});
     }
     async function kirimNotifTes() {
@@ -1762,6 +1973,512 @@
       kirimNotif(`Tes notifikasi dari ${deviceName || 'HP ini'} 👋`, 'Thai Tea', true);
       triggerToast('Notifikasi tes dikirim ke semua HP');
     }
+
+    /* ===== IKON, PENANDA BAYAR, CARI MENU ===== */
+    const ICON_EDIT = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 17.25V20h2.75L17.8 8.94l-2.75-2.75L4 17.25zm15.7-9.04a1 1 0 0 0 0-1.41l-2.5-2.5a1 1 0 0 0-1.41 0l-1.83 1.83 3.91 3.91 1.83-1.83z"/></svg>';
+    const ICON_TRASH = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9zm4 2v8h1.6v-8H10zm3.4 0v8H15v-8h-1.6z"/></svg>';
+    const ICON_PLAY = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
+    const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+    function payPill(m) {
+      const v = String(m || 'Tunai');
+      const cls = /tunai/i.test(v) ? 'pay-tunai' : /qris/i.test(v) ? 'pay-qris' : /shopee/i.test(v) ? 'pay-shopee' : 'pay-lain';
+      return `<span class="pay ${cls}">${esc(v.toUpperCase())}</span>`;
+    }
+    let currentMenuCat = 'all';
+    let menuSearchQ = '';
+    function bukaCariMenu() {
+      document.getElementById('chipsRow').classList.add('hidden');
+      document.getElementById('menuSearchRow').classList.remove('hidden');
+      setTimeout(() => document.getElementById('menuSearchInput').focus(), 50);
+    }
+    function tutupCariMenu() {
+      menuSearchQ = '';
+      document.getElementById('menuSearchInput').value = '';
+      document.getElementById('menuSearchRow').classList.add('hidden');
+      document.getElementById('chipsRow').classList.remove('hidden');
+      renderMenuCards(currentMenuCat);
+    }
+    function cariMenu(q) {
+      menuSearchQ = String(q || '').trim().toLowerCase();
+      renderMenuCards(currentMenuCat);
+    }
+
+    /* ===== POP-UP BERHASIL ===== */
+    let appSettings = {};
+    function tampilkanSukses(jenis, detail) {
+      const lib = window.TT_CARTOONS || { order: [], expense: [] };
+      const idx = Number(jenis === 'order' ? appSettings.cartoonOrder : appSettings.cartoonExpense) || 0;
+      const arr = lib[jenis] || [];
+      document.getElementById('spArt').innerHTML = arr[idx] || arr[0] || '';
+      document.getElementById('spTitle').textContent = jenis === 'order' ? 'Pesanan Sudah Ditambahkan ke Sistem' : 'Pengeluaran Sudah Ditambahkan ke Sistem';
+      document.getElementById('spDetail').textContent = detail || '';
+      const conf = document.getElementById('spConfetti');
+      const warna = ['#FFC83D', '#EA6A0A', '#FF9AA2', '#5AC8FA', '#34C759', '#FF6B6B'];
+      conf.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${warna[i % warna.length]};animation-duration:${1.8 + Math.random() * 1.6}s;animation-delay:${Math.random() * .5}s"></i>`).join('');
+      document.getElementById('successPop').classList.remove('hidden');
+      try { if (navigator.vibrate) navigator.vibrate([40, 60, 40]); } catch (e) {}
+    }
+    function tutupSukses() {
+      document.getElementById('successPop').classList.add('hidden');
+      document.getElementById('spConfetti').innerHTML = '';
+    }
+    function renderCartoonPickers() {
+      const lib = window.TT_CARTOONS;
+      if (!lib) return;
+      [['order', 'cartoonPickOrder', 'cartoonOrder'], ['expense', 'cartoonPickExpense', 'cartoonExpense']].forEach(([jenis, boxId, key]) => {
+        const box = document.getElementById(boxId);
+        if (!box) return;
+        const cur = Number(appSettings[key]) || 0;
+        box.innerHTML = lib[jenis].map((svg, i) => `<button type="button" class="${i === cur ? 'active' : ''}" onclick="pilihKartun('${key}', ${i})"><span>${i + 1}</span>${svg}</button>`).join('');
+      });
+    }
+    function pilihKartun(key, i) {
+      appSettings[key] = i;
+      settingsRef.child(key).set(i).then(() => triggerToast(`Kartun No. ${i + 1} dipilih`));
+      renderCartoonPickers();
+      tampilkanSukses(key === 'cartoonOrder' ? 'order' : 'expense', 'Contoh tampilan pop-up');
+    }
+
+    /* ===== PENGGUNA, STATUS ONLINE & ADMIN ===== */
+    const ADMIN_KEY = 'azzmi';
+    const settingsRef = db.ref('thaitea/settings');
+    const usersRef = db.ref('thaitea/users');
+    const presenceRootRef = db.ref('thaitea/presence');
+    const SERVER_TS = (firebase.database && firebase.database.ServerValue) ? firebase.database.ServerValue.TIMESTAMP : Date.now();
+    let usersData = {};
+    let usersLoaded = false;
+    let presenceData = {};
+    let serverOffset = 0;
+    let presenceConnected = false;
+    function userKeyOf(n) { return String(n || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30); }
+    let myKey = userKeyOf(deviceName);
+    function nowServer() { return Date.now() + serverOffset; }
+    function isOnline(key) { return !!(presenceData[key] && Object.keys(presenceData[key]).length); }
+    function agoText(ts) {
+      if (!ts) return 'belum pernah aktif';
+      const d = Math.max(0, Math.floor((nowServer() - ts) / 1000));
+      if (d < 60) return `${Math.max(1, d)} detik yang lalu`;
+      if (d < 3600) return `${Math.floor(d / 60)} menit yang lalu`;
+      if (d < 86400) return `${Math.floor(d / 3600)} jam yang lalu`;
+      if (d < 86400 * 30) return `${Math.floor(d / 86400)} hari yang lalu`;
+      return `${Math.floor(d / (86400 * 30))} bulan yang lalu`;
+    }
+    function statusText(key) { return isOnline(key) ? 'Online' : 'Terakhir aktif ' + agoText((usersData[key] || {}).lastSeen); }
+    function avaHtml(key, name, extraCls) {
+      const u = usersData[key] || {};
+      const nm = name || u.name || '?';
+      const style = u.photo ? `background-image:url('${esc(u.photo)}')` : `background-color:${warnaNama(nm)}`;
+      return `<span class="ava ${extraCls || ''}" style="${style}">${u.photo ? '' : esc(String(nm).charAt(0).toUpperCase())}${isOnline(key) ? '<span class="on-dot"></span>' : ''}</span>`;
+    }
+    function daftarkanPengguna() {
+      if (!myKey) return;
+      const upd = { name: deviceName, lastSeen: SERVER_TS };
+      if (!usersData[myKey] || !usersData[myKey].createdAt) upd.createdAt = SERVER_TS;
+      usersRef.child(myKey).update(upd).catch(() => {});
+      lsSet('tt_registered', myKey);
+    }
+    function updatePresence() {
+      if (!myKey) return;
+      const pr = db.ref(`thaitea/presence/${myKey}/${deviceId}`);
+      const ls = db.ref(`thaitea/users/${myKey}/lastSeen`);
+      if (document.visibilityState === 'visible' && presenceConnected) {
+        pr.onDisconnect().remove();
+        ls.onDisconnect().set(SERVER_TS);
+        pr.set(SERVER_TS);
+        ls.set(SERVER_TS);
+      } else {
+        pr.remove();
+        ls.set(SERVER_TS);
+      }
+    }
+    function lepasPresence(key) {
+      if (!key) return;
+      db.ref(`thaitea/presence/${key}/${deviceId}`).remove();
+      db.ref(`thaitea/users/${key}/lastSeen`).set(SERVER_TS);
+    }
+    function renderWhoGrid() {
+      const grid = document.getElementById('whoGrid');
+      if (!grid) return;
+      const list = Object.entries(usersData).filter(([, u]) => u && u.name).sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+      const names = list.map(([k]) => k);
+      const extra = ['Ibu', 'Ayah'].filter(n => !names.includes(userKeyOf(n)));
+      grid.innerHTML = list.map(([k, u]) => `<button type="button" class="who-btn has-ava" onclick="pilihNama('${esc(u.name).replace(/'/g, '&#39;')}')">${avaHtml(k, u.name)}<span>${esc(u.name)}</span></button>`).join('') +
+        extra.map(n => `<button type="button" class="who-btn" onclick="pilihNama('${n}')">${n === 'Ibu' ? '👩' : '👨'} ${n}</button>`).join('');
+    }
+    function renderProfil() {
+      document.getElementById('adminDeviceName').textContent = deviceName || '-';
+      const ava = document.getElementById('profileAva');
+      const u = usersData[myKey] || {};
+      ava.style.backgroundImage = u.photo ? `url('${u.photo}')` : '';
+      ava.style.backgroundColor = u.photo ? '' : warnaNama(deviceName);
+      ava.textContent = u.photo ? '' : String(deviceName || '?').charAt(0).toUpperCase();
+    }
+    function renderUserStatus() {
+      const box = document.getElementById('userStatusList');
+      if (!box) return;
+      const list = Object.entries(usersData).filter(([, u]) => u && u.name)
+        .sort((a, b) => (isOnline(b[0]) - isOnline(a[0])) || ((b[1].lastSeen || 0) - (a[1].lastSeen || 0)));
+      if (!list.length) { box.innerHTML = '<div class="empty">Belum ada pengguna.</div>'; return; }
+      box.innerHTML = list.map(([k, u]) => `<div class="user-row">${avaHtml(k, u.name)}
+          <div style="flex:1;min-width:0"><div class="un">${esc(u.name)}${k === ADMIN_KEY ? ' <span class="pill pill-orange" style="font-size:11px">ADMIN</span>' : ''}${k === myKey ? ' <span class="pill" style="font-size:11px">HP INI</span>' : ''}</div>
+          <div class="us ${isOnline(k) ? 'on' : ''}">${isOnline(k) ? '● Online sekarang' : 'Terakhir aktif ' + agoText(u.lastSeen)}</div></div>
+          ${k !== ADMIN_KEY && k !== myKey ? `<button type="button" class="icon-act del" aria-label="Hapus pengguna ${esc(u.name)}" onclick="hapusPengguna('${k}')">${ICON_TRASH}</button>` : ''}
+        </div>`).join('');
+    }
+    async function hapusPengguna(key) {
+      if (!adminTerbuka()) return;
+      const u = usersData[key];
+      if (!u) return;
+      const ok = await iosConfirm(`Hapus pengguna "${u.name}"? HP yang memakai nama ini akan diminta memilih nama lagi. Riwayat & chat lama tetap ada.`, { title: 'Hapus Pengguna?', okText: 'Hapus', destructive: true });
+      if (!ok) return;
+      await usersRef.child(key).remove();
+      await presenceRootRef.child(key).remove();
+      logAktivitas('sys', `Menghapus pengguna ${u.name}`);
+      triggerToast(`Pengguna ${u.name} dihapus`);
+    }
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function sessGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+    function sessSet(k, v) { try { if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) {} }
+    function adminTerbuka() { return myKey === ADMIN_KEY && !!appSettings.adminPinHash && sessGet('tt_admin_ok') === appSettings.adminPinHash; }
+    function renderAdminVisibility() {
+      const isAdminUser = myKey === ADMIN_KEY;
+      const open = adminTerbuka();
+      document.getElementById('adminLockBox').classList.toggle('hidden', !isAdminUser || open);
+      document.getElementById('adminArea').classList.toggle('hidden', !open);
+      document.getElementById('adminLockDesc').textContent = appSettings.adminPinHash
+        ? 'Masukkan PIN admin untuk membuka stok, laporan, pengguna, dan data.'
+        : 'Belum ada PIN admin. Ketuk tombol di bawah untuk membuat PIN.';
+    }
+    async function buatPinBaru() {
+      const p1 = await iosPrompt('Buat PIN admin (4–6 angka):', { title: 'PIN Admin Baru', okText: 'Lanjut', password: true });
+      if (p1 === null) return false;
+      if (!/^\d{4,6}$/.test(p1)) { triggerToast('PIN harus 4–6 angka', true); return false; }
+      const p2 = await iosPrompt('Ketik ulang PIN yang sama:', { title: 'Konfirmasi PIN', okText: 'Simpan', password: true });
+      if (p2 !== p1) { triggerToast('PIN tidak sama, coba lagi', true); return false; }
+      const h = await sha256('thaitea-admin:' + p1);
+      await settingsRef.child('adminPinHash').set(h);
+      appSettings.adminPinHash = h;
+      sessSet('tt_admin_ok', h);
+      return true;
+    }
+    async function bukaAdmin() {
+      if (myKey !== ADMIN_KEY) return;
+      if (!appSettings.adminPinHash) {
+        if (await buatPinBaru()) { triggerToast('PIN admin dibuat'); logAktivitas('sys', 'Membuat PIN admin'); }
+      } else {
+        const p = await iosPrompt('Masukkan PIN admin:', { title: '🔒 Admin', okText: 'Buka', password: true });
+        if (p === null) return;
+        const h = await sha256('thaitea-admin:' + p);
+        if (h !== appSettings.adminPinHash) { triggerToast('PIN salah', true); return; }
+        sessSet('tt_admin_ok', h);
+      }
+      renderAdminVisibility();
+      renderUserStatus(); renderInventoryUI(); renderCartoonPickers(); calculateAndRenderAnalytics();
+    }
+    async function gantiPinAdmin() {
+      if (!adminTerbuka()) return;
+      if (await buatPinBaru()) { triggerToast('PIN admin diganti'); logAktivitas('sys', 'Mengganti PIN admin'); }
+      renderAdminVisibility();
+    }
+    function kunciAdmin() {
+      sessSet('tt_admin_ok', null);
+      renderAdminVisibility();
+      triggerToast('Bagian admin dikunci');
+    }
+
+    /* ===== UNGGAH FOTO / SUARA (Cloudflare R2 lewat /api/thaitea/upload) ===== */
+    async function unggahBerkas(blob, type) {
+      const res = await fetch('/api/thaitea/upload', { method: 'POST', headers: { 'Content-Type': type }, body: blob });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(data.error || ('Gagal mengunggah (' + res.status + ')'));
+      return data.url;
+    }
+    function kecilkanFoto(file, maxSize, quality) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const sc = Math.min(1, maxSize / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          c.toBlob(b => b ? resolve(b) : reject(new Error('Foto gagal diproses')), 'image/jpeg', quality);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Foto tidak bisa dibaca')); };
+        img.src = url;
+      });
+    }
+    async function gantiFotoProfil(input) {
+      const f = input.files && input.files[0];
+      input.value = '';
+      if (!f || !myKey) return;
+      try {
+        triggerToast('Mengunggah foto…');
+        const blob = await kecilkanFoto(f, 320, .85);
+        const url = await unggahBerkas(blob, 'image/jpeg');
+        await usersRef.child(myKey).update({ photo: url, name: deviceName });
+        triggerToast('Foto profil diganti');
+      } catch (e) { triggerToast(e.message || 'Gagal mengganti foto', true); }
+    }
+
+    /* ===== CHAT ===== */
+    const ROOM_ALL = 'semua';
+    const chatData = {};          // room -> [pesan]
+    const chatListeners = {};     // room -> ref
+    let currentRoom = null;
+    const chatLoadedAt = Date.now();
+    const seenMsg = new Set();
+    function roomIdWith(otherKey) { return 'dm_' + [myKey, otherKey].sort().join('__'); }
+    function otherOfRoom(room) { if (!room.startsWith('dm_')) return null; const [a, b] = room.slice(3).split('__'); return a === myKey ? b : a; }
+    function lastRead(room) {
+      const v = Number(lsGet('tt_read_' + room));
+      if (v) return v;
+      const init = Number(lsGet('tt_read_init')) || Date.now();
+      if (!lsGet('tt_read_init')) lsSet('tt_read_init', String(init));
+      return init;
+    }
+    function tandaiDibaca(room) {
+      const msgs = chatData[room] || [];
+      const last = msgs.length ? msgs[msgs.length - 1].ts : Date.now();
+      lsSet('tt_read_' + room, String(Math.max(last, Date.now())));
+      updateChatBadge();
+    }
+    function unreadCount(room) {
+      const lr = lastRead(room);
+      return (chatData[room] || []).filter(m => m.from !== myKey && m.ts > lr).length;
+    }
+    function updateChatBadge() {
+      const rooms = Object.keys(chatData);
+      const n = rooms.reduce((a, r) => a + unreadCount(r), 0);
+      const b = document.getElementById('chatBadge');
+      b.textContent = n > 99 ? '99+' : String(n);
+      b.classList.toggle('hidden', n === 0);
+    }
+    function dengarRoom(room) {
+      if (chatListeners[room]) return;
+      const ref = db.ref('thaitea/chat/' + room).limitToLast(300);
+      chatListeners[room] = ref;
+      ref.on('value', snap => {
+        const v = snap.val() || {};
+        chatData[room] = Object.values(v).filter(m => m && m.ts).sort((a, b) => a.ts - b.ts);
+        chatData[room].forEach(m => {
+          if (seenMsg.has(m.id)) return;
+          seenMsg.add(m.id);
+          const lihat = currentRoom === room && document.visibilityState === 'visible';
+          if (m.ts > chatLoadedAt && m.from !== myKey && !lihat && document.visibilityState === 'visible') {
+            triggerToast(`💬 ${m.name}: ${previewPesan(m)}`);
+          }
+        });
+        if (currentRoom === room) { renderMessages(); tandaiDibaca(room); }
+        updateChatBadge();
+        if (!document.getElementById('tab-chat').classList.contains('hidden')) renderChatRooms();
+      });
+    }
+    function siapkanRoomChat() {
+      Object.keys(chatListeners).forEach(r => {
+        if (r !== ROOM_ALL && (!myKey || !r.slice(3).split('__').includes(myKey) || !usersData[otherOfRoom(r)])) {
+          chatListeners[r].off(); delete chatListeners[r]; delete chatData[r];
+        }
+      });
+      dengarRoom(ROOM_ALL);
+      if (!myKey) return;
+      Object.keys(usersData).forEach(k => { if (k !== myKey && usersData[k] && usersData[k].name) dengarRoom(roomIdWith(k)); });
+    }
+    function previewPesan(m) {
+      if (!m) return '';
+      if (m.type === 'image') return '📷 Foto';
+      if (m.type === 'audio') return '🎤 Pesan suara';
+      return String(m.text || '');
+    }
+    function jamWIB(ts) { return new Date(ts + 7 * 3600 * 1000).toISOString().slice(11, 16).replace(':', '.'); }
+    function tglWIB(ts) { return new Date(ts + 7 * 3600 * 1000).toISOString().slice(0, 10); }
+    function renderChatRooms() {
+      const box = document.getElementById('chatRoomList');
+      if (!box) return;
+      const rows = [];
+      const allMsgs = chatData[ROOM_ALL] || [];
+      const lastAll = allMsgs[allMsgs.length - 1];
+      const onlineCount = Object.keys(usersData).filter(isOnline).length;
+      rows.push({ room: ROOM_ALL, ts: Infinity, html: `<button type="button" class="room-row" onclick="bukaChat('${ROOM_ALL}')">
+          <span class="ava" style="background:linear-gradient(145deg,#FF9F43,#E25C00)">👨‍👩‍👧</span>
+          <div class="room-main"><div class="room-top"><span class="room-name">Chat Semua</span><span class="room-time">${lastAll ? jamWIB(lastAll.ts) : ''}</span></div>
+          <div class="room-bottom"><span class="room-last">${lastAll ? esc(lastAll.name + ': ' + previewPesan(lastAll)) : esc(onlineCount + ' orang online')}</span>${unreadCount(ROOM_ALL) ? `<span class="room-unread">${unreadCount(ROOM_ALL)}</span>` : ''}</div></div></button>` });
+      Object.entries(usersData).filter(([k, u]) => k !== myKey && u && u.name).forEach(([k, u]) => {
+        const room = roomIdWith(k);
+        const msgs = chatData[room] || [];
+        const last = msgs[msgs.length - 1];
+        const un = unreadCount(room);
+        rows.push({ room, ts: last ? last.ts : 0, html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
+          ${avaHtml(k, u.name)}
+          <div class="room-main"><div class="room-top"><span class="room-name">${esc(u.name)}</span><span class="room-time">${last ? jamWIB(last.ts) : ''}</span></div>
+          <div class="room-bottom"><span class="room-last" style="${!last && isOnline(k) ? 'color:var(--green);font-weight:700' : ''}">${last ? esc((last.from === myKey ? 'Kamu: ' : '') + previewPesan(last)) : esc(statusText(k))}</span>${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
+      });
+      rows.sort((a, b) => b.ts - a.ts);
+      box.innerHTML = myKey ? rows.map(r => r.html).join('') : '<div class="empty">Pilih nama pengguna dulu di Pengaturan.</div>';
+    }
+    function renderChatHead() {
+      const nameEl = document.getElementById('chatHeadName'), stEl = document.getElementById('chatHeadStatus'), avaEl = document.getElementById('chatHeadAva');
+      if (!currentRoom) return;
+      if (currentRoom === ROOM_ALL) {
+        nameEl.textContent = 'Chat Semua';
+        const on = Object.entries(usersData).filter(([k]) => isOnline(k)).map(([, u]) => u.name);
+        stEl.textContent = on.length ? `Online: ${on.join(', ')}` : 'Belum ada yang online';
+        stEl.classList.toggle('on', on.length > 0);
+        avaEl.outerHTML = `<span id="chatHeadAva" class="ava" style="background:linear-gradient(145deg,#FF9F43,#E25C00)">👨‍👩‍👧</span>`;
+      } else {
+        const k = otherOfRoom(currentRoom), u = usersData[k] || {};
+        nameEl.textContent = u.name || k;
+        stEl.textContent = statusText(k);
+        stEl.classList.toggle('on', isOnline(k));
+        avaEl.outerHTML = avaHtml(k, u.name).replace('<span class="ava ', '<span id="chatHeadAva" class="ava ');
+      }
+    }
+    function renderMessages() {
+      const box = document.getElementById('chatMsgs');
+      const msgs = chatData[currentRoom] || [];
+      const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+      let html = '', lastDay = null, prevFrom = null;
+      if (!msgs.length) html = `<div class="msg-day">Belum ada pesan. Sapa duluan 👋</div>`;
+      msgs.forEach(m => {
+        const day = tglWIB(m.ts);
+        if (day !== lastDay) { html += `<div class="msg-day">${day === hariIniWIB() ? 'Hari Ini' : fmtTgl(day)}</div>`; lastDay = day; prevFrom = null; }
+        const me = m.from === myKey;
+        const cont = prevFrom === m.from;
+        let body;
+        if (m.type === 'image') body = `<img src="${esc(m.url)}" alt="Foto" loading="lazy" onclick="lihatFoto(this.src)">`;
+        else if (m.type === 'audio') body = `<div class="vn" data-src="${esc(m.url)}"><button type="button" onclick="putarVN(this)" aria-label="Putar pesan suara">${ICON_PLAY}</button><div class="bar"><i></i></div><span class="d">${fmtDur(m.dur)}</span></div>`;
+        else body = esc(m.text || '').replace(/\n/g, '<br>');
+        html += `<div class="msg ${me ? 'me' : ''} ${cont ? 'cont' : ''}">${me ? '' : avaHtml(m.from, m.name)}
+          <div class="bubble">${!me && currentRoom === ROOM_ALL && !cont ? `<div class="who" style="color:${warnaNama(m.name)}">${esc(m.name)}</div>` : ''}${body}<div class="t">${jamWIB(m.ts)}</div></div></div>`;
+        prevFrom = m.from;
+      });
+      box.innerHTML = html;
+      if (nearBottom || box.dataset.first !== currentRoom) { box.scrollTop = box.scrollHeight; box.dataset.first = currentRoom; }
+    }
+    function bukaChat(room) {
+      if (!myKey) { openWhoSheet(); return; }
+      currentRoom = room;
+      document.getElementById('chatView').classList.remove('hidden');
+      document.getElementById('chatMsgs').dataset.first = '';
+      renderChatHead();
+      renderMessages();
+      tandaiDibaca(room);
+      renderChatRooms();
+    }
+    function tutupChat() {
+      if (rekam) batalRekam();
+      currentRoom = null;
+      document.getElementById('chatView').classList.add('hidden');
+      renderChatRooms();
+    }
+    function lihatFoto(src) {
+      document.getElementById('imgViewerImg').src = src;
+      document.getElementById('imgViewer').classList.remove('hidden');
+    }
+    function chatInputBerubah() {
+      const t = document.getElementById('chatInput');
+      t.style.height = 'auto';
+      t.style.height = Math.min(120, t.scrollHeight) + 'px';
+      const ada = t.value.trim().length > 0;
+      document.getElementById('chatSendBtn').classList.toggle('hidden', !ada);
+      document.getElementById('chatMicBtn').classList.toggle('hidden', ada);
+    }
+    function kirimPesan(data) {
+      if (!currentRoom || !myKey) return Promise.resolve();
+      const room = currentRoom;
+      const ts = Date.now();
+      const id = 'M' + ts + Math.random().toString(36).slice(2, 6);
+      const msg = { id, ts, from: myKey, name: deviceName, ...data };
+      const p = db.ref(`thaitea/chat/${room}/${id}`).set(msg);
+      usersRef.child(myKey).update({ name: deviceName });
+      const isi = previewPesan(msg);
+      if (room === ROOM_ALL) kirimNotif(`${deviceName}: ${isi}`, '💬 Chat Semua');
+      else kirimNotif(isi, `💬 ${deviceName}`, false, otherOfRoom(room));
+      return p;
+    }
+    function kirimTeks() {
+      const t = document.getElementById('chatInput');
+      const text = t.value.trim().slice(0, 2000);
+      if (!text) return;
+      t.value = '';
+      chatInputBerubah();
+      kirimPesan({ type: 'text', text });
+    }
+    async function kirimFoto(input) {
+      const f = input.files && input.files[0];
+      input.value = '';
+      if (!f) return;
+      try {
+        triggerToast('Mengirim foto…');
+        const blob = await kecilkanFoto(f, 1280, .8);
+        const url = await unggahBerkas(blob, 'image/jpeg');
+        await kirimPesan({ type: 'image', url });
+      } catch (e) { triggerToast(e.message || 'Foto gagal dikirim', true); }
+    }
+    // Pesan suara (VN): ketuk mic untuk mulai, "Kirim" untuk selesai. Maksimal 60 detik.
+    let rekam = null;
+    function fmtDur(d) { d = Math.round(Number(d) || 0); return Math.floor(d / 60) + ':' + String(d % 60).padStart(2, '0'); }
+    async function mulaiRekam() {
+      if (!navigator.mediaDevices || !window.MediaRecorder) { triggerToast('HP ini belum bisa merekam suara', true); return; }
+      let stream;
+      try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch (e) { triggerToast('Izin mikrofon ditolak', true); return; }
+      const pilihan = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/ogg'];
+      const mime = pilihan.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const chunks = [];
+      rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      rekam = { rec, stream, chunks, start: Date.now(), kirim: false, timer: null };
+      rec.onstop = async () => {
+        const r = rekam; rekam = null;
+        clearInterval(r.timer);
+        r.stream.getTracks().forEach(t => t.stop());
+        document.getElementById('chatRecBar').classList.add('hidden');
+        document.getElementById('chatCompose').classList.remove('hidden');
+        if (!r.kirim) return;
+        const dur = Math.round((Date.now() - r.start) / 1000);
+        if (dur < 1) { triggerToast('Rekaman terlalu pendek', true); return; }
+        const type = (rec.mimeType || chunks[0] && chunks[0].type || 'audio/webm').split(';')[0];
+        try {
+          triggerToast('Mengirim pesan suara…');
+          const url = await unggahBerkas(new Blob(r.chunks, { type }), type);
+          await kirimPesan({ type: 'audio', url, dur });
+        } catch (e) { triggerToast(e.message || 'Pesan suara gagal dikirim', true); }
+      };
+      rec.start();
+      document.getElementById('chatCompose').classList.add('hidden');
+      document.getElementById('chatRecBar').classList.remove('hidden');
+      document.getElementById('chatRecTime').textContent = '0:00';
+      rekam.timer = setInterval(() => {
+        const d = (Date.now() - rekam.start) / 1000;
+        document.getElementById('chatRecTime').textContent = fmtDur(d);
+        if (d >= 60) selesaiRekam();
+      }, 250);
+    }
+    function selesaiRekam() { if (rekam && rekam.rec.state !== 'inactive') { rekam.kirim = true; rekam.rec.stop(); } }
+    function batalRekam() { if (rekam && rekam.rec.state !== 'inactive') { rekam.kirim = false; rekam.rec.stop(); } }
+    let vnAudio = null, vnBtn = null;
+    function putarVN(btn) {
+      const wrap = btn.closest('.vn');
+      if (vnBtn === btn && vnAudio && !vnAudio.paused) { vnAudio.pause(); btn.innerHTML = ICON_PLAY; return; }
+      if (vnAudio) { vnAudio.pause(); if (vnBtn) vnBtn.innerHTML = ICON_PLAY; }
+      vnAudio = new Audio(wrap.dataset.src);
+      vnBtn = btn;
+      const bar = wrap.querySelector('.bar i');
+      vnAudio.ontimeupdate = () => { if (vnAudio.duration) bar.style.width = (vnAudio.currentTime / vnAudio.duration * 100) + '%'; };
+      vnAudio.onended = () => { btn.innerHTML = ICON_PLAY; bar.style.width = '0'; };
+      vnAudio.play().then(() => { btn.innerHTML = ICON_PAUSE; }).catch(() => triggerToast('Pesan suara tidak bisa diputar', true));
+    }
+    // Perbarui teks "terakhir aktif" setiap 30 detik
+    setInterval(() => {
+      if (!document.getElementById('tab-chat').classList.contains('hidden')) renderChatRooms();
+      if (currentRoom) renderChatHead();
+      if (adminTerbuka() && !document.getElementById('tab-admin').classList.contains('hidden')) renderUserStatus();
+    }, 30000);
 
     /* 3. INISIALISASI HALAMAN & LISTENERS */
     window.addEventListener('DOMContentLoaded', () => {
@@ -1846,7 +2563,51 @@
         if (!document.getElementById('tab-aktivitas').classList.contains('hidden')) renderActivityLog();
       });
 
-      document.getElementById('adminDeviceName').textContent = deviceName || '-';
+      // Pengaturan bersama (PIN admin & pilihan kartun)
+      settingsRef.on('value', snap => {
+        appSettings = snap.val() || {};
+        renderAdminVisibility();
+        if (!document.getElementById('tab-admin').classList.contains('hidden')) renderCartoonPickers();
+      });
+      db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = Number(snap.val()) || 0; });
+      // Pengguna & status online
+      usersRef.on('value', snap => {
+        usersData = snap.val() || {};
+        const pertama = !usersLoaded;
+        usersLoaded = true;
+        if (myKey && !usersData[myKey]) {
+          if (lsGet('tt_registered') === myKey && !pertama) {
+            // akun ini dihapus admin → pilih nama lagi
+            lepasPresence(myKey);
+            deviceName = ''; myKey = '';
+            lsSet('tt_device_name', ''); lsSet('tt_registered', '');
+            iosDialog({ title: 'Akun dihapus', message: 'Nama pengguna HP ini dihapus oleh admin. Silakan pilih nama lagi.', okText: 'OK', cancelText: 'Tutup' }).then(openWhoSheet);
+          } else {
+            daftarkanPengguna();
+          }
+        }
+        siapkanRoomChat();
+        renderProfil();
+        if (!document.getElementById('tab-chat').classList.contains('hidden')) renderChatRooms();
+        if (currentRoom) { renderChatHead(); renderMessages(); }
+        if (adminTerbuka()) renderUserStatus();
+        if (!document.getElementById('whoSheet').classList.contains('hidden')) renderWhoGrid();
+      });
+      presenceRootRef.on('value', snap => {
+        presenceData = snap.val() || {};
+        if (!document.getElementById('tab-chat').classList.contains('hidden')) renderChatRooms();
+        if (currentRoom) renderChatHead();
+        if (adminTerbuka()) renderUserStatus();
+      });
+      db.ref('.info/connected').on('value', snap => { presenceConnected = snap.val() === true; if (presenceConnected) updatePresence(); });
+      document.addEventListener('visibilitychange', () => {
+        updatePresence();
+        if (document.visibilityState === 'visible' && currentRoom) tandaiDibaca(currentRoom);
+      });
+      window.addEventListener('pagehide', () => { if (myKey) lepasPresence(myKey); });
+      siapkanRoomChat();
+
+      renderProfil();
       if (!deviceName) setTimeout(openWhoSheet, 700);
       else if (pushDidukung() && Notification.permission === 'granted') aktifkanNotifikasi(false);
       refreshPushStatus();
@@ -1892,13 +2653,14 @@
 
       if (targetId === 'tab-analisis') calculateAndRenderAnalytics();
       else if (targetId === 'tab-riwayat') renderFullHistoryTable();
-      else if (targetId === 'tab-stok') renderInventoryUI();
-      else if (targetId === 'tab-admin') { calculateAndRenderAnalytics(); refreshPushStatus(); document.getElementById('adminDeviceName').textContent = deviceName || '-'; }
+      else if (targetId === 'tab-chat') renderChatRooms();
+      else if (targetId === 'tab-admin') { calculateAndRenderAnalytics(); refreshPushStatus(); renderProfil(); renderAdminVisibility(); renderInventoryUI(); renderUserStatus(); renderCartoonPickers(); }
       else if (targetId === 'tab-aktivitas') renderActivityLog();
     }
 
     /* 4. TAB 1: MENU & ORDERING LOGIC WITH EXACT FLAVOR STOK DEDUCTION */
     function filterMenu(cat, ev) {
+      currentMenuCat = cat;
       document.querySelectorAll('.cat-pill').forEach(btn => btn.classList.remove('active'));
       if (ev && ev.currentTarget) {
         ev.currentTarget.classList.add('active');
@@ -1909,7 +2671,9 @@
     function renderMenuCards(cat = 'all') {
       const grid = document.getElementById('menuCardsGrid');
       grid.innerHTML = '';
-      const items = cat === 'all' ? MENU_DATABASE : MENU_DATABASE.filter(m => m.category === cat);
+      let items = cat === 'all' ? MENU_DATABASE : MENU_DATABASE.filter(m => m.category === cat);
+      if (menuSearchQ) items = MENU_DATABASE.filter(m => (m.name + ' ' + m.catLabel).toLowerCase().includes(menuSearchQ));
+      if (!items.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1">Menu "${esc(menuSearchQ)}" tidak ditemukan.</div>`; return; }
 
       items.forEach(item => {
         const div = document.createElement('button');
@@ -2157,10 +2921,10 @@
         cartItems = [];
         document.getElementById('orderNote').value = '';
         renderCartUI();
-        triggerToast(`Terekap ${totalCups} cup & stok rasa terpotong!`);
+        tampilkanSukses('order', `${ringkasItem(newOrder.items)}\n${totalCups} cup · ${formatRp(totalPrice)} · ${payMethod}`);
         logAktivitas('add', `Menambahkan pesanan ${ringkasItem(newOrder.items)} · ${formatRp(totalPrice)} (${payMethod})`, true);
       }).catch((err) => {
-        triggerToast('Gagal menyimpan ke server!', true);
+        triggerToast('Gagal menyimpan ke sistem!', true);
       });
     }
 
@@ -2226,9 +2990,9 @@
             </div>
             <div class="lc-body">${desc}</div>
             ${o.note ? `<div class="lc-note">“${esc(o.note)}”</div>` : ''}
-            <div class="lc-actions">
-              <button onclick="openEditOrderModal('${o.orderId}', false)" class="btn btn-sm btn-tinted"><i class="fas fa-pen"></i> Ubah</button>
-              <button onclick="deleteSingleOrder('${o.orderId}')" class="btn btn-sm btn-red-tinted"><i class="fas fa-trash-can"></i> Hapus</button>
+            <div class="lc-actions icons">
+              <button onclick="openEditOrderModal('${o.orderId}', false)" class="icon-act edit" aria-label="Ubah pesanan">${ICON_EDIT}</button>
+              <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
             </div>
           `;
           tableBody.appendChild(cell);
@@ -2241,7 +3005,7 @@
 
     /* FITUR RESTORE STOK OTOMATIS SAAT ORDER DIHAPUS */
     async function deleteSingleOrder(orderId) {
-      if (!(await iosConfirm('Hapus transaksi ini dari Cloud dan kembalikan stok semula?', { title: 'Hapus Transaksi?', okText: 'Hapus', destructive: true }))) return;
+      if (!(await iosConfirm('Hapus transaksi ini dari Sistem dan kembalikan stok semula?', { title: 'Hapus Transaksi?', okText: 'Hapus', destructive: true }))) return;
 
       const orderToDel = ordersList.find(o => o.orderId === orderId);
       if (orderToDel && !orderToDel.isFreeDrink && orderToDel.items) {
@@ -2409,7 +3173,7 @@
         isFreeDrink: isFree
       }).then(() => {
         closeEditModal();
-        triggerToast('Pesanan berhasil diperbarui di Cloud!');
+        triggerToast('Pesanan berhasil diperbarui di Sistem!');
         if (orderLama) {
           const ubah = [];
           if (ringkasItem(orderLama.items) !== ringkasItem(itemBaru)) ubah.push(`menu ${ringkasItem(orderLama.items)} → ${ringkasItem(itemBaru)}`);
@@ -2431,14 +3195,14 @@
       const itemInput = document.getElementById('expenseItemName');
 
       if (isQuick) {
-        box.classList.add('is-disabled');
+        box.classList.add('hidden');
         // Total belanja saja: sembunyikan jumlah/berat & satuan (dikosongkan supaya tidak menambah stok)
         document.getElementById('expenseQtyUnitBox').classList.add('hidden');
         document.getElementById('expenseQty').value = '';
         document.getElementById('expenseUnit').value = 'Operasional/Tanpa Stok';
         itemInput.value = 'Belanja Bahan Baku (Borongan)';
       } else {
-        box.classList.remove('is-disabled');
+        box.classList.remove('hidden');
         itemInput.value = '';
       }
     }
@@ -2504,7 +3268,7 @@
           document.getElementById('expenseNote').value = '';
           document.getElementById('expenseQty').value = '';
           if (!isQuick) document.getElementById('expenseItemName').value = '';
-          triggerToast(`Biaya Aset ${formatRp(amt)} disimpan ke Database Aset!`);
+          triggerToast(`Biaya Aset ${formatRp(amt)} disimpan ke sistem (aset)!`);
           logAktivitas('add', `Menambahkan biaya aset ${title} ${formatRp(amt)}`, true);
         }).catch(err => triggerToast('Gagal menyimpan aset!', true));
         return;
@@ -2548,7 +3312,7 @@
         document.getElementById('expenseNote').value = '';
         document.getElementById('expenseQty').value = '';
         if (!isQuick) document.getElementById('expenseItemName').value = '';
-        triggerToast(`Pengeluaran ${formatRp(amt)} disimpan & stok terupdate!`);
+        tampilkanSukses('expense', `${title}\n${formatRp(amt)}`);
         logAktivitas('add', `Menambahkan pengeluaran ${title} ${formatRp(amt)}`, true);
       }).catch(err => triggerToast('Gagal menyimpan!', true));
     }
@@ -2584,7 +3348,7 @@
         document.getElementById('assetAmount').value = '';
         document.getElementById('assetNote').value = '';
         closeSecretAssetModal();
-        triggerToast('Biaya aset tetap tersimpan di Database Terpisah!');
+        triggerToast('Biaya aset tetap tersimpan di sistem!');
         logAktivitas('add', `Menambahkan biaya aset ${aTitle} ${formatRp(aAmt)}`, true);
       }).catch(err => triggerToast('Gagal menyimpan aset!', true));
     }
@@ -2685,9 +3449,9 @@
             <div class="lc-amount ${e.isAsset ? 'amber' : 'red'}">${formatRp(e.amount)}</div>
           </div>
           ${e.note ? `<div class="lc-note">${esc(e.note)}</div>` : ''}
-          <div class="lc-actions">
-            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="btn btn-sm btn-tinted"><i class="fas fa-pen"></i> Ubah</button>
-            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="btn btn-sm btn-red-tinted"><i class="fas fa-trash-can"></i> Hapus</button>
+          <div class="lc-actions icons">
+            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="icon-act edit" aria-label="Ubah pengeluaran">${ICON_EDIT}</button>
+            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="icon-act del" aria-label="Hapus pengeluaran">${ICON_TRASH}</button>
           </div>
         `;
         tbody.appendChild(cell);
@@ -2744,7 +3508,7 @@
         unit: newUnit
       }).then(() => {
         closeEditExpenseModal();
-        triggerToast('Pengeluaran berhasil diperbarui di Cloud!');
+        triggerToast('Pengeluaran berhasil diperbarui di Sistem!');
         if (expLama) {
           const ubah = [];
           if ((expLama.title || '') !== newTitle) ubah.push(`nama "${expLama.title}" → "${newTitle}"`);
@@ -2789,7 +3553,7 @@
     }
 
     async function deleteSingleExpense(expId, isAsset = false) {
-      if (!(await iosConfirm('Hapus catatan pengeluaran ini dari Cloud?', { title: 'Hapus Pengeluaran?', okText: 'Hapus', destructive: true }))) return;
+      if (!(await iosConfirm('Hapus catatan pengeluaran ini dari Sistem?', { title: 'Hapus Pengeluaran?', okText: 'Hapus', destructive: true }))) return;
       const ref = isAsset ? assetsRef : expensesRef;
       const expDel = isAsset ? assetsList.find(a => a.assetId === expId) : expensesList.find(e => e.expenseId === expId);
       ref.child(expId).remove().then(() => {
@@ -3131,14 +3895,14 @@
           <div class="lc-head">
             <div>
               <div class="lc-title">${fmtTgl(o.date)}</div>
-              <div class="lc-meta">Jam ${esc(o.time || '-')} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
+              <div class="lc-meta">Jam ${esc(o.time || '-')} ${payPill(o.method)} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
             </div>
             <div class="lc-amount ${o.isFreeDrink ? 'strike' : 'green'}">${formatRp(o.totalPrice)}</div>
           </div>
           <div class="lc-body">${esc(detailStr)}</div>
-          <div class="lc-actions">
-            <button onclick="openEditOrderModal('${o.orderId}', true)" class="btn btn-sm btn-tinted"><i class="fas fa-pen"></i> Ubah / Free</button>
-            <button onclick="deleteSingleOrder('${o.orderId}')" class="btn btn-sm btn-red-tinted"><i class="fas fa-trash-can"></i> Hapus</button>
+          <div class="lc-actions icons">
+            <button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit" aria-label="Ubah pesanan / free drink">${ICON_EDIT}</button>
+            <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
           </div>
         `;
         tbody.appendChild(cell);
@@ -3208,12 +3972,12 @@
     }
 
     async function executeResetData() {
-      if ((await iosPrompt('Ketik "RESET" untuk menghapus seluruh data cloud:', { title: 'Reset Semua Data?', okText: 'Hapus', destructive: true })) === 'RESET') {
+      if ((await iosPrompt('Ketik "RESET" untuk menghapus seluruh data di sistem:', { title: 'Reset Semua Data?', okText: 'Hapus', destructive: true })) === 'RESET') {
         db.ref('thaitea').remove().then(() => {
           ordersList = []; expensesList = []; assetsList = []; cartItems = [];
           renderCartUI(); renderInventoryUI();
-          triggerToast('Data cloud berhasil dibersihkan!');
-          logAktivitas('sys', 'Mereset seluruh data cloud');
+          triggerToast('Data sistem berhasil dibersihkan!');
+          logAktivitas('sys', 'Mereset seluruh data sistem');
         });
       }
     }
