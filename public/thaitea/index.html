@@ -195,7 +195,8 @@
     .day-nav { display: flex; align-items: center; gap: 8px; }
     .day-arrow { width: 54px; height: 58px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text); font-size: 34px; font-weight: 600; line-height: 1; flex: none; display: flex; align-items: center; justify-content: center; padding-bottom: 4px; }
     .day-arrow:active { transform: scale(.94); }
-    .day-pick { flex: 1; min-width: 0; position: relative; min-height: 58px; border-radius: 14px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 4.6vw, 20px); font-weight: 800; cursor: pointer; white-space: nowrap; padding: 0 8px; }
+    .day-pick { flex: 1; min-width: 0; position: relative; min-height: 58px; border-radius: 14px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; cursor: pointer; white-space: nowrap; padding: 4px 8px; flex-direction: column; line-height: 1.15; text-align: center; }
+    .day-pick small { display: block; font-size: 12.5px; font-weight: 700; color: var(--accent-text); letter-spacing: .02em; }
     .day-pick input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; cursor: pointer; }
     .day-pick input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
@@ -1909,7 +1910,7 @@
       if (!box) return;
       const d = document.getElementById('activityDate').value;
       const today = hariIniWIB();
-      document.getElementById('activityDateLabel').textContent = !d ? 'Semua Tanggal' : (d === today ? `Hari Ini · ${fmtTgl(d)}` : fmtTgl(d));
+      document.getElementById('activityDateLabel').innerHTML = labelHariPilih(d);
       const list = activityList.filter(a => !d || a.date === d);
       if (!list.length) {
         box.innerHTML = `<div class="empty"><i class="fas fa-list-check"></i>Belum ada aktivitas${d ? ' di tanggal ' + fmtTgl(d) : ''}.</div>`;
@@ -2035,6 +2036,15 @@
     const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
     // Nama kategori yang tampil: "Regular" ditampilkan sebagai "Original" (data tersimpan tidak diubah)
     function labelKategori(c) { return String(c || '').replace(/Regular/g, 'Original'); }
+    // Label pemilih tanggal: "Hari Ini" kecil di atas, tanggal tanpa tanda "-" di bawah
+    function tglSpasi(iso) { return fmtTgl(iso).replace(/-/g, ' '); }
+    function labelHariPilih(iso) {
+      if (!iso) return 'Semua Tanggal';
+      const today = hariIniWIB();
+      const k = new Date(today + 'T00:00:00Z'); k.setUTCDate(k.getUTCDate() - 1);
+      const atas = iso === today ? 'HARI INI' : (iso === k.toISOString().slice(0, 10) ? 'KEMARIN' : '');
+      return (atas ? `<small>${atas}</small>` : '') + tglSpasi(iso);
+    }
     function payPill(m) {
       const v = String(m || 'Tunai');
       const cls = /tunai/i.test(v) ? 'pay-tunai' : /qris/i.test(v) ? 'pay-qris' : /shopee/i.test(v) ? 'pay-shopee' : 'pay-lain';
@@ -4067,7 +4077,7 @@
 
       const todayISO = hariIniWIB();
       const pickedDate = document.getElementById('historyDate').value;
-      document.getElementById('historyDateLabel').textContent = !pickedDate ? 'Semua Tanggal' : (pickedDate === todayISO ? `Hari Ini · ${fmtTgl(pickedDate)}` : fmtTgl(pickedDate));
+      document.getElementById('historyDateLabel').innerHTML = labelHariPilih(pickedDate);
 
       let list = [...ordersList];
       if (pickedDate) list = list.filter(o => o.date === pickedDate);
