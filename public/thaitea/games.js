@@ -19,6 +19,7 @@
   const BOT_NAMES = ['Robo Tea', 'Bot Boba', 'Bot Matcha', 'Bot Taro', 'Bot Keju', 'Bot Oreo', 'Bot Jelly'];
   const roomsRef = db.ref('thaitea/games/rooms');
   const ROOM_TTL = 6 * 3600 * 1000;
+  const SAVE_TTL = 30 * 24 * 3600 * 1000;   // game yang sedang dimainkan disimpan s.d. 30 hari (kecuali diakhiri / digeser hapus)
   const IDLE_CLOSE = 30 * 1000;         // meja tanpa orang 30 detik → dihapus (kecuali dijeda)
   const FRESH = 25 * 1000;               // tanda "masih di dalam meja" (dikirim tiap 10 detik)
   const BOT_SVG = '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="#fff" d="M11 2h2v3h4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h4V2zm-2 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm6 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>';
@@ -659,7 +660,7 @@
     const p = pauseInfo();
     $('gvPause').classList.toggle('hidden', !p);
     if (p) {
-      $('gvPauseBy').textContent = cur.mode === 'bot' ? 'Komputer ikut berhenti.' : (p.by === deviceName ? 'Kamu menjeda permainan untuk semua pemain.' : `Dijeda oleh ${p.by}.`);
+      $('gvPauseBy').textContent = cur.mode === 'bot' ? 'Komputer ikut berhenti.' : (p.auto ? 'Dijeda otomatis karena semua pemain keluar.' : p.by === deviceName ? 'Kamu menjeda permainan untuk semua pemain.' : `Dijeda oleh ${p.by}.`);
       $('gvPauseResume').classList.toggle('hidden', cur.mode === 'watch');
     }
     refreshHead();
@@ -676,15 +677,47 @@
     else roomsRef.child(cur.roomId).update({ paused: null, activeAt: Date.now() });
   }
   async function keluar() {
-    if (cur && gameRunning() && cur.mode !== 'watch') {
-      const rr = cur.roomId && rooms[cur.roomId];
-      const sendiri = cur.mode === 'bot' || (rr && !arr(rr.seats).some(x => x && !x.bot && x.key !== myKey));
-      const msg = sendiri ? 'Permainan ini akan berakhir.' : 'Kursimu akan dilanjutkan oleh komputer.';
-      if (!(await iosConfirm(msg, { title: 'Keluar dari Game?', okText: 'Keluar', destructive: true }))) return;
-      const p = pauseInfo();
-      if (p && cur.mode === 'online' && p.by === deviceName) lanjut();
+    if (cur && gameRunning() && cur.mode === 'online' && cur.roomId) { bukaKeluar(); return; }
+    if (cur && gameRunning() && cur.mode === 'bot') {
+      if (!(await iosConfirm('Permainan ini akan berakhir.', { title: 'Akhiri Game?', okText: 'Akhiri', destructive: true }))) return;
+      return closeView('akhiri');
     }
     closeView();
+  }
+  function orangLainDiMeja() {
+    const rr = cur && cur.roomId && rooms[cur.roomId];
+    return !!(rr && arr(rr.seats).some(x => x && !x.bot && x.key !== myKey));
+  }
+  function bukaKeluar() {
+    const lain = orangLainDiMeja();
+    const box = $('gvExitSheet');
+    box.innerHTML = `<div class="gx-card">
+      <div class="gx-title">Keluar dari game?</div>
+      <div class="gx-sub">Progres game tersimpan otomatis. Kamu bisa lanjut kapan saja dari Hiburan → Game.</div>
+      <button type="button" class="btn btn-primary btn-lg btn-block" onclick="TTG._simpanKeluar()"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg> Jeda, Lanjutkan Nanti</button>
+      <button type="button" class="btn btn-red-tinted btn-lg btn-block" style="margin-top:10px" onclick="TTG._akhiri()">${lain ? 'Keluar, Kursiku Dimainkan Komputer' : 'Akhiri Game'}</button>
+      <button type="button" class="btn btn-gray btn-lg btn-block" style="margin-top:10px" onclick="TTG._batalKeluar()">Batal</button></div>`;
+    box.classList.remove('hidden');
+  }
+  function lanjutkanMeja(id) {
+    const r = rooms[id]; if (!r) return;
+    roomsRef.child(id).update({ paused: null, activeAt: Date.now() });
+    masukMeja(id, 'online');
+  }
+  function tutupKeluar() { $('gvExitSheet').classList.add('hidden'); }
+  function simpanKeluar() {
+    tutupKeluar();
+    if (cur && cur.roomId && gameRunning() && !pauseInfo()) roomsRef.child(cur.roomId).update({ paused: { by: deviceName || 'Seseorang', at: Date.now() }, activeAt: Date.now() });
+    closeView('simpan');
+    triggerToast('Game dijeda & tersimpan');
+  }
+  async function akhiriDariSheet() {
+    tutupKeluar();
+    const lain = orangLainDiMeja();
+    if (!lain && !(await iosConfirm('Game ini akan dihapus dan tidak bisa dilanjutkan lagi.', { title: 'Akhiri Game?', okText: 'Akhiri', destructive: true }))) return;
+    const p = pauseInfo();
+    if (p && lain) roomsRef.child(cur.roomId).update({ paused: null });
+    closeView('akhiri');
   }
 
   /* ---------- layar game ---------- */
@@ -692,13 +725,16 @@
     $('gameView').classList.remove('hidden');
     $('gvTitle').textContent = title;
     $('gvBody').innerHTML = '';
+    $('gvBody').className = 'gv-body';
     $('gvPause').classList.add('hidden');
     $('gvWin').classList.add('hidden');
     $('gvLive').classList.add('hidden');
     refreshHead();
   }
-  function closeView() {
+  function closeView(how) {
+    how = how || (gameRunning() ? 'simpan' : 'akhiri');
     stopAll();
+    if ($('gvExitSheet')) $('gvExitSheet').classList.add('hidden');
     if (cur && cur.roomId) {
       const r = rooms[cur.roomId];
       db.ref(`thaitea/games/rooms/${cur.roomId}/online/${myKey}`).remove();
@@ -711,6 +747,8 @@
         if (r.status === 'waiting') {
           if (r.host === myKey) roomsRef.child(cur.roomId).remove();
           else if (mine >= 0) db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}`).remove();
+        } else if (mine >= 0 && how === 'simpan' && r.status === 'playing') {
+          if (!r.paused) roomsRef.child(cur.roomId).update({ paused: { by: deviceName || 'Seseorang', at: Date.now() } });
         } else if (mine >= 0) {
           const orangLain = seats.some((x, i) => i !== mine && x && !x.bot);
           if (!orangLain) { roomsRef.child(cur.roomId).remove(); cur = null; tutupPodium(); $('gameView').classList.add('hidden'); renderPane(); return; }
@@ -1137,27 +1175,40 @@
       if (!r || !r.id) return;
       const inside = [...Object.values(r.online || {}), ...Object.values(r.viewers || {})].map(v => typeof v === 'number' ? v : (v && v.at) || 0);
       const life = Math.max(r.activeAt || r.createdAt || 0, ...inside);
-      if (now - (r.createdAt || 0) > ROOM_TTL && now - life > IDLE_CLOSE) roomsRef.child(r.id).remove();
-      else if (!r.paused && now - life > IDLE_CLOSE) roomsRef.child(r.id).remove();
+      const idle = now - life > IDLE_CLOSE;
+      if (r.status === 'playing') {
+        if (idle && now - life > SAVE_TTL) roomsRef.child(r.id).remove();
+        else if (idle && !r.paused) roomsRef.child(r.id).update({ paused: { by: 'otomatis', auto: true, at: now } });
+      } else if (idle) roomsRef.child(r.id).remove();
     });
   }
 
   /* ---------- panel Game di menu Hiburan ---------- */
   function daftarMeja() {
     const now = Date.now();
-    return Object.values(rooms).filter(r => r && r.id && GAMES[r.game] && now - (r.createdAt || 0) < ROOM_TTL);
+    return Object.values(rooms).filter(r => r && r.id && GAMES[r.game] && (r.status === 'playing' || now - (r.createdAt || 0) < ROOM_TTL));
   }
   function renderPane() {
     const box = $('gameList');
     if (!box) return;
     const list = daftarMeja();
-    const live = list.filter(r => r.status === 'playing');
+    const live = list.filter(r => r.status === 'playing' && !r.paused);
+    const saved = list.filter(r => r.status === 'playing' && r.paused).sort((a, b) => (b.paused.at || 0) - (a.paused.at || 0));
     const wait = list.filter(r => r.status === 'waiting');
+    const DEL = `<svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9z"/></svg>Hapus`;
+    const siapa = (r, seats) => r.solo && !seats.some(s => !s.bot && s.key !== r.host) ? esc((r.hostName || seats[0].name) + ' lawan komputer') : esc(seats.map(s => s.name).join(', '));
+    const kapan = t => { const m = Math.max(1, Math.round((Date.now() - t) / 60000)); return m < 60 ? m + ' menit lalu' : m < 1440 ? Math.round(m / 60) + ' jam lalu' : Math.round(m / 1440) + ' hari lalu'; };
+    const savedHtml = saved.length ? `<div class="section-label"><span>Game Tersimpan</span></div><div class="list">${saved.map(r => {
+      const seats = arr(r.seats).filter(Boolean);
+      const mine = seats.some(x => x.key === myKey && !x.bot);
+      return `<div class="sw-wrap" data-room="${r.id}"><button type="button" class="sw-del" onclick="TTG.hapusMeja('${r.id}')">${DEL}</button><div class="room-row sw-row" style="cursor:default"><span class="gl-mini" style="background:${GAMES[r.game].bg}">${ICON[r.game]}</span><div class="room-main"><div class="room-name">${GAMES[r.game].name} <span class="pill" style="font-size:11px">DIJEDA</span></div><div class="room-last">${siapa(r, seats)} · ${kapan(r.paused.at || r.activeAt || Date.now())}</div></div>
+        <button type="button" class="btn ${mine ? 'btn-primary' : 'btn-tinted'} btn-sm" onclick="${mine ? `TTG.lanjutkanMeja('${r.id}')` : `TTG.tonton('${r.id}')`}">${mine ? 'Lanjutkan' : 'Lihat'}</button></div></div>`;
+    }).join('')}</div>` : '';
     const liveHtml = live.length ? `<div class="section-label"><span><span class="live-dot"></span> Live Sekarang</span></div><div class="list">${live.map(r => {
       const seats = arr(r.seats).filter(Boolean);
       const v = Object.values(r.viewers || {}).filter(fresh).length;
       return `<div class="sw-wrap" data-room="${r.id}"><button type="button" class="sw-del" onclick="TTG.hapusMeja('${r.id}')"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9z"/></svg>Hapus</button><div class="room-row sw-row" style="cursor:default"><span class="gl-mini" style="background:${GAMES[r.game].bg}">${ICON[r.game]}</span><div class="room-main"><div class="room-name">${GAMES[r.game].name}${r.paused ? ' <span class="pill" style="font-size:11px">DIJEDA</span>' : ''}</div><div class="room-last">${r.solo && !seats.some(s => !s.bot && s.key !== r.host) ? esc((r.hostName || seats[0].name) + ' lawan komputer') : esc(seats.map(s => s.name).join(', '))}${v ? ' · ' + v + ' menonton' : ''}</div></div>
-        <div style="display:flex;flex-direction:column;gap:6px">${slotJoin(r) && !seats.some(s => s.key === myKey) ? `<button type="button" class="btn btn-primary btn-sm" onclick="TTG.mintaIkut('${r.id}')">Minta Ikut</button>` : ''}<button type="button" class="btn btn-tinted btn-sm" onclick="TTG.tonton('${r.id}')">Tonton</button></div></div></div>`;
+        <div style="display:flex;flex-direction:column;gap:6px">${seats.some(x => x.key === myKey && !x.bot) && !(cur && cur.roomId === r.id) ? `<button type="button" class="btn btn-primary btn-sm" onclick="TTG.lanjutkanMeja('${r.id}')">Lanjutkan</button>` : ''}${slotJoin(r) && !seats.some(s => s.key === myKey) ? `<button type="button" class="btn btn-primary btn-sm" onclick="TTG.mintaIkut('${r.id}')">Minta Ikut</button>` : ''}<button type="button" class="btn btn-tinted btn-sm" onclick="TTG.tonton('${r.id}')">Tonton</button></div></div></div>`;
     }).join('')}</div>` : '';
     const waitHtml = wait.length ? `<div class="section-label"><span>Meja Menunggu Pemain</span></div><div class="list">${wait.map(r => {
       const seats = arr(r.seats).filter(Boolean);
@@ -1165,8 +1216,8 @@
       return `<div class="sw-wrap" data-room="${r.id}"><button type="button" class="sw-del" onclick="TTG.hapusMeja('${r.id}')"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9z"/></svg>Hapus</button><div class="room-row sw-row" style="cursor:default"><span class="gl-mini" style="background:${GAMES[r.game].bg}">${ICON[r.game]}</span><div class="room-main"><div class="room-name">${GAMES[r.game].name}</div><div class="room-last">Dibuat ${esc(r.hostName || '')} · ${seats.length}/${r.max} pemain</div></div>
         <button type="button" class="btn btn-primary btn-sm" onclick="TTG.gabung('${r.id}')">${mine ? 'Buka' : 'Ikut'}</button></div></div>`;
     }).join('')}</div>` : '';
-    const geserTxt = (live.length || wait.length) ? '<p class="card-sub" style="margin:8px 6px 0">Geser kartu meja ke kiri untuk menghapus.</p>' : '';
-    box.innerHTML = `${liveHtml}${waitHtml}${geserTxt}<div class="section-label"><span>Pilih Game</span></div>
+    const geserTxt = (live.length || wait.length || saved.length) ? '<p class="card-sub" style="margin:8px 6px 0">Geser kartu meja ke kiri untuk menghapus.</p>' : '';
+    box.innerHTML = `${savedHtml}${liveHtml}${waitHtml}${geserTxt}<div class="section-label"><span>Pilih Game</span></div>
       <div class="game-grid">${Object.entries(GAMES).map(([k, g]) => `<button type="button" class="game-card" onclick="TTG.pilih('${k}')"><span class="gl-ico big" style="background:${g.bg}">${ICON[k]}</span><span class="gc-name">${g.name}</span><span class="gc-desc">${g.desc}</span></button>`).join('')}</div>`;
     pasangGeser(box);
   }
@@ -1285,6 +1336,11 @@
   .gvp-card{width:100%;max-width:360px;background:#fff;border-radius:26px;padding:26px 20px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.15);animation:gpop .3s cubic-bezier(.2,1.3,.4,1)}
   .gvp-ico{width:84px;height:84px;border-radius:50%;background:var(--accent);margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
   .gvp-title{font-size:26px;font-weight:900}
+  #gvExitSheet{z-index:7;align-items:flex-end}
+  .gx-card{width:100%;max-width:420px;background:#fff;border-radius:26px;padding:22px 18px calc(env(safe-area-inset-bottom,0px) + 18px);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.18);animation:gxup .3s cubic-bezier(.2,1,.3,1)}
+  @keyframes gxup{from{transform:translateY(40px);opacity:0}}
+  .gx-title{font-size:22px;font-weight:900}
+  .gx-sub{color:var(--text2);font-size:15px;margin:6px 0 16px;line-height:1.4}
   .gvp-sub{color:var(--text2);margin:6px 0 20px;font-size:16px}
   @keyframes gpop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
   .live-badge{display:inline-flex;align-items:center;gap:6px;background:#FF3B30;color:#fff;font-size:12px;font-weight:800;padding:5px 9px;border-radius:8px;letter-spacing:.03em;flex:none}
@@ -1391,12 +1447,14 @@
     <div id="gvReq" class="gv-req hidden"></div>
     <div id="gvBody" class="gv-body"></div>
     <div id="gvWin" class="pd-wrap hidden"></div>
+    <div id="gvExitSheet" class="gv-pause hidden"></div>
     <div id="gvPause" class="gv-pause hidden"><div class="gvp-card">
       <div class="gvp-ico"><svg viewBox="0 0 24 24" width="44" height="44"><path fill="#fff" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></div>
       <div class="gvp-title">Permainan Dijeda</div>
       <div id="gvPauseBy" class="gvp-sub"></div>
       <button type="button" id="gvPauseResume" class="btn btn-primary btn-lg btn-block" onclick="TTG.lanjut()"><svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg> Lanjutkan</button>
-      <button type="button" class="btn btn-red-tinted btn-lg btn-block" style="margin-top:10px" onclick="TTG.keluar()">Keluar dari Game</button>
+      <button type="button" class="btn btn-tinted btn-lg btn-block" style="margin-top:10px" onclick="TTG.tutup('simpan')">Tutup, Lanjutkan Nanti</button>
+      <button type="button" class="btn btn-red-tinted btn-block" style="margin-top:10px" onclick="TTG.keluar()">Keluar / Akhiri Game</button>
     </div></div>`;
   (document.getElementById('thaiTeaAppRoot') || document.body).appendChild(view);
   view.addEventListener('pointerdown', () => SFX.unlock(), { passive: true });
@@ -1418,7 +1476,7 @@
   window.TTG = {
     daftarGame,
     _h: { SFX, $, rnd, clone, shuffle, arr, sleep, seatName, seatAva, resultHtml, BOT_SVG, isDriver: () => isDriver(), get autoTick() { return autoTick; }, set autoTick(v) { clearInterval(autoTick); autoTick = v; } },
-    renderPane, pilih, tutup: closeView, keluar, jeda, lanjut, mulaiOnline, _mulai: mulaiDengan, mainLagi,
+    renderPane, pilih, tutup: closeView, keluar, lanjutkanMeja, _simpanKeluar: simpanKeluar, _akhiri: akhiriDariSheet, _batalKeluar: tutupKeluar, jeda, lanjut, mulaiOnline, _mulai: mulaiDengan, mainLagi,
     gabung: gabungMeja, hapusMeja, tonton: id => masukMeja(id, 'watch'), mintaIkut, batalMinta, terimaIkut, tolakIkut,
     tutupPodium,
     suara: () => { SFX.toggle(); refreshHead(); if (!SFX.muted) SFX.tap(); },
