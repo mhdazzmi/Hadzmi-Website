@@ -229,6 +229,10 @@
     }
     .chip.active { background: var(--accent); color: #fff; box-shadow: 0 3px 10px rgba(234, 106, 10, .28); }
     .chip:active { transform: scale(.97); }
+    #chipsRow { gap: 6px; }
+    #chipsRow .chip { min-height: 38px; padding: 0 13px; font-size: 15px; border-radius: 19px; box-shadow: inset 0 0 0 1px var(--sep); }
+    #chipsRow .chip.active { box-shadow: 0 2px 6px rgba(234, 106, 10, .25); }
+    #chipsRow .chip-search { width: 38px; padding: 0; justify-content: center; color: var(--text2); }
     .tag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .tag-btn { min-height: 50px; border-radius: 12px; background: var(--bg); font-size: 15px; font-weight: 600; text-align: left; padding: 0 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tag-btn:active { background: var(--accent-soft); }
@@ -674,12 +678,12 @@
               <button type="button" class="btn btn-gray btn-sm" style="min-height:46px" onclick="tutupCariMenu()">Tutup</button>
             </div>
             <div class="chips" id="chipsRow">
-              <button type="button" onclick="bukaCariMenu()" class="chip chip-search" aria-label="Cari menu">🔍 Cari</button>
+              <button type="button" onclick="bukaCariMenu()" class="chip chip-search" aria-label="Cari menu"><svg viewBox="0 0 24 24" width="18" height="18"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
               <button onclick="filterMenu('all', event)" class="chip cat-pill active">Semua</button>
-              <button onclick="filterMenu('thai-premium', event)" class="chip cat-pill">Premium 15rb</button>
-              <button onclick="filterMenu('thai-regular', event)" class="chip cat-pill">Regular 10rb</button>
-              <button onclick="filterMenu('tea', event)" class="chip cat-pill">Tea Buah 7rb</button>
-              <button onclick="filterMenu('special', event)" class="chip cat-pill">Es Teler 15rb</button>
+              <button onclick="filterMenu('thai-premium', event)" class="chip cat-pill">Premium</button>
+              <button onclick="filterMenu('thai-regular', event)" class="chip cat-pill">Original</button>
+              <button onclick="filterMenu('tea', event)" class="chip cat-pill">Tea Buah</button>
+              <button onclick="filterMenu('special', event)" class="chip cat-pill">Es Teler</button>
             </div>
             <div id="menuCardsGrid" class="menu-grid"></div>
           </div>
@@ -1022,7 +1026,7 @@
             <div id="stockCardsGrid" class="stock-grid"></div>
             <div class="info-box" style="margin-top:14px">
               <h4><i class="fas fa-circle-info"></i> Aturan Potong Stok</h4>
-              <p>• Setiap rasa punya stok bubuk sendiri. Varian <b>Premium</b> maupun <b>Regular</b> memakai bubuk yang sama.</p>
+              <p>• Setiap rasa punya stok bubuk sendiri. Varian <b>Premium</b> maupun <b>Original</b> memakai bubuk yang sama.</p>
               <p>• <b>Susu/Krimer</b> terpotong 50 ml per cup Thai Tea. Cup terpotong 1 per cup.</p>
             </div>
           </div>
@@ -2029,6 +2033,8 @@
     const ICON_TRASH = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9zm4 2v8h1.6v-8H10zm3.4 0v8H15v-8h-1.6z"/></svg>';
     const ICON_PLAY = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
     const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+    // Nama kategori yang tampil: "Regular" ditampilkan sebagai "Original" (data tersimpan tidak diubah)
+    function labelKategori(c) { return String(c || '').replace(/Regular/g, 'Original'); }
     function payPill(m) {
       const v = String(m || 'Tunai');
       const cls = /tunai/i.test(v) ? 'pay-tunai' : /qris/i.test(v) ? 'pay-qris' : /shopee/i.test(v) ? 'pay-shopee' : 'pay-lain';
@@ -2862,7 +2868,7 @@
             ${item.category.includes('premium') ? '<span class="mt-badge">PREMIUM</span>' : ''}
           </div>
           <div class="mt-name">${item.name}</div>
-          <div class="mt-cat">${item.catLabel}</div>
+          <div class="mt-cat">${labelKategori(item.catLabel)}</div>
           <div class="mt-foot">
             <span class="mt-price">${formatRp(item.price)}</span>
             <span class="mt-plus">+</span>
@@ -2895,7 +2901,7 @@
 
       document.querySelectorAll('.topping-box').forEach(b => b.checked = false);
       document.getElementById('modalMenuName').textContent = activeItem.name;
-      document.getElementById('modalCategoryBadge').textContent = activeItem.catLabel;
+      document.getElementById('modalCategoryBadge').textContent = labelKategori(activeItem.catLabel);
       document.getElementById('modalMenuBasePrice').textContent = formatRp(activeItem.price);
       document.getElementById('modalQuantityVal').textContent = activeQty;
 
@@ -3976,7 +3982,7 @@
             <div class="rank-line">
               <div style="min-width:0">
                 <div class="rank-name">${esc(item.name)}</div>
-                <div class="rank-cat">${esc(item.catLabel)}</div>
+                <div class="rank-cat">${esc(labelKategori(item.catLabel))}</div>
               </div>
               <div class="rank-qty">${item.qty} cup <small>(${pct}%)</small></div>
             </div>
@@ -4011,7 +4017,7 @@
       chartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: Object.keys(catMap),
+          labels: Object.keys(catMap).map(labelKategori),
           datasets: [{
             data: Object.values(catMap),
             backgroundColor: ['#EA6A0A', '#FF9F0A', '#FFD60A', '#34C759', '#5AC8FA', '#AF52DE'],
