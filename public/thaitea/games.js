@@ -16,7 +16,7 @@
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const arr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map(k => v[k]) : []);
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const BOT_NAMES = ['Robo Tea', 'Bot Boba', 'Bot Matcha'];
+  const BOT_NAMES = ['Robo Tea', 'Bot Boba', 'Bot Matcha', 'Bot Taro', 'Bot Keju', 'Bot Oreo', 'Bot Jelly'];
   const roomsRef = db.ref('thaitea/games/rooms');
   const ROOM_TTL = 6 * 3600 * 1000;
   const IDLE_CLOSE = 30 * 1000;         // meja tanpa orang 30 detik → dihapus (kecuali dijeda)
@@ -56,6 +56,7 @@
     }
     return {
       unlock() { ctx(); },
+      tone, noise,
       get muted() { return muted; },
       toggle() { muted = !muted; try { lsSet('tt_game_mute', muted ? '1' : '0'); } catch (e) {} return muted; },
       clack() { noise(.06, .55, 0, 2600, 2); tone(1400, .04, 'square', .04); noise(.04, .3, .045, 1800, 2); },
@@ -797,7 +798,7 @@
   }
   function commit(st) {
     if (cur.mode === 'online') {
-      roomsRef.child(cur.roomId).update({ state: st, activeAt: Date.now(), ...(st.winner !== null && st.winner !== undefined ? { status: 'done', winnerName: st.winner >= 0 ? seatName({ seats: cur.seats, spectator: true }, st.winner) : 'Seri' } : {}) });
+      roomsRef.child(cur.roomId).update({ state: st, activeAt: Date.now(), ...(st.winner !== null && st.winner !== undefined ? { status: 'done', winnerName: ENG[cur.game].winnerName ? ENG[cur.game].winnerName(st) : st.winner >= 0 ? seatName({ seats: cur.seats, spectator: true }, st.winner) : 'Seri' } : {}) });
     }
     terima(st);
   }
@@ -805,6 +806,19 @@
     clearTimeout(botTimer);
     const st = cur && cur.state;
     if (!st || (st.winner !== null && st.winner !== undefined) || cur.anim || cur.queue.length) return;
+    const eng0 = ENG[cur.game];
+    if (eng0.pending && isDriver() && !isPaused()) {   // langkah otomatis (mis. pergantian malam/siang)
+      const p = eng0.pending(eng0.norm(clone(st)), cur.seats);
+      if (p) {
+        const v0 = st.v;
+        botTimer = setTimeout(() => {
+          if (!cur || !cur.state || cur.state.v !== v0 || isPaused() || cur.anim) return;
+          const after = eng0.apply(cur.state, -1, p.mv);
+          if (after.v !== v0) commit(after);
+        }, p.ms || 1500);
+        return;
+      }
+    }
     const seat = cur.seats[st.turn];
     if (!seat || !seat.bot || !isDriver() || isPaused()) return;
     const v = st.v;
@@ -815,26 +829,27 @@
       if (!cur.seats[s] || !cur.seats[s].bot) return;   // kursi sudah diambil alih orang
       const after = eng.apply(cur.state, s, eng.bot(eng.norm(clone(cur.state)), s));
       if (after.v !== v) commit(after);
-    }, cur.game === 'domino' ? 700 : cur.game === 'congklak' ? 500 : 400);
+    }, ENG[cur.game].botDelay ? ENG[cur.game].botDelay(eng0.norm(clone(st))) : cur.game === 'domino' ? 700 : cur.game === 'congklak' ? 500 : 400);
   }
 
   /* ---------- lawan komputer ---------- */
-  function mulaiBot(game, n) {
+  function mulaiBot(game, n, opt) {
     stopAll();
+    opt = opt || null;
     if (game === 'congklak') n = 2;
     const seats = [{ key: myKey, name: deviceName || 'Kamu' }];
     for (let i = 1; i < n; i++) seats.push({ bot: true, name: BOT_NAMES[i - 1] });
     if (!myKey) {   // belum pilih nama: main lokal saja (tidak tampil di Live)
-      cur = { game, mode: 'bot', seats, mySeat: 0, queue: [], anim: false };
+      cur = { game, mode: 'bot', seats, mySeat: 0, queue: [], anim: false, opt };
       openView(GAMES[game].name + ' · Lawan Komputer');
       SFX.unlock();
-      terima(ENG[game].init(n));
+      terima(ENG[game].init(n, opt));
       return;
     }
     // lawan komputer juga jadi meja Live, supaya yang lain bisa menonton
     const id = 'R' + Date.now() + Math.random().toString(36).slice(2, 5);
     const now = Date.now();
-    const room = { id, game, solo: true, host: myKey, hostName: deviceName, status: 'playing', max: n, createdAt: now, startedAt: now, activeAt: now, seats, online: { [myKey]: now }, state: ENG[game].init(n) };
+    const room = { id, game, solo: true, host: myKey, hostName: deviceName, status: 'playing', max: n, createdAt: now, startedAt: now, activeAt: now, seats, online: { [myKey]: now }, opt, state: ENG[game].init(n, opt) };
     rooms[id] = room;
     roomsRef.child(id).set(room);
     catat(`Mulai main ${GAMES[game].name} lawan komputer`);
@@ -847,11 +862,11 @@
   function catat(text) { try { if (typeof logAktivitas === 'function') logAktivitas('fun', text); } catch (e) { } }
 
   /* ---------- online: meja ---------- */
-  function buatMeja(game, max) {
+  function buatMeja(game, max, opt) {
     if (!myKey) { triggerToast('Pilih nama pengguna dulu', true); return; }
     if (game === 'congklak') max = 2;
     const id = 'R' + Date.now() + Math.random().toString(36).slice(2, 5);
-    const room = { id, game, host: myKey, hostName: deviceName, status: 'waiting', max, createdAt: Date.now(), activeAt: Date.now(), seats: { 0: { key: myKey, name: deviceName } }, online: { [myKey]: Date.now() } };
+    const room = { id, game, host: myKey, hostName: deviceName, status: 'waiting', max, createdAt: Date.now(), activeAt: Date.now(), seats: { 0: { key: myKey, name: deviceName } }, online: { [myKey]: Date.now() }, opt: opt || null };
     rooms[id] = room;
     roomsRef.child(id).set(room).then(() => {
       kirimNotif(`${deviceName} membuka meja ${GAMES[game].name}. Ayo ikut main!`, '🎮 Game');
@@ -1027,22 +1042,23 @@
     const r = rooms[cur.roomId]; if (!r || r.host !== myKey) return;
     const humans = arr(r.seats).filter(Boolean);
     const seats = humans.slice();
-    if (isiBot) { let b = 0; while (seats.length < r.max) seats.push({ bot: true, name: BOT_NAMES[b++ % 3] }); }
+    if (isiBot) { let b = 0; while (seats.length < r.max) seats.push({ bot: true, name: BOT_NAMES[b++ % BOT_NAMES.length] }); }
     const n = Math.max(GAMES[r.game].min, seats.length);
-    while (seats.length < n) seats.push({ bot: true, name: BOT_NAMES[seats.length % 3] });
+    while (seats.length < n) seats.push({ bot: true, name: BOT_NAMES[seats.length % BOT_NAMES.length] });
     catat(`Mulai main ${GAMES[r.game].name} bersama ${humans.filter(x => x.key !== myKey).map(x => x.name).join(', ') || 'komputer'}`);
-    roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n) });
+    roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n, r.opt || null) });
   }
   function mainLagi() {
     tutupPodium();
     if (!cur) return;
-    if (cur.mode === 'bot') return mulaiBot(cur.game, cur.seats.length);
+    if (cur.mode === 'bot') return mulaiBot(cur.game, cur.seats.length, cur.opt);
     const r = rooms[cur.roomId]; if (!r) return;
-    roomsRef.child(cur.roomId).update({ status: 'playing', paused: null, activeAt: Date.now(), winnerName: null, state: ENG[r.game].init(arr(r.seats).length) });
+    roomsRef.child(cur.roomId).update({ status: 'playing', paused: null, activeAt: Date.now(), winnerName: null, state: ENG[r.game].init(arr(r.seats).length, r.opt || null) });
   }
 
   /* ---------- pop-up juara (podium 1-2-3) ---------- */
   function peringkat(game, st) {
+    if (ENG[game].rank) return ENG[game].rank(st);
     const seats = Array.from({ length: st.n }, (_, i) => i);
     if (game === 'ludo') {
       const sc = s => st.tokens[s].filter(t => t === 56).length * 1000 + st.tokens[s].reduce((a, t) => a + Math.max(0, t), 0);
@@ -1055,6 +1071,7 @@
     return seats.sort((a, b) => st.b[Congklak.store(b)] - st.b[Congklak.store(a)]);
   }
   function nilaiPeringkat(game, st, s) {
+    if (ENG[game].rankVal) return ENG[game].rankVal(st, s);
     if (game === 'ludo') return `${st.tokens[s].filter(t => t === 56).length}/4 bidak pulang`;
     if (game === 'domino') { const p = st.hands[s].reduce((a, t) => a + t[0] + t[1], 0); return st.hands[s].length ? `sisa ${st.hands[s].length} kartu · nilai ${p}` : 'kartu habis'; }
     return `${st.b[Congklak.store(s)]} biji`;
@@ -1067,6 +1084,17 @@
   function tampilPodium(st) {
     if (!cur) return;
     const ctx = { seats: cur.seats, mySeat: cur.mySeat, spectator: cur.mode === 'watch' };
+    if (ENG[cur.game].winHtml) {
+      const w = ENG[cur.game].winHtml(st, ctx);
+      if (w.iWin) catat(`Menang main ${GAMES[cur.game].name}`);
+      const box = $('gvWin');
+      box.innerHTML = `<div class="pd-card">${w.html}<div style="margin-top:16px">${ctx.spectator ? '' : '<button type="button" class="btn btn-primary btn-lg btn-block" onclick="TTG.mainLagi()">Main Lagi</button>'}
+        <button type="button" class="btn btn-gray btn-lg btn-block" style="margin-top:10px" onclick="TTG.tutupPodium()">${ctx.spectator ? 'Tutup' : 'Lihat Papan'}</button>
+        <button type="button" class="btn btn-red-tinted btn-block" style="margin-top:10px" onclick="TTG.keluar()">Keluar</button></div></div>`;
+      box.classList.remove('hidden');
+      if (w.iWin || ctx.spectator) SFX.win(); else SFX.pass();
+      return;
+    }
     const seri = cur.game === 'congklak' && st.winner === -1;
     const urut = peringkat(cur.game, st);
     const iWin = !ctx.spectator && urut[0] === ctx.mySeat && !seri;
@@ -1197,16 +1225,21 @@
     cur = null;
     openView(g.name);
     SFX.unlock();
-    const nList = g.max === 2 ? [] : [2, 3, 4];
+    const nList = g.nList || (g.max === 2 ? [] : [2, 3, 4]);
+    const nDef = g.nDef || nList[0] || 2;
     $('gvBody').innerHTML = `<div class="gl-hero" style="background:${g.bg}"><span class="gl-ico">${ICON[game]}</span><div><div class="gl-title">${g.name}</div><div class="gl-sub">${g.desc}</div></div></div>
-      <div class="card" style="margin-top:12px">${nList.length ? `<span class="field-label">Jumlah pemain</span><div class="segmented" id="glN">${nList.map(n => `<button type="button" data-n="${n}" class="${n === 2 ? 'active' : ''}">${n} pemain</button>`).join('')}</div>` : '<div class="toggle-desc" style="margin-bottom:4px">Dimainkan 2 orang.</div>'}
+      <div class="card" style="margin-top:12px">${nList.length ? `<span class="field-label">Jumlah pemain</span><div class="segmented" id="glN">${nList.map(n => `<button type="button" data-n="${n}" class="${n === nDef ? 'active' : ''}">${n} ${g.nUnit || 'pemain'}</button>`).join('')}</div>${g.nNote ? `<p class="card-sub" style="margin:8px 2px 0">${g.nNote}</p>` : ''}` : '<div class="toggle-desc" style="margin-bottom:4px">Dimainkan 2 orang.</div>'}
+        ${g.optHtml ? g.optHtml() : ''}
         <button type="button" class="btn btn-primary btn-lg btn-block" style="margin-top:14px" id="glBot">${BOT_SVG.replace('#fff', 'currentColor').replace('width="18" height="18"', 'width="22" height="22"')} Main Lawan Komputer</button>
         <button type="button" class="btn btn-tinted btn-lg btn-block" style="margin-top:10px" id="glOnline"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.6 0-1 .1 1.2.8 2 1.9 2 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z"/></svg> Main Online</button>
         <p class="card-sub" style="margin-top:10px"><b>Main Online</b>: pengguna lain dapat pemberitahuan dan bisa ikut. Kalau saat mulai kursinya belum penuh, kamu bisa pilih lanjut atau isi dengan komputer.</p></div>`;
-    let n = 2;
+    let n = nDef;
+    const opt = () => (g.readOpt ? g.readOpt() : null);
+    if (g.bindOpt) g.bindOpt();
     document.querySelectorAll('#glN button').forEach(b => b.onclick = () => { n = +b.dataset.n; SFX.tap(); document.querySelectorAll('#glN button').forEach(x => x.classList.toggle('active', x === b)); });
-    $('glBot').onclick = () => mulaiBot(game, n);
-    $('glOnline').onclick = () => buatMeja(game, n);
+    $('glBot').onclick = () => mulaiBot(game, n, opt());
+    $('glOnline').onclick = () => buatMeja(game, n, opt());
+    if (g.onLobby) g.onLobby();
   }
 
   /* ---------- gaya ---------- */
@@ -1376,7 +1409,15 @@
   });
   setInterval(() => { lastClean = 0; bersihkanMeja(); }, 10000);
 
+  function daftarGame(key, spec) {
+    GAMES[key] = spec.meta; ENG[key] = spec.engine; RENDER[key] = spec.render; ANIM[key] = spec.anim || (async (p, n, redraw) => redraw(n));
+    ICON[key] = spec.icon;
+    if (spec.css) { const st2 = document.createElement('style'); st2.textContent = spec.css; document.head.appendChild(st2); }
+    if (!document.getElementById('tab-hiburan').classList.contains('hidden')) renderPane();
+  }
   window.TTG = {
+    daftarGame,
+    _h: { SFX, $, rnd, clone, shuffle, arr, sleep, seatName, seatAva, resultHtml, BOT_SVG, isDriver: () => isDriver(), get autoTick() { return autoTick; }, set autoTick(v) { clearInterval(autoTick); autoTick = v; } },
     renderPane, pilih, tutup: closeView, keluar, jeda, lanjut, mulaiOnline, _mulai: mulaiDengan, mainLagi,
     gabung: gabungMeja, hapusMeja, tonton: id => masukMeja(id, 'watch'), mintaIkut, batalMinta, terimaIkut, tolakIkut,
     tutupPodium,
