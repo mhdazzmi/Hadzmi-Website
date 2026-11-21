@@ -495,6 +495,22 @@
     .im-time b { font-weight: 600; }
     .im-row { display: flex; align-items: flex-end; gap: 7px; margin-top: 2px; }
     .im-row.start { margin-top: 9px; }
+    .im-row[data-mid] .im-bubble { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .im-row.hold .im-bubble { transform: scale(.95); opacity: .7; transition: transform .15s, opacity .15s; }
+    .ul-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .ul-big { font-size: 46px; font-weight: 900; line-height: 1; }
+    .ul-stars { display: inline-flex; gap: 2px; }
+    .ul-stars svg { width: 18px; height: 18px; fill: #E5E5EA; }
+    .ul-stars svg.on { fill: #FFB300; }
+    .ul-bars { flex: 1; min-width: 170px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+    .ul-bars div { display: flex; align-items: center; gap: 6px; }
+    .ul-bars i { flex: 1; height: 7px; border-radius: 4px; background: #EFEFF4; overflow: hidden; }
+    .ul-bars b { display: block; height: 100%; background: #FFB300; }
+    .ul-item { margin-top: 10px; }
+    .ul-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .ul-text { margin: 6px 0; font-size: 16px; line-height: 1.4; white-space: pre-wrap; }
+    .ul-reply { margin-top: 8px; background: #F2F2F7; border-radius: 12px; padding: 8px 10px; font-size: 14px; }
+    .ul-act { display: flex; gap: 8px; margin-top: 10px; }
     .im-row.me { justify-content: flex-end; }
     .im-col { display: flex; flex-direction: column; max-width: 76%; min-width: 0; }
     .im-row.me .im-col { align-items: flex-end; }
@@ -1178,9 +1194,17 @@
             <button type="button" class="more-tile" onclick="switchTab('tab-online')"><span class="more-ico" style="background:linear-gradient(160deg,#FFB340,#EA6A0A)"><i class="fas fa-mobile-screen-button"></i><span id="onlineBadgeTile" class="tab-badge hidden">0</span></span><span><b>Pesanan Online</b><small>Pesanan dari link /pesan</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-chat')"><span class="more-ico" style="background:linear-gradient(160deg,#5AC8FA,#0A84FF)"><i class="fas fa-comments"></i><span id="chatBadgeTile" class="tab-badge hidden">0</span></span><span><b>Chat</b><small>Pesan, foto & suara</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-hiburan')"><span class="more-ico" style="background:linear-gradient(160deg,#FF6B8B,#E8325A)"><i class="fas fa-music"></i></span><span><b>Hiburan</b><small>Musik, ayat & game</small></span></button>
+            <button type="button" class="more-tile" onclick="switchTab('tab-ulasan')"><span class="more-ico" style="background:linear-gradient(160deg,#FFD54F,#F29D00)"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="#fff" d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z"/></svg><span id="ulasanBadgeTile" class="tab-badge hidden">0</span></span><span><b>Ulasan</b><small id="ulasanTileSub">Penilaian customer</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-aktivitas')"><span class="more-ico" style="background:linear-gradient(160deg,#34C759,#1E9E4A)"><i class="fas fa-list-check"></i></span><span><b>Aktivitas</b><small>Siapa mencatat apa</small></span></button>
           </div>
         </div>
+      </section>
+
+      <section id="tab-ulasan" class="tab-content hidden">
+        <button type="button" class="back-btn" onclick="switchTab('tab-lainnya')"><i class="fas fa-chevron-left"></i> Lainnya</button>
+        <h1 class="large-title">Ulasan</h1>
+        <p class="page-sub">Penilaian customer setelah pesanan online diambil.</p>
+        <div class="narrow"><div id="ulasanSum" class="card ul-sum"></div><div id="ulasanList"></div></div>
       </section>
 
       <section id="tab-aktivitas" class="tab-content hidden">
@@ -2679,7 +2703,8 @@
     }
     function unreadCount(room) {
       const lr = lastRead(room);
-      return (chatData[room] || []).filter(m => m.from !== myKey && m.ts > lr).length;
+      const cs = String(room).startsWith('cs_');
+      return (chatData[room] || []).filter(m => (cs ? m.from === 'cs' : m.from !== myKey) && m.ts > lr).length;
     }
     function updateChatBadge() {
       const rooms = Object.keys(chatData);
@@ -2829,7 +2854,8 @@
         const nextJam = next && (next.ts - m.ts > GAP_JAM || tglWIB(next.ts) !== tglWIB(m.ts));
         const awal = tampilJam || prev.from !== m.from || m.ts - prev.ts > GAP_KLASTER;
         const akhir = !next || nextJam || next.from !== m.from || next.ts - m.ts > GAP_KLASTER;
-        const me = m.from === myKey;
+        const csRoom = String(currentRoom).startsWith('cs_');
+        const me = csRoom ? m.from !== 'cs' : m.from === myKey;   // Chat Resto: semua balasan kedai di kanan
         let body, cls = '';
         if (m.type === 'image') { body = `<img src="${esc(m.url)}" alt="Foto" onload="gulirChatJikaDiBawah()" onclick="lihatFoto(this.src)">`; cls = 'img'; }
         else if (m.type === 'audio') body = `<div class="vn" data-src="${esc(m.url)}"><button type="button" onclick="putarVN(this)" aria-label="Putar pesan suara">${ICON_PLAY}</button><div class="wave">${gelombang(m.id).map(v => `<span style="height:${v}%"></span>`).join('')}</div><span class="d">${fmtDur(m.dur)}</span></div>`;
@@ -2837,11 +2863,15 @@
         if (akhir && cls !== 'img') cls += ' tail';
         const slot = (!me && grup) ? `<span class="im-ava-slot">${akhir ? avaHtml(m.from, m.name) : ''}</span>` : '';
         const nama = (!me && grup && awal) ? `<div class="im-name">${esc(m.name)}</div>` : '';
-        html += `<div class="im-row ${me ? 'me' : 'them'} ${awal ? 'start' : ''}">${slot}<div class="im-col">${nama}<div class="im-bubble ${cls}">${body}</div></div></div>`;
+        const bisaHapus = csRoom || m.from === myKey;
+        html += `<div class="im-row ${me ? 'me' : 'them'} ${awal ? 'start' : ''}" ${bisaHapus ? `data-mid="${esc(m.id)}"` : ''}>${slot}<div class="im-col">${nama}<div class="im-bubble ${cls}">${body}</div></div></div>`;
       });
       const last = msgs[msgs.length - 1];
-      if (last && last.from === myKey) html += `<div class="im-status">Terkirim · ${jamWIB(last.ts)}</div>`;
+      const csR = String(currentRoom).startsWith('cs_');
+      if (last && (csR ? last.from !== 'cs' : last.from === myKey)) html += `<div class="im-status">Terkirim · ${jamWIB(last.ts)}</div>`;
+      if (csR && msgs.length) html += `<div class="im-status" style="text-align:center">Tekan lama bubble untuk menghapus</div>`;
       box.innerHTML = html;
+      box.querySelectorAll('.im-row[data-mid]').forEach(pasangTahanChat);
       if (nearBottom || box.dataset.first !== currentRoom) {
         box.dataset.stick = '1';
         box.scrollTop = box.scrollHeight;
@@ -2853,6 +2883,71 @@
     function gulirChatJikaDiBawah() {
       const box = document.getElementById('chatMsgs');
       if (box.dataset.stick === '1') box.scrollTop = box.scrollHeight;
+    }
+    /* ---------- ULASAN customer (thaitea/reviews, ditulis worker /api/pesan/review) ---------- */
+    let ulasanData = [];
+    const BINTANG = n => '<span class="ul-stars">' + [1, 2, 3, 4, 5].map(k => `<svg viewBox="0 0 24 24" class="${k <= n ? 'on' : ''}"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z"/></svg>`).join('') + '</span>';
+    function ulasanDilihat() { try { return Number(localStorage.getItem('tt_ulasan_seen')) || 0; } catch (e) { return 0; } }
+    function tandaiUlasanDilihat() { try { localStorage.setItem('tt_ulasan_seen', String(Date.now())); } catch (e) {} renderUlasanBadge(); }
+    function renderUlasanBadge() {
+      const n = ulasanData.filter(v => v.ts > ulasanDilihat()).length;
+      const b = document.getElementById('ulasanBadgeTile'); if (b) { b.textContent = n; b.classList.toggle('hidden', !n); }
+      const avg = ulasanData.length ? ulasanData.reduce((a, v) => a + v.stars, 0) / ulasanData.length : 0;
+      const sub = document.getElementById('ulasanTileSub');
+      if (sub) sub.textContent = ulasanData.length ? `★ ${avg.toFixed(1).replace('.', ',')} · ${ulasanData.length} ulasan` : 'Penilaian customer';
+    }
+    function renderUlasan() {
+      const sum = document.getElementById('ulasanSum'), list = document.getElementById('ulasanList');
+      if (!sum) return;
+      const n = ulasanData.length, avg = n ? ulasanData.reduce((a, v) => a + v.stars, 0) / n : 0;
+      const per = [5, 4, 3, 2, 1].map(k => [k, ulasanData.filter(v => v.stars === k).length]);
+      sum.innerHTML = n ? `<div class="ul-big">${avg.toFixed(1).replace('.', ',')}</div><div>${BINTANG(Math.round(avg))}<div class="card-sub">${n} ulasan</div></div>
+        <div class="ul-bars">${per.map(([k, c]) => `<div><span>${k}</span><i><b style="width:${n ? c / n * 100 : 0}%"></b></i><small>${c}</small></div>`).join('')}</div>` : '<div class="card-sub" style="text-align:center;width:100%">Belum ada ulasan. Ulasan muncul setelah customer mengambil pesanan online.</div>';
+      list.innerHTML = ulasanData.map(v => `<div class="card ul-item">
+        <div class="ul-top"><b>${esc(v.nick || 'Customer')}</b><span class="card-sub">${tglWIB(v.ts) ? labelHari(tglWIB(v.ts)) : ''} ${jamWIB(v.ts)}</span></div>
+        ${BINTANG(v.stars)}${v.text ? `<p class="ul-text">${esc(v.text)}</p>` : ''}
+        <div class="card-sub">Pesanan #${esc(String(v.no || ''))}${v.items ? ' · ' + esc(v.items) : ''}</div>
+        ${v.reply ? `<div class="ul-reply"><b>Balasan kedai:</b> ${esc(v.reply)}</div>` : ''}
+        <div class="ul-act"><button type="button" class="btn btn-tinted btn-sm" onclick="balasUlasan('${esc(v.id)}')">${v.reply ? 'Ubah Balasan' : 'Balas'}</button><button type="button" class="btn btn-red-tinted btn-sm" onclick="hapusUlasan('${esc(v.id)}')">Hapus</button></div></div>`).join('');
+    }
+    async function balasUlasan(id) {
+      const v = ulasanData.find(x => x.id === id); if (!v) return;
+      const t = await iosPrompt('Balasan ini tampil di daftar ulasan customer.', { title: 'Balas Ulasan', okText: 'Simpan' });
+      if (t === null || t === undefined || t === false) return;
+      db.ref('thaitea/reviews/' + id).update({ reply: String(t).trim().slice(0, 300) || null }).then(() => triggerToast('Balasan disimpan'));
+    }
+    async function hapusUlasan(id) {
+      if (!(await iosConfirm('Ulasan ini akan dihapus dari daftar ulasan customer.', { title: 'Hapus Ulasan?', okText: 'Hapus', destructive: true }))) return;
+      db.ref('thaitea/reviews/' + id).remove().then(() => triggerToast('Ulasan dihapus'));
+    }
+    db.ref('thaitea/reviews').on('value', snap => {
+      ulasanData = Object.values(snap.val() || {}).filter(v => v && v.stars).sort((a, b) => b.ts - a.ts);
+      renderUlasanBadge();
+      if (!document.getElementById('tab-ulasan').classList.contains('hidden')) { renderUlasan(); tandaiUlasanDilihat(); }
+    });
+    // tekan lama bubble → hapus (Chat Resto: semua bubble; chat keluarga: pesan sendiri)
+    function pasangTahanChat(row) {
+      const b = row.querySelector('.im-bubble'); if (!b) return;
+      let t = null;
+      const mulai = () => { row.classList.add('hold'); t = setTimeout(() => { t = null; row.classList.remove('hold'); try { navigator.vibrate && navigator.vibrate(30); } catch (e) {} hapusBubble(row.dataset.mid); }, 550); };
+      const batal = () => { row.classList.remove('hold'); if (t) { clearTimeout(t); t = null; } };
+      b.addEventListener('touchstart', mulai, { passive: true });
+      ['touchend', 'touchcancel'].forEach(ev => b.addEventListener(ev, batal));
+      b.addEventListener('touchmove', batal, { passive: true });
+      b.addEventListener('contextmenu', e => { e.preventDefault(); batal(); hapusBubble(row.dataset.mid); });
+    }
+    async function hapusBubble(id) {
+      const room = currentRoom; if (!room || !id) return;
+      const cs = room.startsWith('cs_');
+      if (!(await iosConfirm(cs ? 'Pesan ini akan hilang juga dari layar customer.' : 'Pesan ini akan dihapus untuk semua.', { title: 'Hapus Pesan?', okText: 'Hapus', destructive: true }))) return;
+      db.ref(`thaitea/chat/${room}/${id}`).remove().then(() => {
+        triggerToast('Pesan dihapus');
+        if (cs) {
+          const sisa = (chatData[room] || []).filter(m => m.id !== id);
+          const akhir = sisa[sisa.length - 1];
+          db.ref('thaitea/cs_rooms/' + room).update(akhir ? { lastTs: akhir.ts, lastText: ((akhir.from === 'cs' ? '' : 'Kedai: ') + previewPesan(akhir)).slice(0, 80) } : { lastText: '' });
+        }
+      }).catch(() => triggerToast('Gagal menghapus, cek internet', true));
     }
     function bukaChat(room) {
       if (!myKey) { openWhoSheet(); return; }
@@ -3310,7 +3405,7 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
       document.getElementById(targetId).classList.remove('hidden');
-      const induk = { 'tab-online': 'tab-lainnya', 'tab-chat': 'tab-lainnya', 'tab-hiburan': 'tab-lainnya' }[targetId] || targetId;
+      const induk = { 'tab-online': 'tab-lainnya', 'tab-chat': 'tab-lainnya', 'tab-hiburan': 'tab-lainnya', 'tab-ulasan': 'tab-lainnya' }[targetId] || targetId;
       const tabBtn = document.getElementById('btn-' + induk);
       if (tabBtn) { tabBtn.classList.add('active'); lastMainTab = targetId; }
       currentTab = targetId;
@@ -3323,6 +3418,7 @@
       else if (targetId === 'tab-hiburan') pilihHiburan(funPane);
       else if (targetId === 'tab-admin') { calculateAndRenderAnalytics(); refreshPushStatus(); renderProfil(); renderAdminVisibility(); renderInventoryUI(); renderUserStatus(); renderCartoonPickers(); renderAdminHiburan(); }
       else if (targetId === 'tab-aktivitas') renderActivityLog();
+      else if (targetId === 'tab-ulasan') { renderUlasan(); tandaiUlasanDilihat(); }
       else if (targetId === 'tab-online' && typeof renderOnline === 'function') renderOnline();
     }
 

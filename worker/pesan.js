@@ -21,7 +21,11 @@
      POST /api/pesan/cancel               { cid, id }             batalkan (hanya yang belum dibayar)
      GET  /api/pesan/orders?cid=          riwayat pesanan HP ini
      GET  /api/pesan/chat?cid=            Chat Resto: pesan antara customer & kedai
-     POST /api/pesan/chat                 { cid, nick, gender, text }  kirim pesan ke kedai
+     POST /api/pesan/chat                 { cid, nick, gender, text } atau { ..., type:'image', url }  kirim pesan ke kedai
+     POST /api/pesan/chat-del             { cid, id }  customer menghapus pesannya sendiri
+     GET  /api/pesan/reviews?cid=         ulasan terbaru + rata-rata bintang (+ ulasan milik HP ini)
+     POST /api/pesan/review               { cid, id, stars 1-5, text }  ulasan untuk pesanan yang sudah selesai
+   Ulasan: thaitea/reviews/<orderId>  { id, orderId, no, ts, stars, text, nick, gender, items }
    Chat Resto disimpan di tempat yang sama dengan chat kasir supaya tampil di menu Chat kasir:
      thaitea/chat/cs_<hash cid>/<id>    { id, ts, from: 'cs', name, text }  (balasan kasir: from = nama kasir)
      thaitea/cs_rooms/cs_<hash cid>     { nick, gender, lastTs, lastText }
@@ -211,7 +215,7 @@ export async function handlePesan(request, env, url, ctx) {
     const room = await roomOf(cid);
     const data = await fb(env, 'GET', 'chat/' + room, undefined, 'orderBy="$key"&limitToLast=150');
     const msgs = Object.values(data || {}).filter(m => m && m.ts).sort((a, b) => a.ts - b.ts).map(m => ({
-      id: m.id, ts: m.ts, me: m.from === 'cs', name: m.from === 'cs' ? '' : (m.name || 'Kedai'),
+      id: m.id, ts: m.ts, me: m.from === 'cs', name: '',   // nama HP kasir tidak ditampilkan ke customer
       type: m.type || 'text', text: m.text || '', url: safeFile(m.url), dur: m.dur || 0
     }));
     return json({ now: Date.now(), msgs });
@@ -221,8 +225,10 @@ export async function handlePesan(request, env, url, ctx) {
     const b = await readJson(request);
     const cid = cleanCid(b.cid);
     const text = String(b.text || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, 600);
+    const isImg = b.type === 'image';
+    const furl = isImg ? safeFile(b.url) : '';
     if (!cid) return json({ error: 'Data HP tidak dikenali, muat ulang halaman.' }, 400);
-    if (!text) return json({ error: 'Pesan kosong.' }, 400);
+    if (isImg ? !furl : !text) return json({ error: isImg ? 'Foto gagal dikirim, coba lagi.' : 'Pesan kosong.' }, 400);
     const nick = cleanText(b.nick, 24) || 'Customer';
     const gender = b.gender === 'L' ? 'L' : b.gender === 'P' ? 'P' : '';
     const minute = Math.floor(Date.now() / 60000);
@@ -232,15 +238,56 @@ export async function handlePesan(request, env, url, ctx) {
     const room = await roomOf(cid);
     const ts = Date.now();
     const id = 'M' + ts + Math.random().toString(36).slice(2, 6);
-    await fb(env, 'PUT', 'chat/' + room + '/' + id, { id, ts, from: 'cs', name: nick, text });
+    const msg = isImg ? { id, ts, from: 'cs', name: nick, type: 'image', url: furl } : { id, ts, from: 'cs', name: nick, text };
+    await fb(env, 'PUT', 'chat/' + room + '/' + id, msg);
+    const preview = isImg ? 'Mengirim foto' : text;
     const meta = (await fb(env, 'GET', 'cs_rooms/' + room)) || {};
-    await fb(env, 'PATCH', 'cs_rooms/' + room, { nick, gender, lastTs: ts, lastText: text.slice(0, 80) });
+    await fb(env, 'PATCH', 'cs_rooms/' + room, { nick, gender, lastTs: ts, lastText: preview.slice(0, 80) });
     // notifikasi ke HP kasir, paling sering sekali per 30 detik per customer
     if (!meta.lastPush || ts - meta.lastPush > 30000) {
       await fb(env, 'PATCH', 'cs_rooms/' + room, { lastPush: ts });
-      await pushKasir(env, ctx, { title: '💬 Chat Resto · ' + nick, body: text.slice(0, 200), tag: 'chat-' + room }).catch(() => {});
+      await pushKasir(env, ctx, { title: '💬 Chat Resto · ' + nick, body: preview.slice(0, 200), tag: 'chat-' + room }).catch(() => {});
     }
-    return json({ ok: true, msg: { id, ts, me: true, name: '', type: 'text', text } });
+    return json({ ok: true, msg: { id, ts, me: true, name: '', type: isImg ? 'image' : 'text', text: isImg ? '' : text, url: furl } });
+  }
+
+  if (path === '/api/pesan/chat-del' && method === 'POST') {
+    const b = await readJson(request);
+    const cid = cleanCid(b.cid);
+    const id = String(b.id || '');
+    if (!cid || !/^M[0-9a-z]{8,30}$/.test(id)) return json({ error: 'Pesan tidak ditemukan.' }, 404);
+    const room = await roomOf(cid);
+    const m = await fb(env, 'GET', 'chat/' + room + '/' + id);
+    if (!m || m.from !== 'cs') return json({ error: 'Hanya pesanmu sendiri yang bisa dihapus.' }, 403);
+    await fb(env, 'DELETE', 'chat/' + room + '/' + id);
+    return json({ ok: true });
+  }
+
+  if (path === '/api/pesan/reviews' && method === 'GET') {
+    const cid = cleanCid(url.searchParams.get('cid'));
+    const data = (await fb(env, 'GET', 'reviews')) || {};
+    const all = Object.values(data).filter(v => v && v.stars).sort((a, b) => b.ts - a.ts);
+    const avg = all.length ? all.reduce((a, v) => a + v.stars, 0) / all.length : 0;
+    const pub = v => ({ id: v.orderId, ts: v.ts, stars: v.stars, text: v.text || '', nick: v.nick || 'Customer', gender: v.gender || '', reply: v.reply || '' });
+    const mine = cid ? all.filter(v => v.cid === cid).map(v => v.orderId) : [];
+    return json({ avg: Math.round(avg * 10) / 10, count: all.length, list: all.slice(0, 40).map(pub), mine });
+  }
+
+  if (path === '/api/pesan/review' && method === 'POST') {
+    const b = await readJson(request);
+    const { order, error } = await ownOrder(env, b);
+    if (error) return error;
+    if (order.status !== 'selesai') return json({ error: 'Ulasan bisa diberikan setelah pesanan diambil.' }, 409);
+    const stars = Math.round(Number(b.stars));
+    if (!(stars >= 1 && stars <= 5)) return json({ error: 'Pilih jumlah bintang dulu ya.' }, 400);
+    const text = String(b.text || '').replace(/[\u0000-\u0008\u000b-\u001f<>]/g, '').trim().slice(0, 400);
+    const old = await fb(env, 'GET', 'reviews/' + order.id);
+    if (old && old.stars) return json({ error: 'Pesanan ini sudah kamu beri ulasan. Terima kasih!' }, 409);
+    const rev = { id: order.id, orderId: order.id, no: order.no || '', cid: order.cid, ts: Date.now(), stars, text, nick: order.nick || order.name || 'Customer', gender: order.gender || '',
+      items: (order.items || []).map(it => `${it.qty || 1}× ${it.name}`).join(', ').slice(0, 200) };
+    await fb(env, 'PUT', 'reviews/' + order.id, rev);
+    await pushKasir(env, ctx, { title: `⭐ Ulasan baru ${'★'.repeat(stars)}${'☆'.repeat(5 - stars)}`, body: `${rev.nick}: ${text || '(tanpa komentar)'}`.slice(0, 200), tag: 'review-' + order.id }).catch(() => {});
+    return json({ ok: true });
   }
 
   return json({ error: 'Not found' }, 404);

@@ -269,6 +269,34 @@
     .chat-empty svg.i { width: 46px; height: 46px; color: var(--text3); margin: 0 auto 8px; display: block; stroke-width: 1.6; }
     .composer { position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar-h) + var(--safe-b)); z-index: 44; background: rgba(250, 249, 247, .92); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-top: .5px solid var(--sep); }
     .composer-in { max-width: 640px; margin: 0 auto; padding: 8px 12px; display: flex; gap: 8px; align-items: flex-end; }
+    .attach { width: 36px; height: 36px; border-radius: 50%; background: #EFE7DF; color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; margin-bottom: 1px; }
+    .attach svg.i { width: 21px; height: 21px; }
+    .bubble.media img { display: block; cursor: zoom-in; }
+    .m-row.me .bubble { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .m-row.hold .bubble { transform: scale(.96); opacity: .75; transition: transform .15s, opacity .15s; }
+    .m-hint { text-align: center; font-size: 11.5px; color: var(--text3); margin: 4px 0 0; }
+    .img-view { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.92); display: flex; align-items: center; justify-content: center; }
+    .img-view img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .img-view .x { position: absolute; top: calc(var(--safe-t) + 12px); right: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .rating-chip { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 2px; padding: 7px 12px; border-radius: 999px; background: #FFF4E0; color: #8A4B00; font-weight: 700; font-size: 15px; }
+    .rating-chip svg.i { width: 18px; height: 18px; fill: #FFB300; stroke: #FFB300; }
+    .stars { display: inline-flex; gap: 2px; vertical-align: -2px; }
+    .stars svg.i { width: 16px; height: 16px; stroke-width: 1.4; fill: #E5E5EA; stroke: #E5E5EA; }
+    .stars svg.i.on { fill: #FFB300; stroke: #FFB300; }
+    .star-pick { display: flex; justify-content: center; gap: 8px; margin: 12px 0 6px; }
+    .star-pick button { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
+    .star-pick svg.i { width: 42px; height: 42px; stroke-width: 1.3; fill: #E5E5EA; stroke: #D1D1D6; transition: transform .15s; }
+    .star-pick button.on svg.i { fill: #FFB300; stroke: #F29D00; transform: scale(1.08); }
+    .star-label { text-align: center; font-weight: 700; color: #8A4B00; min-height: 22px; }
+    .rev-ta { width: 100%; min-height: 96px; border: .5px solid var(--text3); border-radius: 14px; padding: 10px 12px; font-size: 16px; background: #fff; resize: vertical; outline: none; }
+    .rev { background: #fff; border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; }
+    .rev-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .rev-top b { font-size: 15.5px; }
+    .rev-top small { color: var(--text2); font-size: 12.5px; }
+    .rev p { margin: 6px 0 0; font-size: 15px; line-height: 1.4; white-space: pre-wrap; }
+    .rev-sum { text-align: center; padding: 6px 0 14px; }
+    .rev-sum .big { font-size: 44px; font-weight: 800; line-height: 1; }
+    .rev-sum .stars svg.i { width: 22px; height: 22px; }
     .composer textarea { flex: 1; min-width: 0; resize: none; border: .5px solid var(--text3); border-radius: 19px; padding: 8px 14px; font-size: 16.5px; line-height: 1.3; max-height: 120px; background: #fff; outline: none; }
     .send { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; margin-bottom: 1px; }
     .send:disabled { background: #D9CFC6; }
@@ -325,6 +353,8 @@
       <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
       <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1"/><path d="M14 14h2.5v2.5H14zM18 18h2.5v2.5H18zM14 18.5v2M18.5 14h2"/></symbol>
       <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z"/></symbol>
+      <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 15.5l-5-5-8.5 8.5"/></symbol>
       <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
     </defs>
   </svg>
@@ -369,6 +399,7 @@
       <section id="paneMenu">
         <h1 class="large-title">Menu</h1>
         <p class="lead"><span id="helloText">Halo!</span> · <button type="button" class="link" style="font-size:15px;min-height:0" onclick="bukaOnboard(true)">Ubah profil</button></p>
+        <button type="button" id="ratingChip" class="rating-chip hidden" onclick="bukaDaftarUlasan()"></button>
         <div id="menuLoading" class="loading">Memuat menu…</div>
         <div id="closedBox" class="ios-group closed hidden">
           <svg class="i big"><use href="#i-moon"/></svg>
@@ -414,6 +445,7 @@
 
     <div id="composer" class="composer hidden">
       <div class="composer-in">
+        <label class="attach" aria-label="Kirim foto"><svg class="i"><use href="#i-photo"/></svg><input type="file" accept="image/*" hidden onchange="kirimFotoChat(this)"></label>
         <textarea id="chatInput" rows="1" maxlength="600" placeholder="Tulis pesan" oninput="ketikChat()"></textarea>
         <button type="button" id="sendBtn" class="send" disabled aria-label="Kirim" onclick="kirimChat()"><svg class="i"><use href="#i-up"/></svg></button>
       </div>
@@ -433,6 +465,29 @@
       </div>
     </nav>
   </div>
+
+  <!-- SHEET: BERI ULASAN -->
+  <div id="revSheet" class="sheet-bg hidden" onclick="if(event.target===this) tutupSheet('revSheet')">
+    <div class="sheet">
+      <div class="sheet-nav"><button type="button" class="link" style="justify-self:start" onclick="tutupSheet('revSheet')">Batal</button><span class="t">Beri Ulasan</span><span></span></div>
+      <div class="sheet-body">
+        <p class="lead" style="text-align:center;margin-top:6px" id="revFor"></p>
+        <div class="star-pick" id="starPick"></div>
+        <div class="star-label" id="starLabel">Ketuk bintang</div>
+        <div class="ios-head">Ceritakan pengalamanmu (boleh dikosongkan)</div>
+        <textarea id="revText" class="rev-ta" maxlength="400" placeholder="Rasanya enak, pelayanannya ramah…"></textarea>
+      </div>
+      <div class="sheet-foot"><button type="button" class="btn btn-primary btn-block" id="revSend" onclick="kirimUlasan()">Kirim Ulasan</button></div>
+    </div>
+  </div>
+  <!-- SHEET: DAFTAR ULASAN -->
+  <div id="revListSheet" class="sheet-bg hidden" onclick="if(event.target===this) tutupSheet('revListSheet')">
+    <div class="sheet">
+      <div class="sheet-nav"><span></span><span class="t">Ulasan Pelanggan</span><button type="button" class="link" style="justify-self:end" onclick="tutupSheet('revListSheet')">Tutup</button></div>
+      <div class="sheet-body" id="revList"></div>
+    </div>
+  </div>
+  <div id="imgView" class="img-view hidden" onclick="this.classList.add('hidden')"><img id="imgViewImg" alt="Foto"><button type="button" class="x" aria-label="Tutup"><svg class="i"><use href="#i-x"/></svg></button></div>
 
   <!-- SHEET: PILIH TOPPING & JUMLAH -->
   <div id="itemSheet" class="sheet-bg hidden" onclick="if(event.target===this) tutupSheet('itemSheet')">
@@ -1079,7 +1134,9 @@
       else if (o.status === 'siap') { extra = `<div class="ready">${ic('bell')}<span>Siap dijemput sejak jam ${jamDari(o.readyAt || now())}. Yuk jemput ke kedai, sebutkan nama <b>${esc(o.name)}</b>.</span></div>`; aksi = nota; }
       else {
         if (o.status === 'batal' && o.cancelReason) extra = `<p class="ord-note">${esc(o.cancelReason)}</p>`;
-        aksi = (o.status === 'selesai' ? nota : '') + `<button type="button" class="btn btn-tinted btn-sm" onclick="pesanLagi('${o.id}')">${ic('repeat')}Pesan Lagi</button>`;
+        const sudah = o.status === 'selesai' && ulasan.mine.includes(o.id);
+        const ulas = o.status !== 'selesai' ? '' : sudah ? `<span class="pill pill-green">${ic('check')}Sudah diulas</span>` : `<button type="button" class="btn btn-primary btn-sm" onclick="bukaUlasan('${o.id}')">${ic('star')}Beri Ulasan</button>`;
+        aksi = ulas + (o.status === 'selesai' ? nota : '') + `<button type="button" class="btn btn-tinted btn-sm" onclick="pesanLagi('${o.id}')">${ic('repeat')}Pesan Lagi</button>`;
       }
       return `<div class="ord">
         <div class="ord-head"><div><div class="ord-no">#${o.no} · ${tglDari(o.createdAt)}, ${jamDari(o.createdAt)}</div><div class="ord-name">${esc(o.name)}</div></div><span class="pill ${cls}">${label}</span></div>
@@ -1088,6 +1145,43 @@
         <div class="ord-meta"><span class="pill">${ic('clock')}${o.pickupLabel === 'Sekarang' ? 'Jemput sekarang' : 'Jemput ' + esc(o.pickupLabel)}</span><span class="pill">${o.totalCups} cup</span><span class="pill pill-orange">${rp(o.totalPrice)}</span>${o.doneAt ? `<span class="pill">Diambil ${jamDari(o.doneAt)}</span>` : ''}</div>
         ${extra}${aksi ? `<div class="ord-actions">${aksi}</div>` : ''}
       </div>`;
+    }
+    /* ============ ULASAN ============ */
+    let ulasan = { avg: 0, count: 0, list: [], mine: [] }, ulasId = null, ulasBintang = 0;
+    const LABEL_BINTANG = ['', 'Kurang', 'Lumayan', 'Enak', 'Enak banget', 'Sempurna!'];
+    const bintangHtml = n => `<span class="stars">${[1, 2, 3, 4, 5].map(k => `<svg class="i ${k <= Math.round(n) ? 'on' : ''}"><use href="#i-star"/></svg>`).join('')}</span>`;
+    async function muatUlasan() {
+      try { ulasan = await api('reviews?cid=' + encodeURIComponent(cid)); ulasan.mine = ulasan.mine || []; } catch (e) { return; }
+      const chip = $('ratingChip');
+      if (ulasan.count) { chip.innerHTML = `<svg class="i"><use href="#i-star"/></svg>${String(ulasan.avg).replace('.', ',')} · ${ulasan.count} ulasan`; chip.classList.remove('hidden'); }
+      else chip.classList.add('hidden');
+      renderOrders();
+    }
+    function bukaUlasan(id) {
+      const o = orders.find(x => x.id === id); if (!o) return;
+      ulasId = id; ulasBintang = 0;
+      $('revFor').innerHTML = `Pesanan #${o.no} · ${esc(ringkasTeks(o.items))}`;
+      $('revText').value = '';
+      $('starPick').innerHTML = [1, 2, 3, 4, 5].map(k => `<button type="button" data-k="${k}" aria-label="${k} bintang"><svg class="i"><use href="#i-star"/></svg></button>`).join('');
+      $('starPick').querySelectorAll('button').forEach(b => b.onclick = () => { ulasBintang = +b.dataset.k; getar(15); $('starPick').querySelectorAll('button').forEach(x => x.classList.toggle('on', +x.dataset.k <= ulasBintang)); $('starLabel').textContent = LABEL_BINTANG[ulasBintang]; });
+      $('starLabel').textContent = 'Ketuk bintang';
+      bukaSheet('revSheet');
+    }
+    function ringkasTeks(items) { return (items || []).map(i => `${i.qty}× ${i.name}`).join(', '); }
+    async function kirimUlasan() {
+      if (!ulasBintang) { toast('Pilih jumlah bintang dulu ya'); return; }
+      $('revSend').disabled = true;
+      try {
+        await api('review', { cid, id: ulasId, stars: ulasBintang, text: $('revText').value.trim() });
+        tutupSheet('revSheet'); toast('Terima kasih atas ulasanmu!'); muatUlasan();
+      } catch (e) { toast(e.message, 4000); }
+      finally { $('revSend').disabled = false; }
+    }
+    function bukaDaftarUlasan() {
+      const u = ulasan;
+      $('revList').innerHTML = `<div class="rev-sum"><div class="big">${String(u.avg).replace('.', ',')}</div>${bintangHtml(u.avg)}<div class="lead" style="margin-top:6px">${u.count} ulasan</div></div>` +
+        u.list.map(v => `<div class="rev"><div class="rev-top"><b>${esc(v.nick)}</b><small>${tglDari(v.ts)}</small></div>${bintangHtml(v.stars)}${v.text ? `<p>${esc(v.text)}</p>` : ''}${v.reply ? `<p style="color:var(--text2)"><b>Balasan kedai:</b> ${esc(v.reply)}</p>` : ''}</div>`).join('');
+      bukaSheet('revListSheet');
     }
     function renderOrders() {
       const aktif = orders.filter(o => AKTIF.includes(o.status));
@@ -1156,16 +1250,61 @@
         const prev = chatMsgs[i - 1];
         if (!prev || m.ts - prev.ts > 15 * 60000 || tglDari(prev.ts) !== tglDari(m.ts)) html += `<div class="m-time">${tglDari(m.ts) === tglDari(now()) ? 'Hari ini' : tglDari(m.ts)} ${jamDari(m.ts)}</div>`;
         const ganti = prev && prev.me !== m.me;
-        if (!m.me && (!prev || prev.me || m.ts - prev.ts > 15 * 60000)) html += `<div class="m-name">${esc(m.name || 'Kedai')}</div>`;
         let body, cls = '';
-        if (m.type === 'image' && m.url) { body = `<img src="${esc(m.url)}" alt="Foto">`; cls = 'media'; }
+        if (m.type === 'image' && m.url) { body = `<img src="${esc(m.url)}" alt="Foto" onclick="lihatFotoChat(this.src)" onload="if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 400) window.scrollTo(0, document.body.scrollHeight)">`; cls = 'media'; }
         else if (m.type === 'audio' && m.url) { body = `<audio controls preload="none" src="${esc(m.url)}"></audio>`; cls = 'media'; }
         else body = esc(m.text);
-        html += `<div class="m-row ${m.me ? 'me' : 'them'} ${ganti ? 'gap' : ''}"><div class="bubble ${cls}">${body}</div></div>`;
+        html += `<div class="m-row ${m.me ? 'me' : 'them'} ${ganti ? 'gap' : ''}" ${m.me ? `data-id="${esc(m.id)}"` : ''}><div class="bubble ${cls}">${body}</div></div>`;
       });
       if (chatMsgs[chatMsgs.length - 1].me) html += `<div class="m-status">Terkirim</div>`;
+      if (chatMsgs.some(m => m.me)) html += `<div class="m-hint">Tekan lama pesanmu untuk menghapus</div>`;
       box.innerHTML = html;
+      box.querySelectorAll('.m-row.me[data-id]').forEach(pasangTahan);
       if (dekatBawah || !box.dataset.ready) { box.dataset.ready = '1'; requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight)); }
+    }
+    function lihatFotoChat(src) { $('imgViewImg').src = src; $('imgView').classList.remove('hidden'); }
+    function pasangTahan(row) {
+      let t = null;
+      const mulai = () => { row.classList.add('hold'); t = setTimeout(() => { t = null; row.classList.remove('hold'); getar(30); hapusChat(row.dataset.id); }, 550); };
+      const batal = () => { row.classList.remove('hold'); if (t) { clearTimeout(t); t = null; } };
+      row.addEventListener('touchstart', mulai, { passive: true });
+      row.addEventListener('touchend', batal); row.addEventListener('touchmove', batal, { passive: true }); row.addEventListener('touchcancel', batal);
+      row.addEventListener('contextmenu', e => { e.preventDefault(); batal(); hapusChat(row.dataset.id); });
+    }
+    async function hapusChat(id) {
+      if (!(await tanya('Hapus pesan?', 'Pesan ini akan dihapus untuk kamu dan kedai.', 'Hapus'))) return;
+      try { await api('chat-del', { cid, id }); chatMsgs = chatMsgs.filter(m => m.id !== id); chatSig = ''; renderChat(); toast('Pesan dihapus'); }
+      catch (e) { toast(e.message, 3500); }
+    }
+    function kecilkanFoto(file) {
+      return new Promise((res, rej) => {
+        const img = new Image(), u = URL.createObjectURL(file);
+        img.onload = () => {
+          const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+          const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+          c.toBlob(b => b ? res(b) : rej(new Error('Foto tidak bisa dibaca.')), 'image/jpeg', .82);
+        };
+        img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('Foto tidak bisa dibaca.')); };
+        img.src = u;
+      });
+    }
+    async function kirimFotoChat(input) {
+      const f = input.files && input.files[0]; input.value = '';
+      if (!f) return;
+      if (!profile) { bukaOnboard(false); return; }
+      if (kirimSedang) return;
+      kirimSedang = true; toast('Mengirim foto…', 10000);
+      try {
+        const blob = await kecilkanFoto(f);
+        let res; try { res = await fetch('/api/thaitea/upload', { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob }); } catch (e) { throw new Error('Tidak ada internet. Coba lagi ya.'); }
+        const up = await res.json().catch(() => ({}));
+        if (!res.ok || !up.url) throw new Error(up.error || 'Foto gagal diunggah.');
+        const d = await api('chat', { cid, nick: profile.nick, gender: profile.gender, type: 'image', url: up.url });
+        chatMsgs.push(d.msg); renderChat(); toast('Foto terkirim');
+        requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight));
+      } catch (e) { toast(e.message, 4000); }
+      finally { kirimSedang = false; }
     }
     function ketikChat() {
       const t = $('chatInput');
@@ -1220,7 +1359,7 @@
     // Mulai
     if (!profile) bukaOnboard(false); else $('app').classList.remove('hidden');
     renderHello();
-    muatInfo(); muatPesanan(); muatChat();
+    muatInfo(); muatPesanan(); muatChat(); muatUlasan();
   </script>
 </body>
 </html>
