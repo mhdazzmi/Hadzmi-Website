@@ -278,6 +278,8 @@ Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama sepert
 - **Link customer:** `https://<domain>/pesan/` (berbeda dari web kasir `/thaitea/`).
 - **Alur:** kenalan (nama panggilan + jenis kelamin) → pilih menu & topping → isi *atas nama* + *jam jemput* (Sekarang / pilih jam, 12.00–23.40) → QRIS dengan nominal terisi otomatis → customer tekan **Saya Sudah Bayar** → kasir mencocokkan di ShopeePay Partner → **Pembayaran Diterima** → **Siap Dijemput** → **Selesai**.
 - **Kasir:** Lainnya → **Pesanan Online**: pilihan **Auto** (buka sendiri 11.30 AM – 11.45 PM WIB) / **Tutup** (tertutup terus sampai dipindah ke Auto), alarm keras berulang sampai disentuh, riwayat, topping habis, dan ganti foto menu. Pesanan yang dibayar otomatis masuk Laporan/Riwayat (metode QRIS) dan memotong stok.
+- **Chat Resto:** customer bisa kirim foto & hapus pesannya sendiri (tekan lama); nama HP kasir tidak ditampilkan ke customer. Di kasir semua balasan kedai tampil di kanan di setiap HP, dan bubble mana pun bisa dihapus dengan tekan lama.
+- **Ulasan:** setelah pesanan diambil customer bisa memberi 1–5 bintang + komentar (`thaitea/reviews/<orderId>`). Rata-rata bintang tampil di halaman customer; kasir: Lainnya → **Ulasan** (balas / hapus), notifikasi saat ada ulasan baru.
 - **QRIS:** QRIS statis ShopeePay Partner diubah jadi QRIS bernominal oleh `worker/pesan.js` (`qrisWithAmount`). Pembayaran **dicek manual** oleh kasir (ShopeePay Partner tidak mengirim konfirmasi otomatis).
 - **Data Firebase kasir:** `thaitea/online_settings`, `thaitea/online_orders`, `thaitea/online_customers`.
 - **Variabel opsional Worker:** `TT_FIREBASE_URL`, `TT_FIREBASE_SECRET` (wajib kalau rules Firebase kasir dikunci), `TT_QRIS`.
