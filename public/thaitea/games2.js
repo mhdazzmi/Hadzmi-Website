@@ -7,7 +7,8 @@
   const H = TTG._h;
   const { SFX, $, rnd, clone, shuffle, arr, sleep, seatName, seatAva } = H;
   const now = () => Date.now();
-  const fmt = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+  const fmtF = n => (n < 0 ? '-' : '') + 'Rp' + Math.abs(Math.round(n)).toLocaleString('id-ID');
+  const fmt = n => { const a = Math.abs(n), sg = n < 0 ? '-' : ''; if (a >= 1e6) return `${sg}Rp${(a / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Jt`; if (a >= 1e3) return `${sg}Rp${(a / 1e3).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Rb`; return sg + 'Rp' + Math.round(a); };
   const gid = () => Date.now() + '' + rnd(1000);
 
   /* ---------- suara tambahan ---------- */
@@ -324,39 +325,44 @@
     { t: 'kota', n: 'Jakarta', g: 7, p: 350 },
     { t: 'kota', n: 'Pekanbaru', sn: 'Pekan&shy;baru', g: 7, p: 400 }
   ];
-  const MP_N = MP_TILES.length, MP_START_CASH = 1000, MP_SALARY = 100, MP_JAIL = 6, MP_MAX_ROUND = 60;
+  const MP_K = 100000;   // 1 satuan lama = Rp100 rb → harga kota jutaan
+  MP_TILES.forEach(t => { if (t.p) t.p *= MP_K; });
+  const MP_N = MP_TILES.length, MP_START_CASH = 1000 * MP_K, MP_SALARY = 100 * MP_K, MP_JAIL = 6, MP_MAX_ROUND = 60, MP_JAIL_FEE = 50 * MP_K;
+  const sewaDasar = p => Math.round(p * .35 / 50000) * 50000;
   const MP_CARD = {
     kesempatan: [
       { x: 'Maju ke START, terima gaji', go: 0 },
-      { x: 'Menang lomba masak!', cash: 100 },
-      { x: 'Kena tilang di jalan', cash: -50 },
+      { x: 'Menang lomba masak!', cash: 100 * MP_K },
+      { x: 'Kena tilang di jalan', cash: -50 * MP_K },
       { x: 'Mundur 3 langkah', back: 3 },
       { x: 'Ketahuan parkir liar, masuk penjara!', jail: true },
       { x: 'Liburan ke Bali!', go: 21 },
-      { x: 'Dapat bonus dari tetangga', cash: 50 },
-      { x: 'Servis motor', cash: -80 },
+      { x: 'Dapat bonus dari tetangga', cash: 50 * MP_K },
+      { x: 'Servis motor', cash: -80 * MP_K },
       { x: 'Pulang kampung ke Pekanbaru', go: 23 }
     ],
     dana: [
-      { x: 'Ulang tahun! Terima 20 dari setiap pemain', each: 20 },
-      { x: 'Bayar uang sekolah', cash: -100 },
-      { x: 'Tabungan cair', cash: 150 },
-      { x: 'Menang arisan!', cash: 120 },
-      { x: 'Biaya dokter', cash: -60 },
-      { x: 'Jual barang bekas', cash: 40 },
-      { x: 'Traktir teman, bayar 30 ke setiap pemain', each: -30 }
+      { x: 'Ulang tahun! Terima Rp2 Jt dari setiap pemain', each: 20 * MP_K },
+      { x: 'Bayar uang sekolah', cash: -100 * MP_K },
+      { x: 'Tabungan cair', cash: 150 * MP_K },
+      { x: 'Menang arisan!', cash: 120 * MP_K },
+      { x: 'Biaya dokter', cash: -60 * MP_K },
+      { x: 'Jual barang bekas', cash: 40 * MP_K },
+      { x: 'Traktir teman, bayar Rp3 Jt ke setiap pemain', each: -30 * MP_K }
     ]
   };
   const MP_COL = ['#FF4D4D', '#2DB84D', '#1F7FE0', '#F7B500'];
   const MP_DARK = ['#A31F18', '#16772D', '#0E4F99', '#A06A00'];
-  const sewa = (st, i) => { const tl = MP_TILES[i], o = st.own[i]; if (o === undefined || o === null) return 0; const full = MP_TILES.every((x, k) => x.g !== tl.g || st.own[k] === o); return Math.round(tl.p * .35 / 5) * 5 * (full ? 2 : 1); };
+  const sewa = (st, i) => { const tl = MP_TILES[i], o = st.own[i]; if (o === undefined || o === null) return 0; const full = MP_TILES.every((x, k) => x.g !== tl.g || st.own[k] === o); return sewaDasar(tl.p) * (full ? 2 : 1); };
   const Mono = {
     init(n) {
-      return { n, pos: Array(n).fill(0), cash: Array(n).fill(MP_START_CASH), own: {}, jail: Array(n).fill(0), out: Array(n).fill(false), turn: 0, phase: 'roll', dice: [3, 4], round: 1, last: null, winner: null, deadline: now() + 12000, v: 1, gid: gid() };
+      return { n, pos: Array(n).fill(0), cash: Array(n).fill(MP_START_CASH), own: {}, inc: {}, m: 1, jail: Array(n).fill(0), out: Array(n).fill(false), turn: 0, phase: 'roll', dice: [3, 4], round: 1, last: null, winner: null, deadline: now() + 12000, v: 1, gid: gid() };
     },
     norm(st) {
       st.pos = arr(st.pos).map(Number); st.cash = arr(st.cash).map(Number); st.jail = arr(st.jail).map(Number); st.out = arr(st.out).map(Boolean);
       st.dice = arr(st.dice).map(Number); const o = {}; Object.keys(st.own || {}).forEach(k => { if (st.own[k] !== null && st.own[k] !== undefined) o[k] = Number(st.own[k]); }); st.own = o;
+      if (!st.m) { st.cash = st.cash.map(c => c * MP_K); st.m = 1; }   // game tersimpan versi lama (angka kecil)
+      const inc = {}; Object.keys(st.inc || {}).forEach(k => { inc[k] = Number(st.inc[k]) || 0; }); st.inc = inc;
       if (st.winner === undefined) st.winner = null; if (st.last) { if (st.last.path) st.last.path = arr(st.last.path).map(Number); if (st.last.dice) st.last.dice = arr(st.last.dice).map(Number); }
       return st;
     },
@@ -366,11 +372,11 @@
       if (st.cash[s] >= 0) return;
       // jual tanah (setengah harga) mulai dari yang termurah
       const milik = Object.keys(st.own).map(Number).filter(k => st.own[k] === s).sort((a, b) => MP_TILES[a].p - MP_TILES[b].p);
-      for (const k of milik) { if (st.cash[s] >= 0) break; st.cash[s] += Math.round(MP_TILES[k].p / 2); delete st.own[k]; (L.sold = L.sold || []).push(k); }
+      for (const k of milik) { if (st.cash[s] >= 0) break; st.cash[s] += Math.round(MP_TILES[k].p / 2); delete st.own[k]; delete st.inc[k]; (L.sold = L.sold || []).push(k); }
       if (st.cash[s] < 0) {
         if (to !== undefined && to !== null) st.cash[to] += st.cash[s];   // penerima hanya dapat sebanyak yang ada
         st.cash[s] = 0; st.out[s] = true; L.bankrupt = s;
-        Object.keys(st.own).forEach(k => { if (st.own[k] === s) delete st.own[k]; });
+        Object.keys(st.own).forEach(k => { if (st.own[k] === s) { delete st.own[k]; delete st.inc[k]; } });
       }
     },
     mendarat(st, s, L, depth) {
@@ -378,7 +384,7 @@
       if (tl.t === 'kota') {
         const o = st.own[i];
         if (o === undefined) { if (st.cash[s] >= tl.p) { st.phase = 'buy'; return; } L.cantBuy = true; }
-        else if (o !== s && !st.out[o]) { const r = sewa(st, i); L.rent = { to: o, amt: r, tile: i }; this.bayar(st, s, r, o, L); }
+        else if (o !== s && !st.out[o]) { const r = sewa(st, i); L.rent = { to: o, amt: r, tile: i }; const before = st.cash[o]; this.bayar(st, s, r, o, L); st.inc[i] = (st.inc[i] || 0) + Math.max(0, st.cash[o] - before); }
       } else if (tl.t === 'pajak') { L.tax = tl.p; this.bayar(st, s, tl.p, null, L); }
       else if (tl.t === 'kepenjara') { st.pos[s] = MP_JAIL; st.jail[s] = 1; L.jail = true; }
       else if ((tl.t === 'kesempatan' || tl.t === 'dana') && depth < 2) {
@@ -429,18 +435,18 @@
         if (st.phase !== 'buy') this.lanjut(st); else st.deadline = now() + 20000;
       } else if (st.phase === 'buy' && (mv.buy || mv.skip)) {
         const i = st.pos[a];
-        if (mv.buy && st.own[i] === undefined && st.cash[a] >= MP_TILES[i].p) { st.cash[a] -= MP_TILES[i].p; st.own[i] = a; L.buy = i; } else L.skipBuy = i;
+        if (mv.buy && st.own[i] === undefined && st.cash[a] >= MP_TILES[i].p) { st.cash[a] -= MP_TILES[i].p; st.own[i] = a; st.inc[i] = 0; L.buy = i; } else L.skipBuy = i;
         this.lanjut(st);
       } else if (st.phase === 'jail' && (mv.pay || mv.wait)) {
-        if (mv.pay && st.cash[a] >= 50) { st.cash[a] -= 50; st.jail[a] = 0; st.phase = 'roll'; L.payJail = true; st.deadline = now() + 12000; }
+        if (mv.pay && st.cash[a] >= MP_JAIL_FEE) { st.cash[a] -= MP_JAIL_FEE; st.jail[a] = 0; st.phase = 'roll'; L.payJail = true; st.deadline = now() + 12000; }
         else { st.jail[a] = 0; L.waitJail = true; this.lanjut(st); }
       } else return st;
       st.last = L; st.v++;
       return st;
     },
     bot(st, s) {
-      if (st.phase === 'buy') { const p = MP_TILES[st.pos[s]].p; return st.cash[s] - p >= 120 || Math.random() < .25 && st.cash[s] >= p ? { buy: true } : { skip: true }; }
-      if (st.phase === 'jail') return st.cash[s] > 400 ? { pay: true } : { wait: true };
+      if (st.phase === 'buy') { const p = MP_TILES[st.pos[s]].p; return st.cash[s] - p >= 120 * MP_K || Math.random() < .25 && st.cash[s] >= p ? { buy: true } : { skip: true }; }
+      if (st.phase === 'jail') return st.cash[s] > 400 * MP_K ? { pay: true } : { wait: true };
       return { roll: true };
     },
     botDelay(st) { return st.phase === 'roll' ? 900 : 1300; },
@@ -516,7 +522,8 @@
     side: SV('<path d="M3 15l9-5 9 5-9 5z" fill="currentColor" opacity=".35"/><path d="M3 15l9-5 9 5-9 5zM12 10V4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><circle cx="12" cy="4" r="2" fill="currentColor"/>', '0 0 24 24'),
     top: SV('<rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="8" y="8" width="8" height="8" rx="1" fill="currentColor" opacity=".35"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/>', '0 0 24 24'),
     skip: SV('<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>', '0 0 24 24'),
-    wait: SV('<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>', '0 0 24 24')
+    wait: SV('<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>', '0 0 24 24'),
+    tag: SV('<rect x="2.5" y="6" width="19" height="9" rx="4.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M7 10.5h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 15v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="20.5" r="1.5" fill="currentColor"/>', '0 0 24 24')
   };
   const tileIcon = (tl, i) => tl.t === 'kota' ? MP_ICON[tl.n] : tl.t === 'pajak' ? (i === 20 ? MP_ICON.mewah : MP_ICON.pajak) : MP_ICON[tl.t] || '';
   const pawnSvg = (s, top) => top
@@ -524,18 +531,39 @@
     : `<svg viewBox="0 0 30 44" class="mp-pin"><ellipse cx="15" cy="41" rx="10" ry="3" fill="rgba(0,0,0,.28)"/><path d="M6 39c0-4 4-6 5-10l1-6h6l1 6c1 4 5 6 5 10z" fill="${MP_DARK[s]}"/><path d="M7.5 38.5c0-3.4 3.6-5.3 4.6-9l.9-5.5h4l.9 5.5c1 3.7 4.6 5.6 4.6 9z" fill="${MP_COL[s]}"/><circle cx="15" cy="13" r="9" fill="${MP_DARK[s]}"/><circle cx="15" cy="12.4" r="8" fill="${MP_COL[s]}"/><circle cx="12" cy="9.5" r="2.6" fill="#fff" opacity=".75"/></svg>`;
   let mpView = (() => { try { return localStorage.getItem('tt_mp_view') || 'side'; } catch (e) { return 'side'; } })();
   let mpLast = null;
+  let mpNames = (() => { try { return localStorage.getItem('tt_mp_names') !== '0'; } catch (e) { return true; } })();
+  let mpAsetFor = null;
+  // lembar aset pemain: kota, sewa, pendapatan sewa, modal & untung
+  function asetHtml(st, ctx, s) {
+    const milik = Object.keys(st.own).map(Number).filter(k => st.own[k] === s).sort((a, b) => a - b);
+    const modal = milik.reduce((a, k) => a + MP_TILES[k].p, 0);
+    const pend = milik.reduce((a, k) => a + (st.inc[k] || 0), 0);
+    const selisih = pend - modal;
+    const status = v => v >= 0 ? `<span class="mpa-ok">Sudah untung ${fmtF(v)}</span>` : `<span class="mpa-no">Belum balik modal, kurang ${fmtF(-v)}</span>`;
+    const rows = milik.map(k => {
+      const tl = MP_TILES[k], sw = sewa(st, k), full = sw > sewaDasar(tl.p), inc = st.inc[k] || 0;
+      return `<div class="mpa-row" style="--g:${MP_GRP[tl.g]}"><img src="mp/${tl.n}.jpg" alt=""><div class="mpa-r"><div class="mpa-n">${tl.n}${full ? ' <span class="mpa-x2">Sewa ×2</span>' : ''}</div>
+        <div class="mpa-g"><span>Harga beli</span><b>${fmtF(tl.p)}</b><span>Sewa</span><b>${fmtF(sw)}</b><span>Pendapatan sewa</span><b>${fmtF(inc)}</b></div>${status(inc - tl.p)}</div></div>`;
+    }).join('');
+    return `<div class="mpa-card"><div class="mpa-head" style="--c:${MP_COL[s]}"><span class="mp-chip-pawn">${pawnSvg(s, true)}</span><div><div class="mpa-name">${esc(seatName(ctx, s))}</div><div class="mpa-sub">${st.out[s] ? 'Bangkrut' : `Uang tunai ${fmtF(st.cash[s])}`}</div></div><button type="button" class="mpa-x" id="mpAsetX" aria-label="Tutup">${MP_UI.skip}</button></div>
+      <div class="mpa-sum"><div><span>Kota dimiliki</span><b>${milik.length}</b></div><div><span>Total modal beli</span><b>${fmtF(modal)}</b></div><div><span>Total pendapatan sewa</span><b>${fmtF(pend)}</b></div><div><span>Total harta</span><b>${fmtF(Mono.kekayaan(st, s))}</b></div></div>
+      ${milik.length ? `<div class="mpa-stat">${status(selisih)}</div><div class="mpa-list">${rows}</div>` : '<div class="mpa-empty">Belum punya kota.</div>'}</div>`;
+  }
+  function bukaAset(s) { mpAsetFor = s; SFX.tap(); if (mpLast) renderMono(...mpLast); }
   let M3 = null, m3Loading = false, m3Failed = false;
   function siap3D() {
     if (M3 || m3Failed || m3Loading) return;
     try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) { m3Failed = true; return; } } catch (e) { m3Failed = true; return; }
     m3Loading = true;
     import('./mono3d.js').then(m => {
-      M3 = m.createBoard({ tiles: MP_TILES, grp: MP_GRP, col: MP_COL, dark: MP_DARK, icons: MP_ICON, photos: 'mp/' });
+      M3 = m.createBoard({ tiles: MP_TILES, grp: MP_GRP, col: MP_COL, dark: MP_DARK, icons: MP_ICON, photos: 'mp/', fmt: v => fmt(v).replace('Rp', 'Rp '), onPick: bukaAset });
       if (mpLast && mpLast[0].isConnected) renderMono(...mpLast);
     }).catch(e => { console.warn('3D gagal dimuat', e); m3Failed = true; m3Loading = false; });
   }
+  let mpGid = null;
   function renderMono(box, st, ctx) {
     siap3D();
+    if (st && st.gid !== mpGid) { mpGid = st.gid; mpAsetFor = null; }
     mpLast = [box, st, ctx];
     box.classList.add('mp-mode');
     st = Mono.norm(clone(st));
@@ -545,7 +573,7 @@
     const me = ctx.mySeat;
     const top = mpView === 'top';
     const myTurn = ctx.canAct && st.turn === me && st.winner === null && !ctx.spectator && !ctx.anim;
-    const chips = Array.from({ length: st.n }, (_, s) => `<div class="mp-chip ${st.turn === s && st.winner === null ? 'turn' : ''} ${st.out[s] ? 'out' : ''}" style="--c:${MP_COL[s]}"><span class="mp-chip-pawn">${pawnSvg(s, true)}</span><span class="mp-chip-t"><b>${esc(seatName(ctx, s))}</b><small>${st.out[s] ? 'Bangkrut' : fmt(cash[s])}</small></span></div>`).join('');
+    const chips = Array.from({ length: st.n }, (_, s) => `<div role="button" tabindex="0" data-s="${s}" class="mp-chip ${st.turn === s && st.winner === null ? 'turn' : ''} ${st.out[s] ? 'out' : ''}" style="--c:${MP_COL[s]}"><span class="mp-chip-pawn">${pawnSvg(s, true)}</span><span class="mp-chip-t"><b>${esc(seatName(ctx, s))}</b><small>${st.out[s] ? 'Bangkrut' : fmt(cash[s])}</small></span></div>`).join('');
     let cells = '';
     MP_TILES.forEach((tl, i) => {
       const [r, c] = mpCell(i);
@@ -565,11 +593,11 @@
       if (st.out[s]) return '';
       const k = seen[p] = (seen[p] || 0); seen[p]++;
       const [x, y] = mpTokenXY(p, k, cnt[p]);
-      return `<span class="mp-tok ${A.hop === s ? 'hop' : ''} ${st.turn === s && st.winner === null ? 'cur' : ''}" style="left:${x}%;top:${y}%">${pawnSvg(s, top)}</span>`;
+      return `<span class="mp-tok ${A.hop === s ? 'hop' : ''} ${st.turn === s && st.winner === null ? 'cur' : ''}" data-s="${s}" style="left:${x}%;top:${y}%">${pawnSvg(s, top)}${mpNames ? `<i class="mp-tname" style="--c:${MP_COL[s]}">${esc(seatName(ctx, s))}</i>` : ''}</span>`;
     }).join('');
     const curPos = pos[st.turn], tl = MP_TILES[curPos], own = st.own[curPos];
     let det = '';
-    if (tl.t === 'kota') det = `Harga <b>${fmt(tl.p)}</b> · Sewa <b>${fmt(Math.round(tl.p * .35 / 5) * 5)}</b><br>Pemilik: <b>${own !== undefined ? esc(seatName(ctx, own)) : 'belum ada'}</b>`;
+    if (tl.t === 'kota') det = `Harga <b>${fmt(tl.p)}</b> · Sewa <b>${fmt(sewaDasar(tl.p))}</b><br>Pemilik: <b>${own !== undefined ? esc(seatName(ctx, own)) : 'belum ada'}</b>`;
     else if (tl.t === 'pajak') det = `Bayar pajak <b>${fmt(tl.p)}</b>`;
     else if (tl.t === 'start') det = `Lewat START dapat gaji <b>${fmt(MP_SALARY)}</b>`;
     else if (tl.t === 'penjara') det = 'Hanya mampir';
@@ -587,7 +615,7 @@
       if (l.card) bits.push(`kartu: ${MP_CARD[l.card.t][l.card.i].x}`);
       if (l.jail) bits.push(`${who} masuk penjara`);
       if (l.waitJail) bits.push(`${who} menunggu di penjara`);
-      if (l.payJail) bits.push(`${who} bayar ${fmt(50)} keluar penjara`);
+      if (l.payJail) bits.push(`${who} bayar ${fmt(MP_JAIL_FEE)} keluar penjara`);
       if (l.bankrupt !== undefined) bits.push(`${esc(seatName(ctx, l.bankrupt))} BANGKRUT`);
       status = bits.join(' · ');
     }
@@ -595,18 +623,19 @@
     if (st.winner === null && !ctx.anim) {
       if (myTurn && st.phase === 'roll') actions = `<button type="button" class="btn btn-primary mp-btn" id="mpRoll">${MP_UI.dice} Lempar Dadu</button>`;
       else if (myTurn && st.phase === 'buy') actions = `<div class="mp-two"><button type="button" class="btn btn-gray mp-btn" id="mpSkip">${MP_UI.skip} Lewati</button><button type="button" class="btn btn-primary mp-btn" id="mpBuy">${MP_UI.house} Beli ${fmt(tl.p)}</button></div>`;
-      else if (myTurn && st.phase === 'jail') actions = `<div class="mp-two"><button type="button" class="btn btn-gray mp-btn" id="mpWait">${MP_UI.wait} Tunggu</button><button type="button" class="btn btn-primary mp-btn" id="mpPay" ${st.cash[me] < 50 ? 'disabled' : ''}>${MP_UI.pay} Bayar ${fmt(50)}</button></div>`;
+      else if (myTurn && st.phase === 'jail') actions = `<div class="mp-two"><button type="button" class="btn btn-gray mp-btn" id="mpWait">${MP_UI.wait} Tunggu</button><button type="button" class="btn btn-primary mp-btn" id="mpPay" ${st.cash[me] < MP_JAIL_FEE ? 'disabled' : ''}>${MP_UI.pay} Bayar ${fmt(MP_JAIL_FEE)}</button></div>`;
       else actions = `<div class="mp-wait">${st.phase === 'buy' ? `${esc(seatName(ctx, st.turn))} menimbang beli ${tl.n}…` : st.phase === 'jail' ? `${esc(seatName(ctx, st.turn))} di penjara…` : `Giliran ${esc(seatName(ctx, st.turn))}…`}</div>`;
     } else if (ctx.anim) actions = '<div class="mp-wait">…</div>';
     const card = A.card ? `<div class="mp-cardpop"><div class="mp-flip ${A.cardOpen ? 'open' : ''}"><div class="mp-cf back ${A.card.t}">${MP_ICON[A.card.t]}<b>${A.card.t === 'dana' ? 'DANA UMUM' : 'KESEMPATAN'}</b></div><div class="mp-cf front ${A.card.t}"><small>${A.card.t === 'dana' ? 'Dana Umum' : 'Kesempatan'}</small><b>${MP_CARD[A.card.t][A.card.i].x}</b></div></div></div>` : '';
     const flash = A.flash ? `<div class="mp-flash">${MP_UI[A.flash[0]] || ''}<span>${A.flash[1]}</span></div>` : '';
     box.innerHTML = `<div class="mp-screen">
-      <div class="mp-topbar"><div class="mp-chips">${chips}</div><button type="button" class="mp-view" id="mpView" aria-label="Ganti sudut pandang">${top ? MP_UI.top : MP_UI.side}<span>${top ? 'Atas' : 'Samping'}</span></button></div>
+      <div class="mp-topbar"><div class="mp-chips">${chips}</div><div class="mp-btns"><button type="button" class="mp-view" id="mpView" aria-label="Ganti sudut pandang">${top ? MP_UI.top : MP_UI.side}<span>${top ? 'Atas' : 'Samping'}</span></button><button type="button" class="mp-view ${mpNames ? 'on' : ''}" id="mpNames" aria-label="Nama di atas bidak">${MP_UI.tag}<span>Nama</span></button></div></div>
       <div class="mp-status">${status || (st.winner === null ? `Putaran ${st.round}` : '')}</div>
       <div class="mp-stage ${top ? 'top' : 'side'} ${M3 ? 'gl' : ''}" id="mpStage">${M3 ? '<div class="mp-gl" id="mpGl"></div>' : `<div class="mp-board" id="mpBoard">${cells}<div class="mp-center"><div class="mp-logo">MONOPOLI<span>Nusantara</span></div><div class="mp-dice">${dieHtml('mpD1')}${dieHtml('mpD2')}</div></div>${tokens}</div>`}${card}${flash}</div>
       <div class="mp-bottom"><div class="mp-tile" style="--g:${tl.g ? MP_GRP[tl.g] : '#8E8E93'}"><span class="mp-tile-lm">${tl.t === 'kota' ? `<img src="mp/${tl.n}.jpg" alt="${tl.n}">` : tileIcon(tl, curPos)}</span><div class="mp-tile-t"><div class="mp-tile-n">${tl.n}</div><div class="mp-tile-d">${det}</div></div></div>
         <div class="mp-act">${actions}<div class="mp-hint" id="mpHint"></div></div></div>
-      ${st.winner !== null ? H.resultHtml(ctx, st.winner, st.reason) : ''}</div>`;
+      ${st.winner !== null ? H.resultHtml(ctx, st.winner, st.reason) : ''}
+      ${mpAsetFor !== null && mpAsetFor < st.n ? `<div class="mpa-wrap" id="mpAset">${asetHtml(st, ctx, mpAsetFor)}</div>` : ''}</div>`;
     // ukuran papan pas 1 layar
     const fit = () => {
       const stage = $('mpStage'), board = $('mpBoard'); if (!stage || !board) return;
@@ -619,10 +648,14 @@
     if (M3) {
       M3.mount($('mpGl'));
       const fl = A.flash && (A.flash[0] === 'coin' || A.flash[0] === 'pay') && st.last ? { s: A.flash[0] === 'pay' && st.last.rent ? st.last.rent.to : st.last.s } : null;
-      M3.update({ pos, out: st.out, own: st.own, turn: st.turn, hi: A.hi !== undefined ? A.hi : pos[st.turn], rolling: !!A.rolling, dice: d, view: mpView, burst: fl, burstKey: fl ? st.v + A.flash[1] : 0 });
+      const focus = A.hop !== undefined ? A.hop : (ctx.anim && st.last ? st.last.s : st.turn);
+      M3.update({ focus, names: mpNames ? Array.from({ length: st.n }, (_, s) => s === me && !ctx.spectator ? 'Kamu' : seatName(ctx, s)) : null, pos, out: st.out, own: st.own, turn: st.turn, hi: A.hi !== undefined ? A.hi : pos[st.turn], rolling: !!A.rolling, dice: d, view: mpView, burst: fl, burstKey: fl ? st.v + A.flash[1] : 0 });
     } else { fit(); requestAnimationFrame(fit); }
     if (!M3) { dieShow('mpD1', d[0], false); dieShow('mpD2', d[1], false); }
     if (!M3 && A.rolling) { dieShow('mpD1', d[0], true); dieShow('mpD2', d[1], true); }
+    box.querySelectorAll('.mp-chip[data-s], .mp-tok[data-s]').forEach(el => el.onclick = () => bukaAset(+el.dataset.s));
+    if ($('mpAset')) { $('mpAset').onclick = e => { if (e.target.id === 'mpAset' || e.target.closest('#mpAsetX')) { mpAsetFor = null; SFX.tap(); renderMono(...mpLast); } }; }
+    $('mpNames').onclick = () => { mpNames = !mpNames; try { localStorage.setItem('tt_mp_names', mpNames ? '1' : '0'); } catch (e) { } SFX.tap(); if (mpLast) renderMono(...mpLast); };
     $('mpView').onclick = () => { mpView = top ? 'side' : 'top'; try { localStorage.setItem('tt_mp_view', mpView); } catch (e) { } SFX.tap(); if (mpLast) renderMono(...mpLast); };
     if (!myTurn) return;
     const go = mv => { SFX.unlock(); SFX.tap(); clearInterval(H.autoTick); ctx.act(mv); };
@@ -691,6 +724,34 @@
     .mp-chip.out{opacity:.45;filter:grayscale(1)}
     .mp-chip-pawn svg{width:22px;height:22px;display:block}
     .mp-chip-t{min-width:0;line-height:1.15}.mp-chip-t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mp-chip-t small{font-size:12.5px;color:var(--text2);font-weight:700}
+    .mp-btns{flex:none;display:flex;flex-direction:column;gap:6px}
+    .mp-btns .mp-view{flex:1}
+    .mp-view.on{background:#12865A;color:#fff}
+    .mp-chip{cursor:pointer}
+    .mp-tname{position:absolute;left:0;top:0;transform:translate(-50%,-260%);font-style:normal;white-space:nowrap;font-size:10px;font-weight:800;background:#fff;color:#1C1C1E;border:2px solid var(--c);border-radius:999px;padding:1px 6px;pointer-events:none}
+    .mpa-wrap{position:absolute;inset:-8px -10px;z-index:20;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;animation:gxfade .2s}
+    @keyframes gxfade{from{opacity:0}}
+    .mpa-card{width:100%;max-height:88%;overflow-y:auto;background:#F2F2F7;border-radius:24px 24px 0 0;padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 16px);animation:gxup .3s cubic-bezier(.2,1,.3,1)}
+    .mpa-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .mpa-head .mp-chip-pawn svg{width:36px;height:36px}
+    .mpa-head>div{flex:1;min-width:0}
+    .mpa-name{font-size:21px;font-weight:900}.mpa-sub{font-size:15px;color:var(--text2);font-weight:700}
+    .mpa-x{width:40px;height:40px;border-radius:50%;background:#E5E5EA;color:#3A3A3C;display:flex;align-items:center;justify-content:center}.mpa-x svg{width:18px;height:18px}
+    .mpa-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .mpa-sum>div{background:#fff;border-radius:14px;padding:10px 12px;box-shadow:var(--shadow)}
+    .mpa-sum span{display:block;font-size:12.5px;color:var(--text2);font-weight:700}.mpa-sum b{font-size:17px}
+    .mpa-stat{margin:12px 2px 4px;font-size:16px;font-weight:800;text-align:center}
+    .mpa-ok{color:#1E8E3E}.mpa-no{color:#C25B00}
+    .mpa-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .mpa-row{display:flex;gap:10px;background:#fff;border-radius:16px;padding:10px;box-shadow:var(--shadow);border-left:6px solid var(--g)}
+    .mpa-row img{width:64px;height:64px;border-radius:12px;object-fit:cover;flex:none}
+    .mpa-r{min-width:0;flex:1}
+    .mpa-n{font-size:17px;font-weight:900}
+    .mpa-x2{font-size:11px;background:#FFE7C2;color:#8A4B00;border-radius:999px;padding:2px 7px;vertical-align:2px}
+    .mpa-g{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:13.5px;margin:4px 0}
+    .mpa-g span{color:var(--text2)}.mpa-g b{text-align:right}
+    .mpa-r .mpa-ok,.mpa-r .mpa-no{font-size:13px;font-weight:800}
+    .mpa-empty{text-align:center;color:var(--text2);padding:22px;font-size:16px}
     .mp-view{flex:none;width:62px;border-radius:12px;background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#12865A;font-size:11px;font-weight:800}
     .mp-view svg{width:24px;height:24px}
     .mp-status{flex:none;text-align:center;font-size:14px;font-weight:700;color:#1C1C1E;min-height:19px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

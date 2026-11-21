@@ -87,7 +87,7 @@ export function createBoard(cfg) {
         const [a, b] = [nm.slice(0, nm.indexOf(' ')), nm.slice(nm.indexOf(' ') + 1)];
         g.fillText(a, x + w / 2, y + h * .8); g.fillText(b, x + w / 2, y + h * .8 + fs);
       } else g.fillText(nm, x + w / 2, y + h * (tl.t === 'kota' ? .82 : .86));
-      if (tl.t === 'kota') { g.font = '800 34px Inter, system-ui, sans-serif'; g.fillStyle = '#6E6E73'; g.fillText('Rp' + tl.p, x + w / 2, y + h * .95); }
+      if (tl.t === 'kota') { g.font = '800 34px Inter, system-ui, sans-serif'; g.fillStyle = '#6E6E73'; g.fillText(cfg.fmt ? cfg.fmt(tl.p) : 'Rp' + tl.p, x + w / 2, y + h * .95); }
       g.restore();
       g.save(); rr(g, x, y, w, h, 22); g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.12)'; g.stroke(); g.restore();
     });
@@ -117,10 +117,24 @@ export function createBoard(cfg) {
     const b = new THREE.Mesh(pawnGeo, mat); b.castShadow = true; gp.add(b);
     const h = new THREE.Mesh(headGeo, mat); h.position.y = 1.02; h.castShadow = true; gp.add(h);
     gp.scale.setScalar(1.05);
+    gp.userData.seat = s;
     scene.add(gp);
-    return pawns[s] = { g: gp, tile: -1, from: new THREE.Vector3(), to: new THREE.Vector3(), t0: 0, dur: 1, arc: 0, alive: true };
+    const lc = document.createElement('canvas'); lc.width = 512; lc.height = 128;
+    const lt = new THREE.CanvasTexture(lc); lt.colorSpace = THREE.SRGBColorSpace;
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: lt, transparent: true, depthTest: false }));
+    label.scale.set(2.6, .65, 1); label.renderOrder = 10; label.visible = false; scene.add(label);
+    return pawns[s] = { label, lc, lt, name: '', g: gp, tile: -1, from: new THREE.Vector3(), to: new THREE.Vector3(), t0: 0, dur: 1, arc: 0, alive: true };
   }
 
+  function setLabel(pw, s, name) {
+    if (pw.name === name) return; pw.name = name;
+    const g = pw.lc.getContext('2d'); g.clearRect(0, 0, 512, 128);
+    g.font = '800 54px Inter, system-ui, sans-serif'; const tw = Math.min(470, g.measureText(name).width + 56);
+    const x = (512 - tw) / 2; rr(g, x, 22, tw, 84, 42); g.fillStyle = 'rgba(255,255,255,.95)'; g.fill();
+    g.lineWidth = 8; g.strokeStyle = col[s]; g.stroke();
+    g.fillStyle = '#1C1C1E'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name, 256, 66, 440);
+    pw.lt.needsUpdate = true;
+  }
   // rumah milik
   const houses = {};
   const roofGeo = new THREE.ConeGeometry(.42, .34, 4); roofGeo.rotateY(Math.PI / 4);
@@ -180,7 +194,23 @@ export function createBoard(cfg) {
   }
 
   // status
-  const S = { view: 'side', turn: 0, hi: 0, n: 0, alive: true, running: false, lastBurst: 0 };
+  const S = { view: 'side', turn: 0, focus: 0, names: true, hi: 0, n: 0, alive: true, running: false, lastBurst: 0 };
+  // ketuk bidak → lihat aset pemain
+  const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let down = null;
+  canvas.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  canvas.addEventListener('pointerup', e => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 10) return;
+    const rc = canvas.getBoundingClientRect();
+    ptr.set(((e.clientX - rc.left) / rc.width) * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
+    ray.setFromCamera(ptr, cam);
+    const objs = []; pawns.forEach(pw => { if (pw && pw.alive) { objs.push(pw.g); if (pw.label.visible) objs.push(pw.label); } });
+    const hit = ray.intersectObjects(objs, true)[0];
+    if (!hit) return;
+    let o = hit.object; while (o && o.userData.seat === undefined && o.parent) o = o.parent;
+    let seat = o && o.userData.seat;
+    if (seat === undefined) seat = pawns.findIndex(pw => pw && pw.label === hit.object);
+    if (seat >= 0 && cfg.onPick) cfg.onPick(seat);
+  });
   let W = 1, Hh = 1;
   function resize() {
     const p = canvas.parentElement; if (!p) return;
@@ -198,11 +228,13 @@ export function createBoard(cfg) {
       const h = fit / Math.min(a, 1);
       return { pos: new THREE.Vector3(0, h, .001), look: new THREE.Vector3(0, 0, 0) };
     }
-    const p = pawns[S.turn] && pawns[S.turn].alive ? pawns[S.turn].g.position : new THREE.Vector3();
-    const look = new THREE.Vector3(p.x * .55, 0, p.z * .55 + .4);
-    const k = a < .75 ? 1.12 : a < 1 ? 1.02 : .92;
-    const sway = Math.sin(t / 2600) * .6;
-    return { pos: new THREE.Vector3(look.x * .35 + sway, 9.6 * k, look.z + 10.2 * k), look };
+    const f = pawns[S.focus] && pawns[S.focus].alive ? pawns[S.focus] : null;
+    const p = f ? f.g.position : new THREE.Vector3();
+    const cl = v => Math.max(-5.2, Math.min(5.2, v));
+    const look = new THREE.Vector3(cl(p.x), 0, cl(p.z) + .3);
+    const k = a < .75 ? 1.06 : a < 1 ? .98 : .9;
+    const sway = Math.sin(t / 2600) * .4;
+    return { pos: new THREE.Vector3(look.x * .55 + sway, 8.4 * k, look.z + 8.8 * k), look };
   }
 
   function loop(t) {
@@ -221,7 +253,8 @@ export function createBoard(cfg) {
       pw.g.scale.set(1.05 / Math.sqrt(sq), 1.05 * sq, 1.05 / Math.sqrt(sq));
       if (!pw.alive) pw.g.scale.multiplyScalar(Math.max(.001, 1 - (now - pw.deadAt) / 500));
     });
-    if (pawns[S.turn] && pawns[S.turn].alive && (now - pawns[S.turn].t0) > pawns[S.turn].dur) pawns[S.turn].g.position.y = Math.abs(Math.sin(now / 380)) * .12;
+    if (pawns[S.focus] && pawns[S.focus].alive && (now - pawns[S.focus].t0) > pawns[S.focus].dur) pawns[S.focus].g.position.y = Math.abs(Math.sin(now / 380)) * .12;
+    pawns.forEach(pw => { if (!pw) return; pw.label.visible = S.names && pw.alive; pw.label.position.set(pw.g.position.x, pw.g.position.y + 1.95, pw.g.position.z); });
     // rumah muncul memantul
     Object.values(houses).forEach(h => { const k = Math.min(1, (now - h.t0) / 520); const s = k < 1 ? (1 - Math.pow(1 - k, 3)) * (1 + Math.sin(k * Math.PI) * .35) : 1; h.g.scale.setScalar(Math.max(.001, s)); });
     // dadu
@@ -246,7 +279,8 @@ export function createBoard(cfg) {
     hiMesh.material.opacity = .55 + Math.sin(now / 260) * .4;
     // kamera
     const dc = desiredCam(now);
-    cam.position.lerp(dc.pos, .06); lookNow.lerp(dc.look, .08); cam.lookAt(lookNow);
+    const fast = S.view === 'side' ? .11 : .06;
+    cam.position.lerp(dc.pos, fast); lookNow.lerp(dc.look, fast + .03); cam.lookAt(lookNow);
     renderer.render(scene, cam);
   }
 
@@ -259,10 +293,11 @@ export function createBoard(cfg) {
       if (!S.running) { S.running = true; requestAnimationFrame(loop); }
     },
     update(o) {
-      S.view = o.view || 'side'; S.turn = o.turn; S.hi = o.hi;
+      S.view = o.view || 'side'; S.turn = o.turn; S.hi = o.hi; S.focus = o.focus !== undefined ? o.focus : o.turn; S.names = !!o.names;
       const now = performance.now();
       o.pos.forEach((tile, s) => {
         const pw = pawn(s);
+        if (o.names && o.names[s]) setLabel(pw, s, o.names[s]);
         if (o.out[s]) { if (pw.alive) { pw.alive = false; pw.deadAt = now; } return; }
         pw.alive = true;
         const same = o.pos.map((p, k) => !o.out[k] && p === tile ? k : -1).filter(k => k >= 0);
