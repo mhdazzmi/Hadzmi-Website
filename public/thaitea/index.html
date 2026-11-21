@@ -1111,13 +1111,12 @@
         <div class="split">
           <div>
             <div class="card on-store" id="onStoreCard">
-              <label class="toggle-row">
-                <div>
-                  <div class="toggle-title" id="onOpenTitle">Pesanan online: TUTUP</div>
-                  <div class="toggle-desc" id="onOpenDesc">Customer tidak bisa membuka menu pesan.</div>
-                </div>
-                <span class="switch"><input type="checkbox" id="onOpenToggle" onchange="setTokoOnline(this.checked)"><span class="slider"></span></span>
-              </label>
+              <div class="toggle-title" id="onOpenTitle">Pesanan online</div>
+              <div class="toggle-desc" id="onOpenDesc"></div>
+              <div class="segmented" id="onModeSeg" style="margin-top:12px">
+                <button type="button" data-m="auto" onclick="setModeOnline('auto')">Auto</button>
+                <button type="button" data-m="tutup" onclick="setModeOnline('tutup')">Tutup</button>
+              </div>
             </div>
             <div id="onWakeStatus" class="on-wake hidden"></div>
             <div class="card on-sound hidden" id="onSoundBox">
@@ -4808,22 +4807,31 @@
     }
 
     /* ---------- buka / tutup ---------- */
+    // Auto: buka sendiri 11.30 AM – 11.45 PM WIB. Tutup: tertutup terus sampai dipindah ke Auto.
+    var ON_BUKA = 11 * 60 + 30, ON_TUTUP = 23 * 60 + 45;
+    function jam12(m) { const h = Math.floor(m / 60); return `${((h + 11) % 12) + 1}.${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; }
+    function menitWIB() { const d = new Date(Date.now() + 7 * 3600000); return d.getUTCHours() * 60 + d.getUTCMinutes(); }
+    function modeOnline() { return onlineSettings.mode === 'tutup' ? 'tutup' : 'auto'; }
+    function tokoBukaSekarang() { const m = menitWIB(); return modeOnline() === 'auto' && m >= ON_BUKA && m <= ON_TUTUP; }
     function renderOnlineStore() {
-      const open = onlineSettings.open === true;
-      document.getElementById('onOpenToggle').checked = open;
+      const mode = modeOnline(), open = tokoBukaSekarang();
       document.getElementById('onStoreCard').classList.toggle('open', open);
+      document.querySelectorAll('#onModeSeg button').forEach(b => b.classList.toggle('active', b.dataset.m === mode));
       document.getElementById('onOpenTitle').textContent = open ? 'Pesanan online: BUKA' : 'Pesanan online: TUTUP';
-      document.getElementById('onOpenDesc').textContent = open
-        ? 'Customer bisa memesan (jam jemput 12.00 – 23.40). Matikan kalau kedai tutup.'
-        : 'Customer tidak bisa membuka menu pesan. Nyalakan saat kedai buka.';
+      document.getElementById('onOpenDesc').textContent = mode === 'tutup'
+        ? 'Ditutup manual. Tetap tutup sampai kamu pilih Auto.'
+        : open ? `Buka otomatis. Tutup sendiri jam ${jam12(ON_TUTUP)} WIB.`
+          : `Otomatis buka jam ${jam12(ON_BUKA)} dan tutup jam ${jam12(ON_TUTUP)} WIB.`;
     }
-    async function setTokoOnline(open) {
-      if (!open && !(await iosConfirm('Tutup pesanan online? Customer tidak bisa memesan sampai dibuka lagi.', { title: 'Tutup Pesanan Online?', okText: 'Tutup' }))) {
+    setInterval(() => { if (typeof onlineSettings !== 'undefined') renderOnlineStore(); }, 30000);
+    async function setModeOnline(mode) {
+      if (mode === modeOnline()) return;
+      if (mode === 'tutup' && !(await iosConfirm('Pesanan online akan tertutup terus sampai kamu pilih Auto lagi.', { title: 'Tutup Pesanan Online?', okText: 'Tutup' }))) {
         renderOnlineStore(); return;
       }
-      onlineSettingsRef.child('open').set(open).then(() => {
-        triggerToast(open ? 'Pesanan online DIBUKA' : 'Pesanan online DITUTUP');
-        logAktivitas('edit', open ? 'Membuka pesanan online' : 'Menutup pesanan online');
+      onlineSettingsRef.update({ mode, open: null }).then(() => {
+        triggerToast(mode === 'tutup' ? 'Pesanan online DITUTUP' : `Pesanan online AUTO (${jam12(ON_BUKA)} – ${jam12(ON_TUTUP)})`);
+        logAktivitas('edit', mode === 'tutup' ? 'Menutup pesanan online' : 'Mengatur pesanan online ke Auto');
       }).catch(() => { triggerToast('Gagal menyimpan, cek internet', true); renderOnlineStore(); });
     }
 
@@ -5106,7 +5114,7 @@
     /* ---------- layar tetap menyala saat pesanan online dibuka & web kasir terbuka ---------- */
     // 1) Wake Lock API (Chrome Android, iPhone iOS 16.4+)  2) cadangan: video senyap kecil diputar berulang
     let wakeLock = null, wakeVideo = null, wakeMode = '';
-    function perluLayarNyala() { return onlineSettings.open === true && document.visibilityState === 'visible'; }
+    function perluLayarNyala() { return tokoBukaSekarang() && document.visibilityState === 'visible'; }
     async function aturWakeLock() {
       const perlu = perluLayarNyala();
       if (!perlu) {
@@ -5137,7 +5145,7 @@
     }
     function renderWakeStatus() {
       const el = document.getElementById('onWakeStatus'); if (!el) return;
-      if (onlineSettings.open !== true) { el.className = 'on-wake hidden'; return; }
+      if (!tokoBukaSekarang()) { el.className = 'on-wake hidden'; return; }
       const ok = wakeMode === 'api' || wakeMode === 'video';
       el.className = 'on-wake ' + (ok ? 'ok' : 'warn');
       el.innerHTML = ok ? '🔆 Layar dijaga tetap menyala selama halaman ini terbuka.' : '⚠️ Layar bisa mati sendiri. Sentuh layar sekali, atau atur waktu layar mati HP lebih lama.';
