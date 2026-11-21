@@ -284,8 +284,7 @@ function infoFrom(settings) {
   const open = mode === 'auto' && nowMin >= OPEN_MIN && nowMin <= CLOSE_MIN;
   let closedReason = '';
   if (mode === 'tutup') closedReason = 'Kedai sedang tutup. Coba lagi nanti ya!';
-  else if (nowMin < OPEN_MIN) closedReason = `Pesanan online buka jam ${jam12(OPEN_MIN)}. Sampai nanti ya!`;
-  else if (nowMin > CLOSE_MIN) closedReason = `Pesanan online hari ini sudah tutup (buka lagi besok jam ${jam12(OPEN_MIN)}). Sampai besok ya!`;
+  else if (nowMin < OPEN_MIN || nowMin > CLOSE_MIN) closedReason = `Pesanan online buka jam ${jam12(OPEN_MIN)}. Coba lagi nanti ya!`;
   const photos = settings.photos || {};
   const off = settings.toppingOff || {};
   return {
