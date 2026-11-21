@@ -524,7 +524,18 @@
     : `<svg viewBox="0 0 30 44" class="mp-pin"><ellipse cx="15" cy="41" rx="10" ry="3" fill="rgba(0,0,0,.28)"/><path d="M6 39c0-4 4-6 5-10l1-6h6l1 6c1 4 5 6 5 10z" fill="${MP_DARK[s]}"/><path d="M7.5 38.5c0-3.4 3.6-5.3 4.6-9l.9-5.5h4l.9 5.5c1 3.7 4.6 5.6 4.6 9z" fill="${MP_COL[s]}"/><circle cx="15" cy="13" r="9" fill="${MP_DARK[s]}"/><circle cx="15" cy="12.4" r="8" fill="${MP_COL[s]}"/><circle cx="12" cy="9.5" r="2.6" fill="#fff" opacity=".75"/></svg>`;
   let mpView = (() => { try { return localStorage.getItem('tt_mp_view') || 'side'; } catch (e) { return 'side'; } })();
   let mpLast = null;
+  let M3 = null, m3Loading = false, m3Failed = false;
+  function siap3D() {
+    if (M3 || m3Failed || m3Loading) return;
+    try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) { m3Failed = true; return; } } catch (e) { m3Failed = true; return; }
+    m3Loading = true;
+    import('./mono3d.js').then(m => {
+      M3 = m.createBoard({ tiles: MP_TILES, grp: MP_GRP, col: MP_COL, dark: MP_DARK, icons: MP_ICON, photos: 'mp/' });
+      if (mpLast && mpLast[0].isConnected) renderMono(...mpLast);
+    }).catch(e => { console.warn('3D gagal dimuat', e); m3Failed = true; m3Loading = false; });
+  }
   function renderMono(box, st, ctx) {
+    siap3D();
     mpLast = [box, st, ctx];
     box.classList.add('mp-mode');
     st = Mono.norm(clone(st));
@@ -592,8 +603,8 @@
     box.innerHTML = `<div class="mp-screen">
       <div class="mp-topbar"><div class="mp-chips">${chips}</div><button type="button" class="mp-view" id="mpView" aria-label="Ganti sudut pandang">${top ? MP_UI.top : MP_UI.side}<span>${top ? 'Atas' : 'Samping'}</span></button></div>
       <div class="mp-status">${status || (st.winner === null ? `Putaran ${st.round}` : '')}</div>
-      <div class="mp-stage ${top ? 'top' : 'side'}" id="mpStage"><div class="mp-board" id="mpBoard">${cells}<div class="mp-center"><div class="mp-logo">MONOPOLI<span>Nusantara</span></div><div class="mp-dice">${dieHtml('mpD1')}${dieHtml('mpD2')}</div></div>${tokens}</div>${card}${flash}</div>
-      <div class="mp-bottom"><div class="mp-tile" style="--g:${tl.g ? MP_GRP[tl.g] : '#8E8E93'}"><span class="mp-tile-lm">${tileIcon(tl, curPos)}</span><div class="mp-tile-t"><div class="mp-tile-n">${tl.n}</div><div class="mp-tile-d">${det}</div></div></div>
+      <div class="mp-stage ${top ? 'top' : 'side'} ${M3 ? 'gl' : ''}" id="mpStage">${M3 ? '<div class="mp-gl" id="mpGl"></div>' : `<div class="mp-board" id="mpBoard">${cells}<div class="mp-center"><div class="mp-logo">MONOPOLI<span>Nusantara</span></div><div class="mp-dice">${dieHtml('mpD1')}${dieHtml('mpD2')}</div></div>${tokens}</div>`}${card}${flash}</div>
+      <div class="mp-bottom"><div class="mp-tile" style="--g:${tl.g ? MP_GRP[tl.g] : '#8E8E93'}"><span class="mp-tile-lm">${tl.t === 'kota' ? `<img src="mp/${tl.n}.jpg" alt="${tl.n}">` : tileIcon(tl, curPos)}</span><div class="mp-tile-t"><div class="mp-tile-n">${tl.n}</div><div class="mp-tile-d">${det}</div></div></div>
         <div class="mp-act">${actions}<div class="mp-hint" id="mpHint"></div></div></div>
       ${st.winner !== null ? H.resultHtml(ctx, st.winner, st.reason) : ''}</div>`;
     // ukuran papan pas 1 layar
@@ -604,10 +615,14 @@
       board.style.width = board.style.height = size + 'px';
       board.style.setProperty('--u', size / 7 + 'px');
     };
-    fit(); requestAnimationFrame(fit);
     const d = A.dice || st.dice;
-    dieShow('mpD1', d[0], false); dieShow('mpD2', d[1], false);
-    if (A.rolling) { dieShow('mpD1', d[0], true); dieShow('mpD2', d[1], true); }
+    if (M3) {
+      M3.mount($('mpGl'));
+      const fl = A.flash && (A.flash[0] === 'coin' || A.flash[0] === 'pay') && st.last ? { s: A.flash[0] === 'pay' && st.last.rent ? st.last.rent.to : st.last.s } : null;
+      M3.update({ pos, out: st.out, own: st.own, turn: st.turn, hi: A.hi !== undefined ? A.hi : pos[st.turn], rolling: !!A.rolling, dice: d, view: mpView, burst: fl, burstKey: fl ? st.v + A.flash[1] : 0 });
+    } else { fit(); requestAnimationFrame(fit); }
+    if (!M3) { dieShow('mpD1', d[0], false); dieShow('mpD2', d[1], false); }
+    if (!M3 && A.rolling) { dieShow('mpD1', d[0], true); dieShow('mpD2', d[1], true); }
     $('mpView').onclick = () => { mpView = top ? 'side' : 'top'; try { localStorage.setItem('tt_mp_view', mpView); } catch (e) { } SFX.tap(); if (mpLast) renderMono(...mpLast); };
     if (!myTurn) return;
     const go = mv => { SFX.unlock(); SFX.tap(); clearInterval(H.autoTick); ctx.act(mv); };
@@ -623,7 +638,7 @@
     tick(); H.autoTick = setInterval(tick, 300);
     ctx.auto(() => ctx.act({ timeout: true }), Math.max(400, until - now()));
   }
-  window.addEventListener('resize', () => { if (mpLast && mpLast[0].isConnected && document.getElementById('mpBoard')) renderMono(...mpLast); });
+  window.addEventListener('resize', () => { if (mpLast && mpLast[0].isConnected && document.getElementById('mpBoard') && !M3) renderMono(...mpLast); });
   async function animMono(prev, next, redraw) {
     const l = next.last;
     if (!prev || prev.gid !== next.gid || !l) { redraw(next); return; }
@@ -654,7 +669,17 @@
   }
   const iconMono = '<svg viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="6" fill="#E9F7EF"/><rect x="6" y="6" width="36" height="8" rx="3" fill="#E53935"/><rect x="6" y="34" width="36" height="8" rx="3" fill="#1E5BD8"/><rect x="6" y="6" width="8" height="36" rx="3" fill="#FF9800"/><rect x="34" y="6" width="8" height="36" rx="3" fill="#29B6F6"/><path d="M19 30v-7l5-4 5 4v7z" fill="#2DB84D"/><rect x="22" y="25" width="4" height="5" fill="#fff"/></svg>';
   TTG.daftarGame('monopoli', {
-    meta: { name: 'Monopoli', desc: 'Keliling Nusantara, beli kota', bg: 'linear-gradient(160deg,#34C77B,#12865A)', min: 2, max: 4, nNote: 'Lewat START dapat gaji. Berhenti di kota orang bayar sewa. Main sampai tinggal 1 pemain yang tidak bangkrut.' },
+    meta: {
+      name: 'Monopoli', desc: 'Keliling Nusantara, beli kota', bg: 'linear-gradient(160deg,#34C77B,#12865A)', min: 2, max: 4, nNote: 'Lewat START dapat gaji. Berhenti di kota orang bayar sewa. Main sampai tinggal 1 pemain yang tidak bangkrut.',
+      optHtml: () => `<details class="mp-kredit"><summary>Kredit foto landmark</summary><div id="mpKredit" class="card-sub">Memuat…</div></details>`,
+      onLobby: () => {
+        siap3D();
+        fetch('mp/kredit.json').then(r => r.json()).then(k => {
+          const el = $('mpKredit'); if (!el) return;
+          el.innerHTML = 'Foto dari Wikimedia Commons:<br>' + Object.entries(k).map(([c, v]) => `${c}: <a href="${v.page}" target="_blank" rel="noopener">${esc(v.artist || 'Tanpa nama')}</a>, ${esc(v.lic)}`).join('<br>') + '<br>Foto dipotong & diperkecil.';
+        }).catch(() => { const el = $('mpKredit'); if (el) el.textContent = 'Tidak bisa memuat kredit.'; });
+      }
+    },
     engine: Mono, render: renderMono, anim: animMono, icon: iconMono,
     css: `
     .gv-body.mp-mode{display:flex;flex-direction:column;overflow:hidden;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 10px)}
@@ -708,7 +733,10 @@
     @keyframes mphopt{50%{transform:translate(-50%,-50%) scale(1.35)}}
     .mp-bottom{flex:none;display:flex;flex-direction:column;gap:8px}
     .mp-tile{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:8px 12px;box-shadow:var(--shadow);border-left:6px solid var(--g)}
-    .mp-tile-lm{width:50px;height:50px;flex:none}.mp-tile-lm svg{width:100%;height:100%}
+    .mp-tile-lm{width:56px;height:56px;flex:none;border-radius:12px;overflow:hidden}.mp-tile-lm svg,.mp-tile-lm img{width:100%;height:100%;object-fit:cover;display:block}
+    .mp-stage.gl{background:radial-gradient(ellipse at 50% 30%,#E6F7FF,#BFE6F5 55%,#9AD3C0);border-radius:20px;overflow:hidden;perspective:none}
+    .mp-gl{position:absolute;inset:0}.mp-gl canvas{display:block;width:100%;height:100%;touch-action:none}
+    .mp-kredit{margin-top:12px;font-size:13px}.mp-kredit summary{color:var(--text2);font-weight:700;cursor:pointer}.mp-kredit a{color:var(--accent)}
     .mp-tile-t{min-width:0;line-height:1.3}.mp-tile-n{font-size:18px;font-weight:900}.mp-tile-d{font-size:14px;color:#3A3A3C}
     .mp-act{min-height:58px}
     .mp-btn{width:100%;min-height:56px;font-size:19px;display:flex;align-items:center;justify-content:center;gap:8px}
