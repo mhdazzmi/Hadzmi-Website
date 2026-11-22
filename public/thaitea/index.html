@@ -316,6 +316,30 @@
     .lc-meta { font-size: 14px; color: var(--text2); margin-top: 3px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .lc-amount { font-size: 18px; font-weight: 800; white-space: nowrap; }
     .lc-amount.green { color: var(--green); }
+    .rw-day + .rw-day { margin-top: 18px; }
+    .rw-dh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 4px 8px; }
+    .rw-dh b { font-size: 15px; font-weight: 800; white-space: nowrap; }
+    .rw-dh span { font-size: 12.5px; color: var(--text2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rw-tb { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+    .rw-th, .rw-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 26px auto; gap: 6px; padding: 11px 12px; align-items: center; }
+    .rw-th { background: #F7F5F2; font-size: 12px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; padding-top: 9px; padding-bottom: 9px; }
+    .rw-row { font-size: 14.5px; cursor: pointer; border-top: .5px solid var(--sep); }
+    .rw-row.open { background: #FFF6EE; }
+    .rw-row:active { background: #FFF1E4; }
+    .rw-j { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .rw-m { line-height: 1.35; min-width: 0; }
+    .rw-top { color: var(--text2); font-size: 13px; }
+    .rw-tags { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .rw-tags .pay, .rw-tags .pill { font-size: 10.5px; padding: 2px 7px; }
+    .rw-c { text-align: center; color: var(--text2); font-weight: 700; }
+    .rw-t { text-align: right; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rw-th .rw-t, .rw-th .rw-c { color: var(--text2); }
+    .rw-t.strike { color: var(--text3); text-decoration: line-through; }
+    .rw-act { display: flex; gap: 8px; justify-content: flex-end; padding: 0 14px 12px; background: #FFF6EE; }
+    .rw-act .btn { display: inline-flex; align-items: center; gap: 6px; }
+    .rw-act svg { width: 16px; height: 16px; }
+    .rw-ft { display: flex; justify-content: space-between; padding: 12px 14px; border-top: 1px solid var(--sep); font-weight: 900; font-size: 15.5px; }
+    .rw-hint { text-align: center; font-size: 12.5px; color: var(--text2); margin-top: 10px; }
     .lc-amount.red { color: var(--red); }
     .lc-amount.amber { color: var(--amber); }
     .lc-amount.strike { color: var(--text3); text-decoration: line-through; }
@@ -1060,7 +1084,7 @@
               <span id="historyTotalLabel" style="font-size:20px;font-weight:800;color:var(--green)">Rp 0</span>
             </div>
           </div>
-          <div id="allHistoryTableBody" class="list" style="margin-top:12px"></div>
+          <div id="allHistoryTableBody" class="rw-wrap" style="margin-top:12px"></div>
         </div>
       </section>
 
@@ -4682,26 +4706,33 @@
         return;
       }
 
-      list.forEach(o => {
-        const detailStr = (o.items || []).map(i => `${i.qty}x ${i.name}`).join(', ');
-        const cell = document.createElement('div');
-        cell.className = 'list-cell';
-        cell.innerHTML = `
-          <div class="lc-head">
-            <div>
-              <div class="lc-title">${fmtTgl(o.date)}</div>
-              <div class="lc-meta">Jam ${esc(o.time || '-')} ${payPill(o.method)}${o.source === 'online' ? ' <span class="pill pill-online">Online</span>' : ''} <span class="pill pill-orange">${o.totalCups} cup</span>${o.isFreeDrink ? ' <span class="pill pill-free">FREE DRINK</span>' : ''}</div>
+      // Tabel per tanggal: Jam | Menu | Cup | Total — ketuk baris untuk Ubah / Hapus
+      const perTgl = [];
+      list.forEach(o => { let g = perTgl.find(x => x.d === o.date); if (!g) perTgl.push(g = { d: o.date, l: [] }); g.l.push(o); });
+      tbody.innerHTML = perTgl.map(g => {
+        const tot = g.l.reduce((a, o) => a + (o.isFreeDrink ? 0 : (o.totalPrice || 0)), 0);
+        const cup = g.l.reduce((a, o) => a + (o.totalCups || 0), 0);
+        const rows = g.l.map(o => {
+          const menu = (o.items || []).map(i => `<div>${i.qty}× ${esc(i.name)}${i.toppings && i.toppings.length ? ` <span class="rw-top">+ ${esc(i.toppings.join(', '))}</span>` : ''}</div>`).join('');
+          const tags = `${payPill(o.method)}${o.source === 'online' ? ' <span class="pill pill-online">Online</span>' : ''}${o.isFreeDrink ? ' <span class="pill pill-free">FREE</span>' : ''}`;
+          return `<div class="rw-row" data-id="${esc(o.orderId)}" onclick="bukaAksiRiwayat(this)">
+              <span class="rw-j">${esc(o.time || '-')}</span>
+              <span class="rw-m">${menu}<div class="rw-tags">${tags}</div></span>
+              <span class="rw-c">${o.totalCups || 0}</span>
+              <span class="rw-t ${o.isFreeDrink ? 'strike' : ''}">${formatRp(o.totalPrice)}</span>
             </div>
-            <div class="lc-amount ${o.isFreeDrink ? 'strike' : 'green'}">${formatRp(o.totalPrice)}</div>
-          </div>
-          <div class="lc-body">${esc(detailStr)}</div>
-          <div class="lc-actions icons">
-            ${o.source === 'online' ? '' : `<button onclick="openEditOrderModal('${o.orderId}', true)" class="icon-act edit" aria-label="Ubah pesanan / free drink">${ICON_EDIT}</button>`}
-            <button onclick="deleteSingleOrder('${o.orderId}')" class="icon-act del" aria-label="Hapus pesanan">${ICON_TRASH}</button>
-          </div>
-        `;
-        tbody.appendChild(cell);
-      });
+            <div class="rw-act hidden">${o.source === 'online' ? '' : `<button type="button" class="btn btn-tinted btn-sm" onclick="event.stopPropagation(); openEditOrderModal('${o.orderId}', true)">${ICON_EDIT} Ubah</button>`}<button type="button" class="btn btn-red-tinted btn-sm" onclick="event.stopPropagation(); deleteSingleOrder('${o.orderId}')">${ICON_TRASH} Hapus</button></div>`;
+        }).join('');
+        return `<div class="rw-day"><div class="rw-dh"><b>${tanggalPanjang(g.d)}</b><span>${g.l.length} transaksi · ${formatRp(tot)}</span></div>
+          <div class="rw-tb"><div class="rw-th"><span>Jam</span><span>Menu</span><span class="rw-c">Cup</span><span class="rw-t">Total</span></div>${rows}
+          <div class="rw-ft"><span>Total ${cup} cup</span><span class="rw-t">${formatRp(tot)}</span></div></div></div>`;
+      }).join('') + '<p class="rw-hint">Ketuk baris untuk ubah atau hapus</p>';
+    }
+    function bukaAksiRiwayat(row) {
+      const act = row.nextElementSibling, buka = act.classList.contains('hidden');
+      document.querySelectorAll('#allHistoryTableBody .rw-act').forEach(a => a.classList.add('hidden'));
+      document.querySelectorAll('#allHistoryTableBody .rw-row.open').forEach(a => a.classList.remove('open'));
+      if (buka) { act.classList.remove('hidden'); row.classList.add('open'); }
     }
 
     function filterHistoryTable() {
