@@ -757,7 +757,17 @@
   let botTimer = null, autoTimer = null, beatTimer = null, rafLoop = 0, autoTick = null;
   const AUTO_ROLL_MS = 6000;
 
-  function seatName(ctx, s) { const x = (ctx.seats || [])[s]; return x ? (x.key === myKey && !ctx.spectator ? 'Kamu' : x.name) : 'Kosong'; }
+  function seatName(ctx, s) { const x = (ctx.seats || [])[s]; return x ? (x.key === myKey && !ctx.spectator ? 'Kamu' : x.name + (!x.bot && dimainkanBot(x) ? ' (bot)' : '')) : 'Kosong'; }
+  // kursi orang yang sedang keluar/terputus (refresh, tutup web, atau pilih keluar) sementara dimainkan bot;
+  // begitu orangnya masuk lagi, kursinya otomatis dikembalikan
+  function dimainkanBot(seat) {
+    if (!seat) return false;
+    if (seat.bot || seat.away) return true;
+    if (!cur || cur.mode === 'bot' || !cur.roomId) return false;
+    if (seat.key === myKey && cur.mode !== 'watch') return false;
+    const r = rooms[cur.roomId];
+    return !!r && r.status === 'playing' && !fresh((r.online || {})[seat.key]);
+  }
   function seatAva(ctx, s) {
     const x = (ctx.seats || [])[s];
     if (!x) return '';
@@ -838,7 +848,7 @@
       <div class="gx-title">Keluar dari game?</div>
       <div class="gx-sub">Progres game tersimpan otomatis. Kamu bisa lanjut kapan saja dari Hiburan → Game.</div>
       <button type="button" class="btn btn-primary btn-lg btn-block" onclick="TTG._simpanKeluar()"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg> Jeda, Lanjutkan Nanti</button>
-      <button type="button" class="btn btn-red-tinted btn-lg btn-block" style="margin-top:10px" onclick="TTG._akhiri()">${lain ? 'Keluar, Kursiku Dimainkan Komputer' : 'Akhiri Game'}</button>
+      <button type="button" class="btn btn-red-tinted btn-lg btn-block" style="margin-top:10px" onclick="TTG._akhiri()">${lain ? 'Keluar, Bot Gantikan Aku Dulu' : 'Akhiri Game'}</button>${lain ? '<div class="gx-sub" style="margin-top:8px">Bot memainkan bidakmu selama kamu keluar. Kamu bisa masuk lagi kapan saja dari Hiburan → Game → Lanjutkan.</div>' : ''}
       <button type="button" class="btn btn-gray btn-lg btn-block" style="margin-top:10px" onclick="TTG._batalKeluar()">Batal</button></div>`;
     box.classList.remove('hidden');
   }
@@ -895,7 +905,7 @@
         } else if (mine >= 0) {
           const orangLain = seats.some((x, i) => i !== mine && x && !x.bot);
           if (!orangLain) { roomsRef.child(cur.roomId).remove(); cur = null; tutupPodium(); $('gameView').classList.add('hidden'); renderPane(); return; }
-          if (r.status === 'playing') db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}`).update({ bot: true, name: seats[mine].name + ' (bot)' });
+          if (r.status === 'playing') db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}`).update({ away: true });   // bot gantikan sementara, bisa masuk lagi
         }
         roomsRef.child(cur.roomId).update({ activeAt: Date.now() });
       }
@@ -1001,13 +1011,13 @@
       }
     }
     const seat = cur.seats[st.turn];
-    if (!seat || !seat.bot || !isDriver() || isPaused()) return;
+    if (!dimainkanBot(seat) || !isDriver() || isPaused()) return;
     const v = st.v;
     botTimer = setTimeout(() => {
       if (!cur || !cur.state || cur.state.v !== v || isPaused() || cur.anim) return;
       const eng = ENG[cur.game];
       const s = cur.state.turn;
-      if (!cur.seats[s] || !cur.seats[s].bot) return;   // kursi sudah diambil alih orang
+      if (!dimainkanBot(cur.seats[s])) return;   // kursi sudah diambil alih / orangnya sudah kembali
       const after = eng.apply(cur.state, s, eng.bot(eng.norm(clone(cur.state)), s));
       if (after.v !== v) commit(after);
     }, ENG[cur.game].botDelay ? ENG[cur.game].botDelay(eng0.norm(clone(st))) : cur.game === 'domino' ? 700 : cur.game === 'congklak' ? 500 : 400);
@@ -1184,6 +1194,13 @@
       cur.shown = null; cur.state = null; cur.queue = [];
     }
     cur.mySeat = cur.mode === 'watch' ? null : (mine >= 0 ? mine : null);
+    // kembali ke meja: ambil alih lagi kursi yang tadi dimainkan bot
+    if (cur.mode === 'online' && mine >= 0 && cur.seats[mine].away && r.status === 'playing') {
+      cur.seats[mine] = Object.assign({}, cur.seats[mine], { away: null });
+      db.ref(`thaitea/games/rooms/${cur.roomId}/seats/${mine}/away`).remove();
+      roomsRef.child(cur.roomId).update({ activeAt: Date.now() });
+      triggerToast('Kamu kembali main, bot berhenti menggantikanmu');
+    }
     renderReq();
     setLive(r);
     renderPause();
@@ -1647,9 +1664,16 @@
   (document.getElementById('thaiTeaAppRoot') || document.body).appendChild(view);
   view.addEventListener('pointerdown', () => SFX.unlock(), { passive: true });
 
+  let sudahIngatkan = false;
   roomsRef.on('value', snap => {
     rooms = snap.val() || {};
     bersihkanMeja();
+    // setelah web dibuka ulang / di-refresh: ingatkan kalau masih ada game online yang sedang dimainkan bot
+    if (!sudahIngatkan && myKey && !cur) {
+      sudahIngatkan = true;
+      const g = Object.values(rooms).find(r => r && r.status === 'playing' && !r.paused && !r.solo && arr(r.seats).some(x => x && x.key === myKey && !x.bot));
+      if (g && GAMES[g.game]) setTimeout(() => triggerToast(`Game ${GAMES[g.game].name}-mu masih berjalan & dimainkan bot. Buka Hiburan → Game → Lanjutkan.`), 1500);
+    }
     if (cur && cur.roomId) onRoomUpdate();
     if (!document.getElementById('tab-hiburan').classList.contains('hidden')) renderPane();
   });
