@@ -16,7 +16,9 @@
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const arr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map(k => v[k]) : []);
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const BOT_NAMES = ['Robo Tea', 'Bot Boba', 'Bot Matcha', 'Bot Taro', 'Bot Keju', 'Bot Oreo', 'Bot Jelly'];
+  const BOT_NAMES = ['Cello', 'Muezza', 'Tina', 'Alang', 'Tumpok', 'Momoy', 'Manis', 'Koko', 'Kurok', 'Itam Buruak', 'Si Pus', 'Ujang', 'Manja', 'Celek', 'Ire'];
+  // ambil k nama bot acak yang belum dipakai (tidak ada nama kembar dalam satu meja)
+  const botAcak = (k, pakai) => { const ada = new Set(pakai || []); const pool = shuffle(BOT_NAMES.filter(x => !ada.has(x))); const out = []; for (let i = 0; i < k; i++) out.push(pool[i] || BOT_NAMES[rnd(BOT_NAMES.length)] + ' ' + (i + 2)); return out; };
   const roomsRef = db.ref('thaitea/games/rooms');
   const ROOM_TTL = 6 * 3600 * 1000;
   const SAVE_TTL = 30 * 24 * 3600 * 1000;   // game yang sedang dimainkan disimpan s.d. 30 hari (kecuali diakhiri / digeser hapus)
@@ -65,6 +67,10 @@
       land() { noise(.05, .5, 0, 900, 2); },
       step() { tone(620, .06, 'triangle', .16); tone(930, .05, 'sine', .06, .02); },
       capture() { tone(520, .32, 'sawtooth', .1, 0, 110); noise(.12, .25, .05, 600); },
+      // bidak dimakan: hantaman → "rewind" cepat → plop masuk markas
+      smash() { noise(.18, .7, 0, 260, .8); tone(190, .28, 'square', .14, 0, 45); noise(.08, .45, .02, 3200, 1.5); tone(1250, .09, 'triangle', .09, .03, 620); },
+      rewind(p) { tone(360 + p * 1500, .035, 'square', .045); noise(.02, .12, 0, 2500 + p * 4000, 4); },
+      poof() { noise(.22, .38, 0, 700, .7); tone(330, .16, 'sine', .2, 0, 880); [1319, 1760, 2093].forEach((f, i) => tone(f, .2, 'triangle', .1, .06 + i * .06)); },
       home() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .16, 'triangle', .17, i * .08)); },
       win() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .3, 'triangle', .2, i * .12)); [262, 330, 392].forEach(f => tone(f, .9, 'sine', .08, .5)); },
       seed() { tone(1500 + Math.random() * 500, .035, 'sine', .14); noise(.025, .18, 0, 5000, 4); },
@@ -82,10 +88,23 @@
     congklak: '<svg viewBox="0 0 48 48"><rect x="4" y="13" width="40" height="22" rx="11" fill="#E8B678"/><ellipse cx="9.5" cy="24" rx="3.5" ry="7" fill="#8A5527"/><ellipse cx="38.5" cy="24" rx="3.5" ry="7" fill="#8A5527"/><g fill="#8A5527"><circle cx="17" cy="19" r="2.6"/><circle cx="24" cy="19" r="2.6"/><circle cx="31" cy="19" r="2.6"/><circle cx="17" cy="29" r="2.6"/><circle cx="24" cy="29" r="2.6"/><circle cx="31" cy="29" r="2.6"/></g><g fill="#fff"><circle cx="16.5" cy="18.5" r=".9"/><circle cx="24.5" cy="29.5" r=".9"/><circle cx="38" cy="22" r="1"/></g></svg>'
   };
   const GAMES = {
-    ludo: { name: 'Ludo', desc: 'Lempar dadu 3D, bawa 4 bidak pulang', bg: 'linear-gradient(160deg,#FF8A5C,#EA4C2A)', min: 2, max: 4 },
+    ludo: {
+      name: 'Ludo', desc: 'Lempar dadu 3D, bawa 4 bidak pulang', bg: 'linear-gradient(160deg,#FF8A5C,#EA4C2A)', min: 2, max: 4,
+      // pilih warna bidak sendiri (24 warna); lawan dapat warna acak yang berbeda
+      optHtml: () => { const v = ludoPalSaved(), P = LUDO_PAL[v]; return `<div class="lu-palhead"><span class="field-label" style="margin:0;flex:1">Warna bidakmu</span><span class="lu-pawn" id="luPalPawn" style="--c:${P.c};--d:${P.d}"></span><span class="lu-palname" id="luPalName">${P.name}</span></div><div class="lu-pal" id="luPal">${LUDO_PAL.map((p, i) => `<button type="button" class="lu-sw ${i === v ? 'on' : ''}" data-i="${i}" aria-label="${p.name}" style="--c:${p.c};--d:${p.d};--l:${p.l}"></button>`).join('')}</div>`; },
+      bindOpt: () => document.querySelectorAll('#luPal .lu-sw').forEach(b => b.onclick = () => {
+        const i = +b.dataset.i, P = LUDO_PAL[i];
+        SFX.tap(); try { lsSet('tt_ludo_pal', String(i)); } catch (e) { }
+        document.querySelectorAll('#luPal .lu-sw').forEach(x => x.classList.toggle('on', x === b));
+        $('luPalPawn').style.cssText = `--c:${P.c};--d:${P.d}`; $('luPalName').textContent = P.name;
+      }),
+      readOpt: () => ({ pal: ludoPalSaved() })
+    },
     domino: { name: 'Domino Gaple', desc: 'Sambung kartu, habiskan duluan', bg: 'linear-gradient(160deg,#4A4A52,#1C1C1E)', min: 2, max: 4 },
     congklak: { name: 'Congklak', desc: 'Sebar biji, isi lumbung terbanyak', bg: 'linear-gradient(160deg,#D99A55,#9C5A22)', min: 2, max: 2 }
   };
+
+  function ludoPalSaved() { let v = 0; try { v = parseInt(lsGet('tt_ludo_pal'), 10); } catch (e) { } return v >= 0 && v < LUDO_PAL.length ? v : 0; }
 
   /* =====================================================================
      DOMINO GAPLE
@@ -215,19 +234,39 @@
   const LUDO_PATH = [[6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [0, 7], [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14], [7, 14], [8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9], [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [14, 7], [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0], [7, 0], [6, 0]];
   const LUDO_HOME = { 0: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]], 1: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]], 2: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]], 3: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]] };
   const LUDO_BASE = { 0: [0, 0], 1: [0, 9], 2: [9, 9], 3: [9, 0] };
-  const LUDO_COL = ['#F2453D', '#2DB84D', '#F7C21B', '#1F7FE0'];
-  const LUDO_DARK = ['#A31F18', '#16772D', '#B88600', '#0E4F99'];
-  const LUDO_LIGHT = ['#FF8A84', '#7BE495', '#FFE27A', '#7CB8FF'];
+  // 24 warna bidak yang bisa dipilih sebelum main: [nama, warna, gelap, terang]
+  const LUDO_PAL = [
+    ['Merah', '#F2453D', '#A31F18', '#FF8A84'], ['Hijau', '#2DB84D', '#16772D', '#7BE495'], ['Kuning', '#F7C21B', '#B88600', '#FFE27A'], ['Biru', '#1F7FE0', '#0E4F99', '#7CB8FF'],
+    ['Oranye', '#FF7A1A', '#B84A00', '#FFB27A'], ['Ungu', '#8E44D9', '#5A1F96', '#C79BF2'], ['Pink', '#FF4FA3', '#B01F68', '#FF9DCB'], ['Tosca', '#12B5A6', '#0A7268', '#6FE3D7'],
+    ['Cokelat', '#9C6233', '#5E3515', '#D3A27A'], ['Hitam', '#3A3A3C', '#111113', '#8A8A8E'], ['Abu-abu', '#9AA3AD', '#5E6670', '#D3D8DE'], ['Navy', '#24418F', '#11245A', '#7690D6'],
+    ['Marun', '#8E1B3A', '#560D22', '#D4708B'], ['Hijau Muda', '#9BD31E', '#5F8A08', '#CDF27A'], ['Langit', '#22C3EE', '#0A7FA0', '#8BE3F8'], ['Magenta', '#D42AD8', '#85148A', '#EE8CF0'],
+    ['Emas', '#D4A017', '#8A6600', '#F2D27A'], ['Salem', '#FF8C75', '#C24F3A', '#FFC2B5'], ['Lavender', '#A98BEA', '#6B4FB0', '#D9CBF7'], ['Mint', '#5FD9A0', '#23905F', '#B4F0D3'],
+    ['Zaitun', '#7D8A2E', '#4C5517', '#BCC77A'], ['Indigo', '#4B3FD1', '#2A2090', '#9D94F0'], ['Krem', '#E8C99A', '#A8834F', '#F7E7CC'], ['Putih', '#F4F4F6', '#A9ACB4', '#FFFFFF']
+  ].map(([name, c, d, l]) => ({ name, c, d, l }));
+  const LUDO_KOSONG = { name: '', c: '#D1D1D6', d: '#A1A1A6', l: '#E9E9EE' };   // sudut papan tanpa pemain
+  const luS = (st, s) => LUDO_PAL[(st.pal || [])[s]] || LUDO_PAL[st.colors[s]] || LUDO_PAL[0];   // warna kursi s
+  const luP = (st, c) => { const s = st.colors.indexOf(c); return s >= 0 && s < st.n ? luS(st, s) : LUDO_KOSONG; };   // warna sudut papan c
   const LUDO_SAFE = [0, 8, 13, 21, 26, 34, 39, 47];
   const Ludo = {
     colorsFor(n) { return n === 2 ? [0, 2] : n === 3 ? [0, 1, 2] : [0, 1, 2, 3]; },
-    init(n) {
+    init(n, opt) {
       const tokens = {};
       for (let s = 0; s < n; s++) tokens[s] = [-1, -1, -1, -1];
-      return { n, colors: this.colorsFor(n), tokens, turn: 0, dice: 0, rolled: false, winner: null, last: null, v: 1, gid: Date.now() + '' + rnd(1000) };
+      // kursi 0 (pembuat meja) memakai warna pilihannya, yang lain dapat warna acak yang berbeda
+      const mine = opt && opt.pal >= 0 && opt.pal < LUDO_PAL.length ? +opt.pal : 0;
+      // warna lawan dipilih acak di antara yang paling kontras dengan warna yang sudah dipakai
+      const rgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+      const jarak = (i, j) => { const a = rgb(LUDO_PAL[i].c), b = rgb(LUDO_PAL[j].c); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+      const pal = [mine];
+      while (pal.length < n) {
+        const cand = LUDO_PAL.map((_, i) => i).filter(i => !pal.includes(i)).map(i => ({ i, d: Math.min(...pal.map(j => jarak(i, j))) })).sort((x, y) => y.d - x.d);
+        pal.push(cand[rnd(Math.min(5, cand.length))].i);
+      }
+      return { n, colors: this.colorsFor(n), pal, tokens, turn: 0, dice: 0, rolled: false, winner: null, last: null, v: 1, gid: Date.now() + '' + rnd(1000) };
     },
     norm(st) {
       st.colors = arr(st.colors).map(Number);
+      st.pal = st.pal ? arr(st.pal).map(Number) : st.colors.slice();   // game lama: warna bawaan
       const t = {};
       for (let s = 0; s < st.n; s++) t[s] = arr((st.tokens || {})[s]).map(Number);
       st.tokens = t;
@@ -316,16 +355,16 @@
   function renderLudo(box, st, ctx) {
     st = Ludo.norm(clone(st));
     // saat bidak melompat: cukup gambar ulang kanvas (lebih ringan & mulus)
-    if (ctx.anim && ctx.anim.hop && $('luCanvas')) {
+    if (ctx.anim && (ctx.anim.hop || ctx.anim.fx) && $('luCanvas')) {
       const cv = $('luCanvas');
-      drawLudo(cv, parseInt(cv.style.width), window.devicePixelRatio || 1, st, ctx.anim.tokens, ctx.mySeat, [], ctx.anim.hop, ctx.anim.glow);
+      drawLudo(cv, parseInt(cv.style.width), window.devicePixelRatio || 1, st, ctx.anim.tokens, ctx.mySeat, [], ctx.anim.hop, ctx.anim.glow, ctx.anim.fx);
       return;
     }
     const me = ctx.mySeat;
     const myTurn = ctx.canAct && st.turn === me && st.winner === null;
     const mv = myTurn ? Ludo.movable(st, me) : [];
     const chips = [];
-    for (let s = 0; s < st.n; s++) chips.push(`<div class="gp-chip ${st.turn === s && st.winner === null ? 'turn' : ''}" style="${st.turn === s && st.winner === null ? `box-shadow:inset 0 0 0 2.5px ${LUDO_COL[st.colors[s]]},var(--shadow)` : ''}"><span class="lu-pawn" style="--c:${LUDO_COL[st.colors[s]]};--d:${LUDO_DARK[st.colors[s]]}"></span><div><b>${esc(seatName(ctx, s))}</b><small>${st.tokens[s].filter(x => x === 56).length}/4 pulang</small></div></div>`);
+    for (let s = 0; s < st.n; s++) chips.push(`<div class="gp-chip ${st.turn === s && st.winner === null ? 'turn' : ''}" style="${st.turn === s && st.winner === null ? `box-shadow:inset 0 0 0 2.5px ${luS(st, s).c},var(--shadow)` : ''}"><span class="lu-pawn" style="--c:${luS(st, s).c};--d:${luS(st, s).d}"></span><div><b>${esc(seatName(ctx, s))}</b><small>${st.tokens[s].filter(x => x === 56).length}/4 pulang</small></div></div>`);
     let status = '';
     if (st.winner === null) {
       const l = st.last;
@@ -337,7 +376,7 @@
       else if (myTurn) status = st.rolled ? `Dapat <b>${st.dice}</b>. Ketuk bidak yang menyala.` : '<b>Giliranmu!</b> Ketuk dadu untuk melempar.';
       else status = `Giliran ${esc(seatName(ctx, st.turn))}…`;
     }
-    const turnCol = LUDO_COL[st.colors[st.turn]];
+    const turnCol = luS(st, st.turn).c;
     // dadu hanya muncul saat giliran HP ini (termasuk saat dadunya sedang berputar)
     const showDice = !ctx.spectator && (ctx.anim ? (ctx.anim.rolling && ctx.anim.glow === me) : (st.turn === me && st.winner === null));
     box.innerHTML = `<div class="gp-others">${chips.join('')}</div><div class="gp-status">${status}</div>
@@ -373,7 +412,8 @@
     }
     if (myTurn && st.rolled && mv.length && new Set(mv.map(i => st.tokens[me][i])).size === 1) ctx.auto(() => ctx.act({ token: mv[0] }), 900);
   }
-  function drawLudo(cv, S, dpr, st, tokens, me, mv, hop, glowSeat) {
+  function drawLudo(cv, S, dpr, st, tokens, me, mv, hop, glowSeat, fx) {
+    const hops = hop ? [].concat(hop) : [];
     const g = cv.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const m = S * .022, u = (S - 2 * m) / 15;
@@ -387,51 +427,58 @@
       const [r0, c0] = LUDO_BASE[c];
       const active = st.colors[glowSeat] === c && st.winner === null;
       g.save();
-      if (active) { g.shadowColor = LUDO_COL[c]; g.shadowBlur = u * .9; }
-      gr = g.createLinearGradient(X(c0), Y(r0), X(c0 + 6), Y(r0 + 6)); gr.addColorStop(0, LUDO_LIGHT[c]); gr.addColorStop(.45, LUDO_COL[c]); gr.addColorStop(1, LUDO_DARK[c]);
+      const P = luP(st, c);
+      if (active) { g.shadowColor = P.c; g.shadowBlur = u * .9; }
+      gr = g.createLinearGradient(X(c0), Y(r0), X(c0 + 6), Y(r0 + 6)); gr.addColorStop(0, P.l); gr.addColorStop(.45, P.c); gr.addColorStop(1, P.d);
       g.fillStyle = gr; roundRect(g, X(c0) + 1, Y(r0) + 1, 6 * u - 2, 6 * u - 2, u * .55); g.fill();
       g.restore();
       g.fillStyle = '#FFFFFF'; roundRect(g, X(c0 + .9), Y(r0 + .9), 4.2 * u, 4.2 * u, u * .5); g.fill();
       g.strokeStyle = 'rgba(0,0,0,.08)'; g.lineWidth = 2; roundRect(g, X(c0 + .9) + 1, Y(r0 + .9) + 1, 4.2 * u - 2, 4.2 * u - 2, u * .5); g.stroke();
       [[1.75, 1.75], [1.75, 4.25], [4.25, 1.75], [4.25, 4.25]].forEach(([dr, dc]) => {
         const x = X(c0 + dc), y = Y(r0 + dr);
-        const rg = g.createRadialGradient(x - u * .15, y - u * .15, u * .1, x, y, u * .7); rg.addColorStop(0, LUDO_LIGHT[c] + '66'); rg.addColorStop(1, LUDO_COL[c] + '88');
+        const rg = g.createRadialGradient(x - u * .15, y - u * .15, u * .1, x, y, u * .7); rg.addColorStop(0, P.l + '66'); rg.addColorStop(1, P.c + '88');
         g.fillStyle = rg; g.beginPath(); g.arc(x, y, u * .66, 0, 7); g.fill();
-        g.strokeStyle = LUDO_DARK[c] + '55'; g.lineWidth = 1.5; g.stroke();
+        g.strokeStyle = P.d + '55'; g.lineWidth = 1.5; g.stroke();
       });
     });
     // jalur
     LUDO_PATH.forEach(([r, c], i) => {
       const start = [0, 13, 26, 39].indexOf(i);
-      g.fillStyle = start >= 0 ? LUDO_COL[start] : '#FFFFFF';
+      g.fillStyle = start >= 0 ? luP(st, start).c : '#FFFFFF';
       g.fillRect(X(c), Y(r), u, u);
       g.strokeStyle = '#D8D0C3'; g.lineWidth = 1; g.strokeRect(X(c) + .5, Y(r) + .5, u - 1, u - 1);
       if ([8, 21, 34, 47].includes(i)) { g.fillStyle = '#B8B0A3'; star(g, X(c + .5), Y(r + .5), u * .34); }
       if (start >= 0) { g.fillStyle = 'rgba(255,255,255,.9)'; star(g, X(c + .5), Y(r + .5), u * .32); }
     });
     [0, 1, 2, 3].forEach(c => LUDO_HOME[c].forEach(([r, cc]) => {
-      gr = g.createLinearGradient(X(cc), Y(r), X(cc + 1), Y(r + 1)); gr.addColorStop(0, LUDO_LIGHT[c]); gr.addColorStop(1, LUDO_COL[c]);
+      gr = g.createLinearGradient(X(cc), Y(r), X(cc + 1), Y(r + 1)); gr.addColorStop(0, luP(st, c).l); gr.addColorStop(1, luP(st, c).c);
       g.fillStyle = gr; g.fillRect(X(cc), Y(r), u, u);
       g.strokeStyle = 'rgba(255,255,255,.6)'; g.strokeRect(X(cc) + .5, Y(r) + .5, u - 1, u - 1);
     }));
     // panah masuk rumah
     const arrow = (r, c, rot, col) => { g.save(); g.translate(X(c + .5), Y(r + .5)); g.rotate(rot); g.fillStyle = col; g.beginPath(); g.moveTo(-u * .28, -u * .2); g.lineTo(u * .3, 0); g.lineTo(-u * .28, u * .2); g.closePath(); g.fill(); g.restore(); };
-    arrow(7, 0, 0, LUDO_COL[0]); arrow(0, 7, Math.PI / 2, LUDO_COL[1]); arrow(7, 14, Math.PI, LUDO_COL[2]); arrow(14, 7, -Math.PI / 2, LUDO_COL[3]);
+    arrow(7, 0, 0, luP(st, 0).c); arrow(0, 7, Math.PI / 2, luP(st, 1).c); arrow(7, 14, Math.PI, luP(st, 2).c); arrow(14, 7, -Math.PI / 2, luP(st, 3).c);
     // tengah
-    const tri = (c, pts) => { g.beginPath(); g.moveTo(X(pts[0][1]), Y(pts[0][0])); pts.slice(1).forEach(p => g.lineTo(X(p[1]), Y(p[0]))); g.closePath(); const tg = g.createLinearGradient(X(pts[0][1]), Y(pts[0][0]), X(7.5), Y(7.5)); tg.addColorStop(0, LUDO_COL[c]); tg.addColorStop(1, LUDO_DARK[c]); g.fillStyle = tg; g.fill(); };
+    const tri = (c, pts) => { g.beginPath(); g.moveTo(X(pts[0][1]), Y(pts[0][0])); pts.slice(1).forEach(p => g.lineTo(X(p[1]), Y(p[0]))); g.closePath(); const tg = g.createLinearGradient(X(pts[0][1]), Y(pts[0][0]), X(7.5), Y(7.5)); tg.addColorStop(0, luP(st, c).c); tg.addColorStop(1, luP(st, c).d); g.fillStyle = tg; g.fill(); };
     tri(0, [[6, 6], [7.5, 7.5], [9, 6]]); tri(1, [[6, 6], [7.5, 7.5], [6, 9]]); tri(2, [[6, 9], [7.5, 7.5], [9, 9]]); tri(3, [[9, 6], [7.5, 7.5], [9, 9]]);
     g.fillStyle = 'rgba(255,255,255,.9)'; star(g, X(7.5), Y(7.5), u * .45);
     // bidak (pion 3D)
     const spots = {}, draw = [];
     for (let s = 0; s < st.n; s++) (tokens[s] || []).forEach((t, i) => {
       let [r, c] = Ludo.cell(st, s, t, i);
-      let lift = 0;
-      if (hop && hop.s === s && hop.i === i) { r = hop.r; c = hop.c; lift = hop.lift; }
-      const k = Math.round(r * 10) + ',' + Math.round(c * 10);
+      let lift = 0, trail = null;
+      const hp = hops.find(h => h.s === s && h.i === i);
+      if (hp) { r = hp.r; c = hp.c; lift = hp.lift; trail = hp.trail; }
+      const k = hp ? 'hop' + s + i : Math.round(r * 10) + ',' + Math.round(c * 10);
       spots[k] = (spots[k] || 0) + 1;
-      draw.push({ s, i, r, c, k, n: spots[k], lift, step: t });
+      draw.push({ s, i, r, c, k, n: spots[k], lift, step: t, trail });
     });
     draw.sort((a, b) => a.r - b.r);
+    // jejak bayangan bidak yang sedang mundur cepat ke markas
+    draw.forEach(d => (d.trail || []).forEach(([tr, tc], k, all) => {
+      const P = luS(st, d.s);
+      g.save(); g.globalAlpha = .1 + .32 * (k + 1) / all.length; pawn(g, X(tc), Y(tr), u * (.7 + .25 * (k + 1) / all.length), P.c, P.d, P.l, 0); g.restore();
+    }));
     const hits = [];
     const now = performance.now();
     draw.forEach(d => {
@@ -441,8 +488,19 @@
       const can = d.s === me && mv.includes(d.i);
       const scale = many ? .78 : 1;
       if (can) { const p = (Math.sin(now / 180) + 1) / 2; g.beginPath(); g.ellipse(x, y + u * .18, u * (.48 + p * .1), u * (.2 + p * .04), 0, 0, 7); g.fillStyle = `rgba(255,255,255,${.75 - p * .3})`; g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#EA6A0A'; g.stroke(); }
-      pawn(g, x, y - (can ? Math.abs(Math.sin(now / 180)) * u * .12 : 0), u * scale, LUDO_COL[st.colors[d.s]], LUDO_DARK[st.colors[d.s]], LUDO_LIGHT[st.colors[d.s]], d.lift * u);
+      const P = luS(st, d.s);
+      pawn(g, x, y - (can ? Math.abs(Math.sin(now / 180)) * u * .12 : 0), u * scale, P.c, P.d, P.l, d.lift * u);
       if (can) hits.push({ x, y, i: d.i });
+    });
+    // efek ledakan kecil (saat bidak dimakan & saat sampai markas)
+    [].concat(fx || []).forEach(f => {
+      const x = X(f.c), y = Y(f.r), k = Math.min(1, Math.max(0, f.k));
+      g.save(); g.globalAlpha = 1 - k;
+      g.strokeStyle = f.col || '#fff'; g.lineWidth = u * .16 * (1 - k) + 1;
+      g.beginPath(); g.arc(x, y, u * (.25 + 1.1 * k), 0, 7); g.stroke();
+      g.fillStyle = f.col || '#fff';
+      for (let q = 0; q < 10; q++) { const a = q / 10 * Math.PI * 2 + f.r, rr = u * (.3 + 1.5 * k); star(g, x + Math.cos(a) * rr, y + Math.sin(a) * rr - u * .4 * k, u * .16 * (1 - k * .6)); }
+      g.restore();
     });
     return hits;
   }
@@ -464,6 +522,50 @@
   }
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function star(g, x, y, r) { g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); g.fill(); }
+  // bidak yang dimakan berjalan mundur sangat cepat menyusuri jalur sampai ke markasnya
+  async function animMakan(st, caps, tokens, s, redraw) {
+    const killer = luS(st, s).c;
+    const cv = $('luCanvas'), wrap = cv && cv.parentElement;
+    if (wrap) { wrap.classList.remove('lu-shake'); void wrap.offsetWidth; wrap.classList.add('lu-shake'); }
+    SFX.smash();
+    const [hr, hc] = Ludo.cell(st, caps[0].s, caps[0].from, caps[0].i);
+    // 1) hantaman: bidak lawan terpental sebentar
+    await tween(260, k => redraw(st, { tokens, glow: s, hop: caps.map(c => { const [r, cc] = Ludo.cell(st, c.s, c.from, c.i); return { s: c.s, i: c.i, r, c: cc, lift: Math.sin(k * Math.PI) * .9 }; }), fx: { r: hr, c: hc, k, col: killer } }));
+    // 2) mundur kilat: dari kotak tempat dimakan → kotak 0 → markas
+    const routes = caps.map(c => { const pts = []; for (let k = c.from; k >= 0; k--) pts.push(Ludo.cell(st, c.s, k, c.i)); pts.push(Ludo.cell(st, c.s, -1, c.i)); return pts; });
+    const SEG = 34, LAST = 230;   // ms per kotak, ms lompatan terakhir ke markas
+    const longest = Math.max(...routes.map(p => p.length - 1));
+    const total = (longest - 1) * SEG + LAST;
+    let lastTick = -1;
+    await tween(total, (k, ms) => {
+      const hops = routes.map((pts, j) => {
+        const n = pts.length - 1, runT = (n - 1) * SEG;
+        let pos, lift = 0;
+        if (ms < runT) { pos = ms / SEG; lift = .12; }
+        else { const q = Math.min(1, (ms - runT) / LAST); pos = n - 1 + q; lift = Math.sin(q * Math.PI) * 1.1; }
+        pos = Math.min(n, pos);
+        const a = Math.floor(pos), f = pos - a, A = pts[a], B = pts[Math.min(n, a + 1)];
+        const trail = [];
+        for (let t = 4; t >= 1; t--) { const p2 = Math.max(0, pos - t * .55), a2 = Math.floor(p2), f2 = p2 - a2, A2 = pts[a2], B2 = pts[Math.min(n, a2 + 1)]; if (p2 < pos - .01 && pos < n) trail.push([A2[0] + (B2[0] - A2[0]) * f2, A2[1] + (B2[1] - A2[1]) * f2]); }
+        return { s: caps[j].s, i: caps[j].i, r: A[0] + (B[0] - A[0]) * f, c: A[1] + (B[1] - A[1]) * f, lift, trail };
+      });
+      const tick = Math.floor(ms / SEG);
+      if (tick !== lastTick && ms < (longest - 1) * SEG) { lastTick = tick; SFX.rewind(Math.min(1, ms / Math.max(1, (longest - 1) * SEG))); }
+      redraw(st, { tokens, glow: s, hop: hops });
+    });
+    // 3) sampai markas: plop + kilau
+    caps.forEach(c => { tokens[c.s][c.i] = -1; });
+    SFX.poof();
+    await tween(380, k => redraw(st, { tokens, glow: s, fx: caps.map(c => { const [r, cc] = Ludo.cell(st, c.s, -1, c.i); return { r, c: cc, k, col: luS(st, c.s).l }; }) }));
+    if (wrap) wrap.classList.remove('lu-shake');
+  }
+  function tween(D, fn) {
+    return new Promise(res => {
+      const t0 = performance.now();
+      const f = () => { const ms = Math.min(D, performance.now() - t0); fn(ms / D, ms); if (ms < D) requestAnimationFrame(f); else res(); };
+      requestAnimationFrame(f);
+    });
+  }
   async function animLudo(prev, next, redraw) {
     const l = next.last;
     if (!prev || next.gid !== prev.gid || !l) { redraw(next); return; }
@@ -496,7 +598,7 @@
         SFX.step();
         tokens[s][i] = step; pr = nr; pc = nc;
       }
-      if (l.captured) { await sleep(120); SFX.capture(); (l.caps || []).forEach(c => { tokens[c.s][c.i] = -1; }); redraw(next, { tokens, glow: s }); await sleep(350); }
+      if (l.captured) await animMakan(next, l.caps || [], tokens, s, redraw);
       if (l.finished) SFX.home();
       redraw(next);
       if (next.winner !== null && next.winner !== undefined) SFX.win();
@@ -876,7 +978,7 @@
     opt = opt || null;
     if (game === 'congklak') n = 2;
     const seats = [{ key: myKey, name: deviceName || 'Kamu' }];
-    for (let i = 1; i < n; i++) seats.push({ bot: true, name: BOT_NAMES[i - 1] });
+    botAcak(n - 1).forEach(name => seats.push({ bot: true, name }));
     if (!myKey) {   // belum pilih nama: main lokal saja (tidak tampil di Live)
       cur = { game, mode: 'bot', seats, mySeat: 0, queue: [], anim: false, opt };
       openView(GAMES[game].name + ' · Lawan Komputer');
@@ -1080,9 +1182,8 @@
     const r = rooms[cur.roomId]; if (!r || r.host !== myKey) return;
     const humans = arr(r.seats).filter(Boolean);
     const seats = humans.slice();
-    if (isiBot) { let b = 0; while (seats.length < r.max) seats.push({ bot: true, name: BOT_NAMES[b++ % BOT_NAMES.length] }); }
-    const n = Math.max(GAMES[r.game].min, seats.length);
-    while (seats.length < n) seats.push({ bot: true, name: BOT_NAMES[seats.length % BOT_NAMES.length] });
+    const n = Math.max(GAMES[r.game].min, isiBot ? r.max : seats.length);
+    botAcak(n - seats.length, seats.map(x => x.name)).forEach(name => seats.push({ bot: true, name }));
     catat(`Mulai main ${GAMES[r.game].name} bersama ${humans.filter(x => x.key !== myKey).map(x => x.name).join(', ') || 'komputer'}`);
     roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n, r.opt || null) });
   }
@@ -1391,6 +1492,16 @@
   .dm-side{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:14px;font-weight:700;flex-wrap:wrap}
   /* Ludo */
   .lu-wrap{display:flex;justify-content:center}
+  .lu-wrap.lu-shake{animation:luShake .32s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes luShake{10%,90%{transform:translate(-2px,1px)}20%,80%{transform:translate(4px,-2px)}30%,50%,70%{transform:translate(-6px,2px)}40%,60%{transform:translate(6px,-1px)}}
+  .lu-pal{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:2px}
+  .lu-sw{position:relative;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 34% 30%,var(--l),var(--c) 48%,var(--d));box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),0 2px 5px rgba(0,0,0,.18);border:2px solid rgba(0,0,0,.06);transition:transform .15s}
+  .lu-sw:active{transform:scale(.9)}
+  .lu-sw.on{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--c),0 4px 10px rgba(0,0,0,.25);transform:scale(1.05)}
+  .lu-sw.on::after{content:'';position:absolute;left:50%;top:46%;width:30%;height:16%;border:solid #fff;border-width:0 0 3px 3px;transform:translate(-50%,-50%) rotate(-45deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  .lu-palhead{display:flex;align-items:center;gap:10px;margin:16px 2px 10px}
+  .lu-palhead .lu-pawn{transform:scale(1.25)}
+  .lu-palname{font-weight:800}
   .lu-wrap canvas{border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);touch-action:manipulation}
   .lu-pawn{width:22px;height:26px;flex:none;position:relative}
   .lu-pawn::before{content:'';position:absolute;left:50%;top:0;width:13px;height:13px;margin-left:-6.5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--c) 45%,var(--d))}
