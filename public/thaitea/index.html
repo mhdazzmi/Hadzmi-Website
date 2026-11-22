@@ -4965,6 +4965,11 @@
       return o.status;
     }
     function onJam(ts) { return ts ? new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '-'; }
+    // pesanan baru selalu "dijemput saat siap"; pesanan lama mungkin masih punya jam jadwal
+    function onJemput(o) {
+      if (!o.pickupLabel || o.pickupLabel === 'Saat siap' || o.pickupLabel === 'Sekarang') return 'Jemput saat siap';
+      return 'Jemput jam ' + o.pickupLabel;
+    }
     function onItems(items) {
       return (items || []).map(i => `<b>${i.qty}x</b> ${esc(i.name)}${i.toppings && i.toppings.length ? ` <span style="color:var(--text2)">+ ${esc(i.toppings.join(', '))}</span>` : ''}`).join('<br>');
     }
@@ -5040,7 +5045,7 @@
     function kartuOnline(o) {
       const st = onStatus(o);
       const meta = [
-        `<span class="pill">🕒 Jemput ${o.pickupLabel === 'Sekarang' ? 'SEKARANG' : 'jam ' + esc(o.pickupLabel)}</span>`,
+        `<span class="pill">🕒 ${onJemput(o)}</span>`,
         `<span class="pill">Pesan ${onJam(o.createdAt)}</span>`,
         `<span class="pill">${o.totalCups} cup</span>`
       ];
@@ -5294,7 +5299,7 @@
     function cekAlarmOnline() {
       const perlu = onlineList.filter(o => o.status === 'cek' && !onlineAck.has(o.id));
       if (!perlu.length) { if (alarmOn || !document.getElementById('onAlarm').classList.contains('hidden')) stopAlarm(); return; }
-      mulaiAlarm(perlu.map(o => `#${o.no} · ${o.name} · ${formatRp(o.totalPrice)}\nJemput ${o.pickupLabel === 'Sekarang' ? 'SEKARANG' : 'jam ' + o.pickupLabel}`).join('\n\n') + '\n\nCek pembayaran QRIS di ShopeePay Partner');
+      mulaiAlarm(perlu.map(o => `#${o.no} · ${o.name} · ${formatRp(o.totalPrice)}\n${onJemput(o)}`).join('\n\n') + '\n\nCek pembayaran QRIS di ShopeePay Partner');
     }
     function lihatPesananOnline() {
       onlineList.filter(o => o.status === 'cek').forEach(o => onlineAck.add(o.id));

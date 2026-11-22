@@ -106,19 +106,9 @@ export async function handlePesan(request, env, url, ctx) {
     const info = infoFrom(settings);
     if (!info.canOrder) return json({ error: info.closedReason || 'Kedai sedang tutup.' }, 409);
 
-    // Jam jemput: "now" atau "HH:MM" (11.30 AM – 11.45 PM, tidak boleh sudah lewat)
+    // Tidak ada jadwal: semua pesanan dijemput saat sudah siap (supaya es tidak keburu mencair)
     const nowMin = wibMinutes();
-    let pickup = 'now', pickupMin = nowMin;
-    if (b.pickup === 'now') {
-      if (nowMin < OPEN_MIN || nowMin > CLOSE_MIN) return json({ error: `Pilihan "Sekarang" hanya bisa jam ${JAM_TXT}. Pilih jam jemput.` }, 400);
-    } else {
-      const m = /^(\d{2}):(\d{2})$/.exec(String(b.pickup || ''));
-      if (!m) return json({ error: 'Pilih dulu jam jemputnya.' }, 400);
-      pickupMin = Number(m[1]) * 60 + Number(m[2]);
-      if (pickupMin < OPEN_MIN || pickupMin > CLOSE_MIN) return json({ error: `Jam jemput hanya bisa ${JAM_TXT}.` }, 400);
-      if (pickupMin < nowMin - 2) return json({ error: 'Jam jemput sudah lewat, pilih jam lain.' }, 400);
-      pickup = m[1] + ':' + m[2];
-    }
+    const pickup = 'now', pickupMin = nowMin;
 
     // Hitung ulang harga di server (harga dari HP tidak dipakai)
     const off = settings.toppingOff || {};
@@ -158,7 +148,7 @@ export async function handlePesan(request, env, url, ctx) {
     const id = 'ON-' + now + '-' + Math.random().toString(36).slice(2, 6);
     const order = {
       id, no, cid, nick, gender, name, date,
-      pickup, pickupMin, pickupLabel: pickup === 'now' ? 'Sekarang' : jam12(pickupMin),
+      pickup, pickupMin, pickupLabel: 'Saat siap',
       items, totalCups, totalPrice,
       status: 'bayar', createdAt: now
     };
@@ -303,7 +293,7 @@ function safeFile(u) { return typeof u === 'string' && /^\/api\/thaitea\/file\/[
 function notifPesanan(order, ke) {
   return {
     title: (ke > 1 ? `⏰ PENGINGAT ${ke}/${NUDGE_MAX} · ` : '🔔 ') + 'PESANAN ONLINE #' + order.no,
-    body: `${order.name} · ${rp(order.totalPrice)} · jemput ${order.pickupLabel}. ` + (ke > 1 ? 'Belum dicek! ' : '') + `Cek pembayaran QRIS${order.payerName ? ' a.n. ' + order.payerName : ''}.`,
+    body: `${order.name} · ${rp(order.totalPrice)}. ` + (ke > 1 ? 'Belum dicek! ' : '') + `Cek pembayaran QRIS${order.payerName ? ' a.n. ' + order.payerName : ''}.`,
     urgent: true, tag: 'online-' + order.id
   };
 }
