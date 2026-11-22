@@ -321,12 +321,17 @@
     .rw-dh b { font-size: 15px; font-weight: 800; white-space: nowrap; }
     .rw-dh span { font-size: 12.5px; color: var(--text2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rw-tb { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
-    .rw-th, .rw-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 26px auto; gap: 6px; padding: 11px 12px; align-items: center; }
+    .rw-th, .rw-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) 30px 90px; gap: 6px; padding: 11px 12px; align-items: baseline; }
+    .rw-th { align-items: center; }
+    .rw-tb.blj .rw-th, .rw-tb.blj .rw-row { grid-template-columns: 54px minmax(0, 1fr) 96px; }
     .rw-th { background: #F7F5F2; font-size: 12px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; padding-top: 9px; padding-bottom: 9px; }
     .rw-row { font-size: 14.5px; cursor: pointer; border-top: .5px solid var(--sep); }
     .rw-row.open { background: #FFF6EE; }
     .rw-row:active { background: #FFF1E4; }
-    .rw-j { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .rw-j { font-weight: 800; font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rw-j small { font-size: 9.5px; font-weight: 800; color: var(--text2); margin-left: 2px; }
+    .rw-t.red { color: var(--red); } .rw-t.amber { color: var(--amber); }
+    .rw-note { margin-top: 3px; font-size: 12.5px; color: var(--text2); }
     .rw-m { line-height: 1.35; min-width: 0; }
     .rw-top { color: var(--text2); font-size: 13px; }
     .rw-tags { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; }
@@ -503,6 +508,10 @@
     .room-last.unread { color: var(--text); font-weight: 700; }
     .room-last { font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .room-unread { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+    .room-row.hold { background: var(--bg); }
+    .room-row.pinned { background: #FFFAF4; }
+    .room-pin { color: var(--accent); margin-right: 5px; vertical-align: -2px; }
+    .room-row { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
     .room-chev { color: #C7C7CC; margin-left: 4px; display: inline-flex; }
     /* Chat bergaya iMessage (warna oranye thai tea) */
     .chat-view { position: fixed; inset: 0; z-index: 1000000; background: #fff; display: flex; flex-direction: column; height: 100%; }
@@ -991,7 +1000,7 @@
                 <span id="expenseTotalLabel" style="font-size:20px;font-weight:800;color:var(--red)">Rp 0</span>
               </div>
             </div>
-            <div id="expensesTableBody" class="list" style="margin-top:12px"></div>
+            <div id="expensesTableBody" class="rw-wrap" style="margin-top:12px"></div>
           </div>
         </div>
       </section>
@@ -1580,7 +1589,7 @@
         </div>
         <div class="sheet-foot">
           <button onclick="confirmOrderAddition()" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus"></i> Tambah · <span id="modalSubtotalPrice">Rp 15.000</span>
+            Simpan · <span id="modalSubtotalPrice">Rp 15.000</span>
           </button>
         </div>
       </div>
@@ -1885,7 +1894,7 @@
   <script>
     /* 1. DATA KATALOG LENGKAP MENU THAI TEA */
     const MENU_DATABASE = [
-      { id: 'ttp-ori', name: 'Thai Tea Ori Premium', price: 15000, category: 'thai-premium', catLabel: 'Thai Tea Premium', grad: 'from-amber-600 to-orange-700' },
+      { id: 'ttp-ori', name: 'Thai Tea Premium', price: 15000, category: 'thai-premium', catLabel: 'Thai Tea Premium', grad: 'from-amber-600 to-orange-700' },
       { id: 'ttp-matcha', name: 'Matcha Premium', price: 15000, category: 'thai-premium', catLabel: 'Thai Tea Premium', grad: 'from-emerald-600 to-green-700' },
       { id: 'ttp-coklat', name: 'Coklat Premium', price: 15000, category: 'thai-premium', catLabel: 'Thai Tea Premium', grad: 'from-yellow-900 to-amber-950' },
       { id: 'ttp-tarro', name: 'Tarro Premium', price: 15000, category: 'thai-premium', catLabel: 'Thai Tea Premium', grad: 'from-purple-600 to-indigo-800' },
@@ -2796,7 +2805,7 @@
       const allMsgs = chatData[ROOM_ALL] || [];
       const lastAll = allMsgs[allMsgs.length - 1];
       const onlineCount = Object.keys(usersData).filter(isOnline).length;
-      rows.push({ room: ROOM_ALL, ts: Infinity, html: `<button type="button" class="room-row" onclick="bukaChat('${ROOM_ALL}')">
+      rows.push({ room: ROOM_ALL, ts: Infinity, html: `<button type="button" class="room-row" data-room="${ROOM_ALL}" onclick="klikRoom('${ROOM_ALL}')">
           <span class="ava ava-logo">${chatLogoSvg()}</span>
           <div class="room-main"><div class="room-top"><span class="room-name">Chat Semua</span><span class="room-time">${lastAll ? jamWIB(lastAll.ts) : ''}<span class="room-chev">›</span></span></div>
           <div class="room-bottom"><span class="room-last ${unreadCount(ROOM_ALL) && lastAll ? 'unread' : ''}">${unreadCount(ROOM_ALL) && lastAll ? esc(lastAll.name + ': ' + previewPesan(lastAll)) : esc(onlineCount + ' orang online')}</span>${unreadCount(ROOM_ALL) ? `<span class="room-unread">${unreadCount(ROOM_ALL)}</span>` : ''}</div></div></button>` });
@@ -2805,7 +2814,7 @@
         const msgs = chatData[room] || [];
         const last = msgs[msgs.length - 1];
         const un = unreadCount(room);
-        rows.push({ room, ts: last ? last.ts : 0, html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
+        rows.push({ room, ts: last ? last.ts : 0, html: `<button type="button" class="room-row" data-room="${room}" onclick="klikRoom('${room}')">
           ${avaHtml(k, u.name)}
           <div class="room-main"><div class="room-top"><span class="room-name">${esc(u.name)}</span><span class="room-time">${last ? jamWIB(last.ts) : ''}<span class="room-chev">›</span></span></div>
           <div class="room-bottom">${un && last
@@ -2818,13 +2827,56 @@
         const last = msgs[msgs.length - 1];
         const un = unreadCount(room);
         const nm = r.nick || 'Customer';
-        rows.push({ room, ts: last ? last.ts : (r.lastTs || 0), html: `<button type="button" class="room-row" onclick="bukaChat('${room}')">
+        rows.push({ room, ts: last ? last.ts : (r.lastTs || 0), html: `<button type="button" class="room-row" data-room="${room}" onclick="klikRoom('${room}')">
           ${avaHtml('cs_' + nm, nm)}
           <div class="room-main"><div class="room-top"><span class="room-name">${esc(nm)} <span class="pill pill-online" style="font-size:11px;padding:1px 7px">Customer</span></span><span class="room-time">${last ? jamWIB(last.ts) : ''}<span class="room-chev">›</span></span></div>
           <div class="room-bottom"><span class="room-last ${un ? 'unread' : ''}">${esc(last ? (last.from === 'cs' ? '' : 'Kamu: ') + previewPesan(last) : (r.lastText || ''))}</span>${un ? `<span class="room-unread">${un}</span>` : ''}</div></div></button>` });
       });
-      rows.sort((a, b) => b.ts - a.ts);
-      box.innerHTML = myKey ? rows.map(r => r.html).join('') : '<div class="empty">Pilih nama pengguna dulu di Pengaturan.</div>';
+      const pins = ambilPinChat().filter(r => rows.some(x => x.room === r));
+      rows.sort((a, b) => {
+        const pa = pins.indexOf(a.room), pb = pins.indexOf(b.room);
+        if (pa !== -1 || pb !== -1) return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+        return b.ts - a.ts;
+      });
+      rows.forEach(r => { if (pins.includes(r.room)) r.html = r.html.replace('class="room-row"', 'class="room-row pinned"').replace('<span class="room-time">', `<span class="room-time">${ICON_PIN}`); });
+      box.innerHTML = myKey ? rows.map(r => r.html).join('') + '<p class="rw-hint">Tekan lama chat untuk pin (maks. 2)</p>' : '<div class="empty">Pilih nama pengguna dulu di Pengaturan.</div>';
+      pasangTahanRoom(box);
+    }
+    // Pin chat (maks. 2) — tekan lama baris chat. Disimpan di HP ini.
+    var ICON_PIN = '<svg class="room-pin" viewBox="0 0 24 24" width="14" height="14" aria-label="Disematkan"><path fill="currentColor" d="M16 3l5 5-2.2.9-3.6 3.6.6 4.3-1.4 1.4-4.2-4.2L5 19.2 4.8 19l4.2-5.2-4.2-4.2L6.2 8.2l4.3.6 3.6-3.6z"/></svg>';
+    function ambilPinChat() { try { const v = JSON.parse(localStorage.getItem('tt_chat_pin') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+    function simpanPinChat(v) { try { localStorage.setItem('tt_chat_pin', JSON.stringify(v)); } catch (e) { } }
+    let roomBaruDitahan = false;
+    function klikRoom(room) { if (roomBaruDitahan) { roomBaruDitahan = false; return; } bukaChat(room); }
+    function pasangTahanRoom(box) {
+      if (box.dataset.tahan) return;
+      box.dataset.tahan = '1';
+      let t = null, row = null;
+      const batal = () => { if (row) row.classList.remove('hold'); if (t) { clearTimeout(t); t = null; } };
+      box.addEventListener('touchstart', e => {
+        row = e.target.closest('.room-row'); if (!row) return;
+        row.classList.add('hold');
+        t = setTimeout(() => { t = null; row.classList.remove('hold'); roomBaruDitahan = true; setTimeout(() => { roomBaruDitahan = false; }, 800); try { navigator.vibrate && navigator.vibrate(30); } catch (er) { } menuPinChat(row.dataset.room); }, 550);
+      }, { passive: true });
+      ['touchend', 'touchcancel', 'touchmove'].forEach(ev => box.addEventListener(ev, batal, { passive: true }));
+      box.addEventListener('contextmenu', e => { const r = e.target.closest('.room-row'); if (!r) return; e.preventDefault(); batal(); menuPinChat(r.dataset.room); });
+    }
+    async function menuPinChat(room) {
+      if (!room) return;
+      let pins = ambilPinChat();
+      const sudah = pins.includes(room);
+      if (sudah) {
+        if (!(await iosConfirm('Chat ini tidak akan disematkan di atas lagi.', { title: 'Lepas Pin Chat?', okText: 'Lepas Pin' }))) return;
+        simpanPinChat(pins.filter(r => r !== room));
+        triggerToast('Pin chat dilepas');
+      } else {
+        const aktif = pins.filter(r => document.querySelector(`#chatRoomList .room-row[data-room="${r}"]`));
+        if (aktif.length >= 2) { await iosDialog({ title: '📌 Pin Penuh', message: 'Maksimal 2 chat yang bisa di-pin. Tekan lama chat yang sudah di-pin untuk melepasnya dulu.', okText: 'Mengerti', cancelText: 'Tutup' }); return; }
+        if (!(await iosConfirm('Chat ini akan selalu tampil paling atas.', { title: '📌 Pin Chat?', okText: 'Pin' }))) return;
+        simpanPinChat([...aktif, room]);
+        triggerToast('📌 Chat di-pin');
+      }
+      renderChatRooms();
     }
     setInterval(() => { if (!document.hidden) renderChatRooms(); }, 30000);
     function renderChatHead() {
@@ -3301,7 +3353,7 @@
 
       ordersRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        ordersList = data ? Object.values(data).sort((a, b) => b.orderId > a.orderId ? 1 : -1) : [];
+        ordersList = data ? Object.values(data).map(o => { (o && o.items || []).forEach(i => { if (i && i.name === 'Thai Tea Ori Premium') i.name = 'Thai Tea Premium'; }); return o; }).sort((a, b) => b.orderId > a.orderId ? 1 : -1) : [];
         updateDailyOrdersView();
         renderInventoryUI();
         if (analyticsVisible()) calculateAndRenderAnalytics();
@@ -3310,7 +3362,7 @@
 
       expensesRef.on('value', (snapshot) => {
         const data = snapshot.val();
-        expensesList = data ? Object.values(data).sort((a, b) => b.expenseId > a.expenseId ? 1 : -1) : [];
+        expensesList = data ? Object.values(data).map(e => (e && e.title ? Object.assign(e, { title: String(e.title).replace(' (Total Saja)', '') }) : e)).sort((a, b) => b.expenseId > a.expenseId ? 1 : -1) : [];
         renderExpensesList();
         updateExpenseSummaries();
         if (analyticsVisible()) calculateAndRenderAnalytics();
@@ -4067,7 +4119,7 @@
         triggerToast('Lengkapi tanggal dan nominal belanja!', true);
         return;
       }
-      if (isQuick || !title) title = 'Belanja Bahan Baku (Total Saja)';
+      if (isQuick || !title) title = 'Belanja Bahan Baku';
 
       if (unitVal === 'Aset') {
         const assetId = 'AST-' + Date.now();
@@ -4251,26 +4303,25 @@
         return;
       }
 
-      list.forEach(e => {
-        const displayTitle = (e.title || '').replace('[ASET] ', '');
-        const cell = document.createElement('div');
-        cell.className = 'list-cell';
-        cell.innerHTML = `
-          <div class="lc-head">
-            <div style="min-width:0">
-              <div class="lc-title">${esc(displayTitle)}</div>
-              <div class="lc-meta">${fmtTgl(e.date)}${e.qty ? ` <span class="pill pill-orange">${esc(e.qty)} ${esc(e.unit || '')}</span>` : ''}${e.isAsset ? ' <span class="pill pill-amber">Aset</span>' : ''}</div>
+      // Tabel per tanggal: Jam | Belanja | Total — ketuk baris untuk Ubah / Hapus
+      const perTgl = [];
+      list.forEach(e => { let g = perTgl.find(x => x.d === e.date); if (!g) perTgl.push(g = { d: e.date, l: [] }); g.l.push(e); });
+      tbody.innerHTML = perTgl.map(g => {
+        const tot = g.l.reduce((a, e) => a + (e.amount || 0), 0);
+        const rows = g.l.map(e => {
+          const judul = (e.title || '').replace('[ASET] ', '').replace(' (Total Saja)', '');
+          const tags = `${e.qty ? `<span class="pill pill-orange">${esc(e.qty)} ${esc(e.unit || '')}</span>` : ''}${e.isAsset ? '<span class="pill pill-amber">Aset</span>' : ''}`;
+          return `<div class="rw-row" onclick="bukaAksiRiwayat(this)">
+              <span class="rw-j">${jam12Riwayat(jamDariId(e.expenseId))}</span>
+              <span class="rw-m"><div>${esc(judul)}</div>${e.note ? `<div class="rw-note">${esc(e.note)}</div>` : ''}${tags ? `<div class="rw-tags">${tags}</div>` : ''}</span>
+              <span class="rw-t ${e.isAsset ? 'amber' : 'red'}">${formatRp(e.amount)}</span>
             </div>
-            <div class="lc-amount ${e.isAsset ? 'amber' : 'red'}">${formatRp(e.amount)}</div>
-          </div>
-          ${e.note ? `<div class="lc-note">${esc(e.note)}</div>` : ''}
-          <div class="lc-actions icons">
-            <button onclick="openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})" class="icon-act edit" aria-label="Ubah pengeluaran">${ICON_EDIT}</button>
-            <button onclick="deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})" class="icon-act del" aria-label="Hapus pengeluaran">${ICON_TRASH}</button>
-          </div>
-        `;
-        tbody.appendChild(cell);
-      });
+            <div class="rw-act hidden"><button type="button" class="btn btn-tinted btn-sm" onclick="event.stopPropagation(); openEditExpenseModal('${e.expenseId}', ${!!e.isAsset})">${ICON_EDIT} Ubah</button><button type="button" class="btn btn-red-tinted btn-sm" onclick="event.stopPropagation(); deleteSingleExpense('${e.expenseId}', ${!!e.isAsset})">${ICON_TRASH} Hapus</button></div>`;
+        }).join('');
+        return `<div class="rw-day"><div class="rw-dh"><b>${tanggalPanjang(g.d)}</b><span>${g.l.length} catatan · ${formatRp(tot)}</span></div>
+          <div class="rw-tb blj"><div class="rw-th"><span>Jam</span><span>Belanja</span><span class="rw-t">Total</span></div>${rows}
+          <div class="rw-ft"><span>Total</span><span class="rw-t red">${formatRp(tot)}</span></div></div></div>`;
+      }).join('') + '<p class="rw-hint">Ketuk baris untuk ubah atau hapus</p>';
     }
 
     async function openEditExpenseModal(id, isAsset = false) {
@@ -4656,12 +4707,12 @@
     }
 
     /* 7. TAB 4: RIWAYAT & CADANGAN DATA */
-    // Format tampilan tanggal: 2026-11-21 → 21-Nov-2026 (data di database tetap YYYY-MM-DD)
+    // Format tampilan tanggal: 2026-11-21 → 21 Nov 2026 (data di database tetap YYYY-MM-DD)
     const BULAN_SINGKAT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     function fmtTgl(iso) {
       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
       if (!m) return iso || '-';
-      return `${m[3]}-${BULAN_SINGKAT[parseInt(m[2], 10) - 1] || m[2]}-${m[1]}`;
+      return `${m[3]} ${BULAN_SINGKAT[parseInt(m[2], 10) - 1] || m[2]} ${m[1]}`;
     }
 
     // Tab Riwayat: default hanya hari ini, bisa pilih tanggal lain
@@ -4716,7 +4767,7 @@
           const menu = (o.items || []).map(i => `<div>${i.qty}× ${esc(i.name)}${i.toppings && i.toppings.length ? ` <span class="rw-top">+ ${esc(i.toppings.join(', '))}</span>` : ''}</div>`).join('');
           const tags = `${payPill(o.method)}${o.source === 'online' ? ' <span class="pill pill-online">Online</span>' : ''}${o.isFreeDrink ? ' <span class="pill pill-free">FREE</span>' : ''}`;
           return `<div class="rw-row" data-id="${esc(o.orderId)}" onclick="bukaAksiRiwayat(this)">
-              <span class="rw-j">${esc(o.time || '-')}</span>
+              <span class="rw-j">${jam12Riwayat(o.time)}</span>
               <span class="rw-m">${menu}<div class="rw-tags">${tags}</div></span>
               <span class="rw-c">${o.totalCups || 0}</span>
               <span class="rw-t ${o.isFreeDrink ? 'strike' : ''}">${formatRp(o.totalPrice)}</span>
@@ -4728,10 +4779,22 @@
           <div class="rw-ft"><span>Total ${cup} cup</span><span class="rw-t">${formatRp(tot)}</span></div></div></div>`;
       }).join('') + '<p class="rw-hint">Ketuk baris untuk ubah atau hapus</p>';
     }
+    // "14.05" / "14:05" → 02:05 PM (format 12 jam)
+    function jam12Riwayat(t) {
+      const m = /(\d{1,2})[.:](\d{2})/.exec(t || '');
+      if (!m) return esc(t || '-');
+      const h = parseInt(m[1], 10) % 24;
+      return `${String(h % 12 || 12).padStart(2, '0')}:${m[2]}<small>${h < 12 ? 'AM' : 'PM'}</small>`;
+    }
+    function jamDariId(id) {
+      const n = parseInt(String(id || '').replace(/^\D+-/, ''), 10);
+      return n > 1e12 ? jamWIB(n) : '';
+    }
     function bukaAksiRiwayat(row) {
       const act = row.nextElementSibling, buka = act.classList.contains('hidden');
-      document.querySelectorAll('#allHistoryTableBody .rw-act').forEach(a => a.classList.add('hidden'));
-      document.querySelectorAll('#allHistoryTableBody .rw-row.open').forEach(a => a.classList.remove('open'));
+      const wadah = row.closest('.rw-wrap');
+      wadah.querySelectorAll('.rw-act').forEach(a => a.classList.add('hidden'));
+      wadah.querySelectorAll('.rw-row.open').forEach(a => a.classList.remove('open'));
       if (buka) { act.classList.remove('hidden'); row.classList.add('open'); }
     }
 
