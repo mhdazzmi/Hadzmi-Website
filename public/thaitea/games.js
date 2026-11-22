@@ -70,6 +70,7 @@
       // bidak dimakan: hantaman → "rewind" cepat → plop masuk markas
       smash() { noise(.18, .7, 0, 260, .8); tone(190, .28, 'square', .14, 0, 45); noise(.08, .45, .02, 3200, 1.5); tone(1250, .09, 'triangle', .09, .03, 620); },
       rewind(p) { tone(360 + p * 1500, .035, 'square', .045); noise(.02, .12, 0, 2500 + p * 4000, 4); },
+      pop() { noise(.07, .5, 0, 1800, .9); tone(900 + Math.random() * 600, .25, 'sine', .07, .02, 2400); for (let k = 0; k < 6; k++) noise(.02, .14, .12 + k * .05 + Math.random() * .03, 5000 + Math.random() * 3000, 3); },
       poof() { noise(.22, .38, 0, 700, .7); tone(330, .16, 'sine', .2, 0, 880); [1319, 1760, 2093].forEach((f, i) => tone(f, .2, 'triangle', .1, .06 + i * .06)); },
       home() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .16, 'triangle', .17, i * .08)); },
       win() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .3, 'triangle', .2, i * .12)); [262, 330, 392].forEach(f => tone(f, .9, 'sine', .08, .5)); },
@@ -98,7 +99,23 @@
         document.querySelectorAll('#luPal .lu-sw').forEach(x => x.classList.toggle('on', x === b));
         $('luPalPawn').style.cssText = `--c:${P.c};--d:${P.d}`; $('luPalName').textContent = P.name;
       }),
-      readOpt: () => ({ pal: ludoPalSaved() })
+      readOpt: () => ({ pal: ludoPalSaved() }),
+      onLobby: () => {
+        const box = document.querySelector('#luPal'); if (!box) return;
+        box.insertAdjacentHTML('afterend', `<span class="field-label" style="margin:18px 2px 10px">Tema papan</span><div class="lu-tema" id="luTema">${Object.keys(LUDO_TEMA).map(k => `<button type="button" class="${k === luTema ? 'on' : ''}" data-k="${k}"><canvas width="132" height="132"></canvas><span>${LUDO_TEMA[k].name}</span></button>`).join('')}</div>`);
+        const st = Ludo.norm(Ludo.init(4, { pals: [ludoPalSaved()] }));   // satu contoh papan untuk semua gambar mini
+        document.querySelectorAll('#luTema button').forEach(b => {
+          const cv = b.querySelector('canvas'), simpan = luTema;
+          luTema = b.dataset.k;
+          drawLudo(cv, 66, 2, st, st.tokens, -1, [], null, -1);
+          luTema = simpan;
+          b.onclick = () => {
+            luTema = b.dataset.k; SFX.tap(); try { lsSet('tt_ludo_tema', luTema); } catch (e) { }
+            document.querySelectorAll('#luTema button').forEach(x => x.classList.toggle('on', x === b));
+          };
+        });
+        const on = document.querySelector('#luTema button.on'); if (on) on.parentElement.scrollLeft = on.offsetLeft - 12;
+      }
     },
     domino: { name: 'Domino Gaple', desc: 'Sambung kartu, habiskan duluan', bg: 'linear-gradient(160deg,#4A4A52,#1C1C1E)', min: 2, max: 4 },
     congklak: { name: 'Congklak', desc: 'Sebar biji, isi lumbung terbanyak', bg: 'linear-gradient(160deg,#D99A55,#9C5A22)', min: 2, max: 2 }
@@ -243,6 +260,16 @@
     ['Emas', '#D4A017', '#8A6600', '#F2D27A'], ['Salem', '#FF8C75', '#C24F3A', '#FFC2B5'], ['Lavender', '#A98BEA', '#6B4FB0', '#D9CBF7'], ['Mint', '#5FD9A0', '#23905F', '#B4F0D3'],
     ['Zaitun', '#7D8A2E', '#4C5517', '#BCC77A'], ['Indigo', '#4B3FD1', '#2A2090', '#9D94F0'], ['Krem', '#E8C99A', '#A8834F', '#F7E7CC'], ['Hijau Tua', '#1F7A4D', '#0E4A2D', '#6FC29A']
   ].map(([name, c, d, l]) => ({ name, c, d, l }));
+  // tema papan (pilihan tampilan per HP, tidak memengaruhi permainan)
+  const LUDO_TEMA = {
+    kayu: { name: 'Kayu', frame: ['#C98A4B', '#7A4520'], bg: '#FBF8F2', cell: '#FFFFFF', line: '#D8D0C3', star: '#B8B0A3', inner: '#FFFFFF', innerLine: 'rgba(0,0,0,.08)' },
+    malam: { name: 'Malam', frame: ['#2B2D52', '#090A18'], bg: '#12142A', cell: '#1C1F3A', line: '#30355E', star: '#6870B8', inner: '#171A33', innerLine: 'rgba(255,255,255,.12)', neon: true },
+    pantai: { name: 'Pantai', frame: ['#F7DDB0', '#D49B55'], bg: '#E6F7FA', cell: '#FFFDF5', line: '#BDE3EA', star: '#6CC3D6', inner: '#FFFCF2', innerLine: 'rgba(30,120,150,.15)', motif: 'ombak' },
+    batik: { name: 'Batik', frame: ['#7A3E1D', '#3A1A0A'], bg: '#F2E3C8', cell: '#FFF8EA', line: '#CDAE7C', star: '#8A5A2B', inner: '#FFF6E4', innerLine: 'rgba(90,50,20,.18)', motif: 'kawung' },
+    thaitea: { name: 'Warung Thai Tea', frame: ['#F09A4A', '#A8500F'], bg: '#FFF1E0', cell: '#FFFDF8', line: '#F0CFA8', star: '#E39A55', inner: '#FFF8EE', innerLine: 'rgba(168,80,15,.15)', motif: 'boba' }
+  };
+  let luTema = 'kayu';
+  try { const t = lsGet('tt_ludo_tema'); if (LUDO_TEMA[t]) luTema = t; } catch (e) { }
   const LUDO_KOSONG = { name: '', c: '#D1D1D6', d: '#A1A1A6', l: '#E9E9EE' };   // sudut papan tanpa pemain
   const luS = (st, s) => LUDO_PAL[(st.pal || [])[s]] || LUDO_PAL[st.colors[s]] || LUDO_PAL[0];   // warna kursi s
   const luP = (st, c) => { const s = st.colors.indexOf(c); return s >= 0 && s < st.n ? luS(st, s) : (st.kos && LUDO_PAL[st.kos[c]]) || LUDO_KOSONG; };   // warna sudut papan c
@@ -427,10 +454,11 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const m = S * .022, u = (S - 2 * m) / 15;
     const X = c => m + c * u, Y = r => m + r * u;
-    // bingkai kayu
-    let gr = g.createLinearGradient(0, 0, S, S); gr.addColorStop(0, '#C98A4B'); gr.addColorStop(1, '#7A4520');
+    const T = LUDO_TEMA[luTema] || LUDO_TEMA.kayu;
+    // bingkai
+    let gr = g.createLinearGradient(0, 0, S, S); gr.addColorStop(0, T.frame[0]); gr.addColorStop(1, T.frame[1]);
     g.fillStyle = gr; roundRect(g, 0, 0, S, S, S * .04); g.fill();
-    g.fillStyle = '#FBF8F2'; roundRect(g, m, m, S - 2 * m, S - 2 * m, S * .02); g.fill();
+    g.fillStyle = T.bg; roundRect(g, m, m, S - 2 * m, S - 2 * m, S * .02); g.fill();
     // basis tiap warna
     [0, 1, 2, 3].forEach(c => {
       const [r0, c0] = LUDO_BASE[c];
@@ -441,8 +469,10 @@
       gr = g.createLinearGradient(X(c0), Y(r0), X(c0 + 6), Y(r0 + 6)); gr.addColorStop(0, P.l); gr.addColorStop(.45, P.c); gr.addColorStop(1, P.d);
       g.fillStyle = gr; roundRect(g, X(c0) + 1, Y(r0) + 1, 6 * u - 2, 6 * u - 2, u * .55); g.fill();
       g.restore();
-      g.fillStyle = '#FFFFFF'; roundRect(g, X(c0 + .9), Y(r0 + .9), 4.2 * u, 4.2 * u, u * .5); g.fill();
-      g.strokeStyle = 'rgba(0,0,0,.08)'; g.lineWidth = 2; roundRect(g, X(c0 + .9) + 1, Y(r0 + .9) + 1, 4.2 * u - 2, 4.2 * u - 2, u * .5); g.stroke();
+      if (T.motif) { g.save(); roundRect(g, X(c0) + 1, Y(r0) + 1, 6 * u - 2, 6 * u - 2, u * .55); g.clip(); motifLudo(g, T.motif, X(c0), Y(r0), 6 * u, u); g.restore(); }
+      if (T.neon) { g.save(); g.strokeStyle = P.l; g.shadowColor = P.c; g.shadowBlur = u * .5; g.lineWidth = 2; roundRect(g, X(c0) + 3, Y(r0) + 3, 6 * u - 6, 6 * u - 6, u * .5); g.stroke(); g.restore(); }
+      g.fillStyle = T.inner; roundRect(g, X(c0 + .9), Y(r0 + .9), 4.2 * u, 4.2 * u, u * .5); g.fill();
+      g.strokeStyle = T.innerLine; g.lineWidth = 2; roundRect(g, X(c0 + .9) + 1, Y(r0 + .9) + 1, 4.2 * u - 2, 4.2 * u - 2, u * .5); g.stroke();
       [[1.75, 1.75], [1.75, 4.25], [4.25, 1.75], [4.25, 4.25]].forEach(([dr, dc]) => {
         const x = X(c0 + dc), y = Y(r0 + dr);
         const rg = g.createRadialGradient(x - u * .15, y - u * .15, u * .1, x, y, u * .7); rg.addColorStop(0, P.l + '66'); rg.addColorStop(1, P.c + '88');
@@ -453,17 +483,35 @@
     // jalur
     LUDO_PATH.forEach(([r, c], i) => {
       const start = [0, 13, 26, 39].indexOf(i);
-      g.fillStyle = start >= 0 ? luP(st, start).c : '#FFFFFF';
+      g.fillStyle = start >= 0 ? luP(st, start).c : T.cell;
       g.fillRect(X(c), Y(r), u, u);
-      g.strokeStyle = '#D8D0C3'; g.lineWidth = 1; g.strokeRect(X(c) + .5, Y(r) + .5, u - 1, u - 1);
-      if ([8, 21, 34, 47].includes(i)) { g.fillStyle = '#B8B0A3'; star(g, X(c + .5), Y(r + .5), u * .34); }
+      g.strokeStyle = T.line; g.lineWidth = 1; g.strokeRect(X(c) + .5, Y(r) + .5, u - 1, u - 1);
+      if ([8, 21, 34, 47].includes(i)) { g.fillStyle = T.star; star(g, X(c + .5), Y(r + .5), u * .34); }
       if (start >= 0) { g.fillStyle = 'rgba(255,255,255,.9)'; star(g, X(c + .5), Y(r + .5), u * .32); }
     });
     [0, 1, 2, 3].forEach(c => LUDO_HOME[c].forEach(([r, cc]) => {
       gr = g.createLinearGradient(X(cc), Y(r), X(cc + 1), Y(r + 1)); gr.addColorStop(0, luP(st, c).l); gr.addColorStop(1, luP(st, c).c);
       g.fillStyle = gr; g.fillRect(X(cc), Y(r), u, u);
-      g.strokeStyle = 'rgba(255,255,255,.6)'; g.strokeRect(X(cc) + .5, Y(r) + .5, u - 1, u - 1);
+      g.strokeStyle = T.neon ? luP(st, c).l : 'rgba(255,255,255,.6)'; g.strokeRect(X(cc) + .5, Y(r) + .5, u - 1, u - 1);
     }));
+    // jejak langkah: kotak yang baru dilewati bidak menyala (yang terbaru paling terang)
+    const L = st.last;
+    if (L && L.token !== undefined && L.from >= 0 && L.to > L.from && L.s < st.n) {
+      const hp = hops.find(h => h.s === L.s && h.i === L.token && h.step !== undefined);
+      const sampai = hp ? hp.step - 1 : L.to - 1;
+      const P = luS(st, L.s), n = L.to - L.from;
+      for (let k = L.from; k <= Math.min(sampai, 55); k++) {
+        const [r, c] = Ludo.cell(st, L.s, k, L.token);
+        const baru = (k - L.from + 1) / n;
+        g.save();
+        g.globalAlpha = .22 + .5 * baru;
+        g.fillStyle = P.l; g.shadowColor = P.c; g.shadowBlur = u * .6 * baru;
+        roundRect(g, X(c - .5) + u * .1, Y(r - .5) + u * .1, u * .8, u * .8, u * .22); g.fill();
+        g.globalAlpha = .55 + .4 * baru; g.shadowBlur = 0; g.fillStyle = P.d;
+        g.beginPath(); g.ellipse(X(c) - u * .12, Y(r) + u * .05, u * .07, u * .1, -.3, 0, 7); g.ellipse(X(c) + u * .12, Y(r) - u * .07, u * .07, u * .1, .3, 0, 7); g.fill();
+        g.restore();
+      }
+    }
     // panah masuk rumah
     const arrow = (r, c, rot, col) => { g.save(); g.translate(X(c + .5), Y(r + .5)); g.rotate(rot); g.fillStyle = col; g.beginPath(); g.moveTo(-u * .28, -u * .2); g.lineTo(u * .3, 0); g.lineTo(-u * .28, u * .2); g.closePath(); g.fill(); g.restore(); };
     arrow(7, 0, 0, luP(st, 0).c); arrow(0, 7, Math.PI / 2, luP(st, 1).c); arrow(7, 14, Math.PI, luP(st, 2).c); arrow(14, 7, -Math.PI / 2, luP(st, 3).c);
@@ -504,6 +552,24 @@
     // efek ledakan kecil (saat bidak dimakan & saat sampai markas)
     [].concat(fx || []).forEach(f => {
       const x = X(f.c), y = Y(f.r), k = Math.min(1, Math.max(0, f.k));
+      if (f.kembang) {   // kembang api: percikan sewarna bidak, jatuh pelan
+        if (k <= 0 || k >= 1) return;
+        const cols = [f.col, f.l || '#fff', '#FFD54A', '#FFFFFF'];
+        g.save();
+        for (let q = 0; q < 22; q++) {
+          const a = q / 22 * Math.PI * 2 + f.seed, sp = u * (1.6 + (q % 3) * .45) * f.size;
+          const e = 1 - Math.pow(1 - k, 3);
+          const px = x + Math.cos(a) * sp * e, py = y + Math.sin(a) * sp * e + u * 1.1 * k * k;
+          const px2 = x + Math.cos(a) * sp * Math.max(0, e - .18), py2 = y + Math.sin(a) * sp * Math.max(0, e - .18) + u * 1.1 * k * k;
+          g.globalAlpha = Math.max(0, 1 - k * k);
+          g.strokeStyle = cols[q % 4]; g.lineWidth = u * .08; g.lineCap = 'round';
+          g.beginPath(); g.moveTo(px2, py2); g.lineTo(px, py); g.stroke();
+          g.fillStyle = cols[q % 4]; g.beginPath(); g.arc(px, py, u * .09 * (1 - k * .5), 0, 7); g.fill();
+        }
+        if (k < .25) { g.globalAlpha = 1 - k * 4; g.fillStyle = '#fff'; g.shadowColor = f.col; g.shadowBlur = u; g.beginPath(); g.arc(x, y, u * .5 * (1 - k * 2), 0, 7); g.fill(); }
+        g.restore();
+        return;
+      }
       g.save(); g.globalAlpha = 1 - k;
       g.strokeStyle = f.col || '#fff'; g.lineWidth = u * .16 * (1 - k) + 1;
       g.beginPath(); g.arc(x, y, u * (.25 + 1.1 * k), 0, 7); g.stroke();
@@ -528,6 +594,23 @@
     gr = g.createRadialGradient(x - u * .08, hy - u * .08, u * .03, x, hy, u * .24); gr.addColorStop(0, '#fff'); gr.addColorStop(.25, light); gr.addColorStop(.7, col); gr.addColorStop(1, dark);
     g.fillStyle = gr; g.beginPath(); g.arc(x, hy, u * .22, 0, 7); g.fill();
     g.strokeStyle = dark; g.lineWidth = 1; g.stroke();
+  }
+  // motif hiasan di sudut markas sesuai tema
+  function motifLudo(g, motif, x0, y0, W, u) {
+    g.globalAlpha = .2; g.fillStyle = '#fff'; g.strokeStyle = '#fff'; g.lineWidth = u * .08;
+    if (motif === 'kawung') {
+      const s = u * 1.2;
+      for (let y = y0; y < y0 + W + s; y += s) for (let x = x0; x < x0 + W + s; x += s) {
+        [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dy]) => { g.beginPath(); g.ellipse(x + dx * s * .25, y + dy * s * .25, s * (dx ? .2 : .12), s * (dy ? .2 : .12), 0, 0, 7); g.stroke(); });
+        g.beginPath(); g.arc(x, y, s * .05, 0, 7); g.fill();
+      }
+    } else if (motif === 'ombak') {
+      for (let y = y0 + u * .5; y < y0 + W; y += u * .9) { g.beginPath(); for (let x = x0; x <= x0 + W; x += u * .25) g.lineTo(x, y + Math.sin((x - x0) / u * 2.2) * u * .14); g.stroke(); }
+    } else if (motif === 'boba') {
+      g.globalAlpha = .28; g.fillStyle = '#3B1F0E';
+      for (let k = 0; k < 26; k++) { const a = Math.sin(k * 91.7) * .5 + .5, b = Math.sin(k * 37.3 + 1) * .5 + .5; g.beginPath(); g.arc(x0 + a * W, y0 + b * W, u * (.16 + (k % 3) * .05), 0, 7); g.fill(); }
+    }
+    g.globalAlpha = 1;
   }
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function star(g, x, y, r) { g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); g.fill(); }
@@ -568,6 +651,16 @@
     await tween(380, k => redraw(st, { tokens, glow: s, fx: caps.map(c => { const [r, cc] = Ludo.cell(st, c.s, -1, c.i); return { r, c: cc, k, col: luS(st, c.s).l }; }) }));
     if (wrap) wrap.classList.remove('lu-shake');
   }
+  // bidak sampai rumah: kembang api sewarna bidak di segitiga tengah
+  async function animPulang(st, tokens, s, i, redraw) {
+    const P = luS(st, s);
+    const [r, c] = Ludo.cell(st, s, 56, i);
+    const ledak = [{ d: 0, dr: 0, dc: 0, size: 1 }, { d: 260, dr: -1.4, dc: -1.1, size: .75 }, { d: 480, dr: -1.1, dc: 1.3, size: .8 }, { d: 700, dr: .9, dc: .2, size: .7 }];
+    SFX.home();
+    ledak.forEach(b => setTimeout(() => SFX.pop(), b.d));
+    const D = 1500;
+    await tween(D, (k, ms) => redraw(st, { tokens, glow: s, fx: ledak.map((b, j) => ({ kembang: true, r: r + b.dr, c: c + b.dc, k: (ms - b.d) / 900, col: P.c, l: P.l, size: b.size, seed: j * 1.3 })) }));
+  }
   function tween(D, fn) {
     return new Promise(res => {
       const t0 = performance.now();
@@ -599,7 +692,7 @@
           const f = () => {
             const k = Math.min(1, (performance.now() - t0) / D);
             const e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-            redraw(next, { tokens, glow: s, hop: { s, i, r: pr + (nr - pr) * e, c: pc + (nc - pc) * e, lift: Math.sin(k * Math.PI) * .45 } });
+            redraw(next, { tokens, glow: s, hop: { s, i, step, r: pr + (nr - pr) * e, c: pc + (nc - pc) * e, lift: Math.sin(k * Math.PI) * .45 } });
             if (k < 1) requestAnimationFrame(f); else res();
           };
           requestAnimationFrame(f);
@@ -608,7 +701,7 @@
         tokens[s][i] = step; pr = nr; pc = nc;
       }
       if (l.captured) await animMakan(next, l.caps || [], tokens, s, redraw);
-      if (l.finished) SFX.home();
+      if (l.finished) await animPulang(next, tokens, s, i, redraw);
       redraw(next);
       if (next.winner !== null && next.winner !== undefined) SFX.win();
     } else redraw(next);
@@ -1544,6 +1637,11 @@
   .lu-sw.taken{background:radial-gradient(circle at 34% 30%,#F2F2F7,#C7C7CC 48%,#9A9AA0);box-shadow:inset 0 0 0 3px var(--c);cursor:not-allowed;opacity:.75}
   .lu-sw.taken span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
   .lu-sw.taken::before{content:'';position:absolute;left:14%;right:14%;top:50%;height:2.5px;margin-top:-1px;background:rgba(60,60,67,.55);transform:rotate(-45deg);border-radius:2px}
+  .lu-tema{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;margin:0 -2px;scrollbar-width:none}
+  .lu-tema::-webkit-scrollbar{display:none}
+  .lu-tema button{flex:none;width:92px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;border-radius:16px;background:var(--fill);font-size:13px;font-weight:700;color:var(--text2)}
+  .lu-tema canvas{width:66px;height:66px;border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,.18)}
+  .lu-tema button.on{background:var(--accent-soft);color:var(--accent-text);box-shadow:inset 0 0 0 2.5px var(--accent)}
   .lu-palhead{display:flex;align-items:center;gap:10px;margin:16px 2px 10px}
   .lu-palhead .lu-pawn{transform:scale(1.25)}
   .lu-palname{font-weight:800}
