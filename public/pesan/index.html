@@ -236,6 +236,9 @@
     @keyframes pulse { 50% { box-shadow: 0 0 0 9px rgba(234, 106, 10, .12); } }
     .ready { background: #34C759; color: #fff; border-radius: 12px; padding: 11px 13px; font-weight: 600; margin-top: 10px; font-size: 15px; display: flex; gap: 8px; align-items: flex-start; }
     .ready svg.i { width: 20px; height: 20px; margin-top: 1px; }
+    .melt { display: flex; gap: 8px; align-items: flex-start; background: var(--blue-soft); color: #0B4C9A; border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 14px; font-weight: 500; line-height: 1.35; }
+    .melt svg.i { width: 18px; height: 18px; margin-top: 1px; }
+    .melt.warn-melt { background: var(--amber-soft); color: var(--amber); }
     .ord-actions { display: flex; gap: 8px; margin-top: 12px; }
     .ord-actions .btn { flex: 1; }
     .ord-note { color: var(--text2); font-size: 14px; margin: 8px 0 0; }
@@ -527,17 +530,11 @@
         <div class="ios-group" id="coNameGroup">
           <label class="ios-row"><span class="ios-label">Atas Nama</span><input id="coName" class="ios-input" maxlength="30" placeholder="Wajib diisi" autocomplete="name" oninput="cekCheckout(false)"></label>
         </div>
-        <div class="ios-head">Waktu Jemput</div>
-        <div class="ios-group" id="coWhenGroup">
-          <div class="ios-row">
-            <div class="seg grow" id="coWhen">
-              <button type="button" data-w="now">Sekarang</button>
-              <button type="button" data-w="custom">Pilih Jam</button>
-            </div>
-          </div>
-          <label class="ios-row hidden" id="coTimeRow"><span class="grow">Jam Jemput</span><select id="coTime" class="ios-input" onchange="cekCheckout(false)"></select></label>
+        <div class="ios-head">Penjemputan</div>
+        <div class="ios-group">
+          <div class="ios-row"><span class="ico-sq" style="background:#34C759"><svg class="i"><use href="#i-bell"/></svg></span><span class="grow" style="font-size:15px"><b>Dijemput saat pesanan siap</b><span class="sub">Begitu minumanmu selesai dibuat, statusnya langsung berubah di menu Pesanan.</span></span></div>
         </div>
-        <div class="ios-foot" id="coWhenHint">Bisa dijemput jam 11.30 AM – 11.45 PM, Senin – Minggu.</div>
+        <div class="ios-foot">Segera jemput setelah siap ya, supaya esnya belum mencair dan rasanya tetap segar.</div>
         <div class="ios-group" style="margin-top:22px">
           <div class="ios-row total-row"><span>Total</span><b id="coTotal">Rp0</b></div>
         </div>
@@ -604,7 +601,7 @@
       <div class="ios-head">Langkah Berikutnya</div>
       <div class="ios-group" style="--inset:58px">
         <div class="ios-row"><span class="ico-sq" style="background:var(--blue)"><svg class="i"><use href="#i-receipt"/></svg></span><span class="grow" style="font-size:15px">Pantau status di menu <b>Pesanan</b>.</span></div>
-        <div class="ios-row"><span class="ico-sq" style="background:#34C759"><svg class="i"><use href="#i-bell"/></svg></span><span class="grow" style="font-size:15px">Saat statusnya <b>Siap Dijemput</b>, langsung jemput ke kedai.</span></div>
+        <div class="ios-row"><span class="ico-sq" style="background:#34C759"><svg class="i"><use href="#i-bell"/></svg></span><span class="grow" style="font-size:15px">Begitu statusnya <b>Siap Dijemput</b>, segera jemput ya, biar esnya belum mencair.</span></div>
         <div class="ios-row"><span class="ico-sq" style="background:var(--accent)"><svg class="i"><use href="#i-person"/></svg></span><span class="grow" style="font-size:15px">Sebutkan nama pesananmu ke kasir.</span></div>
       </div>
       <div class="ios-head">Alamat Kedai</div>
@@ -863,42 +860,16 @@
     }
 
     /* ============ JAM JEMPUT ============ */
-    let when = '';
-    document.querySelectorAll('#coWhen button').forEach(b => b.onclick = () => {
-      if (b.disabled) return;
-      when = b.dataset.w;
-      document.querySelectorAll('#coWhen button').forEach(x => x.classList.toggle('active', x === b));
-      $('coTimeRow').classList.toggle('hidden', when !== 'custom');
-      cekCheckout(false);
-    });
-    function siapkanJam() {
-      const m = wibMin(), o = info.hours.open, c = info.hours.close;
-      const bisaSekarang = m >= o && m <= c;
-      const btnNow = document.querySelector('#coWhen [data-w="now"]');
-      btnNow.disabled = !bisaSekarang;
-      if (!bisaSekarang && when === 'now') { when = ''; btnNow.classList.remove('active'); }
-      $('coWhenHint').textContent = bisaSekarang ? `Bisa dijemput jam ${jam12(o)} – ${jam12(c)}, Senin – Minggu.` : `Kedai mulai melayani jam ${jam12(o)}. Pilih jam jemput mulai ${jam12(o)}.`;
-      const start = Math.max(o, Math.ceil((m + 10) / 5) * 5);
-      const sel = $('coTime'), prev = sel.value;
-      let html = '<option value="">Pilih</option>';
-      for (let t = start; t <= c; t += 5) html += `<option value="${jam(t).replace('.', ':')}">${jam12(t)}</option>`;
-      sel.innerHTML = html;
-      if (prev && [...sel.options].some(op => op.value === prev)) sel.value = prev;
-      document.querySelector('#coWhen [data-w="custom"]').disabled = start > c;
-    }
+    // Tidak ada jadwal: semua pesanan dijemput saat sudah siap
+    function siapkanJam() {}
     function cekCheckout(tampil) {
       const kurang = [];
       const name = $('coName').value.trim();
-      const jamKosong = !when || (when === 'custom' && !$('coTime').value);
       if (!name) kurang.push('nama pemesan');
-      if (jamKosong) kurang.push('jam jemput');
       $('coGo').classList.toggle('off', kurang.length > 0);
-      if (tampil) {
-        $('coNameGroup').classList.toggle('err-ring', !name);
-        $('coWhenGroup').classList.toggle('err-ring', jamKosong);
-      } else {
+      if (tampil) $('coNameGroup').classList.toggle('err-ring', !name);
+      else {
         if (name) $('coNameGroup').classList.remove('err-ring');
-        if (!jamKosong) $('coWhenGroup').classList.remove('err-ring');
         if (!kurang.length) $('coWarn').classList.add('hidden');
       }
       return kurang;
@@ -916,7 +887,7 @@
       try {
         const d = await api('order', {
           cid, nick: profile.nick, gender: profile.gender, name,
-          pickup: when === 'now' ? 'now' : $('coTime').value,
+          pickup: 'now',
           items: cart.map(c => ({ menuId: c.menuId, toppings: c.toppings, qty: c.qty }))
         });
         LS.set('tt_pesan_lastname', name);
@@ -1060,7 +1031,7 @@
       g.textAlign = 'center'; g.fillStyle = '#1C1C1E'; g.font = FONT(800, 34); g.fillText('NOTA PESANAN #' + o.no, W / 2, y); y += 50;
       row('Tanggal', `${tglDari(o.createdAt)} · ${jamDari(o.createdAt)}`);
       row('Atas nama', o.name);
-      row('Jemput', o.pickupLabel === 'Sekarang' ? 'Sekarang' : 'Jam ' + o.pickupLabel);
+      row('Jemput', o.readyAt ? 'Siap jam ' + jamDari(o.readyAt) : 'Saat pesanan siap');
       row('Pembayaran', 'QRIS (non tunai)');
       row('Status', (STATUS[o.status] || ['-'])[0]);
       y += 6; garis();
@@ -1112,7 +1083,7 @@
         renderOrders();
         if (adaSiap) {
           dingDong(); getar([400, 150, 400, 150, 400]);
-          toast(`Pesanan #${adaSiap.no} sudah SIAP DIJEMPUT!`, 6000);
+          toast(`Pesanan #${adaSiap.no} sudah siap! Segera jemput ya, biar esnya belum mencair.`, 7000);
           if (document.visibilityState === 'visible' && tab === 'menu') gantiTab('orders');
         }
       } catch (e) { if (tab === 'orders' && !ordersLoaded) $('activeOrders').innerHTML = `<div class="ios-group empty">${esc(e.message)}</div>`; }
@@ -1131,7 +1102,14 @@
       if (o.status === 'bayar') aksi = `<button type="button" class="btn btn-primary btn-sm" onclick="lanjutkanBayar('${o.id}')">${ic('qr')}Lanjutkan Bayar</button><button type="button" class="btn btn-gray btn-sm" style="color:var(--red)" onclick="batalkanPesanan(orders.find(x=>x.id==='${o.id}'))">Batalkan</button>`;
       else if (o.status === 'cek') { extra = `<p class="ord-note">Kasir sedang mencocokkan pembayaranmu. Sebentar ya.</p>`; aksi = nota; }
       else if (o.status === 'proses') { extra = `<p class="ord-note">Minumanmu sedang dibuat.</p>`; aksi = nota; }
-      else if (o.status === 'siap') { extra = `<div class="ready">${ic('bell')}<span>Siap dijemput sejak jam ${jamDari(o.readyAt || now())}. Yuk jemput ke kedai, sebutkan nama <b>${esc(o.name)}</b>.</span></div>`; aksi = nota; }
+      else if (o.status === 'siap') {
+        const tunggu = Math.floor((now() - (o.readyAt || now())) / 60000);
+        extra = `<div class="ready">${ic('bell')}<span>Pesananmu sudah siap sejak jam <b>${jamDari(o.readyAt || now())}</b>. Yuk segera dijemput, sebutkan nama <b>${esc(o.name)}</b> ke kasir.</span></div>`
+          + (tunggu >= 15
+            ? `<div class="melt warn-melt">${ic('clock')}<span>Sudah menunggu <b>${tunggu} menit</b>. Esnya mulai mencair nih, yuk buruan dijemput biar rasanya tetap segar!</span></div>`
+            : `<div class="melt">${ic('alert')}<span>Jangan kelamaan ya, biar esnya belum mencair dan Thai Tea-mu tetap segar dan nikmat.</span></div>`);
+        aksi = nota;
+      }
       else {
         if (o.status === 'batal' && o.cancelReason) extra = `<p class="ord-note">${esc(o.cancelReason)}</p>`;
         const sudah = o.status === 'selesai' && ulasan.mine.includes(o.id);
@@ -1142,7 +1120,7 @@
         <div class="ord-head"><div><div class="ord-no">#${o.no} · ${tglDari(o.createdAt)}, ${jamDari(o.createdAt)}</div><div class="ord-name">${esc(o.name)}</div></div><span class="pill ${cls}">${label}</span></div>
         ${aktif && o.status !== 'bayar' ? trackHtml(o) : ''}
         <div class="ord-items">${ringkas(o.items)}</div>
-        <div class="ord-meta"><span class="pill">${ic('clock')}${o.pickupLabel === 'Sekarang' ? 'Jemput sekarang' : 'Jemput ' + esc(o.pickupLabel)}</span><span class="pill">${o.totalCups} cup</span><span class="pill pill-orange">${rp(o.totalPrice)}</span>${o.doneAt ? `<span class="pill">Diambil ${jamDari(o.doneAt)}</span>` : ''}</div>
+        <div class="ord-meta">${o.readyAt ? `<span class="pill pill-green">${ic('bell')}Siap ${jamDari(o.readyAt)}</span>` : ''}<span class="pill">${o.totalCups} cup</span><span class="pill pill-orange">${rp(o.totalPrice)}</span>${o.doneAt ? `<span class="pill">Diambil ${jamDari(o.doneAt)}</span>` : ''}</div>
         ${extra}${aksi ? `<div class="ord-actions">${aksi}</div>` : ''}
       </div>`;
     }
