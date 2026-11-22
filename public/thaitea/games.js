@@ -241,11 +241,18 @@
     ['Cokelat', '#9C6233', '#5E3515', '#D3A27A'], ['Hitam', '#3A3A3C', '#111113', '#8A8A8E'], ['Abu-abu', '#9AA3AD', '#5E6670', '#D3D8DE'], ['Navy', '#24418F', '#11245A', '#7690D6'],
     ['Marun', '#8E1B3A', '#560D22', '#D4708B'], ['Hijau Muda', '#9BD31E', '#5F8A08', '#CDF27A'], ['Langit', '#22C3EE', '#0A7FA0', '#8BE3F8'], ['Magenta', '#D42AD8', '#85148A', '#EE8CF0'],
     ['Emas', '#D4A017', '#8A6600', '#F2D27A'], ['Salem', '#FF8C75', '#C24F3A', '#FFC2B5'], ['Lavender', '#A98BEA', '#6B4FB0', '#D9CBF7'], ['Mint', '#5FD9A0', '#23905F', '#B4F0D3'],
-    ['Zaitun', '#7D8A2E', '#4C5517', '#BCC77A'], ['Indigo', '#4B3FD1', '#2A2090', '#9D94F0'], ['Krem', '#E8C99A', '#A8834F', '#F7E7CC'], ['Putih', '#F4F4F6', '#A9ACB4', '#FFFFFF']
+    ['Zaitun', '#7D8A2E', '#4C5517', '#BCC77A'], ['Indigo', '#4B3FD1', '#2A2090', '#9D94F0'], ['Krem', '#E8C99A', '#A8834F', '#F7E7CC'], ['Hijau Tua', '#1F7A4D', '#0E4A2D', '#6FC29A']
   ].map(([name, c, d, l]) => ({ name, c, d, l }));
   const LUDO_KOSONG = { name: '', c: '#D1D1D6', d: '#A1A1A6', l: '#E9E9EE' };   // sudut papan tanpa pemain
   const luS = (st, s) => LUDO_PAL[(st.pal || [])[s]] || LUDO_PAL[st.colors[s]] || LUDO_PAL[0];   // warna kursi s
-  const luP = (st, c) => { const s = st.colors.indexOf(c); return s >= 0 && s < st.n ? luS(st, s) : LUDO_KOSONG; };   // warna sudut papan c
+  const luP = (st, c) => { const s = st.colors.indexOf(c); return s >= 0 && s < st.n ? luS(st, s) : (st.kos && LUDO_PAL[st.kos[c]]) || LUDO_KOSONG; };   // warna sudut papan c
+  // warna acak yang paling kontras dengan warna yang sudah dipakai (diambil dari 5 terjauh)
+  const luRgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+  const luJarak = (i, j) => { const a = luRgb(LUDO_PAL[i].c), b = luRgb(LUDO_PAL[j].c); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+  function ludoKontras(pakai) {
+    const cand = LUDO_PAL.map((_, i) => i).filter(i => !pakai.includes(i)).map(i => ({ i, d: pakai.length ? Math.min(...pakai.map(j => luJarak(i, j))) : rnd(100) })).sort((x, y) => y.d - x.d);
+    return cand.length ? cand[rnd(Math.min(5, cand.length))].i : rnd(LUDO_PAL.length);
+  }
   const LUDO_SAFE = [0, 8, 13, 21, 26, 34, 39, 47];
   const Ludo = {
     colorsFor(n) { return n === 2 ? [0, 2] : n === 3 ? [0, 1, 2] : [0, 1, 2, 3]; },
@@ -253,20 +260,21 @@
       const tokens = {};
       for (let s = 0; s < n; s++) tokens[s] = [-1, -1, -1, -1];
       // kursi 0 (pembuat meja) memakai warna pilihannya, yang lain dapat warna acak yang berbeda
-      const mine = opt && opt.pal >= 0 && opt.pal < LUDO_PAL.length ? +opt.pal : 0;
-      // warna lawan dipilih acak di antara yang paling kontras dengan warna yang sudah dipakai
-      const rgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
-      const jarak = (i, j) => { const a = rgb(LUDO_PAL[i].c), b = rgb(LUDO_PAL[j].c); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
-      const pal = [mine];
-      while (pal.length < n) {
-        const cand = LUDO_PAL.map((_, i) => i).filter(i => !pal.includes(i)).map(i => ({ i, d: Math.min(...pal.map(j => jarak(i, j))) })).sort((x, y) => y.d - x.d);
-        pal.push(cand[rnd(Math.min(5, cand.length))].i);
-      }
-      return { n, colors: this.colorsFor(n), pal, tokens, turn: 0, dice: 0, rolled: false, winner: null, last: null, v: 1, gid: Date.now() + '' + rnd(1000) };
+      // warna pilihan tiap pemain (opt.pals per kursi; opt.pal = kursi 0). Warna dobel/kosong → acak yang kontras
+      const want = (opt && opt.pals ? arr(opt.pals) : [opt && opt.pal]).map(v => (v === null || v === undefined || v === '') ? -1 : +v);
+      const pal = [];
+      for (let s = 0; s < n; s++) pal.push(want[s] >= 0 && want[s] < LUDO_PAL.length && !pal.includes(want[s]) ? want[s] : -1);
+      for (let s = 0; s < n; s++) if (pal[s] < 0) pal[s] = ludoKontras(pal.filter(x => x >= 0));
+      // sudut papan tanpa pemain (mis. main berdua) juga diberi warna acak
+      const colors = this.colorsFor(n), kos = {};
+      const dipakai = pal.slice();
+      [0, 1, 2, 3].filter(c => !colors.includes(c)).forEach(c => { kos[c] = ludoKontras(dipakai); dipakai.push(kos[c]); });
+      return { n, colors, pal, kos, tokens, turn: 0, dice: 0, rolled: false, winner: null, last: null, v: 1, gid: Date.now() + '' + rnd(1000) };
     },
     norm(st) {
       st.colors = arr(st.colors).map(Number);
       st.pal = st.pal ? arr(st.pal).map(Number) : st.colors.slice();   // game lama: warna bawaan
+      if (st.kos) { const k = {}; Object.keys(st.kos).forEach(c => { k[c] = +st.kos[c]; }); st.kos = k; }
       const t = {};
       for (let s = 0; s < st.n; s++) t[s] = arr((st.tokens || {})[s]).map(Number);
       st.tokens = t;
@@ -329,8 +337,9 @@
       if (step === -1) { const [r0, c0] = LUDO_BASE[st.colors[s]]; const off = [[1.75, 1.75], [1.75, 4.25], [4.25, 1.75], [4.25, 4.25]][i]; return [r0 + off[0], c0 + off[1]]; }
       if (step <= 50) { const [r, c] = LUDO_PATH[this.abs(st, s, step)]; return [r + .5, c + .5]; }
       if (step <= 55) { const [r, c] = LUDO_HOME[st.colors[s]][step - 51]; return [r + .5, c + .5]; }
-      const fin = [[6.9, 7.5], [7.5, 8.1], [8.1, 7.5], [7.5, 6.9]][st.colors[s]];
-      return [fin[0] + (i - 1.5) * .12, fin[1] + (i - 1.5) * .12];
+      // bidak yang sudah menang berjajar di segitiga tengah warnanya sendiri (ujung jalur rumahnya)
+      const pos = st.colors[s], d = (i - 1.5) * .34;
+      return [[7.5 + d, 6.55], [6.55, 7.5 + d], [7.5 + d, 8.45], [8.45, 7.5 + d]][pos];
     }
   };
   // dadu 3D (CSS)
@@ -1006,7 +1015,7 @@
     if (!myKey) { triggerToast('Pilih nama pengguna dulu', true); return; }
     if (game === 'congklak') max = 2;
     const id = 'R' + Date.now() + Math.random().toString(36).slice(2, 5);
-    const room = { id, game, host: myKey, hostName: deviceName, status: 'waiting', max, createdAt: Date.now(), activeAt: Date.now(), seats: { 0: { key: myKey, name: deviceName } }, online: { [myKey]: Date.now() }, opt: opt || null };
+    const room = { id, game, host: myKey, hostName: deviceName, status: 'waiting', max, createdAt: Date.now(), activeAt: Date.now(), seats: { 0: Object.assign({ key: myKey, name: deviceName }, opt && opt.pal >= 0 ? { pal: opt.pal } : {}) }, online: { [myKey]: Date.now() }, opt: opt || null };
     rooms[id] = room;
     roomsRef.child(id).set(room).then(() => {
       kirimNotif(`${deviceName} membuka meja ${GAMES[game].name}. Ayo ikut main!`, '🎮 Game');
@@ -1023,7 +1032,9 @@
     for (let i = 0; i < r.max; i++) if (!seats[i]) { free = i; break; }
     if (free < 0) { triggerToast('Meja sudah penuh', true); return; }
     catat(`Ikut meja ${GAMES[r.game].name} milik ${r.hostName || 'pengguna lain'}`);
-    db.ref(`thaitea/games/rooms/${id}/seats/${free}`).set({ key: myKey, name: deviceName }).then(() => { roomsRef.child(id).update({ activeAt: Date.now() }); masukMeja(id, 'online'); });
+    const kursi = { key: myKey, name: deviceName };
+    if (r.game === 'ludo') { const dipakai = seats.filter(Boolean).map(x => x.pal).filter(v => v >= 0); const suka = ludoPalSaved(); kursi.pal = dipakai.includes(suka) ? ludoKontras(dipakai) : suka; }
+    db.ref(`thaitea/games/rooms/${id}/seats/${free}`).set(kursi).then(() => { roomsRef.child(id).update({ activeAt: Date.now() }); masukMeja(id, 'online'); });
   }
   function masukMeja(id, mode) {
     stopAll();
@@ -1156,14 +1167,43 @@
     let rows = '';
     for (let i = 0; i < r.max; i++) {
       const x = seats[i];
-      rows += `<div class="user-row">${x ? avaHtml(x.key, x.name) : '<span class="ava" style="background:#E5E5EA;color:#8E8E93">?</span>'}<div style="flex:1"><div class="un">${x ? esc(x.name) + (x.key === r.host ? ' <span class="pill pill-orange" style="font-size:11px">PEMBUAT</span>' : '') : 'Kursi kosong'}</div><div class="us">${x ? 'Siap' : 'Menunggu pemain…'}</div></div></div>`;
+      rows += `<div class="user-row">${x ? avaHtml(x.key, x.name) : '<span class="ava" style="background:#E5E5EA;color:#8E8E93">?</span>'}<div style="flex:1"><div class="un">${x ? esc(x.name) + (x.key === r.host ? ' <span class="pill pill-orange" style="font-size:11px">PEMBUAT</span>' : '') : 'Kursi kosong'}</div><div class="us">${x ? 'Siap' : 'Menunggu pemain…'}</div></div>${r.game === 'ludo' && x && LUDO_PAL[x.pal] ? `<span class="lu-pawn" style="--c:${LUDO_PAL[x.pal].c};--d:${LUDO_PAL[x.pal].d}"></span>` : ''}</div>`;
     }
     $('gvBody').innerHTML = `<div class="gl-hero" style="background:${g.bg}"><span class="gl-ico">${ICON[r.game]}</span><div><div class="gl-title">${g.name}</div><div class="gl-sub">Menunggu pemain · ${ada}/${r.max}</div></div></div>
       <div class="list" style="margin-top:12px">${rows}</div>
+      ${r.game === 'ludo' ? ludoLobiWarna(r) : ''}
       <p class="card-sub" style="margin:10px 4px">Pengguna lain bisa ikut dari Hiburan → Game. Meja tanpa pemain lebih dari 30 detik akan terhapus otomatis.</p>
       ${isHost ? `<button type="button" class="btn btn-primary btn-lg btn-block" onclick="TTG.mulaiOnline()">Mulai Sekarang</button>` : `<div class="gp-hint">Menunggu ${esc(r.hostName || 'pembuat meja')} memulai…</div>`}
       <div id="glStartOpt"></div>
       <button type="button" class="btn btn-gray btn-block" style="margin-top:10px" onclick="TTG.tutup()">${isHost ? 'Batalkan Meja' : 'Keluar'}</button>`;
+    if (r.game === 'ludo') ikatLobiWarna(r);
+  }
+  // Ludo online: tiap pemain pilih warnanya sendiri; warna yang sudah diambil pemain lain jadi abu & tidak bisa dipilih
+  function ludoLobiWarna(r) {
+    const seats = arr(r.seats);
+    const mine = seats.findIndex(x => x && x.key === myKey);
+    if (mine < 0) return '';
+    const my = seats[mine].pal, P = LUDO_PAL[my] || null;
+    const ambil = {};
+    seats.forEach((x, i) => { if (x && i !== mine && x.pal >= 0) ambil[x.pal] = x.name; });
+    return `<div class="card" style="margin-top:12px"><div class="lu-palhead" style="margin-top:0"><span class="field-label" style="margin:0;flex:1">Warna bidakmu</span>${P ? `<span class="lu-pawn" style="--c:${P.c};--d:${P.d}"></span><span class="lu-palname">${P.name}</span>` : '<span class="lu-palname">Belum dipilih</span>'}</div>
+      <div class="lu-pal" id="luPalLobi">${LUDO_PAL.map((p, i) => ambil[i] !== undefined
+        ? `<button type="button" class="lu-sw taken" disabled aria-label="${p.name} dipakai ${esc(ambil[i])}" style="--c:${p.c};--d:${p.d};--l:${p.l}"><span>${esc(String(ambil[i]).slice(0, 1).toUpperCase())}</span></button>`
+        : `<button type="button" class="lu-sw ${i === my ? 'on' : ''}" data-i="${i}" aria-label="${p.name}" style="--c:${p.c};--d:${p.d};--l:${p.l}"></button>`).join('')}</div>
+      <p class="card-sub" style="margin:8px 2px 0">Warna abu-abu bertanda huruf sudah dipakai pemain lain.</p></div>`;
+  }
+  function ikatLobiWarna(r) {
+    const seats = arr(r.seats);
+    const mine = seats.findIndex(x => x && x.key === myKey);
+    if (mine < 0) return;
+    document.querySelectorAll('#luPalLobi .lu-sw[data-i]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.i;
+      const cur2 = rooms[r.id] ? arr(rooms[r.id].seats) : seats;
+      if (cur2.some((x, k) => x && k !== mine && x.pal === i)) { triggerToast('Warna itu sudah dipakai', true); return; }
+      SFX.tap(); try { lsSet('tt_ludo_pal', String(i)); } catch (e) { }
+      db.ref(`thaitea/games/rooms/${r.id}/seats/${mine}/pal`).set(i);
+      roomsRef.child(r.id).update({ activeAt: Date.now() });
+    });
   }
   function mulaiOnline() {
     const r = rooms[cur.roomId]; if (!r || r.host !== myKey) return;
@@ -1185,14 +1225,16 @@
     const n = Math.max(GAMES[r.game].min, isiBot ? r.max : seats.length);
     botAcak(n - seats.length, seats.map(x => x.name)).forEach(name => seats.push({ bot: true, name }));
     catat(`Mulai main ${GAMES[r.game].name} bersama ${humans.filter(x => x.key !== myKey).map(x => x.name).join(', ') || 'komputer'}`);
-    roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n, r.opt || null) });
+    roomsRef.child(cur.roomId).update({ status: 'playing', seats, startedAt: Date.now(), activeAt: Date.now(), paused: null, state: ENG[r.game].init(n, optKursi(r, seats)) });
   }
+  // warna pilihan tiap kursi ikut dikirim ke game (Ludo)
+  function optKursi(r, seats) { return r.game === 'ludo' ? Object.assign({}, r.opt || {}, { pals: seats.map(x => (x && x.pal >= 0 ? x.pal : -1)) }) : (r.opt || null); }
   function mainLagi() {
     tutupPodium();
     if (!cur) return;
     if (cur.mode === 'bot') return mulaiBot(cur.game, cur.seats.length, cur.opt);
     const r = rooms[cur.roomId]; if (!r) return;
-    roomsRef.child(cur.roomId).update({ status: 'playing', paused: null, activeAt: Date.now(), winnerName: null, state: ENG[r.game].init(arr(r.seats).length, r.opt || null) });
+    roomsRef.child(cur.roomId).update({ status: 'playing', paused: null, activeAt: Date.now(), winnerName: null, state: ENG[r.game].init(arr(r.seats).length, optKursi(r, arr(r.seats))) });
   }
 
   /* ---------- pop-up juara (podium 1-2-3) ---------- */
@@ -1499,6 +1541,9 @@
   .lu-sw:active{transform:scale(.9)}
   .lu-sw.on{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--c),0 4px 10px rgba(0,0,0,.25);transform:scale(1.05)}
   .lu-sw.on::after{content:'';position:absolute;left:50%;top:46%;width:30%;height:16%;border:solid #fff;border-width:0 0 3px 3px;transform:translate(-50%,-50%) rotate(-45deg);filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  .lu-sw.taken{background:radial-gradient(circle at 34% 30%,#F2F2F7,#C7C7CC 48%,#9A9AA0);box-shadow:inset 0 0 0 3px var(--c);cursor:not-allowed;opacity:.75}
+  .lu-sw.taken span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .lu-sw.taken::before{content:'';position:absolute;left:14%;right:14%;top:50%;height:2.5px;margin-top:-1px;background:rgba(60,60,67,.55);transform:rotate(-45deg);border-radius:2px}
   .lu-palhead{display:flex;align-items:center;gap:10px;margin:16px 2px 10px}
   .lu-palhead .lu-pawn{transform:scale(1.25)}
   .lu-palname{font-weight:800}
