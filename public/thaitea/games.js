@@ -1676,8 +1676,17 @@
     }
     if (cur && cur.roomId) onRoomUpdate();
     if (!document.getElementById('tab-hiburan').classList.contains('hidden')) renderPane();
+    tandaLive();
   });
-  setInterval(() => { lastClean = 0; bersihkanMeja(); }, 10000);
+  // tanda kecil "LIVE" di kartu Hiburan (menu Lainnya) saat ada yang sedang main game
+  function tandaLive() {
+    const el = $('hiburanLive'); if (!el) return;
+    const aktif = Object.values(rooms).filter(r => r && GAMES[r.game] && r.status === 'playing' && !r.paused
+      && arr(r.seats).some(x => x && !x.bot && fresh((r.online || {})[x.key])));
+    el.classList.toggle('hidden', !aktif.length);
+    el.title = aktif.length ? 'Sedang main: ' + aktif.map(r => GAMES[r.game].name).join(', ') : '';
+  }
+  setInterval(() => { lastClean = 0; bersihkanMeja(); tandaLive(); }, 10000);
 
   function daftarGame(key, spec) {
     GAMES[key] = spec.meta; ENG[key] = spec.engine; RENDER[key] = spec.render; ANIM[key] = spec.anim || (async (p, n, redraw) => redraw(n));
