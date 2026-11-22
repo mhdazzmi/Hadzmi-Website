@@ -4304,6 +4304,8 @@
         return;
       }
 
+      // Urutkan per tanggal (terbaru di atas), lalu jam catat
+      list.sort((a, b) => (b.date || '').localeCompare(a.date || '') || String(b.expenseId || '').localeCompare(String(a.expenseId || ''), undefined, { numeric: true }));
       // Tabel per tanggal: Jam | Belanja | Total — ketuk baris untuk Ubah / Hapus
       const perTgl = [];
       list.forEach(e => { let g = perTgl.find(x => x.d === e.date); if (!g) perTgl.push(g = { d: e.date, l: [] }); g.l.push(e); });
@@ -4758,6 +4760,9 @@
         return;
       }
 
+      // Urutkan per tanggal (terbaru di atas), lalu jam
+      const jamKey = t => { const m = /(\d{1,2})[.:](\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : -1; };
+      list.sort((a, b) => (b.date || '').localeCompare(a.date || '') || jamKey(b.time) - jamKey(a.time));
       // Tabel per tanggal: Jam | Menu | Cup | Total — ketuk baris untuk Ubah / Hapus
       const perTgl = [];
       list.forEach(o => { let g = perTgl.find(x => x.d === o.date); if (!g) perTgl.push(g = { d: o.date, l: [] }); g.l.push(o); });
