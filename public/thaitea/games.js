@@ -825,7 +825,7 @@
   /* ---------- alur tampilan: antrean state + animasi ---------- */
   function ctxFor(anim) {
     return {
-      seats: cur.seats, mySeat: cur.mySeat, spectator: cur.mode === 'watch', anim,
+      seats: cur.seats, mySeat: cur.mySeat, spectator: cur.mode === 'watch', anim, roomId: cur.roomId || null, mode: cur.mode,
       canAct: !cur.anim && !cur.queue.length && !isPaused() && cur.mode !== 'watch',
       act: mv => act(mv),
       auto: (fn, ms) => { clearTimeout(autoTimer); autoTimer = setTimeout(fn, ms); },
@@ -1210,8 +1210,8 @@
   function tampilPodium(st) {
     if (!cur) return;
     const ctx = { seats: cur.seats, mySeat: cur.mySeat, spectator: cur.mode === 'watch' };
-    if (ENG[cur.game].winHtml) {
-      const w = ENG[cur.game].winHtml(st, ctx);
+    const w = ENG[cur.game].winHtml ? ENG[cur.game].winHtml(st, ctx) : null;   // winHtml boleh null → pakai podium biasa
+    if (w) {
       if (w.iWin) catat(`Menang main ${GAMES[cur.game].name}`);
       const box = $('gvWin');
       box.innerHTML = `<div class="pd-card">${w.html}<div style="margin-top:16px">${ctx.spectator ? '' : '<button type="button" class="btn btn-primary btn-lg btn-block" onclick="TTG.mainLagi()">Main Lagi</button>'}
@@ -1578,7 +1578,7 @@
   }
   window.TTG = {
     daftarGame,
-    _h: { SFX, $, rnd, clone, shuffle, arr, sleep, seatName, seatAva, resultHtml, BOT_SVG, isDriver: () => isDriver(), get autoTick() { return autoTick; }, set autoTick(v) { clearInterval(autoTick); autoTick = v; } },
+    _h: { SFX, $, rnd, clone, shuffle, arr, sleep, seatName, seatAva, resultHtml, BOT_SVG, isDriver: () => isDriver(), isPaused: () => isPaused(), get autoTick() { return autoTick; }, set autoTick(v) { clearInterval(autoTick); autoTick = v; } },
     renderPane, pilih, tutup: closeView, keluar, lanjutkanMeja, _simpanKeluar: simpanKeluar, _akhiri: akhiriDariSheet, _batalKeluar: tutupKeluar, jeda, lanjut, mulaiOnline, _mulai: mulaiDengan, mainLagi,
     gabung: gabungMeja, hapusMeja, tonton: id => masukMeja(id, 'watch'), mintaIkut, batalMinta, terimaIkut, tolakIkut,
     tutupPodium,
