@@ -321,15 +321,16 @@
     .rw-dh b { font-size: 15px; font-weight: 800; white-space: nowrap; }
     .rw-dh span { font-size: 12.5px; color: var(--text2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rw-tb { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
-    .rw-th, .rw-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) 30px 90px; gap: 6px; padding: 11px 12px; align-items: baseline; }
+    .rw-th, .rw-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 30px 90px; gap: 8px; padding: 11px 12px 11px 0; align-items: baseline; }
+    .rw-th > span:first-child { padding-left: 12px; }
     .rw-th { align-items: center; }
-    .rw-tb.blj .rw-th, .rw-tb.blj .rw-row { grid-template-columns: 54px minmax(0, 1fr) 96px; }
+    .rw-tb.blj .rw-th, .rw-tb.blj .rw-row { grid-template-columns: 58px minmax(0, 1fr) 96px; }
     .rw-th { background: #F7F5F2; font-size: 12px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; padding-top: 9px; padding-bottom: 9px; }
     .rw-row { font-size: 14.5px; cursor: pointer; border-top: .5px solid var(--sep); }
     .rw-row.open { background: #FFF6EE; }
     .rw-row:active { background: #FFF1E4; }
-    .rw-j { font-weight: 800; font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .rw-j small { font-size: 9.5px; font-weight: 800; color: var(--text2); margin-left: 2px; }
+    .rw-j { align-self: stretch; margin: -11px 0; padding: 11px 0 11px 12px; background: #F7F5F2; font-weight: 700; font-size: 12.5px; line-height: 19.5px; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rw-j small { display: block; font-size: 10px; line-height: 1; font-weight: 800; color: var(--text2); }
     .rw-t.red { color: var(--red); } .rw-t.amber { color: var(--amber); }
     .rw-note { margin-top: 3px; font-size: 12.5px; color: var(--text2); }
     .rw-m { line-height: 1.35; min-width: 0; }
@@ -4784,7 +4785,7 @@
       const m = /(\d{1,2})[.:](\d{2})/.exec(t || '');
       if (!m) return esc(t || '-');
       const h = parseInt(m[1], 10) % 24;
-      return `${String(h % 12 || 12).padStart(2, '0')}:${m[2]}<small>${h < 12 ? 'AM' : 'PM'}</small>`;
+      return `${h % 12 || 12}:${m[2]}<small>${h < 12 ? 'AM' : 'PM'}</small>`;
     }
     function jamDariId(id) {
       const n = parseInt(String(id || '').replace(/^\D+-/, ''), 10);
