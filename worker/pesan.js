@@ -63,7 +63,7 @@ const NUDGE_KEY = 'pesan_cek';
 
 // Sama dengan MENU_DATABASE di public/thaitea/index.html (Es Teler sudah tidak dijual)
 const MENU = [
-  ['ttp-ori', 'Thai Tea Ori Premium', 15000, 'thai-premium', 'Thai Tea Premium'],
+  ['ttp-ori', 'Thai Tea Premium', 15000, 'thai-premium', 'Thai Tea Premium'],
   ['ttp-matcha', 'Matcha Premium', 15000, 'thai-premium', 'Thai Tea Premium'],
   ['ttp-coklat', 'Coklat Premium', 15000, 'thai-premium', 'Thai Tea Premium'],
   ['ttp-tarro', 'Tarro Premium', 15000, 'thai-premium', 'Thai Tea Premium'],
