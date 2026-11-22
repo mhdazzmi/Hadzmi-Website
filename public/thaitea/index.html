@@ -753,6 +753,9 @@
     .more-tile small { display: block; font-size: 14px; color: var(--text2); margin-top: 2px; line-height: 1.3; }
     .more-ico { position: relative; width: 56px; height: 56px; border-radius: 15px; color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; }
     .more-ico .tab-badge { top: -6px; right: -8px; }
+    .live-tag { position: absolute; top: -8px; right: -16px; display: flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 9px; background: #FF3B30; color: #fff; font-size: 10px; font-weight: 800; line-height: 1.2; letter-spacing: .02em; border: 2px solid #fff; font-style: normal; }
+    .live-tag i { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: blink 1.2s infinite; }
+    .live-tag.hidden { display: none; }
 
     /* ---------- PESANAN ONLINE ---------- */
     .on-store { box-shadow: inset 0 0 0 2px var(--red-soft), var(--shadow); }
@@ -1227,7 +1230,7 @@
           <div class="more-grid">
             <button type="button" class="more-tile" onclick="switchTab('tab-online')"><span class="more-ico" style="background:linear-gradient(160deg,#FFB340,#EA6A0A)"><i class="fas fa-mobile-screen-button"></i><span id="onlineBadgeTile" class="tab-badge hidden">0</span></span><span><b>Pesanan Online</b><small>Pesanan dari link /pesan</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-chat')"><span class="more-ico" style="background:linear-gradient(160deg,#5AC8FA,#0A84FF)"><i class="fas fa-comments"></i><span id="chatBadgeTile" class="tab-badge hidden">0</span></span><span><b>Chat</b><small>Pesan, foto & suara</small></span></button>
-            <button type="button" class="more-tile" onclick="switchTab('tab-hiburan')"><span class="more-ico" style="background:linear-gradient(160deg,#FF6B8B,#E8325A)"><i class="fas fa-music"></i></span><span><b>Hiburan</b><small>Musik, ayat & game</small></span></button>
+            <button type="button" class="more-tile" onclick="switchTab('tab-hiburan')"><span class="more-ico" style="background:linear-gradient(160deg,#FF6B8B,#E8325A)"><i class="fas fa-music"></i><span id="hiburanLive" class="live-tag hidden" title="Ada yang sedang main game"><i></i>LIVE</span></span><span><b>Hiburan</b><small>Musik, ayat & game</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-ulasan')"><span class="more-ico" style="background:linear-gradient(160deg,#FFD54F,#F29D00)"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="#fff" d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z"/></svg><span id="ulasanBadgeTile" class="tab-badge hidden">0</span></span><span><b>Ulasan</b><small id="ulasanTileSub">Penilaian customer</small></span></button>
             <button type="button" class="more-tile" onclick="switchTab('tab-aktivitas')"><span class="more-ico" style="background:linear-gradient(160deg,#34C759,#1E9E4A)"><i class="fas fa-list-check"></i></span><span><b>Aktivitas</b><small>Siapa mencatat apa</small></span></button>
           </div>

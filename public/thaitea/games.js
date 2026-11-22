@@ -1,5 +1,5 @@
 /* =====================================================================
-   GAME Kasir Thai Tea: Ludo (3D), Domino Gaple, Congklak
+   GAME Kasir Thai Tea: Ludo (3D), Domino Gaple
    - Main Lawan Komputer (bot) atau Main Online (Firebase: thaitea/games/rooms)
    - Online 2–4 pemain; kalau kursi belum penuh: Lanjutkan (default) atau Isi dengan Komputer
    - Live: menonton meja yang sedang main
@@ -86,7 +86,6 @@
   const ICON = {
     ludo: '<svg viewBox="0 0 48 48"><rect x="6" y="6" width="17" height="17" rx="3" fill="#FF4D4D"/><rect x="25" y="6" width="17" height="17" rx="3" fill="#34C759"/><rect x="6" y="25" width="17" height="17" rx="3" fill="#1E88E5"/><rect x="25" y="25" width="17" height="17" rx="3" fill="#FFD60A"/><rect x="15" y="15" width="18" height="18" rx="4" fill="#fff"/><circle cx="20" cy="20" r="2" fill="#1C1C1E"/><circle cx="28" cy="28" r="2" fill="#1C1C1E"/><circle cx="24" cy="24" r="2" fill="#1C1C1E"/></svg>',
     domino: '<svg viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" rx="5" fill="#fff"/><path d="M14 24h20" stroke="#1C1C1E" stroke-width="2"/><circle cx="19" cy="11" r="2.4" fill="#1C1C1E"/><circle cx="29" cy="18" r="2.4" fill="#1C1C1E"/><circle cx="24" cy="14.5" r="2.4" fill="#1C1C1E"/><circle cx="19" cy="30" r="2.4" fill="#1C1C1E"/><circle cx="29" cy="30" r="2.4" fill="#1C1C1E"/><circle cx="19" cy="37" r="2.4" fill="#1C1C1E"/><circle cx="29" cy="37" r="2.4" fill="#1C1C1E"/></svg>',
-    congklak: '<svg viewBox="0 0 48 48"><rect x="4" y="13" width="40" height="22" rx="11" fill="#E8B678"/><ellipse cx="9.5" cy="24" rx="3.5" ry="7" fill="#8A5527"/><ellipse cx="38.5" cy="24" rx="3.5" ry="7" fill="#8A5527"/><g fill="#8A5527"><circle cx="17" cy="19" r="2.6"/><circle cx="24" cy="19" r="2.6"/><circle cx="31" cy="19" r="2.6"/><circle cx="17" cy="29" r="2.6"/><circle cx="24" cy="29" r="2.6"/><circle cx="31" cy="29" r="2.6"/></g><g fill="#fff"><circle cx="16.5" cy="18.5" r=".9"/><circle cx="24.5" cy="29.5" r=".9"/><circle cx="38" cy="22" r="1"/></g></svg>'
   };
   const GAMES = {
     ludo: {
@@ -102,8 +101,7 @@
       readOpt: () => ({ pal: ludoPalSaved() })
 
     },
-    domino: { name: 'Domino Gaple', desc: 'Sambung kartu, habiskan duluan', bg: 'linear-gradient(160deg,#4A4A52,#1C1C1E)', min: 2, max: 4 },
-    congklak: { name: 'Congklak', desc: 'Sebar biji, isi lumbung terbanyak', bg: 'linear-gradient(160deg,#D99A55,#9C5A22)', min: 2, max: 2 }
+    domino: { name: 'Domino Gaple', desc: 'Sambung kartu, habiskan duluan', bg: 'linear-gradient(160deg,#4A4A52,#1C1C1E)', min: 2, max: 4 }
   };
 
   function ludoPalSaved() { let v = 0; try { v = parseInt(lsGet('tt_ludo_pal'), 10); } catch (e) { } return v >= 0 && v < LUDO_PAL.length ? v : 0; }
@@ -647,111 +645,11 @@
   }
 
   /* =====================================================================
-     CONGKLAK (2 pemain, 7 lubang + 1 lumbung masing-masing, 7 biji per lubang)
-     Indeks: 0–6 lubang P0, 7 lumbung P0, 8–14 lubang P1, 15 lumbung P1.
-     ===================================================================== */
-  const Congklak = {
-    init() { const b = []; for (let i = 0; i < 16; i++) b.push(i === 7 || i === 15 ? 0 : 7); return { n: 2, b, turn: 0, winner: null, last: null, v: 1, gid: Date.now() + '' + rnd(1000) }; },
-    norm(st) { st.b = arr(st.b).map(Number); if (st.winner === undefined) st.winner = null; if (st.last && st.last.trace) st.last.trace = arr(st.last.trace); return st; },
-    store(s) { return s === 0 ? 7 : 15; },
-    side(st, s) { return st.b.slice(s * 8, s * 8 + 7).reduce((a, x) => a + x, 0); },
-    moves(st, s) { const out = []; for (let p = 0; p < 7; p++) if (st.b[s * 8 + p] > 0) out.push({ pit: p }); return out; },
-    apply(st, s, mv) {
-      st = this.norm(clone(st));
-      if (st.winner !== null || st.turn !== s) return st;
-      const b = st.b, my = this.store(s), opp = this.store(1 - s);
-      let idx = s * 8 + mv.pit;
-      if (!(mv.pit >= 0 && mv.pit < 7) || !b[idx]) return st;
-      let seeds = b[idx]; b[idx] = 0;
-      const trace = [{ p: idx }];
-      let pos = idx, extra = false, cap = null, guard = 0;
-      while (guard++ < 2000) {
-        while (seeds > 0) { pos = (pos + 1) % 16; if (pos === opp) continue; b[pos]++; seeds--; trace.push({ d: pos }); }
-        if (pos === my) { extra = true; break; }
-        if (b[pos] > 1) { seeds = b[pos]; b[pos] = 0; trace.push({ p: pos }); continue; }
-        if (Math.floor(pos / 8) === s) { const o = 14 - pos; if (b[o] > 0) { cap = { at: pos, from: o, n: b[o] + 1 }; b[my] += b[o] + 1; b[o] = 0; b[pos] = 0; trace.push({ c: pos, o }); } }
-        break;
-      }
-      st.last = { s, pit: mv.pit, trace, extra, cap };
-      let nxt = extra ? s : 1 - s;
-      if (this.side(st, nxt) === 0) nxt = 1 - nxt;
-      if (this.side(st, nxt) === 0) {
-        for (let k = 0; k < 2; k++) { for (let p = 0; p < 7; p++) { b[this.store(k)] += b[k * 8 + p]; b[k * 8 + p] = 0; } }
-        st.winner = b[7] === b[15] ? -1 : (b[7] > b[15] ? 0 : 1);
-        st.reason = b[7] === b[15] ? `Seri ${b[7]} : ${b[15]}` : `Lumbung ${Math.max(b[7], b[15])} biji lawan ${Math.min(b[7], b[15])}`;
-      } else st.turn = nxt;
-      st.v++;
-      return st;
-    },
-    bot(st, s) {
-      const ms = this.moves(st, s);
-      let best = ms[0], bs = -1e9;
-      ms.forEach(m => { const nx = this.apply(st, s, m); const sc = (nx.b[this.store(s)] - st.b[this.store(s)]) - (nx.b[this.store(1 - s)] - st.b[this.store(1 - s)]) + (nx.last.extra ? 6 : 0) + Math.random(); if (sc > bs) { bs = sc; best = m; } });
-      return best;
-    }
-  };
-  function seedsHtml(n, idx, big) {
-    const show = Math.min(n, big ? 40 : 14);
-    let h = '', sd = idx * 97 + 13;
-    const R = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
-    const cols = ['#FFF8EC', '#F3E3C8', '#FFFFFF', '#EAD7B7'];
-    for (let k = 0; k < show; k++) {
-      const a = R() * Math.PI * 2, rr = Math.sqrt(R()) * (big ? 38 : 30);
-      h += `<i style="left:${50 + Math.cos(a) * rr}%;top:${50 + Math.sin(a) * rr * (big ? .55 : 1)}%;background:${cols[k % 4]};transform:translate(-50%,-50%) rotate(${R() * 180}deg)"></i>`;
-    }
-    return h;
-  }
-  function renderCongklak(box, st, ctx) {
-    st = Congklak.norm(clone(st));
-    const b = (ctx.anim && ctx.anim.b) || st.b;
-    const hi = ctx.anim && ctx.anim.hi;
-    const me = (ctx.mySeat === null || ctx.mySeat === undefined) ? 0 : ctx.mySeat;
-    const op = 1 - me;
-    const myTurn = ctx.canAct && st.turn === me && st.winner === null && !ctx.spectator;
-    const hole = (i, mine) => {
-      const can = mine && myTurn && !ctx.anim && b[i] > 0;
-      return `<button type="button" class="ck-hole ${can ? 'ok' : ''} ${hi === i ? 'hi' : ''}" data-p="${i - (mine ? me * 8 : 0)}" ${can ? '' : 'disabled'}><span class="ck-seeds">${seedsHtml(b[i], i, false)}</span><span class="ck-num">${b[i]}</span></button>`;
-    };
-    let left = '', right = '';
-    for (let p = 0; p < 7; p++) left += hole(me * 8 + p, true);            // kolom kiri: lubang kita, atas → bawah
-    for (let p = 6; p >= 0; p--) right += hole(op * 8 + p, false);         // kolom kanan: lubang lawan, atas (6) → bawah (0)
-    const storeEl = (i, who) => `<div class="ck-store ${hi === i ? 'hi' : ''}"><span class="ck-seeds">${seedsHtml(b[i], i, true)}</span><span class="ck-snum">${b[i]}</span><span class="ck-who">${who}</span></div>`;
-    const chip = s => `<div class="gp-chip ${st.turn === s && st.winner === null ? 'turn' : ''}">${seatAva(ctx, s)}<div><b>${esc(seatName(ctx, s))}</b><small>Lumbung ${st.b[Congklak.store(s)]} biji</small></div></div>`;
-    let status = '';
-    if (st.winner === null && !ctx.anim) {
-      const l = st.last;
-      if (l && l.cap) status = `${esc(seatName(ctx, l.s))} menembak ${l.cap.n} biji ke lumbung!`;
-      else if (l && l.extra) status = `${esc(seatName(ctx, l.s))} berhenti di lumbung, jalan lagi.`;
-      else status = myTurn ? '<b>Giliranmu!</b> Ketuk lubang di kolom kiri.' : `Giliran ${esc(seatName(ctx, st.turn))}…`;
-    } else if (ctx.anim) status = 'Menyebar biji…';
-    box.innerHTML = `<div class="gp-others">${chip(op)}${chip(me)}</div><div class="gp-status">${status}</div>
-      <div class="ck-board">${storeEl(Congklak.store(op), 'Lumbung ' + esc(seatName(ctx, op)))}
-        <div class="ck-cols"><div class="ck-col"><div class="ck-lbl">${ctx.spectator ? esc(seatName(ctx, me)) : 'Lubang Kamu'} ↓</div>${left}</div><div class="ck-col"><div class="ck-lbl">↑ ${esc(seatName(ctx, op))}</div>${right}</div></div>
-        ${storeEl(Congklak.store(me), 'Lumbung ' + esc(seatName(ctx, me)))}</div>
-      ${st.winner === -1 ? `<div class="gp-result"><div class="gr-title">Seri!</div><div class="gr-sub">${esc(st.reason || '')}</div>${ctx.spectator ? '' : '<button type="button" class="btn btn-primary btn-block" onclick="TTG.mainLagi()">Main Lagi</button>'}</div>` : resultHtml(ctx, st.winner, st.reason)}`;
-    box.querySelectorAll('.ck-hole.ok').forEach(h => h.onclick = () => { SFX.unlock(); SFX.tap(); ctx.act({ pit: +h.dataset.p }); });
-  }
-  async function animCongklak(prev, next, redraw) {
-    const l = next.last;
-    if (!prev || next.gid !== prev.gid || !l || !l.trace) { redraw(next); if (next.winner !== null && next.winner !== undefined) SFX.win(); return; }
-    const b = prev.b.slice();
-    const drops = l.trace.filter(t => t.d !== undefined).length;
-    const D = Math.max(55, Math.min(170, 4200 / Math.max(1, drops)));
-    for (const t of l.trace) {
-      if (t.p !== undefined) { b[t.p] = 0; redraw(next, { b: b.slice(), hi: t.p }); SFX.pick(); await sleep(D * 1.6); }
-      else if (t.d !== undefined) { b[t.d]++; redraw(next, { b: b.slice(), hi: t.d }); SFX.seed(); await sleep(D); }
-      else if (t.c !== undefined) { const st = Congklak.store(l.s); b[st] += b[t.o] + b[t.c]; b[t.o] = 0; b[t.c] = 0; redraw(next, { b: b.slice(), hi: st }); SFX.capture(); await sleep(500); }
-    }
-    redraw(next);
-    if (next.winner !== null && next.winner !== undefined) SFX.win(); else if (l.extra) SFX.home();
-  }
-
-  /* =====================================================================
      SESI GAME
      ===================================================================== */
-  const ENG = { domino: Domino, ludo: Ludo, congklak: Congklak };
-  const RENDER = { domino: renderDomino, ludo: renderLudo, congklak: renderCongklak };
-  const ANIM = { domino: animDomino, ludo: animLudo, congklak: animCongklak };
+  const ENG = { domino: Domino, ludo: Ludo };
+  const RENDER = { domino: renderDomino, ludo: renderLudo };
+  const ANIM = { domino: animDomino, ludo: animLudo };
   let cur = null;   // { game, mode, roomId, seats, mySeat, state (terbaru), shown (sedang tampil), queue, anim }
   let rooms = {};
   let botTimer = null, autoTimer = null, beatTimer = null, rafLoop = 0, autoTick = null;
@@ -1020,14 +918,13 @@
       if (!dimainkanBot(cur.seats[s])) return;   // kursi sudah diambil alih / orangnya sudah kembali
       const after = eng.apply(cur.state, s, eng.bot(eng.norm(clone(cur.state)), s));
       if (after.v !== v) commit(after);
-    }, ENG[cur.game].botDelay ? ENG[cur.game].botDelay(eng0.norm(clone(st))) : cur.game === 'domino' ? 700 : cur.game === 'congklak' ? 500 : 400);
+    }, ENG[cur.game].botDelay ? ENG[cur.game].botDelay(eng0.norm(clone(st))) : cur.game === 'domino' ? 700 : 400);
   }
 
   /* ---------- lawan komputer ---------- */
   function mulaiBot(game, n, opt) {
     stopAll();
     opt = opt || null;
-    if (game === 'congklak') n = 2;
     const seats = [{ key: myKey, name: deviceName || 'Kamu' }];
     botAcak(n - 1).forEach(name => seats.push({ bot: true, name }));
     if (!myKey) {   // belum pilih nama: main lokal saja (tidak tampil di Live)
@@ -1055,7 +952,6 @@
   /* ---------- online: meja ---------- */
   function buatMeja(game, max, opt) {
     if (!myKey) { triggerToast('Pilih nama pengguna dulu', true); return; }
-    if (game === 'congklak') max = 2;
     const id = 'R' + Date.now() + Math.random().toString(36).slice(2, 5);
     const room = { id, game, host: myKey, hostName: deviceName, status: 'waiting', max, createdAt: Date.now(), activeAt: Date.now(), seats: { 0: Object.assign({ key: myKey, name: deviceName }, opt && opt.pal >= 0 ? { pal: opt.pal } : {}) }, online: { [myKey]: Date.now() }, opt: opt || null };
     rooms[id] = room;
@@ -1298,13 +1194,13 @@
       const pip = s => st.hands[s].reduce((a, t) => a + t[0] + t[1], 0);
       return seats.sort((a, b) => (b === st.winner) - (a === st.winner) || pip(a) - pip(b) || st.hands[a].length - st.hands[b].length);
     }
-    return seats.sort((a, b) => st.b[Congklak.store(b)] - st.b[Congklak.store(a)]);
+    return seats;
   }
   function nilaiPeringkat(game, st, s) {
     if (ENG[game].rankVal) return ENG[game].rankVal(st, s);
     if (game === 'ludo') return `${st.tokens[s].filter(t => t === 56).length}/4 bidak pulang`;
     if (game === 'domino') { const p = st.hands[s].reduce((a, t) => a + t[0] + t[1], 0); return st.hands[s].length ? `sisa ${st.hands[s].length} kartu · nilai ${p}` : 'kartu habis'; }
-    return `${st.b[Congklak.store(s)]} biji`;
+    return '';
   }
   function medali(rank) {
     const c = { 1: ['#FFE071', '#E3A500', '#8A5A00'], 2: ['#F1F3F6', '#AEB6C0', '#5C6670'], 3: ['#FFC18A', '#C8732E', '#6E3A10'] }[rank] || ['#E5E5EA', '#AEAEB2', '#3A3A3C'];
@@ -1325,7 +1221,7 @@
       if (w.iWin || ctx.spectator) SFX.win(); else SFX.pass();
       return;
     }
-    const seri = cur.game === 'congklak' && st.winner === -1;
+    const seri = false;
     const urut = peringkat(cur.game, st);
     const iWin = !ctx.spectator && urut[0] === ctx.mySeat && !seri;
     if (iWin) catat(`Juara 1 main ${GAMES[cur.game].name}`);
@@ -1359,12 +1255,14 @@
 
   /* ---------- tutup otomatis meja yang kosong ---------- */
   let lastClean = 0;
+  const DIHAPUS = ['congklak', 'kata', 'werewolf'];
   function bersihkanMeja() {
     const now = Date.now();
     if (now - lastClean < 8000) return;
     lastClean = now;
     Object.values(rooms).forEach(r => {
       if (!r || !r.id) return;
+      if (DIHAPUS.includes(r.game)) { roomsRef.child(r.id).remove(); return; }   // meja game yang sudah dihapus
       const inside = [...Object.values(r.online || {}), ...Object.values(r.viewers || {})].map(v => typeof v === 'number' ? v : (v && v.at) || 0);
       const life = Math.max(r.activeAt || r.createdAt || 0, ...inside);
       const idle = now - life > IDLE_CLOSE;
@@ -1618,22 +1516,6 @@
   .dc-f.f1{transform:rotateY(0deg) translateZ(32px)}.dc-f.f2{transform:rotateY(90deg) translateZ(32px)}.dc-f.f6{transform:rotateY(180deg) translateZ(32px)}
   .dc-f.f5{transform:rotateY(-90deg) translateZ(32px)}.dc-f.f3{transform:rotateX(90deg) translateZ(32px)}.dc-f.f4{transform:rotateX(-90deg) translateZ(32px)}
   .dc-shadow{position:absolute;left:8px;right:8px;bottom:-10px;height:10px;border-radius:50%;background:rgba(0,0,0,.18);filter:blur(3px)}
-  /* Congklak */
-  .ck-board{background:linear-gradient(90deg,#B9783C,#D99A55 30%,#E7B272 50%,#D99A55 70%,#B9783C);border-radius:90px;padding:16px 14px;box-shadow:0 12px 30px rgba(90,50,15,.35),inset 0 2px 0 rgba(255,255,255,.3),inset 0 -4px 10px rgba(0,0,0,.2);display:flex;flex-direction:column;align-items:center;gap:10px;max-width:420px;margin:0 auto}
-  .ck-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
-  .ck-col{display:flex;flex-direction:column;align-items:center;gap:7px}
-  .ck-store .ck-seeds{left:46%;right:50px;top:12%;bottom:12%}
-  .ck-lbl{font-size:12px;font-weight:800;color:#5A3210;opacity:.8;text-transform:uppercase;letter-spacing:.04em}
-  .ck-hole{position:relative;width:min(24vw,92px);height:min(11.5vw,48px);border-radius:50%;background:radial-gradient(ellipse at 50% 35%,#6E3E16,#8E5525 60%,#A8682F);box-shadow:inset 0 5px 10px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.35);padding:0;transition:transform .15s,box-shadow .2s}
-  .ck-hole.ok{box-shadow:inset 0 5px 10px rgba(0,0,0,.55),0 0 0 3px #fff,0 0 0 6px var(--accent);animation:pulse 1.4s infinite}
-  .ck-hole.hi,.ck-store.hi{box-shadow:inset 0 5px 10px rgba(0,0,0,.55),0 0 0 4px #FFE08A}
-  .ck-hole:disabled{cursor:default}
-  .ck-seeds{position:absolute;inset:8% 10%}
-  .ck-seeds i{position:absolute;width:10px;height:7px;border-radius:50%;box-shadow:inset 0 -1px 1px rgba(0,0,0,.25),0 1px 1px rgba(0,0,0,.4)}
-  .ck-num{position:absolute;right:-6px;top:-6px;min-width:24px;height:24px;padding:0 5px;border-radius:12px;background:#fff;color:#5A3210;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-  .ck-store{position:relative;width:min(62vw,250px);height:min(14vw,58px);border-radius:40px;background:radial-gradient(ellipse at 50% 35%,#6E3E16,#8E5525 60%,#A8682F);box-shadow:inset 0 6px 12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.35)}
-  .ck-snum{position:absolute;right:10px;top:50%;transform:translateY(-50%);min-width:34px;height:34px;padding:0 6px;border-radius:17px;background:var(--accent);color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
-  .ck-who{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#FFE7C4;font-size:12px;font-weight:800;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   `;
   const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
   // gradasi bersama untuk kartu domino
@@ -1676,8 +1558,17 @@
     }
     if (cur && cur.roomId) onRoomUpdate();
     if (!document.getElementById('tab-hiburan').classList.contains('hidden')) renderPane();
+    tandaLive();
   });
-  setInterval(() => { lastClean = 0; bersihkanMeja(); }, 10000);
+  // tanda kecil "LIVE" di kartu Hiburan (menu Lainnya) saat ada yang sedang main game
+  function tandaLive() {
+    const el = $('hiburanLive'); if (!el) return;
+    const aktif = Object.values(rooms).filter(r => r && GAMES[r.game] && r.status === 'playing' && !r.paused
+      && arr(r.seats).some(x => x && !x.bot && fresh((r.online || {})[x.key])));
+    el.classList.toggle('hidden', !aktif.length);
+    el.title = aktif.length ? 'Sedang main: ' + aktif.map(r => GAMES[r.game].name).join(', ') : '';
+  }
+  setInterval(() => { lastClean = 0; bersihkanMeja(); tandaLive(); }, 10000);
 
   function daftarGame(key, spec) {
     GAMES[key] = spec.meta; ENG[key] = spec.engine; RENDER[key] = spec.render; ANIM[key] = spec.anim || (async (p, n, redraw) => redraw(n));
@@ -1692,6 +1583,6 @@
     gabung: gabungMeja, hapusMeja, tonton: id => masukMeja(id, 'watch'), mintaIkut, batalMinta, terimaIkut, tolakIkut,
     tutupPodium,
     suara: () => { SFX.toggle(); refreshHead(); if (!SFX.muted) SFX.tap(); },
-    _engines: { Domino, Ludo, Congklak }
+    _engines: { Domino, Ludo }
   };
 })();
