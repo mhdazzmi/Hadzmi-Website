@@ -610,8 +610,10 @@
     if (!prev || next.gid !== prev.gid || !l) { redraw(next); return; }
     if (l.roll) {
       redraw(prev, { tokens: prev.tokens, glow: l.s, rolling: true });
-      diceShow(l.roll, true); SFX.dice();
-      await sleep(650); SFX.land();
+      // suara dadu hanya untuk lemparan sendiri; lemparan orang lain/bot tetap beranimasi tapi tanpa suara
+      const dadukuSendiri = !!cur && cur.mode !== 'watch' && cur.mySeat === l.s;
+      diceShow(l.roll, true); if (dadukuSendiri) SFX.dice();
+      await sleep(650); if (dadukuSendiri) SFX.land();
       redraw(next);
       if (l.none) await sleep(550);
       return;
