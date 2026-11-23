@@ -48,12 +48,11 @@
     const el = UI.h(`<div class="review" role="dialog" aria-label="Belajar">
       <div class="rv-top">
         <button type="button" class="circle-btn glass" id="rvClose" aria-label="Keluar">${icon('close')}</button>
-        <div class="counts" id="rvCounts"></div>
+        <div class="rv-status"><div class="rv-left" id="rvCounts"></div><div class="rv-prog"><i id="rvProg"></i></div></div>
         <button type="button" class="circle-btn glass" id="rvUndo" aria-label="Undo">${icon('undo')}</button>
         <button type="button" class="circle-btn glass" id="rvMore" aria-label="Lainnya">${icon('more')}</button>
       </div>
-      <div class="rv-prog"><i id="rvProg"></i></div>
-      <div class="rv-scroll" id="rvScroll"><div class="rv-card" id="rvCard"></div><div class="rv-meta" id="rvMeta"></div></div>
+      <div class="rv-scroll" id="rvScroll"><div class="rv-kindwrap" id="rvKind"></div><div class="rv-card" id="rvCard"></div><div class="rv-meta" id="rvMeta"></div></div>
       <div class="rv-bottom" id="rvBottom"></div></div>`);
     document.body.appendChild(el);
     document.body.style.overflow = 'hidden';
@@ -78,9 +77,10 @@
   }
 
   function updateTop(q) {
-    const c = q ? { n: q.news.length, l: q.learnNow.length + q.learnToday.length, r: q.reviews.length } : Col.counts(S.deck);
+    let c = q ? { n: q.news.length, l: q.learnNow.length + q.learnToday.length, r: q.reviews.length } : Col.counts(S.deck);
+    if (S.chain) { c = { n: 0, l: 0, r: 0 }; S.chain.forEach(id => { const d = DB.get('decks', id); if (!d) return; const k = Col.counts(d); c.n += k.n; c.l += k.l; c.r += k.r; }); }
     const cur = S.card ? (S.card.state === 'new' ? 'n' : S.card.state === 'review' ? 'r' : 'l') : '';
-    $('#rvCounts', S.el).innerHTML = `<span class="c-new ${cur === 'n' ? 'cur' : ''}">${c.n}</span><span class="c-lrn ${cur === 'l' ? 'cur' : ''}">${c.l}</span><span class="c-rev ${cur === 'r' ? 'cur' : ''}">${c.r}</span>`;
+    $('#rvCounts', S.el).textContent = (c.n + c.l + c.r) ? `${c.n + c.l + c.r} lagi` + (S.done ? ` · ${S.done} selesai` : '') : (S.done ? `${S.done} selesai` : '');
     const left = c.n + c.l + c.r;
     $('#rvProg', S.el).style.width = (S.done + left ? (S.done / (S.done + left)) * 100 : 100) + '%';
     $('#rvUndo', S.el).disabled = !S.undo.length; $('#rvUndo', S.el).style.opacity = S.undo.length ? 1 : .35;
@@ -119,8 +119,10 @@
     box.innerHTML = cardHtml(r.q, card, r.nt);
     const deck = DB.get('decks', card.deckId);
     const p = Col.preset(card.deckId);
-    $('#rvMeta', S.el).textContent = (deck ? deck.name : '') + (card.state === 'new' ? ' · baru' : '');
-    $('#rvBottom', S.el).innerHTML = `<button type="button" class="btn primary rv-show" id="rvShow">Tampilkan Jawaban${p.showTimer ? ' <small id="rvTimer" style="opacity:.8;font-weight:500">0:00</small>' : ''}</button><div class="kbd-hint">Spasi untuk membalik · 1–4 menilai · R audio · E edit · U undo</div>`;
+    $('#rvMeta', S.el).textContent = deck ? deck.name.split('::').join(' › ') : '';
+    const kind = card.state === 'new' ? ['k-new', 'Kartu baru'] : card.state === 'review' ? ['k-rev', 'Ulangan'] : card.state === 'relearning' ? ['k-lrn', 'Belajar lagi'] : ['k-lrn', 'Sedang dihafal'];
+    $('#rvKind', S.el).innerHTML = `<span class="rv-kind ${kind[0]}">${kind[1]}</span>`;
+    $('#rvBottom', S.el).innerHTML = `<button type="button" class="btn primary rv-show" id="rvShow">Lihat jawaban${p.showTimer ? ' <small id="rvTimer" style="opacity:.8;font-weight:500">0:00</small>' : ''}</button><div class="kbd-hint">Spasi: lihat jawaban · R: putar suara · E: edit · U: urungkan</div>`;
     $('#rvShow', S.el).onclick = showAnswer;
     const inp = box.querySelector('.type-input');
     if (inp) { setTimeout(() => inp.focus(), 350); inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); showAnswer(); } }); }
@@ -143,8 +145,8 @@
     if (ans) setTimeout(() => { const sc = $('#rvScroll', S.el); const top = ans.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 80; if (top > sc.clientHeight * 0.4) sc.scrollTo({ top, behavior: 'smooth' }); }, 40);
     const p = Col.preset(card.deckId);
     const pv = Sched.preview(card, p, Date.now(), Col.today(), Col.dayOffset());
-    const lab = ['Again', 'Hard', 'Good', 'Easy'];
-    $('#rvBottom', S.el).innerHTML = `<div class="ease-row">${[1, 2, 3, 4].map(g => `<button type="button" class="ease-btn e${g}" data-g="${g}">${p.showIntervals ? `<small>${Sched.fmtIvl(pv[g])}</small>` : ''}${lab[g - 1]}</button>`).join('')}</div><div class="kbd-hint">1 Again · 2 Hard · 3/Spasi Good · 4 Easy</div>`;
+    const lab = ['Lupa', 'Susah', 'Ingat', 'Gampang'];
+    $('#rvBottom', S.el).innerHTML = `<div class="ease-row">${[1, 2, 3, 4].map(g => `<button type="button" class="ease-btn e${g}" data-g="${g}">${p.showIntervals ? `<small>${Sched.fmtIvl(pv[g])}</small>` : ''}${lab[g - 1]}</button>`).join('')}</div>${(DB.meta('helpSeen') || 0) < 15 ? '<p class="ease-help">Seberapa ingat kamu? Jujur saja, Lekat akan atur kapan kartu ini muncul lagi.</p>' : ''}<div class="kbd-hint">1 Lupa · 2 Susah · 3/Spasi Ingat · 4 Gampang</div>`;
     S.el.querySelectorAll('.ease-btn').forEach(b => b.onclick = () => answer(+b.dataset.g));
     if (p.autoplay) {
       // putar audio yang hanya muncul di sisi belakang
@@ -162,7 +164,8 @@
     S.undo.push(Object.assign(res.undo, { session: Object.assign({}, S.session), deckId0: S.deck.id }));
     if (S.undo.length > 30) S.undo.shift();
     S.done++;
-    if (res.leech) UI.toast('Leech! Kartu ini sering lupa — pertimbangkan untuk menulis ulang.');
+    DB.meta('helpSeen', (DB.meta('helpSeen') || 0) + 1);
+    if (res.leech) UI.toast('Kartu ini sering lupa. Coba tambahkan contoh kalimat atau gambar supaya lebih mudah diingat.');
     nextCard();
   }
   function undo() {
@@ -180,7 +183,7 @@
 
   function finished(waitUntil) {
     const box = $('#rvCard', S.el);
-    $('#rvMeta', S.el).textContent = '';
+    $('#rvMeta', S.el).textContent = ''; $('#rvKind', S.el).innerHTML = '';
     const today = Col.today();
     const logs = DB.list('revlog').filter(r => Col.dayOf(r.id) === today);
     const correct = logs.filter(r => r.ease > 1).length;
@@ -192,19 +195,19 @@
         const t = $('#rvWait', S.el); if (t) t.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
         if (s <= 0) nextCard(); else S.waitT = setTimeout(upd, 1000);
       };
-      box.innerHTML = `<div class="rv-done"><div class="big">⏳</div><h2>Istirahat sebentar</h2><p class="muted">Kartu learning berikutnya muncul dalam</p><div style="font-size:40px;font-weight:700;font-variant-numeric:tabular-nums" id="rvWait"></div><p class="muted" style="font-size:14px">Biarkan layar ini terbuka, atau kembali nanti.</p></div>`;
+      box.innerHTML = `<div class="rv-done"><div class="big">⏳</div><h2>Istirahat sebentar</h2><p class="muted">Kartu yang sedang dihafal muncul lagi dalam</p><div style="font-size:40px;font-weight:700;font-variant-numeric:tabular-nums" id="rvWait"></div><p class="muted" style="font-size:14px">Biarkan layar ini terbuka, atau kembali nanti.</p></div>`;
       $('#rvBottom', S.el).innerHTML = `<button type="button" class="btn secondary block" id="rvLater">Selesai untuk sekarang</button>`;
       $('#rvLater', S.el).onclick = close;
       upd(); return;
     }
     const st = (() => { const days = new Set(DB.list('revlog').map(r => Col.dayOf(r.id))); let d = today, n = 0; while (days.has(d)) { n++; d--; } return n; })();
-    box.innerHTML = `<div class="rv-done"><div class="big">🎉</div><h2>Selamat! Deck ini selesai untuk hari ini.</h2>
+    box.innerHTML = `<div class="rv-done"><div class="big">🎉</div><h2>Beres untuk hari ini!</h2>
       <p class="muted">${S.done} kartu di sesi ini · ${logs.length} ulasan hari ini · ${logs.length ? Math.round(correct / logs.length * 100) : 0}% benar · ${mins} menit</p>
       <p style="font-weight:600">🔥 ${st} hari beruntun</p>
-      <p class="muted" style="font-size:14px">Ingin lanjut? Gunakan Custom study untuk menambah kartu baru atau mengulang kartu sulit.</p></div>`;
-    $('#rvBottom', S.el).innerHTML = `<div style="display:flex;gap:10px;max-width:700px;margin:0 auto"><button type="button" class="btn secondary" style="flex:1" id="rvCustom">Custom study</button><button type="button" class="btn primary" style="flex:1" id="rvDone">Selesai</button></div>`;
+      <p class="muted" style="font-size:14px">Mau lanjut? Pilih Latihan tambahan untuk menambah kartu baru atau mengulangi yang sulit.</p></div>`;
+    $('#rvBottom', S.el).innerHTML = `<div style="display:flex;gap:10px;max-width:700px;margin:0 auto"><button type="button" class="btn secondary" style="flex:1" id="rvCustom">Latihan tambahan</button><button type="button" class="btn primary" style="flex:1" id="rvDone">Selesai</button></div>`;
     $('#rvDone', S.el).onclick = close;
-    $('#rvCustom', S.el).onclick = () => { const d = S.deck; close(); setTimeout(() => G.App.deckOverview(d.filtered ? DB.get('decks', 1) : d), 300); };
+    $('#rvCustom', S.el).onclick = () => { const d = S.deck; close(); setTimeout(() => G.App.deckOverview(d), 300); };
   }
 
   // ---------- Menu ----------
@@ -212,35 +215,35 @@
     if (!S) return;
     const c = S.card;
     UI.actions([
-      c && { label: 'Edit note', icon: 'edit', fn: editCurrent },
-      c && { label: 'Flag', icon: 'flag', fn: flagMenu },
-      c && { label: 'Bury kartu (tunda ke besok)', icon: 'moon', fn: () => buryCard(false) },
-      c && { label: 'Bury note', icon: 'moon', fn: () => buryCard(true) },
-      c && { label: 'Suspend kartu', icon: 'pause', fn: () => suspend(false) },
-      c && { label: 'Suspend note', icon: 'pause', fn: () => suspend(true) },
-      c && { label: 'Putar ulang audio', icon: 'speaker', fn: replay },
-      c && { label: 'Info kartu', icon: 'info', fn: () => cardInfo(c) },
-      c && { label: 'Lupakan (reset jadi baru)', icon: 'reset', fn: async () => { if (await UI.confirm('Reset kartu?', 'Kartu kembali menjadi kartu baru.', 'Reset')) { Col.resetCard(c); nextCard(); } } },
-      { label: 'Opsi deck', icon: 'gear', fn: () => G.App.deckOptions(DB.get('decks', c ? c.deckId : S.deck.id)) },
-      c && { label: 'Hapus note', icon: 'trash', danger: true, fn: async () => { if (await UI.confirm('Hapus note?', 'Semua kartu dari note ini akan dihapus.', 'Hapus', true)) { Col.deleteNotes([c.noteId]); UI.toast('Note dihapus'); nextCard(); } } }
+      c && { label: 'Edit kartu', icon: 'edit', fn: editCurrent },
+      c && { label: 'Tandai dengan warna', icon: 'flag', fn: flagMenu },
+      c && { label: 'Tunda ke besok', icon: 'moon', fn: () => buryCard(false) },
+      c && { label: 'Tunda semua kartu dari kata ini', icon: 'moon', fn: () => buryCard(true) },
+      c && { label: 'Sembunyikan kartu ini', icon: 'pause', fn: () => suspend(false) },
+      c && { label: 'Sembunyikan semua kartu dari kata ini', icon: 'pause', fn: () => suspend(true) },
+      c && { label: 'Putar suara lagi', icon: 'speaker', fn: replay },
+      c && { label: 'Riwayat & info kartu', icon: 'info', fn: () => cardInfo(c) },
+      c && { label: 'Ulang dari awal', icon: 'reset', fn: async () => { if (await UI.confirm('Ulang dari awal?', 'Kartu ini dianggap baru lagi.', 'Ulang')) { Col.resetCard(c); nextCard(); } } },
+      { label: 'Pengaturan deck', icon: 'gear', fn: () => G.App.simpleOptions(DB.get('decks', c ? c.deckId : S.deck.id)) },
+      c && { label: 'Hapus kartu ini', icon: 'trash', danger: true, fn: async () => { if (await UI.confirm('Hapus kartu ini?', 'Semua kartu dari kata/catatan ini ikut terhapus.', 'Hapus', true)) { Col.deleteNotes([c.noteId]); UI.toast('Note dihapus'); nextCard(); } } }
     ]);
   }
   function flagMenu() {
     const c = S.card;
-    UI.actions([...FLAGS.map(([n, l]) => ({ label: (c.flag === n ? '✓ ' : '') + 'Flag ' + l, fn: () => setFlag(n) })), { label: 'Hapus flag', fn: () => setFlag(0) }]);
+    UI.actions([...FLAGS.map(([n, l]) => ({ label: (c.flag === n ? '✓ ' : '') + 'Tandai ' + l, fn: () => setFlag(n) })), { label: 'Hapus tanda', fn: () => setFlag(0) }]);
   }
-  function setFlag(n) { const c = S.card; c.flag = c.flag === n ? 0 : n; DB.put('cards', c); const f = $('#rvCard .rv-flag', S.el); if (f) f.remove(); if (c.flag) $('#rvCard', S.el).insertAdjacentHTML('afterbegin', `<i class="rv-flag f${c.flag}"></i>`); UI.toast(c.flag ? 'Flag dipasang' : 'Flag dihapus'); }
+  function setFlag(n) { const c = S.card; c.flag = c.flag === n ? 0 : n; DB.put('cards', c); const f = $('#rvCard .rv-flag', S.el); if (f) f.remove(); if (c.flag) $('#rvCard', S.el).insertAdjacentHTML('afterbegin', `<i class="rv-flag f${c.flag}"></i>`); UI.toast(c.flag ? 'Ditandai' : 'Tanda dihapus'); }
   function buryCard(note) {
     const t = Col.today();
     const list = note ? DB.list('cards').filter(x => x.noteId === S.card.noteId) : [S.card];
     list.forEach(x => { x.buriedDay = t; DB.put('cards', x); });
-    UI.toast(note ? 'Note dikubur sampai besok' : 'Kartu dikubur sampai besok'); nextCard();
+    UI.toast('Ditunda sampai besok'); nextCard();
   }
   function suspend(note) {
     const list = note ? DB.list('cards').filter(x => x.noteId === S.card.noteId) : [S.card];
     list.forEach(x => { x.suspended = true; DB.put('cards', x); });
     const ids = list.map(x => x.id);
-    UI.toast(note ? 'Note di-suspend' : 'Kartu di-suspend', { label: 'Urungkan', fn: () => { ids.forEach(id => { const x = DB.get('cards', id); if (x) { x.suspended = false; DB.put('cards', x); } }); if (S) updateTop(); } });
+    UI.toast('Kartu disembunyikan', { label: 'Urungkan', fn: () => { ids.forEach(id => { const x = DB.get('cards', id); if (x) { x.suspended = false; DB.put('cards', x); } }); if (S) updateTop(); } });
     nextCard();
   }
   function replay() { const box = $('#rvCard', S.el); playAll(box, Col.preset(S.card.deckId).ttsRate); }
@@ -264,7 +267,7 @@
     const due = card.state === 'new' ? 'Baru #' + card.due : card.state === 'review' ? fmtDate(Col.dayStart(card.due) + 3600000) + ` (${card.due - today >= 0 ? card.due - today + ' hari lagi' : 'terlambat ' + (today - card.due) + ' hari'})` : new Date(card.due).toLocaleString('id-ID');
     const avg = logs.length ? (logs.reduce((a, r) => a + (r.time || 0), 0) / logs.length / 1000).toFixed(1) + ' dtk' : '-';
     const tname = nt.kind === 'std' ? (nt.tmpls[card.ord] || {}).name : nt.kind === 'cloze' ? 'Cloze ' + (card.ord + 1) : 'Occlusion ' + (card.ord + 1);
-    const typeLbl = ['Learn', 'Review', 'Relearn', 'Manual'];
+    const typeLbl = ['Hafalan', 'Ulangan', 'Belajar lagi', 'Manual'];
     UI.sheet({ title: 'Info kartu', body: `
       <div class="list"><div class="row" style="display:block"><div class="info-grid">
         <div>Ditambahkan</div><div>${fmtDate(card.created || card.id)}</div>
@@ -284,7 +287,7 @@
         <div>ID kartu / note</div><div style="font-family:var(--mono);font-size:12px">${card.id} / ${note.id}</div>
       </div></div></div>
       <div class="section-h"><span>Riwayat ulasan</span></div>
-      <div class="list"><div class="row" style="display:block">${logs.length ? `<table class="stat-table"><tr style="color:var(--label2)"><td>Tanggal</td><td>Tipe</td><td>Nilai</td><td>Interval</td></tr>${logs.map(r => `<tr><td>${fmtDate(r.id)}</td><td>${typeLbl[r.type] || ''}</td><td style="color:${['', 'var(--red-ink)', 'var(--label2)', 'var(--green-ink)', 'var(--tint-ink)'][r.ease]}">${['', 'Again', 'Hard', 'Good', 'Easy'][r.ease]}</td><td>${r.ivl > 0 ? r.ivl + 'h' : Math.round(-r.ivl / 60) + 'm'}</td></tr>`).join('')}</table>` : '<div class="muted">Belum pernah diulas</div>'}</div></div>` });
+      <div class="list"><div class="row" style="display:block">${logs.length ? `<table class="stat-table"><tr style="color:var(--label2)"><td>Tanggal</td><td>Tipe</td><td>Nilai</td><td>Interval</td></tr>${logs.map(r => `<tr><td>${fmtDate(r.id)}</td><td>${typeLbl[r.type] || ''}</td><td style="color:${['', 'var(--red-ink)', 'var(--label2)', 'var(--green-ink)', 'var(--tint-ink)'][r.ease]}">${['', 'Lupa', 'Susah', 'Ingat', 'Gampang'][r.ease]}</td><td>${r.ivl > 0 ? r.ivl + 'h' : Math.round(-r.ivl / 60) + 'm'}</td></tr>`).join('')}</table>` : '<div class="muted">Belum pernah diulas</div>'}</div></div>` });
   }
 
   // ---------- Keyboard ----------

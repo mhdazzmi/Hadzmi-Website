@@ -67,7 +67,7 @@
     // jumlah kartu
     const cnt = { new: 0, learn: 0, relearn: 0, young: 0, mature: 0, susp: 0 };
     cards.forEach(c => { if (c.suspended) cnt.susp++; else if (c.state === 'new') cnt.new++; else if (c.state === 'learning') cnt.learn++; else if (c.state === 'relearning') cnt.relearn++; else if (c.ivl >= 21) cnt.mature++; else cnt.young++; });
-    const CNT = [['new', 'Baru', '#0A84FF'], ['learn', 'Learning', '#FF9500'], ['relearn', 'Relearning', '#FF3B30'], ['young', 'Muda (<21h)', '#34C759'], ['mature', 'Matang (≥21h)', '#1E7A35'], ['susp', 'Suspended', '#8E8E93']];
+    const CNT = [['new', 'Belum dipelajari', '#0A84FF'], ['learn', 'Sedang dihafal', '#FF9500'], ['relearn', 'Belajar lagi (sempat lupa)', '#FF3B30'], ['young', 'Mulai hafal (< 21 hari)', '#34C759'], ['mature', 'Sudah hafal (≥ 21 hari)', '#1E7A35'], ['susp', 'Disembunyikan', '#8E8E93']];
     const total = cards.length || 1;
     // interval
     const ivls = cards.filter(c => c.state === 'review' && !c.suspended).map(c => c.ivl);
@@ -100,12 +100,17 @@
     const decks = Col.decks().filter(d => !d.filtered);
     v.innerHTML = `
       <div class="navbar"></div>
-      <h1 class="large-title">Statistik</h1>
+      <h1 class="large-title">Progres</h1>
       <div class="list" style="margin-bottom:10px"><div class="row"><div class="grow">Deck</div><select id="stDeck"><option value="0">Seluruh koleksi</option>${decks.map(d => `<option value="${d.id}" ${d.id === st.deckId ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select></div></div>
       ${UI.seg('range', [[30, '1 bulan'], [90, '3 bulan'], [365, '1 tahun'], [0, 'Semua']], st.range)}
+      <div class="summary-card">
+        <div><b>${cnt.mature}</b><span>kartu sudah hafal</span></div>
+        <div><b>${rv.length ? pct(rv) : '–'}</b><span>tingkat ingat saat diulang</span></div>
+        <div><b>${(fc[1] || 0)}</b><span>kartu muncul besok</span></div>
+      </div>
       <div class="section-h"><span>Hari ini</span></div>
       <div class="tiles">
-        <div class="tile"><div class="v">${tLogs.length}</div><div class="k">${icon('check')} ulasan</div></div>
+        <div class="tile"><div class="v">${tLogs.length}</div><div class="k">${icon('check')} kartu dijawab</div></div>
         <div class="tile"><div class="v">${tMin}<span style="font-size:16px"> mnt</span></div><div class="k">${icon('clock')} waktu belajar</div></div>
         <div class="tile"><div class="v">${tLogs.length ? Math.round(tCorrect / tLogs.length * 100) : 0}%</div><div class="k">${icon('sparkle')} benar</div></div>
         <div class="tile"><div class="v">${streak}</div><div class="k">${icon('flame')} hari beruntun</div></div>
@@ -113,13 +118,14 @@
       <div class="section-h"><span>Kalender</span><span>${activeDays} hari aktif</span></div>
       <div class="chart-card"><div class="heat">${heat}</div><div class="heat-legend">Sedikit <i style="background:var(--fill)"></i><i class="l1" style="background:#B3D7FF"></i><i style="background:#66AFFF"></i><i style="background:#0A84FF"></i><i style="background:#0058B8"></i> Banyak</div></div>
       <div class="section-h"><span>Aktivitas</span></div>
-      <div class="chart-card" id="cRev"><h3>Ulasan per hari</h3><div class="cap">Total ${logs.length} ulasan · rata-rata ${(logs.length / Math.max(1, days)).toFixed(1)}/hari</div>${rev.html}</div>
-      <div class="chart-card" id="cFc" style="margin-top:10px"><h3>Perkiraan beban</h3><div class="cap">Kartu jatuh tempo ${fDays} hari ke depan · rata-rata ${(fc.reduce((a, b) => a + b, 0) / fDays).toFixed(1)}/hari · besok ${fc[1] || 0}</div>${fcb.html}</div>
+      <div class="chart-card" id="cRev"><h3>Kartu dijawab per hari</h3><div class="cap">Total ${logs.length} · rata-rata ${(logs.length / Math.max(1, days)).toFixed(1)}/hari</div>${rev.html}</div>
+      <div class="chart-card" id="cFc" style="margin-top:10px"><h3>Jadwal ke depan</h3><div class="cap">Kartu yang akan muncul ${fDays} hari ke depan · rata-rata ${(fc.reduce((a, b) => a + b, 0) / fDays).toFixed(1)}/hari · besok ${fc[1] || 0}</div>${fcb.html}</div>
       <div class="section-h"><span>Kartu</span><span>${cards.length} total</span></div>
       <div class="chart-card"><h3>Jumlah kartu</h3>
         <div class="stack-bar">${CNT.filter(([k]) => cnt[k]).map(([k, l, c]) => `<i style="width:${cnt[k] / total * 100}%;background:${c}" title="${l}: ${cnt[k]}"></i>`).join('')}</div>
         <table class="stat-table">${CNT.map(([k, l, c]) => `<tr><td><span class="legend"><span><i style="background:${c}"></i>${l}</span></span></td><td>${cnt[k]} <span class="muted" style="font-weight:400">(${Math.round(cnt[k] / total * 100)}%)</span></td></tr>`).join('')}</table></div>
-      <div class="chart-card" id="cIv" style="margin-top:10px"><h3>Distribusi interval</h3><div class="cap">${ivls.length ? `Rata-rata ${(ivls.reduce((a, b) => a + b, 0) / ivls.length).toFixed(1)} hari · terpanjang ${Math.max(...ivls)} hari` : 'Belum ada kartu review'}</div>${ivb.html}</div>
+      <div class="chart-card" id="cIv" style="margin-top:10px"><h3>Jarak ulang kartu</h3><div class="cap">${ivls.length ? `Rata-rata ${(ivls.reduce((a, b) => a + b, 0) / ivls.length).toFixed(1)} hari · terpanjang ${Math.max(...ivls)} hari` : 'Belum ada kartu review'}</div>${ivb.html}</div>
+      <details class="adv"><summary>Detail lanjutan (retensi, tombol, FSRS)</summary>
       <div class="section-h"><span>Retensi</span></div>
       <div class="chart-card"><h3>True retention</h3><div class="cap">Persentase kartu review yang diingat (Hard/Good/Easy) dalam periode ini</div>
         <table class="stat-table"><tr><td>Muda (interval &lt; 21 hari)</td><td>${pct(young)} <span class="muted" style="font-weight:400">· ${young.length}</span></td></tr><tr><td>Matang (≥ 21 hari)</td><td>${pct(mature)} <span class="muted" style="font-weight:400">· ${mature.length}</span></td></tr><tr><td>Semua review</td><td>${pct(rv)}</td></tr>
@@ -129,7 +135,7 @@
         ${[[0, 'Learning'], [1, 'Review'], [2, 'Relearning']].map(([t, l]) => { const b = btn(t); const s = b.reduce((x, y) => x + y, 0); return `<tr><td>${l}</td><td>${b.join(' · ')}${s ? ` <span class="muted" style="font-weight:400">(${Math.round((s - b[0]) / s * 100)}% benar)</span>` : ''}</td></tr>`; }).join('')}</table></div>
       <div class="section-h"><span>FSRS</span></div>
       <div class="chart-card" id="cD"><h3>Distribusi difficulty</h3><div class="cap">${withS.length ? `Rata-rata ${Math.round(withS.reduce((a, c) => a + (c.d - 1) / 9, 0) / withS.length * 100)}% · stabilitas rata-rata ${(withS.reduce((a, c) => a + c.s, 0) / withS.length).toFixed(1)} hari` : 'Belum ada data'}</div>${db.html}</div>
-      <div class="chart-card" id="cH" style="margin-top:10px"><h3>Jam belajar</h3><div class="cap">Jumlah ulasan per jam (ketuk batang untuk % benar)</div>${hb.html}</div>`;
+      <div class="chart-card" id="cH" style="margin-top:10px"><h3>Jam belajar</h3><div class="cap">Jumlah ulasan per jam (ketuk batang untuk % benar)</div>${hb.html}</div></details>`;
     bindTips($('#cRev', v), rev.data); bindTips($('#cFc', v), fcb.data); bindTips($('#cIv', v), ivb.data); bindTips($('#cD', v), db.data); bindTips($('#cH', v), hb.data);
     UI.bindSeg(v, (n, val) => { st.range = +val; render(v); });
     $('#stDeck', v).onchange = e => { st.deckId = +e.target.value; render(v); };

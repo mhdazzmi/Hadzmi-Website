@@ -4,6 +4,18 @@
   const { DB, Col, UI, Render } = G;
   const { $, $$, esc, icon } = UI;
   const state = { typeId: null, deckId: null, sticky: {}, stickyVals: {}, tags: '' };
+  const KINDS = [
+    ['en-vocab', 'Kosakata', 'book', 'Kata + arti + contoh. Jadi 2 kartu: tebak arti, lalu ketik ejaannya.'],
+    ['basic', 'Tanya–jawab', 'copy', 'Satu sisi pertanyaan, satu sisi jawaban.'],
+    ['basic-rev', 'Bolak-balik', 'reset', 'Ditanya dua arah: depan → belakang dan belakang → depan.'],
+    ['cloze', 'Isi kalimat', 'edit', 'Sembunyikan kata di dalam kalimat. Cocok untuk grammar.'],
+    ['en-listen', 'Dengar & tulis', 'speaker', 'Dengarkan kalimat bahasa Inggris, lalu ketik apa yang kamu dengar.'],
+    ['basic-type', 'Ketik jawaban', 'edit', 'Latih ejaan dengan mengetik jawabannya.'],
+    ['io', 'Tutup gambar', 'image', 'Tutup label di gambar atau diagram, lalu tebak yang tertutup.']
+  ];
+  const FIELD_LABEL = { Word: 'Kata / frasa (Inggris)', Meaning: 'Arti', Pronunciation: 'Pelafalan · opsional', Example: 'Contoh kalimat · opsional', 'Example Meaning': 'Arti contoh · opsional', Notes: 'Catatan · opsional',
+    Front: 'Depan (pertanyaan)', Back: 'Belakang (jawaban)', Text: 'Kalimat', 'Back Extra': 'Penjelasan · opsional', Sentence: 'Kalimat yang didengar', Header: 'Judul · opsional', 'Add Reverse': 'Buat juga kartu kebalikan? (isi apa saja = ya)' };
+  const fieldLabel = f => FIELD_LABEL[f] || f;
 
   // ---------- Media ----------
   async function saveMedia(blob, name) {
@@ -48,24 +60,24 @@
     const isIO = nt.kind === 'io';
     root.innerHTML = `
       <div class="toolbar glass ${isIO ? 'no-stick' : ''}" id="edTools">
-        <button type="button" data-cmd="bold" aria-label="Tebal"><b>B</b></button>
-        <button type="button" data-cmd="italic" aria-label="Miring"><i>I</i></button>
-        <button type="button" data-cmd="underline" aria-label="Garis bawah"><u>U</u></button>
-        ${nt.kind === 'cloze' ? `<button type="button" data-act="cloze" title="Cloze baru (Ctrl+Shift+C)">[…]+</button><button type="button" data-act="cloze-same" title="Cloze nomor sama (Ctrl+Alt+Shift+C)">[…]=</button>` : ''}
+        <button type="button" data-act="aa" class="aa" aria-label="Format teks">Aa</button>
+        <button type="button" class="fmt" data-cmd="bold" aria-label="Tebal"><b>B</b></button>
+        <button type="button" class="fmt" data-cmd="italic" aria-label="Miring"><i>I</i></button>
+        <button type="button" class="fmt" data-cmd="underline" aria-label="Garis bawah"><u>U</u></button>
+        ${nt.kind === 'cloze' ? `<button type="button" data-act="cloze" class="cloze-btn" title="Blok kata dulu (Ctrl+Shift+C)">[…] Sembunyikan</button><button type="button" data-act="cloze-same" title="Sembunyikan di kartu yang sama (Ctrl+Alt+Shift+C)">[…] Sama</button>` : ''}
         <button type="button" data-act="img" aria-label="Sisipkan gambar">${icon('image')}</button>
         <button type="button" data-act="audio" aria-label="Sisipkan audio">${icon('speaker')}</button>
         <button type="button" data-act="rec" class="rec" aria-label="Rekam suara">${icon('mic')}</button>
-        <button type="button" data-cmd="removeFormat" aria-label="Hapus format">Tx</button>
-        <button type="button" data-act="html" aria-label="Edit HTML">&lt;/&gt;</button>
-        ${nt.key === 'en-vocab' ? `<button type="button" data-act="dict" style="color:var(--tint-ink)">${icon('sparkle')}&nbsp;Kamus</button>` : ''}
+        <button type="button" class="fmt" data-cmd="removeFormat" aria-label="Hapus format">Tx</button>
+        <button type="button" class="fmt" data-act="html" aria-label="Edit HTML">&lt;/&gt;</button>
       </div>
       ${isIO ? '<div id="ioBox"></div>' : ''}
       <div id="edFields">${nt.fields.map((f, i) => {
         if (isIO && (f === 'Image' || f === 'Occlusions')) return '';
-        return `<div class="field-box"><label><span>${esc(f)}</span>${opts.sticky ? `<button type="button" data-pin="${esc(f)}" title="Tetap isi field ini setelah menambah">${state.sticky[nt.id + ':' + f] ? '📌 Tetap' : 'Pin'}</button>` : ''}</label>
-          <div class="fed" contenteditable="true" data-f="${esc(f)}" data-ph="${esc(placeholder(nt, f))}" spellcheck="${/word|front|text|sentence|example/i.test(f) ? 'true' : 'false'}" lang="${/meaning|arti/i.test(f) ? 'id' : 'en'}">${toDisplay(values[f] || '')}</div></div>`;
+        return `<div class="field-box"><label><span>${esc(fieldLabel(f))}</span>${opts.sticky ? `<button type="button" data-pin="${esc(f)}" title="Biarkan terisi setelah menyimpan">${state.sticky[nt.id + ':' + f] ? '📌 Disematkan' : 'Sematkan'}</button>` : ''}</label>
+          <div class="fed" contenteditable="true" data-f="${esc(f)}" data-ph="${esc(placeholder(nt, f))}" spellcheck="${/word|front|text|sentence|example/i.test(f) ? 'true' : 'false'}" lang="${/meaning|arti/i.test(f) ? 'id' : 'en'}">${toDisplay(values[f] || '')}</div></div>${f === 'Word' && nt.key === 'en-vocab' ? `<button type="button" class="dict-btn" data-dict>${icon('sparkle')} Isi otomatis arti, pelafalan & contoh</button>` : ''}`;
       }).join('')}</div>
-      ${opts.dupWarn ? '<div id="dupWarn" class="section-f hidden" style="color:var(--orange-ink);margin-top:-4px">⚠️ Duplikat: field pertama sudah ada di koleksi</div>' : ''}`;
+      ${opts.dupWarn ? '<div id="dupWarn" class="section-f hidden" style="color:var(--orange-ink);margin-top:-4px">Kata ini sudah ada di koleksimu</div>' : ''}`;
     let focused = $('.fed', root);
     let io = null;
     if (isIO) io = ioEditor($('#ioBox', root), values.Image || '', values.Occlusions || '');
@@ -83,13 +95,15 @@
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); cloze(el, e.altKey); }
       });
     });
-    $$('[data-pin]', root).forEach(b => b.onclick = () => { const k = nt.id + ':' + b.dataset.pin; state.sticky[k] = !state.sticky[k]; b.textContent = state.sticky[k] ? '📌 Tetap' : 'Pin'; });
+    $$('[data-pin]', root).forEach(b => b.onclick = () => { const k = nt.id + ':' + b.dataset.pin; state.sticky[k] = !state.sticky[k]; b.textContent = state.sticky[k] ? '📌 Disematkan' : 'Sematkan'; });
+    $$('[data-dict]', root).forEach(b => b.onclick = () => dictionary(root, b));
     $('#edTools', root).addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
     $('#edTools', root).addEventListener('click', async e => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.cmd) { (focused || $('.fed', root)).focus(); document.execCommand(b.dataset.cmd); return; }
       const a = b.dataset.act;
       const target = focused || $('.fed', root);
+      if (a === 'aa') { $('#edTools', root).classList.toggle('open'); b.classList.toggle('on'); return; }
       if (a === 'cloze' || a === 'cloze-same') { cloze(target, a === 'cloze-same'); }
       else if (a === 'img') { const f = await pickFile('image/*'); if (!f) return; const n = await saveMedia(f, f.name); target.focus(); insertHtml(target, `<img src="${esc(Render.mediaUrl(n))}" data-name="${esc(n)}">`); }
       else if (a === 'audio') { const f = await pickFile('audio/*'); if (!f) return; const n = await saveMedia(f, f.name); target.focus(); insertHtml(target, `[sound:${esc(n)}]`); }
@@ -128,7 +142,7 @@
     };
   }
   function placeholder(nt, f) {
-    const map = { Word: 'contoh: resilient', Meaning: 'arti dalam bahasa Indonesia', Pronunciation: '/rɪˈzɪliənt/', Example: 'She is resilient after failure.', 'Example Meaning': 'terjemahan contoh kalimat', Text: 'Tulis kalimat, lalu blok kata & tekan […]+', Sentence: 'kalimat bahasa Inggris untuk didengar', Front: 'pertanyaan / kata', Back: 'jawaban / arti' };
+    const map = { Word: 'contoh: resilient', Meaning: 'arti dalam bahasa Indonesia', Pronunciation: '/rɪˈzɪliənt/', Example: 'She is resilient after failure.', 'Example Meaning': 'terjemahan contoh kalimat', Text: 'Tulis kalimat bahasa Inggris…', 'Back Extra': 'mis. aturan grammar-nya', Header: 'mis. Bagian tubuh', Notes: 'definisi / catatan tambahan', Sentence: 'kalimat bahasa Inggris untuk didengar', Front: 'pertanyaan / kata', Back: 'jawaban / arti' };
     return map[f] || f;
   }
   function insertHtml(el, html) { el.focus(); document.execCommand('insertHTML', false, html); }
@@ -308,23 +322,27 @@
     if (!state.deckId || !DB.get('decks', state.deckId) || DB.get('decks', state.deckId).filtered) state.deckId = DB.meta('lastDeck') || (Col.decks().find(d => !d.filtered) || {}).id;
     if (!DB.get('decks', state.deckId)) state.deckId = Col.decks().find(d => !d.filtered).id;
     const nt = DB.get('notetypes', state.typeId), deck = DB.get('decks', state.deckId);
+    const kinds = KINDS.map(([key, label, ic, desc]) => { const t = Col.typeByKey(key); return t ? { id: t.id, label, icon: ic, desc } : null; }).filter(Boolean);
+    const others = types.filter(t => !kinds.some(k => k.id === t.id));
+    const cur = kinds.find(k => k.id === nt.id);
     v.innerHTML = `
       <div class="navbar"><button type="button" class="circle-btn glass" id="adHist" aria-label="Riwayat">${icon('clock')}</button></div>
       <h1 class="large-title">Tambah</h1>
-      <div class="picker-row">
-        <button type="button" class="picker" id="pkType"><small>Tipe</small><b>${esc(nt.name)}</b></button>
-        <button type="button" class="picker" id="pkDeck"><small>Deck</small><b>${esc(deck.name)}</b></button>
-      </div>
+      <div class="kind-chips" id="kindChips">${kinds.map(k => `<button type="button" class="kind ${k.id === nt.id ? 'on' : ''}" data-kind="${k.id}">${icon(k.icon)}<span>${esc(k.label)}</span></button>`).join('')}${others.length ? `<button type="button" class="kind ${cur ? '' : 'on'}" id="kindMore">${icon('more')}<span>${cur ? 'Lainnya' : esc(nt.name)}</span></button>` : ''}</div>
+      <p class="kind-desc">${esc(cur ? cur.desc : 'Jenis kartu buatanmu sendiri.')}</p>
+      <button type="button" class="picker deck-pick" id="pkDeck"><small>Simpan ke deck</small><b>${esc(deck.name.split('::').join(' › '))}</b>${icon('chevR', 'chev')}</button>
       <div id="adEditor"></div>
-      <div class="field-box"><label><span>Tag</span></label><input class="tags-input" id="adTags" placeholder="pisahkan dengan spasi, mis. vocab toefl" value="${esc(state.tags)}" autocapitalize="off"></div>
-      <div class="add-bar"><button type="button" class="btn secondary" id="adPrev">${icon('eye')} Pratinjau</button><button type="button" class="btn primary" style="flex:1" id="adAdd">${icon('plus')} Tambah</button></div>
-      <p class="section-f">Ctrl/⌘+Enter untuk menambah. ${nt.kind === 'cloze' ? 'Blok teks lalu tekan […]+ (Ctrl+Shift+C) untuk membuat cloze; setiap nomor jadi satu kartu.' : nt.key === 'en-vocab' ? 'Tiap kata menghasilkan 2 kartu: Kata → Arti dan Arti → Kata (ketik ejaan). Tekan ✨ Kamus untuk isi otomatis IPA, contoh, dan arti.' : ''}</p>`;
+      <div class="field-box"><label><span>Tag · opsional</span></label><input class="tags-input" id="adTags" placeholder="mis. toefl kerja (pisahkan dengan spasi)" value="${esc(state.tags)}" autocapitalize="off"></div>
+      <div class="add-bar"><button type="button" class="btn secondary" id="adPrev">${icon('eye')} Pratinjau</button><button type="button" class="btn primary" style="flex:1" id="adAdd">${icon('check')} Simpan kartu</button></div>
+      <p class="section-f">${nt.kind === 'cloze' ? 'Tulis kalimatnya, blok kata yang mau disembunyikan, lalu ketuk <b>[…] Sembunyikan</b>. Setiap kata yang disembunyikan jadi satu kartu.' : nt.kind === 'io' ? 'Pilih gambar, lalu tutup bagian yang mau dihafal.' : 'Isi yang wajib saja dulu; yang opsional bisa dilengkapi nanti.'} Di keyboard: Ctrl/⌘+Enter untuk menyimpan.</p>`;
     const vals = {};
     nt.fields.forEach(f => { if (state.sticky[nt.id + ':' + f]) vals[f] = state.stickyVals[nt.id + ':' + f] || ''; });
     const ed = buildEditor($('#adEditor', v), nt, vals, { sticky: true, dupWarn: true });
-    $('#pkType', v).onclick = async () => {
-      const i = await UI.actions(types.map(t => ({ label: (t.id === nt.id ? '✓ ' : '') + t.name })), 'Pilih note type');
-      if (i >= 0) { state.typeId = types[i].id; DB.meta('lastType', state.typeId); renderAddView(v); }
+    $$('[data-kind]', v).forEach(b => b.onclick = () => { state.typeId = +b.dataset.kind; DB.meta('lastType', state.typeId); renderAddView(v); });
+    const km = $('#kindMore', v);
+    if (km) km.onclick = async () => {
+      const i = await UI.actions(others.map(t => ({ label: (t.id === nt.id ? '✓ ' : '') + t.name })), 'Jenis kartu lainnya');
+      if (i >= 0) { state.typeId = others[i].id; DB.meta('lastType', state.typeId); renderAddView(v); }
     };
     $('#pkDeck', v).onclick = () => pickDeck(state.deckId, id => { state.deckId = id; DB.meta('lastDeck', id); renderAddView(v); });
     $('#adTags', v).oninput = e => { state.tags = e.target.value; };
@@ -338,7 +356,7 @@
       ed.clear(f => state.sticky[nt.id + ':' + f]);
       ed.focus();
       const hist = DB.meta('addHist') || []; hist.unshift(r.note.id); DB.meta('addHist', hist.slice(0, 50));
-      UI.toast(`Ditambahkan · ${r.count} kartu`, { label: 'Urungkan', fn: () => { Col.deleteNotes([r.note.id]); UI.toast('Dibatalkan'); } });
+      UI.toast(`Tersimpan · ${r.count} kartu`, { label: 'Urungkan', fn: () => { Col.deleteNotes([r.note.id]); UI.toast('Dibatalkan'); } });
     };
     $('#adAdd', v).onclick = add;
     $('#adPrev', v).onclick = () => previewNote(nt, ed.values());
@@ -352,7 +370,7 @@
 
   function pickDeck(cur, cb) {
     const decks = Col.decks().filter(d => !d.filtered);
-    const sh = UI.sheet({ title: 'Pilih deck', right: `<button type="button" class="btn-txt" id="pdNew">Baru</button>`, body: `<div class="searchbar" style="margin-top:4px">${icon('search')}<input id="pdQ" placeholder="Cari deck"></div><div class="list" id="pdList"></div>` });
+    const sh = UI.sheet({ title: 'Pilih deck', right: `<button type="button" class="btn-txt" id="pdNew">Deck baru</button>`, body: `<div class="searchbar" style="margin-top:4px">${icon('search')}<input id="pdQ" placeholder="Cari deck"></div><div class="list" id="pdList"></div>` });
     const draw = (q) => {
       $('#pdList', sh.body).innerHTML = decks.filter(d => !q || d.name.toLowerCase().includes(q.toLowerCase())).map(d => `<button type="button" class="row" data-id="${d.id}" style="padding-left:${16 + (d.name.split('::').length - 1) * 16}px"><div class="grow">${esc(d.name.split('::').pop())}${d.name.includes('::') ? `<div class="t2">${esc(d.name)}</div>` : ''}</div>${d.id === cur ? icon('check') : ''}</button>`).join('');
       $$('#pdList [data-id]', sh.body).forEach(b => b.onclick = () => { sh.close(); cb(+b.dataset.id); });
@@ -391,14 +409,14 @@
     const nt = DB.get('notetypes', note.typeId);
     const cards = DB.list('cards').filter(c => c.noteId === noteId);
     let deckId = cards[0] ? cards[0].deckId : 1;
-    const sh = UI.sheet({ title: 'Edit note', full: true, left: `<button type="button" class="btn-txt" data-close>Batal</button>`, right: `<button type="button" class="btn-txt bold" id="enSave">Simpan</button>`, body: `
-      <div class="picker-row"><div class="picker"><small>Tipe</small><b>${esc(nt.name)}</b></div><button type="button" class="picker" id="enDeck"><small>Deck</small><b>${esc((DB.get('decks', deckId) || {}).name || '')}</b></button></div>
+    const sh = UI.sheet({ title: 'Edit kartu', full: true, left: `<button type="button" class="btn-txt" data-close>Batal</button>`, right: `<button type="button" class="btn-txt bold" id="enSave">Simpan</button>`, body: `
+      <div class="picker-row"><div class="picker"><small>Jenis kartu</small><b>${esc(nt.name)}</b></div><button type="button" class="picker" id="enDeck"><small>Deck</small><b>${esc((DB.get('decks', deckId) || {}).name || '')}</b></button></div>
       <div id="enEd"></div>
       <div class="field-box"><label><span>Tag</span></label><input class="tags-input" id="enTags" value="${esc(note.tags.join(' '))}" autocapitalize="off"></div>
       <div class="list" style="margin-top:14px">
         <button type="button" class="row tint" id="enPrev">Pratinjau kartu</button>
-        <button type="button" class="row tint" id="enInfo">Info kartu (${cards.length} kartu)</button>
-        <button type="button" class="row danger" id="enDel">Hapus note</button>
+        <button type="button" class="row tint" id="enInfo">Riwayat belajar</button>
+        <button type="button" class="row danger" id="enDel">Hapus</button>
       </div>` });
     const ed = buildEditor($('#enEd', sh.body), nt, note.fields, { dupWarn: false, noteId });
     $('#enDeck', sh.body).onclick = () => pickDeck(deckId, id => { deckId = id; $('#enDeck b', sh.body).textContent = DB.get('decks', id).name; });

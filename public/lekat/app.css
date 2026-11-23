@@ -343,3 +343,108 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius
 
 .view .toolbar { top: 48px; }
 .toolbar.no-stick { position: static; }
+
+/* ---------- Beranda "Hari ini" (desain sederhana) ---------- */
+.eyebrow { font-size: 13px; font-weight: 600; color: var(--label2); text-transform: uppercase; letter-spacing: .04em; margin: 0 4px -2px; }
+.today-card { border-radius: var(--r-xl); padding: 20px; color: #fff; position: relative; overflow: hidden;
+  background: linear-gradient(150deg, #3A7BFF 0%, #0A6CFF 45%, #1B9ACF 100%); box-shadow: 0 14px 36px rgba(10,108,255,.28); }
+.today-card::after { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 60% at 100% 0%, rgba(255,255,255,.28), transparent 60%); pointer-events: none; }
+.today-card.done { background: linear-gradient(150deg, #2FB765 0%, #1E9E55 55%, #1B8A7A 100%); box-shadow: 0 14px 36px rgba(36,160,90,.25); }
+.today-top { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; }
+.today-ring { position: relative; width: 84px; height: 84px; flex: none; display: grid; place-items: center; }
+.today-ring svg { position: absolute; inset: 0; }
+.today-ring span { font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.today-ring span .ic { width: 30px; height: 30px; stroke-width: 3; }
+.ring-bg { fill: none; stroke: var(--fill); }
+.ring-fg { fill: none; stroke: var(--tint); stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.2,.8,.2,1); }
+.ring.on-dark .ring-bg { stroke: rgba(255,255,255,.25); } .ring.on-dark .ring-fg { stroke: #fff; }
+.today-txt { min-width: 0; }
+.today-num { font-size: 40px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
+.today-num small { font-size: 20px; font-weight: 600; opacity: .9; letter-spacing: 0; }
+.today-sub { font-size: 15px; opacity: .92; margin-top: 3px; }
+.today-btn { position: relative; z-index: 1; width: 100%; margin-top: 18px; background: #fff; color: #0A5FD9; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.today-card.done .today-btn { color: #1E7A45; }
+.mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.mini { background: var(--bg2); border-radius: var(--r-md); padding: 10px 12px; box-shadow: var(--card-shadow); min-width: 0; }
+.mini b { display: block; font-size: 22px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.mini span { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--label2); }
+.mini span .ic { width: 13px; height: 13px; flex: none; }
+.deck-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 620px) { .deck-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.deck-card { background: var(--bg2); border-radius: var(--r-lg); padding: 14px; text-align: left; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 4px; min-width: 0; transition: transform .15s; }
+.deck-card:active { transform: scale(.97); }
+.dc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.dc-ico { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: #fff; flex: none; }
+.dc-ico .ic { width: 20px; height: 20px; }
+.dc-ico.big { width: 64px; height: 64px; border-radius: 18px; }
+.dc-ico.big .ic { width: 32px; height: 32px; }
+.dc-due { background: var(--tint); color: #fff; font-weight: 700; font-size: 14px; min-width: 28px; height: 26px; border-radius: 13px; display: grid; place-items: center; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.dc-ok { color: var(--green-ink); } .dc-ok .ic { width: 22px; height: 22px; stroke-width: 2.6; }
+.dc-name { font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dc-sub { font-size: 12.5px; color: var(--label2); }
+.dc-bar { height: 5px; border-radius: 3px; background: var(--fill); overflow: hidden; margin-top: 8px; }
+.dc-bar i { display: block; height: 100%; border-radius: 3px; }
+.deck-card.add { align-items: center; justify-content: center; color: var(--tint-ink); font-weight: 600; background: transparent; border: 1.5px dashed var(--sep); box-shadow: none; min-height: 140px; }
+.deck-card.add .ic { width: 26px; height: 26px; }
+.ov-head { text-align: center; margin: 0 0 18px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ov-head h2 { margin: 8px 0 0; font-size: 26px; letter-spacing: -.02em; }
+.ov-desc { margin: 6px 0 0; font-size: 15px; color: var(--label2); max-width: 46ch; }
+.ov-done { display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px; border-radius: 25px; background: var(--fill); color: var(--green-ink); font-weight: 600; }
+.tile.tc { text-align: center; padding: 12px 8px; }
+.tile.tc .v { font-size: 26px; }
+.tile.tc .k { justify-content: center; font-size: 12px; }
+.due-pill { background: var(--tint); color: #fff; font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 12px; font-variant-numeric: tabular-nums; }
+.stepper { display: flex; align-items: center; background: var(--fill); border-radius: 10px; flex: none; }
+.stepper button { width: 40px; height: 34px; font-size: 22px; color: var(--tint-ink); border-radius: 10px; }
+.stepper button:active { background: var(--fill2); }
+.stepper output { min-width: 44px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ob { text-align: center; padding-top: 6px; }
+.ob h2 { margin: 14px 0 4px; font-size: 26px; letter-spacing: -.02em; }
+.ob-steps { display: grid; gap: 14px; text-align: left; margin: 22px 4px 4px; }
+.ob-steps > div { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+.ob .section-h { text-align: left; }
+
+/* ---------- Layar belajar (sederhana) ---------- */
+.rv-status { flex: 1; display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 0 6px; }
+.rv-status .rv-left { text-align: center; font-size: 13px; font-weight: 600; color: var(--label2); font-variant-numeric: tabular-nums; }
+.rv-status .rv-prog { margin: 0; }
+.rv-kind { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: var(--fill); color: var(--label2); margin: 0 auto 12px; }
+.rv-kind.k-new { color: var(--blue-ink); background: rgba(10,132,255,.12); }
+.rv-kind.k-lrn { color: var(--orange-ink); background: rgba(255,149,0,.14); }
+.rv-kind.k-rev { color: var(--green-ink); background: rgba(52,199,89,.14); }
+.rv-kindwrap { text-align: center; }
+.ease-help { text-align: center; font-size: 12.5px; color: var(--label2); margin: 8px 0 0; }
+.ease-btn.e1 { background: var(--red); } .ease-btn.e2 { background: var(--orange); } .ease-btn.e4 { background: var(--tint); }
+:root[data-theme="dark"] .ease-btn.e2 { color: #000; }
+
+/* ---------- Tambah (sederhana) ---------- */
+.kind-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px; margin: 0 -2px; scrollbar-width: none; }
+.kind-chips::-webkit-scrollbar { display: none; }
+.kind { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 88px; padding: 12px 6px 10px; border-radius: 16px; background: var(--bg2); box-shadow: var(--card-shadow); border: 1.5px solid transparent; font-size: 12.5px; font-weight: 600; text-align: center; line-height: 1.2; }
+.kind .ic { width: 24px; height: 24px; color: var(--tint-ink); }
+.kind.on { border-color: var(--tint); background: rgba(10,132,255,.08); color: var(--tint-ink); }
+.kind-desc { font-size: 14px; color: var(--label2); margin: 10px 4px 12px; min-height: 2.6em; }
+.picker.deck-pick { width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; margin-bottom: 12px; }
+.picker.deck-pick small { grid-column: 1; } .picker.deck-pick b { grid-column: 1; }
+.picker.deck-pick .chev { grid-column: 2; grid-row: 1 / span 2; color: var(--label3); width: 16px; height: 16px; }
+.dict-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; margin: -2px 0 10px; border-radius: 14px; background: rgba(10,132,255,.1); color: var(--tint-ink); font-weight: 600; font-size: 15px; }
+.dict-btn .ic { width: 18px; height: 18px; }
+.toolbar .cloze-btn { color: var(--tint-ink); background: rgba(10,132,255,.1); }
+
+/* ---------- Progres ---------- */
+.summary-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding: 16px 10px; border-radius: var(--r-lg); background: var(--bg2); box-shadow: var(--card-shadow); text-align: center; }
+.summary-card b { display: block; font-size: 26px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.summary-card span { font-size: 12px; color: var(--label2); }
+details.adv { margin-top: 22px; }
+details.adv > summary { list-style: none; cursor: pointer; color: var(--tint-ink); font-weight: 600; font-size: 15px; padding: 12px 16px; background: var(--bg2); border-radius: var(--r-md); box-shadow: var(--card-shadow); }
+details.adv > summary::-webkit-details-marker { display: none; }
+details.adv[open] > summary { margin-bottom: 4px; }
+
+.toolbar .fmt { display: none; } .toolbar.open .fmt { display: grid; }
+.toolbar .aa { font-weight: 700; }
+.ring-lbl { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+.ring-lbl small { font-size: 10.5px; font-weight: 600; opacity: .85; }
+.mini span { display: block; }
+.deck-card.add { grid-column: 1 / -1; min-height: 0; flex-direction: row; gap: 8px; padding: 14px; }
+
+.toolbar button { flex: none; }
