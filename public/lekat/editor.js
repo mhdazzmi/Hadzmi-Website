@@ -47,7 +47,7 @@
     opts = opts || {};
     const isIO = nt.kind === 'io';
     root.innerHTML = `
-      <div class="toolbar glass" id="edTools">
+      <div class="toolbar glass ${isIO ? 'no-stick' : ''}" id="edTools">
         <button type="button" data-cmd="bold" aria-label="Tebal"><b>B</b></button>
         <button type="button" data-cmd="italic" aria-label="Miring"><i>I</i></button>
         <button type="button" data-cmd="underline" aria-label="Garis bawah"><u>U</u></button>
@@ -209,57 +209,92 @@
     const occ = Render.parseOcc(occField);
     let imgName = (imageField.match(/src=["']([^"']+)["']/) || [])[1] || '';
     let shapes = occ.shapes.map(s => Object.assign({}, s)), mode = occ.mode, sel = -1;
+    let tool = 'pan'; // 'pan' = geser/scroll aman, 'draw' = gambar kotak baru
+    const history = [];
+    const snap = () => { history.push(JSON.stringify(shapes)); if (history.length > 40) history.shift(); };
     function draw() {
+      const nCards = new Set(shapes.map(s => s.c)).size;
       box.innerHTML = imgName ? `
         <div class="io-tools">
-          <button type="button" class="btn sm secondary" data-io="img">${icon('image')} Ganti gambar</button>
-          ${UI.seg('iomode', [['hideAll', 'Sembunyikan semua'], ['hideOne', 'Sembunyikan satu']], mode)}
+          ${UI.seg('iotool', [['pan', '✋ Geser'], ['draw', '✏️ Gambar kotak']], tool)}
         </div>
-        <div style="text-align:center"><div class="io-editor" id="ioEd"><img src="${esc(Render.mediaUrl(imgName))}" alt="">${shapes.map((s, i) => `<div class="shape ${i === sel ? 'sel' : ''}" data-i="${i}" style="left:${s.x * 100}%;top:${s.y * 100}%;width:${s.w * 100}%;height:${s.h * 100}%">${s.c}</div>`).join('')}</div></div>
+        <div class="io-hint">${tool === 'draw' ? 'Seret jari di atas label untuk menutupnya. Di mode ini gambar tidak ikut scroll.' : 'Mode aman: scroll bebas. Ketuk kotak untuk memilih, seret untuk memindah, tarik titik biru untuk ubah ukuran.'}</div>
+        <div style="text-align:center"><div class="io-editor ${tool === 'draw' ? 'drawing' : ''}" id="ioEd"><img src="${esc(Render.mediaUrl(imgName))}" alt="">${shapes.map((s, i) => `<div class="shape ${i === sel ? 'sel' : ''}" data-i="${i}" style="left:${s.x * 100}%;top:${s.y * 100}%;width:${s.w * 100}%;height:${s.h * 100}%">${s.c}${i === sel ? '<i class="handle" data-h="1"></i>' : ''}</div>`).join('')}</div></div>
         <div class="io-tools" style="justify-content:center">
-          <button type="button" class="btn sm secondary" data-io="del" ${sel < 0 ? 'disabled' : ''}>${icon('trash')} Hapus</button>
-          <button type="button" class="btn sm secondary" data-io="group" ${sel < 0 ? 'disabled' : ''}>Gabung ke kotak sebelumnya</button>
+          <button type="button" class="btn sm secondary" data-io="undo" ${!history.length ? 'disabled' : ''}>${icon('undo')} Urungkan</button>
+          <button type="button" class="btn sm secondary" data-io="del" ${sel < 0 ? 'disabled' : ''}>${icon('trash')} Hapus kotak</button>
+          <button type="button" class="btn sm secondary" data-io="group" ${sel < 0 || shapes.length < 2 ? 'disabled' : ''}>Gabung nomor</button>
           <button type="button" class="btn sm secondary" data-io="clear" ${!shapes.length ? 'disabled' : ''}>Hapus semua</button>
         </div>
-        <p class="section-f" style="text-align:center;margin-bottom:12px">Seret di atas gambar untuk menutup label. Satu nomor = satu kartu. ${shapes.length ? `<b>${new Set(shapes.map(s => s.c)).size} kartu</b>` : ''}</p>`
+        <div class="list" style="margin:6px 0 10px">
+          <div class="row" style="flex-wrap:wrap"><div class="grow">Saat belajar<div class="t2">${mode === 'hideAll' ? 'Semua kotak tertutup, kamu menebak yang merah' : 'Hanya kotak yang ditanya yang tertutup'}</div></div>${UI.seg('iomode', [['hideAll', 'Tutup semua'], ['hideOne', 'Tutup satu']], mode)}</div>
+          <button type="button" class="row tint" data-io="img">${icon('image')} Ganti gambar</button>
+        </div>
+        <p class="section-f" style="text-align:center;margin:0 0 12px">${shapes.length ? `<b>${shapes.length} kotak → ${nCards} kartu</b> (satu nomor = satu kartu)` : 'Belum ada kotak. Pilih ✏️ Gambar kotak lalu seret di atas gambar.'}</p>`
         : `<button type="button" class="field-box" data-io="img" style="width:100%;padding:30px;text-align:center;color:var(--tint-ink)">${icon('image')}<div style="margin-top:6px">Pilih gambar (diagram, peta, catatan…)</div></button>`;
-      UI.bindSeg(box, (n, v) => { mode = v; });
+      UI.bindSeg(box, (n, v) => { if (n === 'iomode') { mode = v; draw(); } if (n === 'iotool') { tool = v; sel = -1; draw(); } });
       $$('[data-io]', box).forEach(b => b.onclick = async () => {
         const a = b.dataset.io;
-        if (a === 'img') { const f = await pickFile('image/*'); if (!f) return; imgName = await saveMedia(f, f.name); shapes = []; sel = -1; draw(); }
-        if (a === 'del' && sel >= 0) { shapes.splice(sel, 1); sel = -1; renumber(); draw(); }
-        if (a === 'group' && sel > 0) { shapes[sel].c = shapes[sel - 1].c; renumber(); draw(); }
-        if (a === 'clear') { shapes = []; sel = -1; draw(); }
+        if (a === 'img') { const f = await pickFile('image/*'); if (!f) return; imgName = await saveMedia(f, f.name); shapes = []; sel = -1; history.length = 0; tool = 'pan'; draw(); UI.toast('Pilih ✏️ Gambar kotak untuk mulai menutup label'); }
+        if (a === 'undo' && history.length) { shapes = JSON.parse(history.pop()); sel = -1; draw(); }
+        if (a === 'del' && sel >= 0) { snap(); shapes.splice(sel, 1); sel = -1; renumber(); draw(); }
+        if (a === 'group' && sel >= 0) {
+          const opts = [...new Set(shapes.map(s => s.c))].filter(c => c !== shapes[sel].c).sort((x, y) => x - y);
+          const i = await UI.actions(opts.map(c => ({ label: 'Gabung ke nomor ' + c })), 'Kotak bernomor sama ditanya di kartu yang sama');
+          if (i >= 0) { snap(); shapes[sel].c = opts[i]; renumber(); draw(); }
+        }
+        if (a === 'clear' && await UI.confirm('Hapus semua kotak?', '', 'Hapus', true)) { snap(); shapes = []; sel = -1; draw(); }
       });
       const ed = $('#ioEd', box); if (!ed) return;
-      let start = null, cur = null, ghost = null;
+      let op = null; // {kind:'new'|'move'|'resize', start, orig, el, moved, cur}
       const pt = (e) => { const r = ed.getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }; };
+      const px = (dx, dy) => { const r = ed.getBoundingClientRect(); return Math.hypot(dx * r.width, dy * r.height); };
       ed.addEventListener('pointerdown', e => {
         const sh = e.target.closest('.shape');
-        if (sh) { sel = +sh.dataset.i; draw(); return; }
-        start = pt(e); ed.setPointerCapture(e.pointerId);
-        ghost = document.createElement('div'); ghost.className = 'shape sel'; ed.appendChild(ghost);
+        const p = pt(e);
+        if (sh) {
+          const i = +sh.dataset.i;
+          if (i !== sel) { sel = i; draw(); return; } // ketuk pertama hanya memilih
+          e.preventDefault(); ed.setPointerCapture(e.pointerId);
+          op = { kind: e.target.dataset.h ? 'resize' : 'move', start: p, orig: Object.assign({}, shapes[i]), el: sh, moved: false };
+          return;
+        }
+        if (tool !== 'draw') { if (sel >= 0) { sel = -1; draw(); } return; }
+        e.preventDefault(); ed.setPointerCapture(e.pointerId);
+        const g = document.createElement('div'); g.className = 'shape sel'; g.style.width = '0'; ed.appendChild(g);
+        op = { kind: 'new', start: p, el: g, moved: false };
       });
       ed.addEventListener('pointermove', e => {
-        if (!start) return; cur = pt(e);
-        const x = Math.min(start.x, cur.x), y = Math.min(start.y, cur.y), w = Math.abs(cur.x - start.x), h = Math.abs(cur.y - start.y);
-        Object.assign(ghost.style, { left: x * 100 + '%', top: y * 100 + '%', width: w * 100 + '%', height: h * 100 + '%' });
+        if (!op) return;
+        const p = pt(e), dx = p.x - op.start.x, dy = p.y - op.start.y;
+        if (!op.moved && px(dx, dy) < 8) return; // abaikan sentuhan kecil / jari goyang
+        op.moved = true;
+        let x, y, w, h;
+        if (op.kind === 'new') { x = Math.min(op.start.x, p.x); y = Math.min(op.start.y, p.y); w = Math.abs(dx); h = Math.abs(dy); }
+        else if (op.kind === 'move') { w = op.orig.w; h = op.orig.h; x = Math.min(1 - w, Math.max(0, op.orig.x + dx)); y = Math.min(1 - h, Math.max(0, op.orig.y + dy)); }
+        else { x = op.orig.x; y = op.orig.y; w = Math.max(0.03, Math.min(1 - x, op.orig.w + dx)); h = Math.max(0.03, Math.min(1 - y, op.orig.h + dy)); }
+        op.cur = { x, y, w, h };
+        Object.assign(op.el.style, { left: x * 100 + '%', top: y * 100 + '%', width: w * 100 + '%', height: h * 100 + '%' });
       });
-      ed.addEventListener('pointerup', () => {
-        if (!start) return;
-        if (cur) {
-          const x = Math.min(start.x, cur.x), y = Math.min(start.y, cur.y), w = Math.abs(cur.x - start.x), h = Math.abs(cur.y - start.y);
-          if (w > 0.015 && h > 0.01) { const c = shapes.reduce((m, s) => Math.max(m, s.c), 0) + 1; shapes.push({ x: r4(x), y: r4(y), w: r4(w), h: r4(h), c }); sel = shapes.length - 1; }
+      const end = () => {
+        if (!op) return;
+        const o = op; op = null;
+        if (o.moved && o.cur) {
+          const c = o.cur;
+          if (o.kind === 'new') {
+            if (px(c.w, 0) >= 14 && px(0, c.h) >= 10) { snap(); const n = shapes.reduce((m, s) => Math.max(m, s.c), 0) + 1; shapes.push({ x: r4(c.x), y: r4(c.y), w: r4(c.w), h: r4(c.h), c: n }); sel = shapes.length - 1; }
+          } else { snap(); Object.assign(shapes[sel], { x: r4(c.x), y: r4(c.y), w: r4(c.w), h: r4(c.h) }); }
         }
-        start = cur = null; draw();
-      });
+        draw();
+      };
+      ed.addEventListener('pointerup', end); ed.addEventListener('pointercancel', end);
     }
     function renumber() { const map = new Map(); let n = 0; shapes.forEach(s => { if (!map.has(s.c)) map.set(s.c, ++n); }); shapes.forEach(s => s.c = map.get(s.c)); }
     const r4 = x => Math.round(x * 10000) / 10000;
     draw();
     return {
       values() { return { Image: imgName ? `<img src="${imgName}">` : '', Occlusions: JSON.stringify({ mode, shapes }) }; },
-      reset() { imgName = ''; shapes = []; sel = -1; draw(); }
+      reset() { imgName = ''; shapes = []; sel = -1; history.length = 0; tool = 'pan'; draw(); }
     };
   }
 

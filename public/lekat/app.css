@@ -258,10 +258,14 @@ textarea.fed-html { width: 100%; min-height: 80px; font-family: var(--mono); fon
 .tags-input { width: 100%; border: 0; outline: none; background: transparent; font-size: 16px; }
 .add-bar { display: flex; gap: 10px; margin-top: 16px; }
 
-.io-editor { position: relative; display: inline-block; max-width: 100%; touch-action: none; user-select: none; line-height: 0; }
+.io-editor { position: relative; display: inline-block; max-width: 100%; touch-action: pan-x pan-y pinch-zoom; user-select: none; line-height: 0; }
 .io-editor img { max-width: 100%; display: block; border-radius: 10px; pointer-events: none; }
 .io-editor .shape { position: absolute; background: rgba(255,138,128,.55); border: 2px solid #D70015; border-radius: 4px; display: grid; place-items: center; line-height: 1; font-weight: 700; color: #7A0010; font-size: 14px; }
 .io-editor .shape.sel { border-color: var(--tint); background: rgba(10,132,255,.35); color: #002E66; box-shadow: 0 0 0 3px rgba(10,132,255,.3); }
+.io-editor.drawing { touch-action: none; outline: 2px dashed var(--tint); outline-offset: 3px; border-radius: 10px; cursor: crosshair; }
+.io-editor .shape { touch-action: none; }
+.io-editor .shape .handle { position: absolute; right: -11px; bottom: -11px; width: 24px; height: 24px; border-radius: 50%; background: var(--tint); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.io-hint { font-size: 13px; color: var(--label2); text-align: center; margin: -2px 0 10px; }
 .io-tools { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; align-items: center; }
 
 /* ---------- Browser ---------- */
@@ -336,3 +340,6 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius
 .logo { width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; margin: 0 auto; background: linear-gradient(135deg,#5E5CE6,#0A84FF 55%,#30B0C7); color: #fff; font-weight: 800; font-size: 34px; box-shadow: 0 10px 30px rgba(10,132,255,.35); }
 @media (max-width: 380px) { .large-title { font-size: 30px; } .hero-num { font-size: 44px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+.view .toolbar { top: 48px; }
+.toolbar.no-stick { position: static; }
