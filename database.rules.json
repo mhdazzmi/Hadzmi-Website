@@ -10,6 +10,10 @@
       ".read": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'",
       ".write": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'"
     },
+    "hadzmi_social_data": {
+      ".read": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'",
+      ".write": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'"
+    },
     "hadzmi_lekat_data": {
       ".read": true,
       ".write": true,

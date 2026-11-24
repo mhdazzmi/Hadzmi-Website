@@ -14,6 +14,7 @@ public/                 ← isi website yang di-deploy
 public/games/           ← Nexo Games (game properti + chat bareng teman)
 public/thaitea/         ← Kasir Thai Tea (web terpisah, Firebase project sendiri: kasir-thai-tea). Buka di /thaitea/. Notifikasi lewat worker/thaitea.js (/api/thaitea/*, KV tt_subs & tt_outbox)
 public/pesan/           ← Pesan Online Thai Tea untuk CUSTOMER (link /pesan/). Bayar QRIS, tinggal jemput. Tidak memakai Firebase langsung, semua lewat worker/pesan.js (/api/pesan/*). Pesanan muncul di kasir menu "Online"
+public/social/          ← Nexa Social: workspace social media manager (link /social/). Login PIN Nexa, teks di Firebase (`hadzmi_social_data`), media di R2 lewat /api/files. Tanpa build. Pratinjau data contoh: /social/?demo=1
 public/lekat/           ← Lekat: flashcard SRS ala Anki untuk belajar bahasa Inggris (link /lekat/). Offline-first, teks di Firebase (`hadzmi_lekat_data`), media di R2. Tanpa build.
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
@@ -285,6 +286,38 @@ Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama sepert
 - **Data Firebase kasir:** `thaitea/online_settings`, `thaitea/online_orders`, `thaitea/online_customers`.
 - **Variabel opsional Worker:** `TT_FIREBASE_URL`, `TT_FIREBASE_SECRET` (wajib kalau rules Firebase kasir dikunci), `TT_QRIS`.
 - **Foto menu sementara** ada di `public/pesan/img/` (dipotong dari gambar daftar menu). Foto asli diunggah lewat kasir → Online → Foto menu.
+
+---
+
+## 📱 Nexa Social: workspace Social Media Manager (`/social/`)
+
+Web terpisah untuk mengelola akun Instagram klien (desain iOS mode terang). Buka `https://<domainmu>/social/`, bisa dipasang ke Layar Utama. Login **memakai PIN & sesi yang sama** dengan Nexa, hanya kamu yang bisa masuk. Klien tidak perlu login: pratinjau konten dan laporan dikirim lewat WhatsApp (teks + link media yang berlaku 7 hari).
+
+Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyentuh Firebase/R2, perubahan hanya di browser itu).
+
+| Menu | Isi |
+|---|---|
+| **Beranda** | Jadwal hari ini, menunggu klien, perlu revisi, terlambat; daftar *Perlu tindakan* (revisi, lewat jadwal, klien belum membalas > 2 hari); 7 hari ke depan; Tugas; target paket bulan ini per klien; tagihan belum lunas. |
+| **Kalender** | Tampilan bulan (warna per klien), filter klien, daftar konten di tanggal terpilih, tambah konten langsung di tanggal itu. |
+| **Konten** | Papan alur status **Ide → Draft → Review → Menunggu Klien → Revisi → Disetujui → Terjadwal → Terposting**, atau Daftar dengan pencarian & filter. Editor: klien, jenis (Feed/Carousel/Reels/Story), jadwal, pilar, media (dari Library atau unggah), caption + penghitung 2.200 karakter & 30 hashtag, sisip template/hashtag, catatan internal, link post, riwayat revisi & komentar klien. **Pratinjau tampilan Instagram**, **Kirim ke klien** (salin / buka WhatsApp, status otomatis jadi Menunggu Klien), duplikat. |
+| **Klien** | Profil, paket bulanan (Feed/Reels/Story + harga) dengan progres, **Brand kit** (palet warna, font, tone, pilar, hashtag, do & don't), kontak WhatsApp, folder aset, **pratinjau Grid IG** (urutan feed termasuk yang belum tayang), laporan & tagihan terakhir. |
+| **Media Library** | Semua foto/video di R2 per klien, filter foto/video, label "Baru" untuk yang belum dipakai, info ukuran/durasi, salin link 7 hari, buat konten dari media, hapus dari R2. |
+| **Bank Ide** | Ide cepat (Enter), label, link referensi, "Jadikan konten". |
+| **Template** | Template caption & grup hashtag, variabel `{nama}`, `{handle}`, `{tanggal}`. |
+| **Laporan** | Input bulanan dari Instagram Insights (followers, reach, impressions, interaksi, kunjungan profil), ER otomatis, grafik followers 6 bulan, perbandingan bulan lalu, kirim ringkasan ke klien. |
+| **Keuangan** | Nilai kontrak per bulan, diterima bulan ini, belum lunas, lewat tempo; buat tagihan bulan ini untuk semua klien sekaligus; tandai lunas; kirim pengingat pembayaran. |
+| **Pengaturan** | Nama, status sinkron, pemakaian R2, ekspor/pulihkan JSON, kunci sekarang. |
+
+### Penyimpanan
+| Data | Tempat |
+|---|---|
+| Klien, konten, ide, template, laporan, tagihan, tugas, thumbnail media (±20 KB) | Firebase RTDB node **`hadzmi_social_data`** (hanya UID pemilik) + cache localStorage (offline, sinkron otomatis) |
+| Foto & video asli | **Cloudflare R2** lewat `/api/files?store=r2` (rute Nexa yang sudah ada, wajib login, maks 300 MB/file, ikut batas aman 9 GB) |
+
+### ⚠️ Setup wajib (1 langkah)
+**Firebase Rules**: tempel ulang `database.rules.json` (ada blok baru `hadzmi_social_data`), ganti `GANTI_DENGAN_UID_KAMU` → **Publish**. Tanpa ini status sinkron "Ditolak" dan data hanya tersimpan di perangkat. Worker tidak perlu diubah.
+
+Kode: `public/social/` (index.html, social.css, app.js, manifest.webmanifest). Tidak perlu build. Tidak mengubah halaman lain.
 
 ---
 
