@@ -46,8 +46,15 @@
     });
   }
 
+  // pendengar perubahan (dipakai modul sinkron Firebase)
+  const listeners = [];
+  const notify = (store, op, val) => { for (const f of listeners) { try { f(store, op, val); } catch (e) { console.error(e); } } };
   const DB = {
     mem,
+    onChange(fn) { listeners.push(fn); },
+    // tulis lokal tanpa memicu sinkron (untuk data yang datang dari server)
+    putLocal(store, obj) { mem[store].set(obj.id, obj); queue(store, 'put', obj); return obj; },
+    delLocal(store, id) { mem[store].delete(id); queue(store, 'del', id); },
     async init() {
       idb = await open();
       for (const s of STORES) {
@@ -57,9 +64,9 @@
     },
     get(store, id) { return mem[store].get(id); },
     list(store) { return [...mem[store].values()]; },
-    put(store, obj) { obj.mod = Date.now(); mem[store].set(obj.id, obj); queue(store, 'put', obj); return obj; },
-    putRaw(store, obj) { mem[store].set(obj.id, obj); queue(store, 'put', obj); return obj; },
-    del(store, id) { mem[store].delete(id); queue(store, 'del', id); },
+    put(store, obj) { obj.mod = Date.now(); mem[store].set(obj.id, obj); queue(store, 'put', obj); notify(store, 'put', obj); return obj; },
+    putRaw(store, obj) { mem[store].set(obj.id, obj); queue(store, 'put', obj); notify(store, 'put', obj); return obj; },
+    del(store, id) { const had = mem[store].has(id); mem[store].delete(id); queue(store, 'del', id); if (had) notify(store, 'del', id); },
     flush,
     async wipe() {
       for (const s of STORES) mem[s].clear();

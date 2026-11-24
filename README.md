@@ -14,7 +14,7 @@ public/                 ← isi website yang di-deploy
 public/games/           ← Nexo Games (game properti + chat bareng teman)
 public/thaitea/         ← Kasir Thai Tea (web terpisah, Firebase project sendiri: kasir-thai-tea). Buka di /thaitea/. Notifikasi lewat worker/thaitea.js (/api/thaitea/*, KV tt_subs & tt_outbox)
 public/pesan/           ← Pesan Online Thai Tea untuk CUSTOMER (link /pesan/). Bayar QRIS, tinggal jemput. Tidak memakai Firebase langsung, semua lewat worker/pesan.js (/api/pesan/*). Pesanan muncul di kasir menu "Online"
-public/lekat/           ← Lekat: flashcard SRS ala Anki untuk belajar bahasa Inggris (link /lekat/). Offline, data di IndexedDB browser. Tanpa build.
+public/lekat/           ← Lekat: flashcard SRS ala Anki untuk belajar bahasa Inggris (link /lekat/). Offline-first, teks di Firebase (`hadzmi_lekat_data`), media di R2. Tanpa build.
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
 wrangler.jsonc          ← konfigurasi Cloudflare
@@ -290,7 +290,7 @@ Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama sepert
 
 ## 🧠 Lekat: flashcard pengulangan berjarak (`/lekat/`)
 
-Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glass, mode gelap otomatis). Buka `https://<domainmu>/lekat/`, bisa dipasang ke Layar Utama dan jalan **offline**. Semua data di IndexedDB browser (tidak memakai Firebase).
+Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glass, mode gelap otomatis). Buka `https://<domainmu>/lekat/`, bisa dipasang ke Layar Utama dan jalan **offline**. Data otomatis tersinkron ke semua perangkat lewat Firebase (teks) + R2 (media), tanpa login.
 
 | Fitur | Isi |
 |---|---|
@@ -303,4 +303,10 @@ Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glas
 | **Statistik** | Hari ini, kalender, ulasan per hari, perkiraan beban, jumlah kartu, interval, true retention, tombol jawaban, difficulty FSRS, jam belajar. |
 | **Impor/ekspor** | CSV/TSV/TXT (termasuk ekspor teks Anki), paket `.apkg` Anki (format legacy, termasuk progres & media), cadangan `.lekat` (pindah perangkat), cadangan otomatis harian 3 terakhir. |
 
-Kode: `public/lekat/` (sched.js = algoritma, col.js = koleksi & antrean, render.js = template, review.js, editor.js, browse.js, stats.js, io.js, app.js). Tidak perlu build.
+**Sinkron cloud (Firebase + R2), tanpa login**
+- Teks (deck, kartu, jadwal, riwayat ulasan, note type, pengaturan) disimpan di Firebase Realtime DB node **`hadzmi_lekat_data`** dan tersinkron realtime ke semua perangkat yang membuka `/lekat/`. IndexedDB di perangkat tetap dipakai sebagai cache, jadi Lekat jalan offline dan mengejar ketertinggalan saat online.
+- Media (gambar, audio, rekaman) diunggah ke **Cloudflare R2** lewat rute publik khusus Lekat `worker/lekat.js` (`/api/lekat/files`, prefix R2 `lekat/`, hanya gambar/audio, maks 15 MB, 300 unggahan/jam per IP, ikut batas aman 9 GB). Rute ini tidak bisa membaca file pribadi Nexa (`f/`).
+- **Sengaja tanpa login:** siapa pun yang tahu alamat web bisa melihat, mengubah, atau menghapus data Lekat. Data Nexa/Nexa Health tetap terkunci.
+- **WAJIB sekali:** salin aturan `hadzmi_lekat_data` dari `database.rules.json` ke Firebase Console → Realtime Database → Rules → Publish. Tanpa ini status sinkron "Gagal".
+
+Kode: `public/lekat/` (sync.js = sinkron Firebase/R2, worker/lekat.js = media R2, sched.js = algoritma, col.js = koleksi & antrean, render.js = template, review.js, editor.js, browse.js, stats.js, io.js, app.js). Tidak perlu build.

@@ -448,3 +448,13 @@ details.adv[open] > summary { margin-bottom: 4px; }
 .deck-card.add { grid-column: 1 / -1; min-height: 0; flex-direction: row; gap: 8px; padding: 14px; }
 
 .toolbar button { flex: none; }
+
+/* ---------- Sinkron ---------- */
+.navbar.nav-split { justify-content: space-between; }
+.sync-pill { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 17px; font-size: 13px; font-weight: 600; color: var(--label2); }
+.sync-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--label3); flex: none; }
+.sync-pill.st-on .dot { background: var(--green); }
+.sync-pill.st-syncing .dot { background: var(--tint); animation: pulse 1s infinite; }
+.sync-pill.st-offline .dot { background: var(--orange); }
+.sync-pill.st-error .dot { background: var(--red); }
+@keyframes pulse { 50% { opacity: .3; } }
