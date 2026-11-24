@@ -210,7 +210,7 @@ function shellHTML() {
 }
 
 const TABS = [
-  { k: 'home', label: 'Beranda', icon: 'home', tile: '#007AFF' },
+  { k: 'home', label: 'Hari ini', icon: 'home', tile: '#007AFF' },
   { k: 'calendar', label: 'Kalender', icon: 'cal', tile: '#FF3B30' },
   { k: 'content', label: 'Konten', icon: 'stack', tile: '#AF52DE' },
   { k: 'clients', label: 'Klien', icon: 'people', tile: '#34C759' },
@@ -320,53 +320,76 @@ const demoBar = () => DEMO ? `<div class="demo-bar">${ic('sparkle')}<span><b>Mod
 // ---------------- VIEW: BERANDA ----------------
 const VIEWS = {};
 VIEWS.home = () => {
-  const t = today(), now = nowTime();
+  const t = today(), now = nowTime(), month = t.slice(0, 7);
   const all = postsAll();
   const todayPosts = sortBy(all.filter(p => p.date === t && p.status !== 'ide'), postKey);
-  const waiting = all.filter(p => p.status === 'klien');
+  const waiting = sortBy(all.filter(p => p.status === 'klien'), p => p.stAt || 0);
   const revisi = all.filter(p => p.status === 'revisi');
-  const late = all.filter(isLate);
-  const next7 = sortBy(all.filter(p => p.date > t && p.date <= addDays(t, 7) && p.status !== 'ide'), postKey);
-  const month = t.slice(0, 7);
+  const late = sortBy(all.filter(isLate), postKey);
+  const tasks = sortBy(Object.values(S.tasks).filter(x => !x.done), x => x.due || '9999');
+  const doneTasks = Object.values(S.tasks).filter(x => x.done).length;
+  const unpaid = Object.values(S.invoices).filter(i => i.status !== 'lunas');
   const name = (S.settings && S.settings.name) || 'Hadzmi';
   const h = Number(now.slice(0, 2));
   const greet = h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
-  const stat = (n, label, icon, color, a, k) => `<button class="stat" data-a="${a}" data-k="${k || ''}"><div class="stat-top"><span class="tile" style="background:${color}">${ic(icon)}</span><span class="stat-num">${n}</span></div><div class="stat-lbl">${label}</div></button>`;
+  const act = activeClients();
+  const tot = act.reduce((x, c) => x + pkgTotal(c), 0), done = act.reduce((x, c) => x + pkgDone(c.id, month), 0);
+  if (!clients().length) return { title: 'Hari ini', right: syncPill(), html: `${largeTitle('Hari ini', prettyDate(t, true) + ' · ' + greet + ', ' + esc(name))}${demoBar()}${empty('people', 'Mulai dengan menambahkan klien pertamamu.', `<button class="btn-tinted" data-a="newClient">${ic('plus')} Tambah klien</button>`)}` };
 
-  const action = [];
-  late.forEach(p => action.push({ p, r: `<span class="pill warn">Terlambat</span><span class="t-cap muted">jadwal ${relDay(p.date)}${p.time ? ' ' + p.time : ''}</span>` }));
-  revisi.forEach(p => { if (!isLate(p)) action.push({ p, r: `${pillSt('revisi')}<span class="t-cap muted">${p.stAt ? agoText(p.stAt) : ''}</span>` }); });
-  waiting.forEach(p => { if (!isLate(p) && p.stAt && Date.now() - p.stAt > 2 * 86400000) action.push({ p, r: `${pillSt('klien')}<span class="t-cap muted">belum dibalas ${agoText(p.stAt)}</span>` }); });
-
-  const tasks = sortBy(Object.values(S.tasks).filter(x => !x.done), x => x.due || '9999');
-  const doneTasks = Object.values(S.tasks).filter(x => x.done).length;
-  const unpaid = sortBy(Object.values(S.invoices).filter(i => i.status !== 'lunas'), i => i.due || '9999');
-
-  const targets = activeClients().map(c => {
-    const total = pkgTotal(c), done = pkgDone(c.id, month), pct = total ? Math.min(100, done / total * 100) : 0;
-    return `<button class="row" data-a="client" data-id="${c.id}">${avatar(c)}<span class="grow prog-row"><span class="prog-line"><span class="b" style="color:var(--label)">${esc(c.name)}</span><span class="num">${done}/${total || '—'} post</span></span><span class="progress"><span style="width:${pct}%;background:${c.color}"></span></span></span></button>`;
-  }).join('');
-
+  // Live Activity: konten berikutnya hari ini yang tayang dalam 3 jam
+  const minsTo = p => { const [a1, b1] = (p.time || '00:00').split(':').map(Number), [a2, b2] = now.split(':').map(Number); return a1 * 60 + b1 - (a2 * 60 + b2); };
+  const live = todayPosts.find(p => p.status !== 'posted' && p.time && minsTo(p) >= 0 && minsTo(p) <= 180);
+  let liveW = '';
+  if (live) {
+    const c = clientOf(live.clientId) || {}, m = minsTo(live);
+    const checks = [['Caption', !!live.caption], ['Desain', !!(live.thumb || live.design || (live.media || []).length)], ['Approval', ['setuju', 'jadwal'].includes(live.status)]];
+    const pct = checks.filter(x => x[1]).length / 3 * 100;
+    liveW = `<button class="w md live" data-a="post" data-id="${live.id}" style="--lc:${c.color || '#3A3A3C'}">
+      <div class="live-top"><span class="tile live-ic">${ic('ig')}</span><span class="grow" style="min-width:0"><span class="live-k">Tayang ${esc(live.time)} · ${m < 60 ? m + ' menit lagi' : Math.floor(m / 60) + ' jam ' + (m % 60) + ' menit lagi'}</span><span class="live-t">${esc(postTitle(live))} · ${esc(c.name || '')}</span></span>${postThumb(live, 'wthumb sm')}</div>
+      <div class="live-checks">${checks.map(x => `<span class="${x[1] ? 'ok' : ''}">${x[0]} ${ic(x[1] ? 'check' : 'circle')}</span>`).join('')}</div>
+      <div class="live-bar"><span style="width:${pct}%"></span></div></button>`;
+  }
+  const ringPct = tot ? done / tot : 0;
+  const wait = waiting[0];
+  const waitW = wait ? (() => { const c = clientOf(wait.clientId) || {}; return `<div class="w md"><div class="wsplit">${postThumb(wait, 'wthumb lg')}<div class="grow" style="min-width:0;display:flex;flex-direction:column;gap:3px">
+      <span class="w-k" style="color:var(--orange)">Menunggu klien${waiting.length > 1 ? ' · ' + waiting.length : ''}</span><button class="w-title" data-a="post" data-id="${wait.id}">${esc(postTitle(wait))}</button>
+      <span class="w-sub">${esc(c.name || '')} · ${wait.date ? relDay(wait.date) + (wait.time ? ' ' + wait.time : '') : 'tanpa jadwal'}${wait.stAt ? ' · ' + agoText(wait.stAt) : ''}</span>
+      <span style="margin-top:6px"><button class="btn-tinted green" data-a="followUp" data-id="${wait.id}">${ic('wa')} Follow up</button></span></div></div></div>`; })()
+    : `<div class="w md"><span class="w-k" style="color:var(--green)">Approval</span><div class="w-title">Semua approval beres</div><span class="w-sub">Tidak ada konten yang menunggu balasan klien.</span></div>`;
+  const sched = `<div class="w lg"><div class="w-head"><span style="color:var(--red)">Jadwal hari ini</span><span class="muted">${todayPosts.length} konten</span></div>
+    ${todayPosts.length ? todayPosts.slice(0, 6).map(p => `<button class="wrow" data-a="post" data-id="${p.id}"><span class="wbar" style="background:${cColor(p.clientId)}"></span><span class="grow" style="min-width:0"><span class="ell b" style="display:block;font-size:15px">${esc(postTitle(p))}</span><span class="w-sub num">${esc(p.time || '—')} · ${esc((clientOf(p.clientId) || {}).name || '')} · ${TYPES[p.type || 'feed'].label}</span></span>${p.status === 'posted' ? `<span style="color:var(--green);font-size:20px">${ic('checkc')}</span>` : isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') + (todayPosts.length > 6 ? `<button class="w-more" data-a="tab" data-k="calendar">+${todayPosts.length - 6} lainnya</button>` : '')
+      : `<div class="w-empty">Tidak ada jadwal hari ini.<button class="btn-tinted" data-a="newPost" data-date="${t}">${ic('plus')} Buat konten</button></div>`}</div>`;
+  // 7 hari ke depan
+  const days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
+  const cnt = days.map(d => all.filter(p => p.date === d && p.status !== 'ide'));
+  const mx = Math.max(1, ...cnt.map(x => x.length));
+  const weekW = `<button class="w md" data-a="tab" data-k="calendar"><div class="w-head"><span style="color:var(--blue)">7 hari ke depan</span><span class="muted">${cnt.reduce((x, y) => x + y.length, 0)} konten</span></div>
+    <div class="wweek">${days.map((d, i) => `<span class="wday ${i === 0 ? 'on' : ''}"><span class="wcol">${cnt[i].map(p => `<i style="background:${cColor(p.clientId)}"></i>`).join('') || '<i class="none"></i>'}</span><span class="wn num">${cnt[i].length}</span><span class="wd">${DAYS_S[dow(d)]}</span></span>`).join('')}</div></button>`;
+  const taskW = `<div class="w md"><div class="w-head"><span style="color:var(--indigo)">Tugas</span>${doneTasks ? `<button class="muted" data-a="clearTasks" style="font-size:12px;text-transform:none;letter-spacing:0">Hapus ${doneTasks} selesai</button>` : `<span class="muted">${tasks.length}</span>`}</div>
+    ${tasks.slice(0, 4).map(x => { const c = clientOf(x.clientId); return `<div class="wrow"><button data-a="toggleTask" data-id="${x.id}" style="font-size:22px;color:var(--label3);display:flex" aria-label="Tandai selesai">${ic('circle')}</button><button class="grow" data-a="editTask" data-id="${x.id}" style="text-align:left;min-width:0"><span class="ell" style="display:block;font-size:15px">${esc(x.text)}</span><span class="w-sub">${[c ? esc(c.name) : '', x.due ? (x.due < t ? `<span class="c-red">${relDay(x.due)}</span>` : relDay(x.due)) : ''].filter(Boolean).join(' · ') || 'Tanpa tenggat'}</span></button></div>`; }).join('')}
+    <button class="w-more" data-a="newTask">${ic('plus')} Tambah tugas</button></div>`;
+  const smallW = (n, label, sub, icon, color, a, k, blue) => `<button class="w sm ${blue ? 'blue' : ''}" data-a="${a}" data-k="${k || ''}"><span class="tile round" style="background:${blue ? 'rgba(255,255,255,.22)' : color}">${ic(icon)}</span><span><span class="w-big ${blue ? '' : 'mid'}">${n}</span><span class="w-lbl">${label}</span>${sub ? `<span class="w-sub ell" style="display:block">${sub}</span>` : ''}</span></button>`;
   return {
-    title: 'Beranda',
+    title: 'Hari ini',
     right: syncPill(),
-    html: `${largeTitle(greet + ', ' + name, prettyDate(t, true))}
+    html: `${largeTitle('Hari ini', prettyDate(t, true) + ' · ' + greet + ', ' + esc(name))}
       ${demoBar()}
-      <div class="stats">
-        ${stat(todayPosts.length, 'Jadwal hari ini', 'cal', 'var(--blue)', 'tab', 'calendar')}
-        ${stat(waiting.length, 'Menunggu klien', 'clock', 'var(--orange)', 'statFilter', 'klien')}
-        ${stat(revisi.length, 'Perlu revisi', 'pencil', 'var(--purple)', 'statFilter', 'revisi')}
-        ${stat(late.length, 'Terlambat', 'alert', 'var(--red)', 'statFilter', 'late')}
-      </div>
-      ${group('Hari ini', todayPosts.length ? `<div class="list">${todayPosts.map(p => postRow(p, { timeCol: true, bar: true })).join('')}</div>` : empty('cal', 'Tidak ada jadwal posting hari ini.', `<button class="btn-tinted" data-a="newPost" data-date="${t}">${ic('plus')} Buat konten</button>`), { action: `<button data-a="tab" data-k="calendar">Kalender</button>` })}
-      ${action.length ? group('Perlu tindakan', `<div class="list">${action.slice(0, 8).map(x => postRow(x.p, { reason: x.r })).join('')}</div>`) : ''}
-      ${group('7 hari ke depan', next7.length ? `<div class="list">${next7.slice(0, 8).map(p => postRow(p)).join('')}</div>` : empty('tray', 'Belum ada konten terjadwal minggu ini.'), { foot: next7.length > 8 ? `+${next7.length - 8} konten lainnya di Kalender` : '' })}
-      ${group('Tugas', `<div class="list">${tasks.map(taskRow).join('')}<button class="row action plain" data-a="newTask">${ic('plus')} Tambah tugas</button></div>`, { action: doneTasks ? `<button data-a="clearTasks">Hapus ${doneTasks} selesai</button>` : '' })}
-      ${targets ? group('Target ' + monthLabel(month), `<div class="list">${targets}</div>`, { foot: 'Dihitung dari konten berstatus Terjadwal dan Terposting dibanding paket bulanan.' }) : ''}
-      ${unpaid.length ? group('Tagihan belum lunas', `<div class="list">${unpaid.slice(0, 4).map(invoiceRow).join('')}</div>`, { action: `<button data-a="tab" data-k="finance">Keuangan</button>` }) : ''}
-      ${!clients().length ? group('', empty('people', 'Mulai dengan menambahkan klien pertamamu.', `<button class="btn-tinted" data-a="newClient">${ic('plus')} Tambah klien</button>`)) : ''}`
+      <div class="widgets">
+        ${liveW}
+        ${smallW(todayPosts.length, 'posting hari ini', '', 'cal', '', 'tab', 'calendar', true)}
+        <button class="w sm" data-a="tab" data-k="clients"><span class="ring-wrap">${ringSvg(ringPct, 'var(--green)', 96, 11)}<span class="ring-num"><b class="num">${done}</b><small>dari ${tot || 0}</small></span></span><span class="w-lbl" style="text-align:center">Target ${MON[Number(month.slice(5)) - 1]}</span></button>
+        ${waitW}
+        ${sched}
+        ${smallW(late.length, late.length ? 'terlambat' : 'tidak ada yang telat', late[0] ? esc(postTitle(late[0])) : '', 'alert', 'var(--red)', 'statFilter', 'late')}
+        ${smallW(revisi.length, 'perlu revisi', revisi[0] ? esc(postTitle(revisi[0])) : '', 'pencil', 'var(--purple)', 'statFilter', 'revisi')}
+        ${weekW}
+        ${taskW}
+        ${smallW(short(unpaid.reduce((x, i) => x + num(i.amount), 0)), unpaid.length + ' tagihan belum lunas', overdueInvoices().length ? `<span class="c-red">${overdueInvoices().length} lewat tempo</span>` : '', 'wallet', 'var(--green)', 'tab', 'finance')}
+        ${smallW(Object.values(S.ideas).filter(x => !x.done).length, 'ide tersimpan', '', 'bulb', 'var(--yellow)', 'tab', 'ideas')}
+      </div>`
   };
 };
+function ringSvg(pct, col, sz, sw) { const r = (sz - sw) / 2, c = 2 * Math.PI * r; return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="transform:rotate(-90deg);display:block" aria-hidden="true"><circle cx="${sz / 2}" cy="${sz / 2}" r="${r}" fill="none" stroke="rgba(120,120,128,.16)" stroke-width="${sw}"/><circle cx="${sz / 2}" cy="${sz / 2}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${(c * Math.min(1, pct)).toFixed(1)} ${c.toFixed(1)}"/></svg>`; }
 function taskRow(x) {
   const c = clientOf(x.clientId), t = today();
   const due = x.due ? (x.due < t ? `<span class="c-red">${relDay(x.due)}</span>` : relDay(x.due)) : '';
@@ -449,14 +472,25 @@ function kcard(p) {
 
 // ---------------- VIEW: KLIEN ----------------
 VIEWS.clients = () => {
-  const month = today().slice(0, 7);
+  const t = today(), month = t.slice(0, 7);
   const cs = clients();
   return {
     title: 'Klien',
     html: `${largeTitle('Klien', cs.length + ' akun Instagram', plusBtn('newClient'))}
-      ${cs.length ? `<div class="list">${cs.map(c => {
-        const total = pkgTotal(c), done = pkgDone(c.id, month);
-        return `<button class="row" data-a="client" data-id="${c.id}">${avatar(c)}<span class="grow"><div class="ttl">${esc(c.name)}</div><div class="sub">@${esc(c.handle || '')}${c.niche ? ' · ' + esc(c.niche) : ''}</div></span>${c.status === 'jeda' ? '<span class="pill st-ide">Jeda</span>' : `<span class="val num">${done}/${total || '—'}</span>`}${ic('chevR', 'chev')}</button>`;
+      ${cs.length ? `<div class="stack-list">${cs.map(c => {
+        const total = pkgTotal(c), done = pkgDone(c.id, month), pct = total ? done / total : 0;
+        const mine = postsAll().filter(p => p.clientId === c.id && p.status !== 'ide');
+        const upcoming = sortBy(mine.filter(p => p.status !== 'posted'), postKey);
+        const recent = sortBy(mine.filter(p => p.status === 'posted'), postKey).reverse();
+        const strip = upcoming.concat(recent).slice(0, 5);
+        const nW = mine.filter(p => p.status === 'klien').length, nR = mine.filter(p => p.status === 'revisi').length;
+        const nx = upcoming.find(p => p.date >= t);
+        return `<button class="w stackcard ${c.status === 'jeda' ? 'paused' : ''}" data-a="client" data-id="${c.id}">
+          <div class="sc-head">${avatar(c, 'md')}<span class="grow" style="min-width:0"><span class="w-title ell" style="display:block">${esc(c.name)}</span><span class="w-sub ell" style="display:block">@${esc(c.handle || '')}${c.niche ? ' · ' + esc(c.niche) : ''}</span></span>
+            ${c.status === 'jeda' ? '<span class="pill st-ide">Jeda</span>' : `<span class="ring-wrap">${ringSvg(pct, c.color, 48, 6)}<span class="ring-num"><small class="b num" style="color:var(--label)">${Math.round(pct * 100)}%</small></span></span>`}</div>
+          <div class="strip">${strip.map(p => postThumb(p, 'sthumb')).join('')}${Array.from({ length: Math.max(0, 5 - strip.length) }, () => '<span class="sthumb empty"></span>').join('')}</div>
+          <div class="sc-foot"><span class="pill st-klien">${nW} menunggu</span><span class="pill st-revisi">${nR} revisi</span><span class="w-sub" style="margin-left:auto">${nx ? 'Berikutnya: ' + relDay(nx.date) + (nx.time ? ' ' + nx.time : '') : 'Antrean kosong'} · ${done}/${total || '—'}</span></div>
+        </button>`;
       }).join('')}</div>` : empty('people', 'Belum ada klien.', `<button class="btn-tinted" data-a="newClient">${ic('plus')} Tambah klien</button>`)}`
   };
 };
@@ -1179,6 +1213,7 @@ const A = {
   cView: el => { UI.cView = el.dataset.k; saveUI(); render(); },
   cStatus: el => { UI.cStatus = el.dataset.k; render(); },
   post: el => openPost(el.dataset.id),
+  followUp: el => { const p = S.posts[el.dataset.id]; if (p) sharePost(p); },
   newPost: el => { if (!clients().length) { iosAlert('Belum ada klien', 'Tambahkan klien dulu sebelum membuat konten.', [{ label: 'Nanti' }, { label: 'Tambah klien', bold: true, fn: () => openClient() }]); return; } const pre = {}; if (el.dataset.date) pre.date = el.dataset.date; if (el.dataset.client) pre.clientId = el.dataset.client; openPost(null, pre); },
   pType: el => { draft.type = el.dataset.k; refreshDraftParts(); },
   pStatus: el => { const k = el.dataset.k; if (draft.status !== k) { draft.log.push({ t: Date.now(), text: `Status: ${ST[draft.status] ? ST[draft.status].label : '—'} → ${ST[k].label}` }); draft.status = k; refreshDraftParts(); } },
