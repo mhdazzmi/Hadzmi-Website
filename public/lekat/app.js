@@ -495,7 +495,7 @@
       <div class="list"><div class="row" style="padding:16px"><div class="logo">L</div><div class="grow"><div class="t1" style="font-weight:600;font-size:20px">Lekat</div><div class="t2">${nNotes} note · ${nCards} kartu · ${nRev} ulasan tersimpan di perangkat ini</div></div></div></div>
       <div class="section-h"><span>Akun & sinkron</span></div>
       <div class="list">
-        <button type="button" class="row ind" id="setSync"><div class="row-ico" style="background:var(--tint)">${icon('upload')}</div><div class="grow">Sinkron cloud<div class="t2">Teks di Firebase · media di Cloudflare R2</div></div><div class="detail" id="setSyncState">${G.Sync ? esc({ local: 'Di perangkat', login: 'Belum masuk', syncing: 'Menyinkron…', on: 'Aktif', offline: 'Offline', error: 'Gagal' }[G.Sync.state()] || '') : ''}</div>${icon('chevR', 'chev')}</button>
+        <button type="button" class="row ind" id="setSync"><div class="row-ico" style="background:var(--tint)">${icon('upload')}</div><div class="grow">Sinkron cloud<div class="t2">Teks di Firebase · media di Cloudflare R2</div></div><div class="detail" id="setSyncState">${G.Sync ? esc({ local: 'Di perangkat saja', syncing: 'Menyinkron…', on: 'Aktif', offline: 'Offline', error: 'Gagal' }[G.Sync.state()] || '') : ''}</div>${icon('chevR', 'chev')}</button>
       </div>
       <div class="section-h"><span>Tampilan</span></div>
       <div class="list">
@@ -730,8 +730,8 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !G.Review.active() && App.tab === 'decks') renderDecks(); });
     setInterval(() => { if (!document.hidden && !G.Review.active() && App.tab === 'decks' && !document.querySelector('.sheet')) renderDecks(); }, 60000);
     G.IO.autoBackup();
-    // tunggu sebentar: kalau sudah login, data dari cloud masuk dulu sebelum layar sambutan
-    setTimeout(() => { if (!DB.meta('onboarded') && !DB.mem.cards.size && !document.querySelector('.sheet') && !(G.Sync && G.Sync.isOn())) onboarding(); }, 2500);
+    // tunggu data dari cloud masuk dulu; layar sambutan hanya untuk koleksi yang benar-benar kosong
+    Promise.resolve(G.Sync ? G.Sync.firstSync() : null).then(() => { if (!DB.meta('onboarded') && !DB.mem.cards.size && !document.querySelector('.sheet')) onboarding(); });
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   }
@@ -751,10 +751,8 @@
         ${UI.seg('goal', [['5', '5 · santai'], ['10', '10 · normal'], ['20', '20 · serius']], '10')}
         <div class="list" style="margin-top:14px"><div class="row"><div class="grow">Pasang paket kata awal<div class="t2">50 kosakata + grammar + latihan dengar</div></div>${UI.sw('starter', true)}</div></div>
         <button type="button" class="btn primary block" id="obGo" style="margin-top:20px">Mulai</button>
-        ${G.Sync && G.Sync.state() !== 'local' ? '<button type="button" class="btn secondary block" id="obLogin" style="margin-top:10px">Sudah punya data? Masuk</button>' : ''}
       </div>` });
     UI.bindSeg(sh.body, (n, v) => { goal = +v; });
-    const ol = $('#obLogin', sh.body); if (ol) ol.onclick = () => { DB.meta('onboarded', true); sh.close(); G.Sync.loginSheet(); };
     $('#obGo', sh.body).onclick = () => {
       starter = sh.body.querySelector('[name=starter]').checked;
       const p = DB.get('presets', 1); p.newPerDay = goal; DB.put('presets', p);

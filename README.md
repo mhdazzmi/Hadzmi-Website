@@ -290,7 +290,7 @@ Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama sepert
 
 ## 🧠 Lekat: flashcard pengulangan berjarak (`/lekat/`)
 
-Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glass, mode gelap otomatis). Buka `https://<domainmu>/lekat/`, bisa dipasang ke Layar Utama dan jalan **offline**. Data tersinkron ke Firebase + R2 setelah masuk dengan PIN Nexa.
+Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glass, mode gelap otomatis). Buka `https://<domainmu>/lekat/`, bisa dipasang ke Layar Utama dan jalan **offline**. Data otomatis tersinkron ke semua perangkat lewat Firebase (teks) + R2 (media), tanpa login.
 
 | Fitur | Isi |
 |---|---|
@@ -303,10 +303,10 @@ Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glas
 | **Statistik** | Hari ini, kalender, ulasan per hari, perkiraan beban, jumlah kartu, interval, true retention, tombol jawaban, difficulty FSRS, jam belajar. |
 | **Impor/ekspor** | CSV/TSV/TXT (termasuk ekspor teks Anki), paket `.apkg` Anki (format legacy, termasuk progres & media), cadangan `.lekat` (pindah perangkat), cadangan otomatis harian 3 terakhir. |
 
-**Sinkron cloud (Firebase + R2)**
-- Teks (deck, kartu, jadwal, riwayat ulasan, note type, pengaturan) disimpan di Firebase Realtime DB node **`hadzmi_lekat_data`**, sinkron realtime antar-perangkat. IndexedDB di perangkat tetap dipakai sebagai cache, jadi Lekat jalan offline dan mengejar ketertinggalan saat online.
-- Media (gambar, audio, rekaman) diunggah ke **Cloudflare R2** lewat `/api/files` (sama dengan Assistant); perangkat lain mengambilnya lewat link bertanda tangan `/api/sign` lalu menyimpan salinan untuk offline.
-- Login memakai **PIN & sesi yang sama** dengan Nexa (`hz_session`, berakhir 00:00 WIB). Tanpa login, Lekat tetap bisa dipakai tapi hanya tersimpan di perangkat.
-- **WAJIB sekali:** salin aturan `hadzmi_lekat_data` dari `database.rules.json` ke Firebase Console → Realtime Database → Rules (ganti `GANTI_DENGAN_UID_KAMU` dengan UID-mu) → Publish. Tanpa ini sinkron akan "Ditolak".
+**Sinkron cloud (Firebase + R2), tanpa login**
+- Teks (deck, kartu, jadwal, riwayat ulasan, note type, pengaturan) disimpan di Firebase Realtime DB node **`hadzmi_lekat_data`** dan tersinkron realtime ke semua perangkat yang membuka `/lekat/`. IndexedDB di perangkat tetap dipakai sebagai cache, jadi Lekat jalan offline dan mengejar ketertinggalan saat online.
+- Media (gambar, audio, rekaman) diunggah ke **Cloudflare R2** lewat rute publik khusus Lekat `worker/lekat.js` (`/api/lekat/files`, prefix R2 `lekat/`, hanya gambar/audio, maks 15 MB, 300 unggahan/jam per IP, ikut batas aman 9 GB). Rute ini tidak bisa membaca file pribadi Nexa (`f/`).
+- **Sengaja tanpa login:** siapa pun yang tahu alamat web bisa melihat, mengubah, atau menghapus data Lekat. Data Nexa/Nexa Health tetap terkunci.
+- **WAJIB sekali:** salin aturan `hadzmi_lekat_data` dari `database.rules.json` ke Firebase Console → Realtime Database → Rules → Publish. Tanpa ini status sinkron "Gagal".
 
-Kode: `public/lekat/` (sync.js = sinkron Firebase/R2, sched.js = algoritma, col.js = koleksi & antrean, render.js = template, review.js, editor.js, browse.js, stats.js, io.js, app.js). Tidak perlu build.
+Kode: `public/lekat/` (sync.js = sinkron Firebase/R2, worker/lekat.js = media R2, sched.js = algoritma, col.js = koleksi & antrean, render.js = template, review.js, editor.js, browse.js, stats.js, io.js, app.js). Tidak perlu build.

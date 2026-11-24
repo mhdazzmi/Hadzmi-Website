@@ -11,12 +11,16 @@
       ".write": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'"
     },
     "hadzmi_lekat_data": {
-      ".read": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'",
-      ".write": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'",
+      ".read": true,
+      ".write": true,
       "$store": {
+        ".validate": "$store.matches(/^(notes|cards|decks|presets|notetypes|revlog|media|meta)$/)",
         ".indexOn": [
           "t"
-        ]
+        ],
+        "$id": {
+          ".validate": "newData.hasChildren(['mod', 'j']) && newData.child('j').isString() && newData.child('j').val().length < 200000"
+        }
       }
     }
   }

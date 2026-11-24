@@ -1,6 +1,6 @@
 // Lekat — sinkron: teks (deck, kartu, jadwal, riwayat) ke Firebase Realtime DB, media (gambar/audio) ke Cloudflare R2.
 // IndexedDB di perangkat tetap jadi cache, jadi aplikasi jalan offline dan menyinkron saat online lagi.
-// Login memakai PIN & sesi yang sama dengan Nexa (hz_session), jadi cukup masuk sekali.
+// Tanpa login: semua perangkat yang membuka /lekat/ memakai data yang sama (node hadzmi_lekat_data dibuka di aturan Firebase).
 (function (G) {
   'use strict';
   const { DB, UI } = G;
@@ -15,25 +15,15 @@
     messagingSenderId: '664176294351',
     appId: '1:664176294351:web:5706e50b47d9cec546baba'
   };
-  const OWNER_EMAIL = 'hadzmi-hub@example.com'; // sama dengan Nexa (login PIN)
-  const PIN_LEN = 8;
-  const SESSION_KEY = 'hz_session';             // sesi bersama Nexa & Nexa Health
-  const WIB = 7 * 3600 * 1000;
   const ROOT = 'hadzmi_lekat_data';
   const STORES = ['notes', 'cards', 'decks', 'presets', 'notetypes', 'revlog', 'media', 'meta'];
   const META_SYNC = new Set(['nextPos', 'rollover', 'learnAhead', 'starterInstalled', 'onboarded', 'addHist']);
   const MARGIN = 120000; // toleransi beda jam antar-perangkat
 
-  const S = { state: 'local', auth: null, root: null, ready: false, applying: false, pending: new Map(), timer: null, refs: [], offset: 0, signed: new Map(), uploading: new Set(), downloading: false, lastErr: '' };
+  let readyResolve; const firstSync = new Promise(r => { readyResolve = r; });
+  const S = { state: 'local', root: null, ready: false, applying: false, pending: new Map(), timer: null, refs: [], offset: 0, signed: new Map(), uploading: new Set(), downloading: false, lastErr: '' };
 
   // ---------- util ----------
-  const readLS = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
-  const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  const nextMidnight = () => { const n = Date.now() + WIB; return Math.floor(n / 86400000) * 86400000 + 86400000 - WIB; };
-  function sessionValid(user) {
-    const r = readLS(SESSION_KEY, null);
-    return !!(r && r.expiresAt && Date.now() < r.expiresAt && (!user || !r.uid || r.uid === user.uid));
-  }
   // kunci Firebase tidak boleh berisi . # $ / [ ]
   const encKey = (id) => String(id).replace(/[.#$\/\[\]%]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'));
   const localMod = (store, o) => store === 'revlog' ? o.id : (o.mod || 0);
@@ -51,7 +41,7 @@
   const meta = (k, v) => v === undefined ? DB.meta(k) : DB.meta(k, v); // kunci berawalan _ tidak ikut sinkron
 
   // ---------- status ----------
-  const LABEL = { local: 'Di perangkat', login: 'Masuk untuk sinkron', syncing: 'Menyinkron…', on: 'Tersinkron', offline: 'Offline', error: 'Gagal sinkron' };
+  const LABEL = { local: 'Di perangkat saja', syncing: 'Menyinkron…', on: 'Tersinkron', offline: 'Offline', error: 'Gagal sinkron' };
   function setState(s, err) {
     S.state = s; if (err) S.lastErr = err;
     $$('.sync-pill').forEach(p => { p.className = 'sync-pill glass st-' + s; p.innerHTML = pillInner(); });
@@ -99,7 +89,7 @@
     } catch (e) {
       console.warn('sync flush', e);
       for (const [path, it] of items) if (!S.pending.has(path)) S.pending.set(path, it);
-      setState('error', /permission/i.test(String(e && e.message)) ? 'Ditolak aturan Firebase (database.rules.json belum dipasang?)' : String(e && e.message || e));
+      setState('error', /permission/i.test(String(e && e.message)) ? 'Ditolak aturan Firebase. Pasang aturan hadzmi_lekat_data dari database.rules.json.' : String(e && e.message || e));
       S.timer = setTimeout(flush, 15000);
     }
   }
@@ -168,7 +158,7 @@
 
   // ---------- mulai / berhenti ----------
   async function start() {
-    if (!S.auth || !S.auth.currentUser || !sessionValid(S.auth.currentUser)) { setState('login'); return; }
+    if (typeof firebase === 'undefined' || !firebase.apps.length) { setState('local'); readyResolve(); return; }
     stop();
     setState('syncing');
     try {
@@ -220,8 +210,10 @@
     } catch (e) {
       console.warn('sync start', e);
       S.ready = false;
-      setState('error', /permission/i.test(String(e && e.message)) ? 'Ditolak aturan Firebase. Pasang database.rules.json terbaru (node hadzmi_lekat_data).' : String(e && e.message || e));
+      setState('error', /permission/i.test(String(e && e.message)) ? 'Ditolak aturan Firebase. Pasang aturan hadzmi_lekat_data dari database.rules.json.' : String(e && e.message || e));
+      setTimeout(() => { if (!S.ready) start(); }, 30000);
     }
+    readyResolve();
   }
   let pullSaveT = null;
   function savePullT() { clearTimeout(pullSaveT); pullSaveT = setTimeout(() => { if (S.maxT) meta('_pullT', S.maxT); }, 3000); }
@@ -231,14 +223,15 @@
     S.refs = [];
   }
 
-  // ---------- media di R2 ----------
-  async function token() { if (!S.auth || !S.auth.currentUser) throw new Error('Belum login'); return S.auth.currentUser.getIdToken(); }
+  // ---------- media di R2 (rute publik khusus Lekat) ----------
+  const fileUrl = id => '/api/lekat/files/' + encodeURIComponent(id);
   async function uploadMedia(m) {
     if (!S.ready || S.uploading.has(m.id) || !m.blob) return;
     S.uploading.add(m.id);
     try {
-      const res = await fetch('/api/files?store=r2', { method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': m.type || m.blob.type || 'application/octet-stream', 'X-File-Name': encodeURIComponent('lekat-' + m.id) }, body: m.blob });
+      const res = await fetch('/api/lekat/files', { method: 'POST', headers: { 'Content-Type': m.type || m.blob.type || 'application/octet-stream', 'X-File-Name': encodeURIComponent(m.id) }, body: m.blob });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 413 || res.status === 415) { console.warn('media ditolak', m.id, data.error); S.lastErr = 'Media "' + m.id + '": ' + (data.error || res.status); return; } // tidak diulang
       if (!res.ok || !data.id) throw new Error(data.error || 'upload ' + res.status);
       const cur = DB.get('media', m.id); if (!cur) return;
       cur.r2 = data.id; cur.size = cur.size || data.size;
@@ -246,34 +239,23 @@
     } catch (e) { console.warn('upload media', m.id, e); setTimeout(() => { S.uploading.delete(m.id); if (S.ready) uploadMedia(DB.get('media', m.id) || m); }, 60000); return; }
     S.uploading.delete(m.id);
   }
+  // unduh media yang belum ada di perangkat ini, simpan untuk offline
   async function fetchMissingMedia() {
     if (!S.ready || S.downloading) return;
     const missing = DB.list('media').filter(m => !m.blob && m.r2);
     if (!missing.length) return;
     S.downloading = true;
-    try {
-      const t = await token();
-      for (let i = 0; i < missing.length; i += 400) {
-        const ids = missing.slice(i, i + 400).map(m => m.r2);
-        const res = await fetch('/api/sign', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, days: 30 }) });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.urls) for (const id in data.urls) S.signed.set(id, data.urls[id]);
-      }
-      afterRemote();
-      // simpan salinan di perangkat supaya bisa dipakai offline
-      for (const m of missing) {
-        const u = S.signed.get(m.r2); if (!u) continue;
-        try {
-          const r = await fetch(u); if (!r.ok) continue;
-          const blob = await r.blob();
-          const cur = DB.get('media', m.id); if (!cur) continue;
-          cur.blob = blob; DB.putLocal('media', cur);
-        } catch (e) {}
-      }
-    } catch (e) { console.warn('media download', e); }
+    for (const m of missing) {
+      try {
+        const r = await fetch(fileUrl(m.r2)); if (!r.ok) continue;
+        const blob = await r.blob();
+        const cur = DB.get('media', m.id); if (!cur) continue;
+        cur.blob = blob; DB.putLocal('media', cur);
+      } catch (e) {}
+    }
     S.downloading = false;
   }
-  function signedUrl(m) { return m && m.r2 ? S.signed.get(m.r2) || null : null; }
+  function signedUrl(m) { return m && m.r2 ? fileUrl(m.r2) : null; }
 
   // ---------- hapus semua di server ----------
   async function wipeRemote() {
@@ -284,46 +266,9 @@
     S.pending.clear();
   }
 
-  // ---------- login PIN ----------
-  function loginSheet() {
-    if (!S.auth) return UI.info('Sinkron tidak tersedia', 'Firebase tidak termuat. Periksa koneksi internet lalu muat ulang halaman.');
-    let buf = '', busy = false;
-    const sh = UI.sheet({ title: 'Masuk', body: `
-      <div class="pin-wrap">
-        <div class="logo">L</div>
-        <p class="muted" style="margin:12px 0 0">Masukkan PIN yang sama dengan Nexa untuk menyimpan data ke cloud.</p>
-        <div class="pin-dots" id="pinDots">${'<span></span>'.repeat(PIN_LEN)}</div>
-        <div class="pin-err" id="pinErr"></div>
-        <div class="pin-pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-d="${n}">${n}</button>`).join('')}<span></span><button type="button" data-d="0">0</button><button type="button" data-d="del" aria-label="Hapus">⌫</button></div>
-      </div>` });
-    const dots = () => [...$('#pinDots', sh.body).children].forEach((s, i) => s.classList.toggle('on', i < buf.length));
-    const key = (k) => {
-      if (busy) return;
-      if (k === 'del') buf = buf.slice(0, -1); else if (buf.length < PIN_LEN) buf += k;
-      $('#pinErr', sh.body).textContent = ''; dots(); UI.haptic();
-      if (buf.length === PIN_LEN) submit();
-    };
-    const submit = () => {
-      busy = true; $('#pinDots', sh.body).classList.add('busy');
-      S.auth.signInWithEmailAndPassword(OWNER_EMAIL, buf).then(cred => {
-        writeLS(SESSION_KEY, { uid: cred.user.uid, email: OWNER_EMAIL, loginAt: Date.now(), expiresAt: nextMidnight() });
-        sh.close(); UI.toast('Masuk. Menyinkron…'); start();
-      }).catch(err => {
-        busy = false; buf = ''; dots(); $('#pinDots', sh.body).classList.remove('busy');
-        const c = (err && err.code) || '';
-        $('#pinErr', sh.body).textContent = /too-many/.test(c) ? 'Terlalu banyak percobaan. Tunggu sebentar.' : /network/.test(c) ? 'Tidak ada koneksi internet.' : 'PIN salah.';
-        const d = $('#pinDots', sh.body); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
-      });
-    };
-    sh.body.addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) key(b.dataset.d); });
-    const kd = e => { if (sh.closed) return document.removeEventListener('keydown', kd); if (/^\d$/.test(e.key)) key(e.key); else if (e.key === 'Backspace') key('del'); };
-    document.addEventListener('keydown', kd);
-  }
-
   // ---------- panel status ----------
   function statusSheet() {
-    if (S.state === 'login' || (S.state === 'error' && !S.ready && !(S.auth && S.auth.currentUser && sessionValid(S.auth.currentUser)))) return loginSheet();
-    if (S.state === 'local') return UI.info('Belum tersambung', 'Firebase tidak termuat, jadi data hanya tersimpan di perangkat ini. Periksa internet lalu muat ulang.');
+    if (S.state === 'local') return UI.info('Belum tersambung', 'Firebase tidak termuat, jadi data sementara hanya tersimpan di perangkat ini. Periksa internet lalu muat ulang; data akan ikut tersinkron.');
     const media = DB.list('media');
     const up = media.filter(m => m.r2).length, notUp = media.filter(m => m.blob && !m.r2).length;
     const sh = UI.sheet({ title: 'Sinkron', body: `
@@ -334,7 +279,7 @@
         <div class="row"><div class="grow">Menunggu dikirim</div><div class="detail">${S.pending.size}</div></div>
       </div>
       ${S.state === 'error' && S.lastErr ? `<p class="section-f" style="color:var(--red-ink)">${esc(S.lastErr)}</p>` : ''}
-      <p class="section-f">Data tetap tersimpan di perangkat ini juga, jadi Lekat bisa dipakai offline. Sesi berakhir jam 00:00 WIB seperti Nexa.</p>
+      <p class="section-f">Semua perangkat yang membuka Lekat memakai data yang sama, tanpa login. Data juga disimpan di perangkat ini, jadi tetap bisa dipakai offline.</p>
       <div class="list" style="margin-top:14px"><button type="button" class="row tint" id="syNow">${icon('reset')} Sinkron ulang sekarang</button></div>` });
     $('#syNow', sh.body).onclick = () => { sh.close(); start(); };
   }
@@ -342,19 +287,13 @@
   // ---------- boot ----------
   function init() {
     try {
-      if (typeof firebase === 'undefined') { setState('local'); return; }
+      if (typeof firebase === 'undefined') { setState('local'); readyResolve(); return; }
       if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-      S.auth = firebase.auth();
-    } catch (e) { console.warn(e); setState('local'); return; }
-    setState('login');
-    S.auth.onAuthStateChanged(user => {
-      if (user && sessionValid(user)) { if (!S.ready && S.state !== 'syncing') start(); }
-      else { stop(); setState('login'); }
-    });
-    setInterval(() => { if (S.ready && !sessionValid()) { stop(); setState('login'); UI.toast('Sesi berakhir. Masuk lagi untuk sinkron.'); } }, 60000);
-    window.addEventListener('online', () => { if (S.ready) flush(); });
+    } catch (e) { console.warn(e); setState('local'); readyResolve(); return; }
+    start();
+    window.addEventListener('online', () => { if (S.ready) flush(); else start(); });
     document.addEventListener('click', e => { if (e.target.closest('#syncPill')) statusSheet(); });
   }
 
-  G.Sync = { init, start, pillHtml, loginSheet, statusSheet, signedUrl, wipeRemote, isOn: () => S.ready, state: () => S.state, _S: S };
+  G.Sync = { init, start, pillHtml, statusSheet, firstSync: () => Promise.race([firstSync, new Promise(r => setTimeout(r, 8000))]), signedUrl, wipeRemote, isOn: () => S.ready, state: () => S.state, _S: S };
 })(window);

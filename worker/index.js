@@ -17,6 +17,7 @@ import { healthcareAi } from './healthcare.js';
 import { handleNexo } from './nexo.js';
 import { handleThaiTea } from './thaitea.js';
 import { handlePesan, nudgeKasir } from './pesan.js';
+import { handleLekat } from './lekat.js';
 export { NexoHub } from './nexo.js';
 
 const GOOGLE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
@@ -75,6 +76,8 @@ async function handleApi(request, env, url, ctx) {
   if (path.startsWith('/api/thaitea/')) return handleThaiTea(request, env, url, ctx);
   // ---- Pesan online Kedai Thai Tea (halaman customer /pesan/) ----
   if (path.startsWith('/api/pesan/')) { requireKV(env); return handlePesan(request, env, url, ctx); }
+  // Lekat (flashcard): media publik di R2, tanpa login
+  if (path.startsWith('/api/lekat/')) { requireKV(env); return handleLekat(request, env, url); }
 
   // Dipanggil service worker (tanpa token login): endpoint langganan berfungsi sebagai kunci akses.
   if (path === '/api/pending' && method === 'GET') {
