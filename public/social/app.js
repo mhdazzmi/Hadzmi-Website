@@ -1,7 +1,8 @@
 /* =========================================================
    NEXA SOCIAL — workspace Social Media Manager (Instagram klien)
-   Data teks : Firebase Realtime DB → node "hadzmi_social_data" (hanya pemilik, login PIN Nexa)
-   Media     : Cloudflare R2 lewat /api/files (sama dengan Nexa) + thumbnail kecil di Firebase
+   Tanpa login: semua perangkat yang membuka /social/ memakai data yang sama.
+   Data teks : Firebase Realtime DB → node "hadzmi_social_data" (dibuka di aturan Firebase)
+   Media     : Cloudflare R2 lewat rute publik /api/social/files (prefix social/) + thumbnail kecil di Firebase
    Mode demo : tambahkan ?demo=1 di alamat (data contoh, tidak menyentuh Firebase/R2)
    ========================================================= */
 (function () {
@@ -17,14 +18,10 @@ const firebaseConfig = {
   messagingSenderId: "664176294351",
   appId: "1:664176294351:web:5706e50b47d9cec546baba"
 };
-const OWNER_EMAIL = 'hadzmi-hub@example.com'; // sama dengan Nexa (login PIN)
-const PIN_LEN = 8;
 const DB_PATH = 'hadzmi_social_data';
-const SESSION_KEY = 'hz_session';             // dipakai bersama Nexa → login sekali
 const DEMO = !!window.SOCIAL_DEMO || /[?&]demo\b/.test(location.search);
 const CACHE_KEY = DEMO ? 'social_demo_v1' : 'social_cache_v1';
 const PENDING_KEY = 'social_pending_v1';
-const SIGN_KEY = 'social_sign_v1';
 const UI_KEY = 'social_ui_v1';
 const WIB = 7 * 3600 * 1000;
 const COLS = ['clients', 'posts', 'media', 'ideas', 'templates', 'reports', 'invoices', 'tasks'];
@@ -134,11 +131,10 @@ function blank() { const o = { settings: {} }; COLS.forEach(c => { o[c] = {}; })
 let S = Object.assign(blank(), readLS(CACHE_KEY, {}));
 COLS.forEach(c => { if (!S[c] || typeof S[c] !== 'object') S[c] = {}; });
 let pending = DEMO ? {} : readLS(PENDING_KEY, {});
-let signCache = readLS(SIGN_KEY, {});
 const UI = Object.assign({ tab: 'home', fClient: '', calMonth: today().slice(0, 7), calSel: today(), cView: 'board', cStatus: '', q: '', mKind: '', tKind: 'caption', repClient: '', finFilter: 'all' }, readLS(UI_KEY, {}));
 UI.calMonth = today().slice(0, 7); UI.calSel = today();
 let stack = [];   // halaman detail di atas tab (mis. detail klien)
-let auth = null, dbRef = null, authed = false, started = false, syncMode = DEMO ? 'demo' : 'local';
+let dbRef = null, authed = false, started = false, syncMode = DEMO ? 'demo' : 'local';
 const localUrls = {}; // mode demo: blob URL hasil unggah
 const uploads = {};   // id media → persen unggahan
 let saveTimer = null;
@@ -197,22 +193,6 @@ function mediaOfPost(p) { return (p.media || []).map(id => S.media[id]).filter(B
 // ---------------- SHELL ----------------
 function shellHTML() {
   return `
-<div id="lock" class="lock hidden">
-  <div class="lock-card" id="lockCard">
-    <div class="app-logo">${ic('ig')}</div>
-    <div class="t-title3">Nexa Social</div>
-    <div class="t-sub muted" id="lockHint">Masukkan PIN yang sama dengan Nexa</div>
-    <div class="pin-dots" id="pinDots"></div>
-    <div class="pin-pad" id="pinPad">
-      <button data-d="1">1</button><button data-d="2">2<small>ABC</small></button><button data-d="3">3<small>DEF</small></button>
-      <button data-d="4">4<small>GHI</small></button><button data-d="5">5<small>JKL</small></button><button data-d="6">6<small>MNO</small></button>
-      <button data-d="7">7<small>PQRS</small></button><button data-d="8">8<small>TUV</small></button><button data-d="9">9<small>WXYZ</small></button>
-      <span></span><button data-d="0">0</button><button data-del="1" aria-label="Hapus">${ic('chevL')}</button>
-    </div>
-    <div class="lock-err" id="lockErr"></div>
-    <a class="lock-back" href="../">Kembali ke Nexa</a>
-  </div>
-</div>
 <div id="app" class="shell hidden">
   <aside class="side" id="side"></aside>
   <div class="content">
@@ -666,11 +646,11 @@ VIEWS.settings = () => {
       <div><div class="form-head">Profil</div><div class="form"><div class="field"><label for="setName">Nama panggilan</label><input id="setName" value="${esc((S.settings && S.settings.name) || '')}" placeholder="Hadzmi"></div></div><div class="form-foot">Dipakai di sapaan Beranda.</div></div>
       ${group('Penyimpanan', `<div class="list">
         <button class="row" data-a="explainSync"><span class="tile" style="background:var(--orange)">${ic('cloud')}</span><span class="grow"><div class="ttl">Firebase · teks</div><div class="sub">${{ on: 'Tersinkron realtime', off: 'Offline, sinkron otomatis saat online', err: 'Ditolak Rules, tambahkan hadzmi_social_data', local: 'Firebase tidak termuat', demo: 'Mode pratinjau, tidak tersambung' }[syncMode]}${nPend ? ` · ${nPend} menunggu` : ''}</div></span>${ic('chevR', 'chev')}</button>
-        <div class="row"><span class="tile" style="background:#F38020">${ic('photo')}</span><span class="grow"><div class="ttl">Cloudflare R2 · media</div><div class="sub" id="r2Usage">${DEMO ? 'Mode pratinjau, file hanya di memori' : 'Memuat pemakaian…'}</div></span></div>
+        <div class="row"><span class="tile" style="background:#F38020">${ic('photo')}</span><span class="grow"><div class="ttl">Cloudflare R2 · media</div><div class="sub">${DEMO ? 'Mode pratinjau, file hanya di memori' : `${Object.keys(S.media).length} file · ${bytesText(Object.values(S.media).reduce((a, m) => a + num(m.size), 0))} · batas 200 MB per file`}</div></span></div>
       </div>`)}
       ${group('Cadangan', `<div class="list"><button class="row action" data-a="exportJson">${ic('download')}<span class="grow">Ekspor semua data (JSON)</span></button><button class="row action" data-a="importJson">${ic('upload')}<span class="grow">Pulihkan dari file JSON</span></button></div>`, { foot: 'Cadangan berisi teks dan thumbnail. File media asli tetap di R2.' })}
-      ${DEMO ? group('Pratinjau', `<div class="list"><button class="row action" data-a="resetDemo">${ic('refresh')}<span class="grow">Muat ulang data contoh</span></button></div>`) : group('Keamanan', `<div class="list"><button class="row" data-a="lockNow"><span class="tile" style="background:var(--gray)">${ic('lock')}</span><span class="grow"><div class="ttl">Kunci sekarang</div><div class="sub">PIN sama dengan Nexa, sesi berakhir 00:00 WIB</div></span></button></div>`)}
-      <div class="group-foot" style="text-align:center">Nexa Social · khusus pemilik. Klien tidak perlu login: kirim pratinjau lewat WhatsApp.</div>`
+      ${DEMO ? group('Pratinjau', `<div class="list"><button class="row action" data-a="resetDemo">${ic('refresh')}<span class="grow">Muat ulang data contoh</span></button></div>`) : ''}
+      <div class="group-foot" style="text-align:center">Nexa Social · tanpa login. Siapa pun yang tahu alamat web ini bisa membuka datanya, jadi jangan bagikan linknya.</div>`
   };
 };
 
@@ -791,7 +771,7 @@ function postShareText(p, urls) {
   const lines = [`*${c.name || ''} · ${TYPES[p.type || 'feed'].label}*`, p.date ? `Jadwal tayang: ${prettyDate(p.date, true)}${p.time ? ', ' + p.time + ' WIB' : ''}` : '', ''];
   if (p.title) lines.push(`Judul: ${p.title}`, '');
   lines.push('Caption:', p.caption || '(belum ada caption)');
-  if (urls && urls.length) { lines.push('', `Materi (${urls.length} file, link berlaku 7 hari):`); urls.forEach((u, i) => lines.push(`${i + 1}. ${u}`)); }
+  if (urls && urls.length) { lines.push('', `Materi (${urls.length} file):`); urls.forEach((u, i) => lines.push(`${i + 1}. ${u}`)); }
   lines.push('', 'Mohon dicek ya. Balas *OK* kalau sudah sesuai, atau tulis bagian yang perlu direvisi. Terima kasih!');
   return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
 }
@@ -959,34 +939,21 @@ function makeThumb(file) {
     }
   });
 }
-async function token() { if (!auth || !auth.currentUser) throw new Error('Belum login'); return auth.currentUser.getIdToken(); }
 function uploadFile(file, onProgress) {
-  return token().then(tk => new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const x = new XMLHttpRequest();
-    x.open('POST', '/api/files?store=r2');
-    x.setRequestHeader('Authorization', 'Bearer ' + tk);
+    x.open('POST', '/api/social/files');
     x.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
     x.setRequestHeader('X-File-Name', encodeURIComponent('social-' + file.name));
     x.upload.onprogress = e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); };
     x.onload = () => { let d = {}; try { d = JSON.parse(x.responseText); } catch (e) {} if (x.status >= 200 && x.status < 300 && d.id) resolve(d); else reject(new Error(d.error || 'HTTP ' + x.status)); };
     x.onerror = () => reject(new Error('Koneksi terputus'));
     x.send(file);
-  }));
+  });
 }
 async function mediaUrls(list) {
-  const out = {}, need = [];
-  const soon = Math.floor(Date.now() / 1000) + 86400;
-  list.forEach(m => {
-    if (localUrls[m.id]) out[m.id] = localUrls[m.id];
-    else if (m.fileId) { const c = signCache[m.fileId]; if (c && c.exp > soon) out[m.id] = location.origin + c.u; else need.push(m); }
-  });
-  if (need.length && !DEMO) {
-    const res = await fetch('/api/sign', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() }, body: JSON.stringify({ ids: need.map(m => m.fileId), days: 7 }) });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(d.error || 'sign ' + res.status);
-    need.forEach(m => { const u = d.urls && d.urls[m.fileId]; if (u) { signCache[m.fileId] = { u, exp: d.exp }; out[m.id] = location.origin + u; } });
-    writeLS(SIGN_KEY, signCache);
-  }
+  const out = {};
+  list.forEach(m => { if (localUrls[m.id]) out[m.id] = localUrls[m.id]; else if (m.fileId) out[m.id] = location.origin + '/api/social/files/' + encodeURIComponent(m.fileId); });
   return out;
 }
 function mediaViewer(id) {
@@ -1003,7 +970,7 @@ function mediaViewer(id) {
       </div>
       ${usedIn.length ? `<div class="list">${usedIn.map(p => postRow(p)).join('')}</div>` : ''}
       <div class="list">
-        <button class="row action" data-a="mediaLink" data-id="${id}">${ic('link')}<span class="grow">Salin link (berlaku 7 hari)</span></button>
+        <button class="row action" data-a="mediaLink" data-id="${id}">${ic('link')}<span class="grow">Salin link</span></button>
         <button class="row action" data-a="mediaToPost" data-id="${id}">${ic('plus')}<span class="grow">Buat konten dari media ini</span></button>
       </div>
       <div class="list"><button class="row danger" data-a="delMedia" data-id="${id}">Hapus dari R2</button></div>`,
@@ -1015,7 +982,7 @@ async function deleteMedia(id) {
   const m = S.media[id]; if (!m) return;
   postsAll().forEach(p => { if ((p.media || []).includes(id)) dbSet('posts/' + p.id, Object.assign(clone(p), { media: p.media.filter(x => x !== id) })); });
   dbSet('media/' + id, null);
-  if (m.fileId && !DEMO) { try { await fetch('/api/files/' + encodeURIComponent(m.fileId), { method: 'DELETE', headers: { Authorization: 'Bearer ' + await token() } }); } catch (e) {} }
+  if (m.fileId && !DEMO) { try { await fetch('/api/social/files/' + encodeURIComponent(m.fileId), { method: 'DELETE' }); } catch (e) {} }
   toast('Media dihapus', 'trash'); render();
 }
 
@@ -1142,7 +1109,7 @@ const A = {
   client: el => { const cur = stack[stack.length - 1]; if (cur && cur.v === 'client' && cur.id === el.dataset.id) return; if (sheets.length) [...sheets].forEach(r => closeSheet(r)); stack = [{ v: 'client', id: el.dataset.id, backLabel: ALL_PAGES[UI.tab] ? ALL_PAGES[UI.tab].label : 'Kembali', tab: 'clients' }]; render(); window.scrollTo(0, 0); },
   fClient: el => { UI.fClient = el.dataset.id; saveUI(); render(); },
   statFilter: el => { UI.tab = 'content'; UI.cView = 'list'; UI.cStatus = el.dataset.k; stack = []; saveUI(); render(); window.scrollTo(0, 0); },
-  explainSync: () => iosAlert('Status sinkron', { on: 'Tersambung ke Firebase. Data tersinkron realtime ke semua perangkatmu.', off: 'Sedang offline. Perubahan disimpan di perangkat dan dikirim otomatis saat online.', err: 'Firebase menolak node hadzmi_social_data. Tempel ulang isi database.rules.json ke Firebase Console → Realtime Database → Rules, lalu Publish.', local: 'Firebase tidak termuat. Data hanya tersimpan di perangkat ini.', demo: 'Ini mode pratinjau dengan data contoh. Tidak tersambung ke Firebase maupun R2.' }[syncMode] || ''),
+  explainSync: () => iosAlert('Status sinkron', { on: 'Tersambung ke Firebase. Data tersinkron realtime ke semua perangkatmu.', off: 'Sedang offline. Perubahan disimpan di perangkat dan dikirim otomatis saat online.', err: 'Firebase menolak node hadzmi_social_data. Tempel ulang isi database.rules.json (blok hadzmi_social_data sekarang terbuka tanpa login) ke Firebase Console → Realtime Database → Rules, lalu Publish. Sementara itu data tersimpan di perangkat ini.', local: 'Firebase tidak termuat. Data hanya tersimpan di perangkat ini.', demo: 'Ini mode pratinjau dengan data contoh. Tidak tersambung ke Firebase maupun R2.' }[syncMode] || ''),
   // kalender
   calSel: el => { UI.calSel = el.dataset.d; if (el.dataset.d.slice(0, 7) !== UI.calMonth) UI.calMonth = el.dataset.d.slice(0, 7); render(); },
   calNav: el => { UI.calMonth = addMonths(UI.calMonth, Number(el.dataset.n)); UI.calSel = UI.calMonth === today().slice(0, 7) ? today() : UI.calMonth + '-01'; render(); },
@@ -1247,7 +1214,6 @@ const A = {
   },
   importJson: () => { const fi = $('importInput'); fi.value = ''; fi.click(); },
   resetDemo: () => { S = seedDemo(); saveCache(); render(); toast('Data contoh dimuat ulang', 'refresh'); },
-  lockNow: () => { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} started = false; detachDb(); authed = false; if (auth) auth.signOut().catch(() => {}); showLock(); }
 };
 function insertCaption(text) {
   const w = draftSheet(); const ta = w && w.querySelector('#pCaption'); if (!ta) return;
@@ -1257,54 +1223,20 @@ function insertCaption(text) {
   ta.value = before + sep + text + after; draft.caption = ta.value; updateCaptionCount(w);
 }
 
-// ---------------- LOGIN & FIREBASE ----------------
-function sessionValid(user) { const r = readLS(SESSION_KEY, null); return !!(r && r.expiresAt && Date.now() < r.expiresAt && (!user || !r.uid || r.uid === user.uid)); }
-function nextMidnight() { const n = Date.now() + WIB; return Math.floor(n / 86400000) * 86400000 + 86400000 - WIB; }
-let pinBuf = '', pinBusy = false;
-function showLock(msg) { $('app').classList.add('hidden'); $('lock').classList.remove('hidden'); pinBuf = ''; renderPin(); $('lockErr').textContent = msg || ''; }
-function renderPin() { const d = $('pinDots'); if (d.children.length !== PIN_LEN) d.innerHTML = '<span></span>'.repeat(PIN_LEN); [...d.children].forEach((s, i) => s.classList.toggle('on', i < pinBuf.length)); d.classList.toggle('busy', pinBusy); }
-function pinKey(k) {
-  if (pinBusy || $('lock').classList.contains('hidden')) return;
-  if (k === 'del') pinBuf = pinBuf.slice(0, -1); else if (pinBuf.length < PIN_LEN) { pinBuf += k; haptic(5); }
-  if (pinBuf.length === 1) $('lockErr').textContent = '';
-  renderPin();
-  if (pinBuf.length === PIN_LEN) setTimeout(submitPin, 120);
-}
-function submitPin() {
-  if (!auth) { $('lockErr').textContent = 'Firebase belum termuat. Periksa koneksi.'; return; }
-  pinBusy = true; renderPin();
-  auth.signInWithEmailAndPassword(OWNER_EMAIL, pinBuf).then(cred => {
-    writeLS(SESSION_KEY, { uid: cred.user.uid, email: OWNER_EMAIL, loginAt: Date.now(), expiresAt: nextMidnight() });
-    pinBusy = false; pinBuf = ''; authed = true; startApp(); attachDb();
-  }).catch(err => {
-    pinBusy = false; pinBuf = ''; renderPin();
-    const c = (err && err.code) || '';
-    $('lockErr').textContent = /too-many/.test(c) ? 'Terlalu banyak percobaan. Tunggu sebentar.' : /network/.test(c) ? 'Tidak ada koneksi internet.' : 'PIN salah.';
-    const card = $('lockCard'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); haptic(40);
-  });
-}
+// ---------------- FIREBASE (tanpa login) ----------------
 function attachDb() {
-  if (dbRef || !authed) return;
+  if (dbRef) return;
   try {
-    dbRef = firebase.database().ref(DB_PATH);
-    dbRef.on('value', s => { if (syncMode === 'err') setSync('on'); applyRemote(s.val()); }, err => { console.warn('db', err); setSync('err'); });
-    firebase.database().ref('.info/connected').on('value', s => { if (syncMode !== 'err') setSync(s.val() ? 'on' : 'off'); if (s.val()) flushPending(); });
-  } catch (e) { setSync('local'); }
+    dbRef = firebase.database().ref(DB_PATH); authed = true;
+    dbRef.on('value', snap => { if (syncMode === 'err') setSync('on'); applyRemote(snap.val()); }, err => { console.warn('db', err); setSync('err'); });
+    firebase.database().ref('.info/connected').on('value', snap => { if (syncMode !== 'err') setSync(snap.val() ? 'on' : 'off'); if (snap.val()) flushPending(); });
+  } catch (e) { dbRef = null; authed = false; setSync('local'); }
 }
-function detachDb() { if (dbRef) { try { dbRef.off(); firebase.database().ref('.info/connected').off(); } catch (e) {} } dbRef = null; }
 function startApp() {
-  $('lock').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('app').classList.remove('hidden');
   if (started) return;
   started = true;
   render();
-  if (!DEMO) loadUsage();
-}
-async function loadUsage() {
-  try {
-    const r = await fetch('/api/storage-usage', { headers: { Authorization: 'Bearer ' + await token() } });
-    const d = await r.json(); const el = $('r2Usage');
-    if (d.r2 && el) el.textContent = `${bytesText(d.r2.bytes)} dari 10 GB gratis terpakai (semua app Nexa)`;
-  } catch (e) {}
 }
 
 // ---------------- BOOT ----------------
@@ -1326,12 +1258,10 @@ function bind() {
     if (el.dataset && el.dataset.f && draft) { draft[el.dataset.f] = el.value; if (el.dataset.f === 'clientId' && pickState) renderPicker(); }
   });
   document.addEventListener('keydown', e => {
-    if (!$('lock').classList.contains('hidden')) { if (/^\d$/.test(e.key)) pinKey(e.key); else if (e.key === 'Backspace') pinKey('del'); return; }
     if (e.key === 'Escape' && sheets.length) { closeSheet(); return; }
     if (e.key === 'Enter' && e.target.id === 'quickIdea' && e.target.value.trim()) { const id = uid(); dbSet('ideas/' + id, { id, text: e.target.value.trim(), clientId: UI.fClient || '', tag: '', ref: '', done: false, at: Date.now() }); render(); const q = $('quickIdea'); if (q) q.focus(); toast('Ide disimpan', 'bulb'); }
     if (e.key === 'Enter' && e.target.id === 'pLogInput') { e.preventDefault(); A.addLog(); }
   });
-  $('pinPad').addEventListener('click', e => { const b = e.target.closest('button'); if (b) pinKey(b.dataset.del ? 'del' : b.dataset.d); });
   $('fileInput').addEventListener('change', e => { if (e.target.files.length) handleFiles(e.target.files); });
   $('importInput').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
@@ -1355,14 +1285,9 @@ function boot() {
     if (!Object.keys(S.clients).length) { S = seedDemo(); saveCache(); }
     syncMode = 'demo'; startApp(); return;
   }
-  let fbOk = false;
-  try { if (typeof firebase !== 'undefined') { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); auth = firebase.auth(); fbOk = true; } } catch (e) { console.warn(e); }
-  if (!fbOk) { if (sessionValid()) { syncMode = 'local'; startApp(); } else showLock('Firebase tidak termuat. Periksa internet lalu muat ulang.'); return; }
-  auth.onAuthStateChanged(user => {
-    if (user && sessionValid(user)) { authed = true; startApp(); attachDb(); }
-    else { authed = false; detachDb(); started = false; showLock(); }
-  });
-  setInterval(() => { if (started && !sessionValid()) { started = false; detachDb(); showLock('Sesi berakhir pukul 00:00 WIB. Masukkan PIN lagi.'); } }, 30000);
+  startApp();
+  try { if (typeof firebase !== 'undefined') { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); attachDb(); } } catch (e) { console.warn(e); }
+  if (!dbRef) setSync('local');
 }
 
 // ---------------- DATA CONTOH (mode pratinjau) ----------------
