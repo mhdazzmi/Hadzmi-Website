@@ -448,3 +448,26 @@ details.adv[open] > summary { margin-bottom: 4px; }
 .deck-card.add { grid-column: 1 / -1; min-height: 0; flex-direction: row; gap: 8px; padding: 14px; }
 
 .toolbar button { flex: none; }
+
+/* ---------- Sinkron ---------- */
+.navbar.nav-split { justify-content: space-between; }
+.sync-pill { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 17px; font-size: 13px; font-weight: 600; color: var(--label2); }
+.sync-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--label3); flex: none; }
+.sync-pill.st-on .dot { background: var(--green); }
+.sync-pill.st-syncing .dot { background: var(--tint); animation: pulse 1s infinite; }
+.sync-pill.st-offline .dot { background: var(--orange); }
+.sync-pill.st-error .dot { background: var(--red); }
+.sync-pill.st-login { color: var(--tint-ink); }
+.sync-pill.st-login .dot { background: var(--tint); }
+@keyframes pulse { 50% { opacity: .3; } }
+.pin-wrap { text-align: center; padding: 8px 0 10px; }
+.pin-dots { display: flex; justify-content: center; gap: 12px; margin: 24px 0 8px; }
+.pin-dots span { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--label2); transition: background .15s; }
+.pin-dots span.on { background: var(--label); border-color: var(--label); }
+.pin-dots.busy span { animation: pulse .8s infinite; }
+.pin-dots.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+.pin-err { min-height: 20px; color: var(--red-ink); font-size: 14px; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px 22px; justify-content: center; margin-top: 10px; }
+.pin-pad button { width: 76px; height: 76px; border-radius: 50%; background: var(--fill); font-size: 30px; font-weight: 400; }
+.pin-pad button:active { background: var(--fill2); }

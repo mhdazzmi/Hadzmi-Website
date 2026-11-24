@@ -118,7 +118,8 @@
         ${!todayLogs.length ? `<button type="button" class="btn today-btn" id="goAdd">${icon('plus')} Tambah kartu</button>` : ''}
       </div>`;
     v.innerHTML = `
-      <div class="navbar">
+      <div class="navbar nav-split">
+        ${G.Sync ? G.Sync.pillHtml() : ''}
         <button type="button" class="circle-btn glass" id="dkAdd" aria-label="Tambah">${icon('plus')}</button>
       </div>
       <div class="eyebrow">${esc(dateStr)}</div>
@@ -492,6 +493,10 @@
       <div class="navbar"></div>
       <h1 class="large-title">Setelan</h1>
       <div class="list"><div class="row" style="padding:16px"><div class="logo">L</div><div class="grow"><div class="t1" style="font-weight:600;font-size:20px">Lekat</div><div class="t2">${nNotes} note · ${nCards} kartu · ${nRev} ulasan tersimpan di perangkat ini</div></div></div></div>
+      <div class="section-h"><span>Akun & sinkron</span></div>
+      <div class="list">
+        <button type="button" class="row ind" id="setSync"><div class="row-ico" style="background:var(--tint)">${icon('upload')}</div><div class="grow">Sinkron cloud<div class="t2">Teks di Firebase · media di Cloudflare R2</div></div><div class="detail" id="setSyncState">${G.Sync ? esc({ local: 'Di perangkat', login: 'Belum masuk', syncing: 'Menyinkron…', on: 'Aktif', offline: 'Offline', error: 'Gagal' }[G.Sync.state()] || '') : ''}</div>${icon('chevR', 'chev')}</button>
+      </div>
       <div class="section-h"><span>Tampilan</span></div>
       <div class="list">
         <div class="row"><div class="grow">Tema</div>${UI.seg('theme', [['auto', 'Otomatis'], ['light', 'Terang'], ['dark', 'Gelap']], theme)}</div>
@@ -537,10 +542,14 @@
     $('#setImport').onclick = () => G.IO.importMenu();
     $('#setCsv').onclick = () => G.IO.exportCsv();
     $('#setHelp').onclick = helpSheet;
+    $('#setSync').onclick = () => G.Sync && G.Sync.statusSheet();
     $('#setWipe').onclick = async () => {
-      if (!await UI.confirm('Hapus semua data?', 'Semua deck, kartu, riwayat, dan media akan hilang. Ekspor cadangan dulu jika perlu.', 'Hapus semua', true)) return;
+      const cloud = G.Sync && G.Sync.isOn();
+      if (!await UI.confirm('Hapus semua data?', 'Semua deck, kartu, riwayat, dan media akan hilang' + (cloud ? ' di perangkat ini DAN di cloud (Firebase).' : '.') + ' Ekspor cadangan dulu jika perlu.', 'Hapus semua', true)) return;
       const r = await UI.prompt('Ketik HAPUS untuk konfirmasi', ''); if (r !== 'HAPUS') return;
+      if (cloud) { try { await G.Sync.wipeRemote(); } catch (e) { UI.info('Gagal', 'Data cloud tidak bisa dihapus: ' + e.message); return; } }
       await DB.wipe(); Col.ensureDefaults(); go('decks'); UI.toast('Semua data dihapus');
+      if (cloud) G.Sync.start();
     };
     if (window.speechSynthesis && !voices.length) speechSynthesis.onvoiceschanged = () => { if (App.tab === 'settings') renderSettings(); speechSynthesis.onvoiceschanged = null; };
   }
@@ -712,6 +721,7 @@
     Col.ensureDefaults();
     App.collapsed = new Set(DB.meta('collapsed') || []);
     applyTheme();
+    if (G.Sync) G.Sync.init();
     initTabs();
     let tab = 'decks'; try { tab = localStorage.getItem('lekat.tab') || 'decks'; } catch (e) {}
     if (!TABS.some(t => t[0] === tab)) tab = 'decks';
@@ -720,7 +730,8 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !G.Review.active() && App.tab === 'decks') renderDecks(); });
     setInterval(() => { if (!document.hidden && !G.Review.active() && App.tab === 'decks' && !document.querySelector('.sheet')) renderDecks(); }, 60000);
     G.IO.autoBackup();
-    if (!DB.meta('onboarded') && !DB.mem.cards.size) onboarding();
+    // tunggu sebentar: kalau sudah login, data dari cloud masuk dulu sebelum layar sambutan
+    setTimeout(() => { if (!DB.meta('onboarded') && !DB.mem.cards.size && !document.querySelector('.sheet') && !(G.Sync && G.Sync.isOn())) onboarding(); }, 2500);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   }
@@ -740,8 +751,10 @@
         ${UI.seg('goal', [['5', '5 · santai'], ['10', '10 · normal'], ['20', '20 · serius']], '10')}
         <div class="list" style="margin-top:14px"><div class="row"><div class="grow">Pasang paket kata awal<div class="t2">50 kosakata + grammar + latihan dengar</div></div>${UI.sw('starter', true)}</div></div>
         <button type="button" class="btn primary block" id="obGo" style="margin-top:20px">Mulai</button>
+        ${G.Sync && G.Sync.state() !== 'local' ? '<button type="button" class="btn secondary block" id="obLogin" style="margin-top:10px">Sudah punya data? Masuk</button>' : ''}
       </div>` });
     UI.bindSeg(sh.body, (n, v) => { goal = +v; });
+    const ol = $('#obLogin', sh.body); if (ol) ol.onclick = () => { DB.meta('onboarded', true); sh.close(); G.Sync.loginSheet(); };
     $('#obGo', sh.body).onclick = () => {
       starter = sh.body.querySelector('[name=starter]').checked;
       const p = DB.get('presets', 1); p.newPerDay = goal; DB.put('presets', p);

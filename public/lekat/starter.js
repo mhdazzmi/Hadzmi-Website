@@ -82,6 +82,7 @@
 
   function installStarter() {
     const { Col, DB } = G;
+    if (DB.list('notes').some(n => (n.tags || []).includes('starter'))) { DB.meta('starterInstalled', true); return; } // sudah ada (mis. dari perangkat lain)
     const root = 'English';
     const vocabDeck = Col.deckByName(root + '::Vocabulary', true);
     const phrDeck = Col.deckByName(root + '::Phrasal Verbs', true);

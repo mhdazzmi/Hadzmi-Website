@@ -3,11 +3,11 @@
 (function (G) {
   'use strict';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const tmpDiv = document.createElement('div');
+  const tmpDiv = document.createElement('template'); // isi template tidak memuat gambar/audio
   function stripHtml(h) {
     h = String(h || '').replace(/<br\s*\/?>/gi, ' ').replace(/<\/(div|p|li)>/gi, ' ').replace(/\[sound:[^\]]+\]/g, '');
     tmpDiv.innerHTML = h.replace(/<(script|style)[\s\S]*?<\/\1>/gi, '');
-    return (tmpDiv.textContent || '').replace(/ /g, ' ');
+    return (tmpDiv.content.textContent || '').replace(/ /g, ' ');
   }
   function parseOcc(s) {
     try { const o = typeof s === 'string' ? JSON.parse(s || '{}') : (s || {}); return { mode: o.mode || 'hideAll', shapes: Array.isArray(o.shapes) ? o.shapes : [] }; }
@@ -22,6 +22,8 @@
     if (urlCache.has(key)) return urlCache.get(key);
     const m = G.DB.get('media', key);
     if (!m) return name;
+    // belum ada di perangkat ini: pakai link bertanda tangan dari R2 sambil diunduh di latar belakang
+    if (!m.blob) return (G.Sync && G.Sync.signedUrl(m)) || name;
     const u = URL.createObjectURL(m.blob); urlCache.set(key, u); return u;
   }
   function resolveMedia(html) {

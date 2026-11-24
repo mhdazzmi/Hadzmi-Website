@@ -264,8 +264,7 @@
       const res = Sched.answer(card, g, p, now, today, Col.dayOffset());
       const c = res.card;
       Object.assign(card, c);
-      const log = Object.assign({ id: DB.newId(), cid: card.id, time: Math.min(thinkMs || 0, 60000) }, res.log);
-      log.id = Math.max(log.id, now);
+      const log = Object.assign({}, res.log, { id: DB.newId(), cid: card.id, time: Math.min(thinkMs || 0, 60000) }); // id unik walau jawaban dalam ms yang sama
       DB.putRaw('revlog', log);
       let leechHit = false;
       if (res.leech) {

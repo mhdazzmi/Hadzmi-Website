@@ -56,6 +56,7 @@
       const r = await UI.alertBox({ title: 'Impor cadangan', msg: 'Ganti seluruh koleksi di perangkat ini dengan cadangan ini, atau gabungkan?', buttons: [{ label: 'Batal' }, { label: 'Gabungkan' }, { label: 'Ganti semua', style: 'danger bold' }] });
       if (r.i === 0) return; replace = r.i === 2;
     }
+    if (replace && G.Sync && G.Sync.isOn()) { try { await G.Sync.wipeRemote(); } catch (e) { return UI.info('Gagal', 'Data cloud tidak bisa diganti: ' + e.message); } }
     if (replace) await DB.wipe();
     let n = 0, upd = 0;
     for (const s of STORES) for (const o of data.stores[s] || []) {
@@ -76,6 +77,7 @@
     if ((DB.meta('nextPos') || 0) <= maxPos) DB.meta('nextPos', maxPos + 1);
     Col.ensureDefaults(); await DB.flush();
     UI.info('Impor selesai', replace ? 'Koleksi dipulihkan dari cadangan.' : `${n} note baru${upd ? `, ${upd} diperbarui` : ''}.`);
+    if (replace && G.Sync && G.Sync.state() !== 'local') G.Sync.start();
     G.App.refresh();
   }
   function remapDeck(data, from, to) { (data.stores.cards || []).forEach(c => { if (c.deckId === from) c.deckId = to; }); }
