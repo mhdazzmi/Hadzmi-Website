@@ -301,9 +301,9 @@ Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyent
 |---|---|
 | **Beranda** | Jadwal hari ini, menunggu klien, perlu revisi, terlambat; daftar *Perlu tindakan* (revisi, lewat jadwal, klien belum membalas > 2 hari); 7 hari ke depan; Tugas; target paket bulan ini per klien; tagihan belum lunas. |
 | **Kalender** | Tampilan bulan (warna per klien), filter klien, daftar konten di tanggal terpilih, tambah konten langsung di tanggal itu. |
-| **Konten** | Papan alur status **Ide → Draft → Review → Menunggu Klien → Revisi → Disetujui → Terjadwal → Terposting**, atau Daftar dengan pencarian & filter. Editor: klien, jenis (Feed/Carousel/Reels/Story), jadwal, pilar, media (dari Library atau unggah), caption + penghitung 2.200 karakter & 30 hashtag, sisip template/hashtag, catatan internal, link post, riwayat revisi & komentar klien. **Pratinjau tampilan Instagram**, **Kirim ke klien** (salin / buka WhatsApp, status otomatis jadi Menunggu Klien), duplikat. |
+| **Konten** | Papan alur status **Ide → Draft → Review → Menunggu Klien → Revisi → Disetujui → Terjadwal → Terposting**, atau Daftar dengan pencarian & filter. Editor: klien, jenis (Feed/Carousel/Reels/Story), jadwal, pilar, **link desain** (Canva/Drive/CapCut) + **gambar penanda** (tempel screenshot / Ctrl+V / pilih foto, dikecilkan ±30 KB), media R2 opsional, caption + penghitung 2.200 karakter & 30 hashtag, sisip template/hashtag, catatan internal, link post, riwayat revisi & komentar klien. **Pratinjau tampilan Instagram**, **Kirim ke klien** (salin / buka WhatsApp, status otomatis jadi Menunggu Klien), duplikat. |
 | **Klien** | Profil, paket bulanan (Feed/Reels/Story + harga) dengan progres, **Brand kit** (palet warna, font, tone, pilar, hashtag, do & don't), kontak WhatsApp, folder aset, **pratinjau Grid IG** (urutan feed termasuk yang belum tayang), laporan & tagihan terakhir. |
-| **Media Library** | Semua foto/video di R2 per klien, filter foto/video, label "Baru" untuk yang belum dipakai, info ukuran/durasi, salin link, buat konten dari media, hapus dari R2. |
+| **Media Library** (opsional) | Untuk file yang tidak ada di Canva/Drive, misalnya foto mentah dari klien. Foto dikompres otomatis ke 1080 px, media dihapus otomatis 30 hari setelah kontennya Terposting (bisa dimatikan di Pengaturan). Semua foto/video di R2 per klien, filter foto/video, label "Baru" untuk yang belum dipakai, info ukuran/durasi, salin link, buat konten dari media, hapus dari R2. |
 | **Bank Ide** | Ide cepat (Enter), label, link referensi, "Jadikan konten". |
 | **Template** | Template caption & grup hashtag, variabel `{nama}`, `{handle}`, `{tanggal}`. |
 | **Laporan** | Input bulanan dari Instagram Insights (followers, reach, impressions, interaksi, kunjungan profil), ER otomatis, grafik followers 6 bulan, perbandingan bulan lalu, kirim ringkasan ke klien. |
@@ -313,8 +313,9 @@ Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyent
 ### Penyimpanan
 | Data | Tempat |
 |---|---|
-| Klien, konten, ide, template, laporan, tagihan, tugas, thumbnail media (±20 KB) | Firebase RTDB node **`hadzmi_social_data`** (terbuka tanpa login, hanya koleksi yang dikenal) + cache localStorage (offline, sinkron otomatis) |
-| Foto & video asli | **Cloudflare R2** lewat rute publik khusus `worker/social.js` (`/api/social/files`, prefix R2 `social/`, hanya foto/video, maks 200 MB/file, 300 unggahan/jam per IP, ikut batas aman 9 GB). Rute ini tidak bisa membaca file pribadi Nexa (`f/`). |
+| Klien, konten (termasuk link desain & gambar penanda ±30 KB), ide, template, laporan, tagihan, tugas | Firebase RTDB node **`hadzmi_social_data`** (terbuka tanpa login, hanya koleksi yang dikenal) + cache localStorage (offline, sinkron otomatis) |
+| File asli desain | Tetap di Canva / Google Drive / CapCut (web hanya menyimpan link-nya) |
+| Foto & video opsional | **Cloudflare R2** lewat rute publik khusus `worker/social.js` (`/api/social/files`, prefix R2 `social/`, hanya foto/video, maks 200 MB/file, 300 unggahan/jam per IP, ikut batas aman 9 GB). Rute ini tidak bisa membaca file pribadi Nexa (`f/`). |
 
 ### ⚠️ Setup wajib (1 langkah)
 **Firebase Rules**: tempel ulang `database.rules.json` (ada blok baru `hadzmi_social_data`) ke Firebase Console → Realtime Database → Rules (tetap ganti `GANTI_DENGAN_UID_KAMU` di blok Nexa) → **Publish**. Tanpa ini status sinkron "Ditolak" dan data hanya tersimpan di perangkat. Lalu deploy ulang worker (`npm run deploy`) supaya rute media `/api/social/*` aktif.

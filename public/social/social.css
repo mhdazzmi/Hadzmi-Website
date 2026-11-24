@@ -363,6 +363,17 @@ input:checked + .switch::after { transform: translateX(20px); }
 .log-add input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 15px; padding: 6px 0; }
 .log-add button { color: var(--blue); font-weight: 600; padding: 6px 8px; }
 
+/* ---------- Desain (link + gambar penanda) ---------- */
+.design-box { display: flex; gap: 14px; padding: 12px 16px; align-items: center; }
+.dthumb { width: 92px; aspect-ratio: 4 / 5; border-radius: 10px; background: var(--fill); flex: none; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--label3); font-size: 26px; max-width: 100%; }
+.dthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dside { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 0; }
+.dside .btn-tinted { font-size: 14px; padding: 7px 12px; }
+details.opt summary { list-style: none; cursor: pointer; font-size: 13px; color: var(--label2); text-transform: uppercase; letter-spacing: .03em; padding: 0 16px 6px; display: flex; gap: 6px; align-items: center; }
+details.opt summary::-webkit-details-marker { display: none; }
+details.opt summary svg.i { transition: transform .2s; }
+details.opt[open] summary svg.i { transform: rotate(180deg); }
+
 /* ---------- Media viewer ---------- */
 .viewer-img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; background: #000; display: block; }
 .viewer-ph { width: 100%; aspect-ratio: 4 / 5; max-height: 62vh; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.9); font-size: 48px; }

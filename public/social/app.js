@@ -171,6 +171,7 @@ function applyRemote(v) {
   S.settings = v.settings && typeof v.settings === 'object' ? v.settings : (S.settings || {});
   Object.keys(pending).forEach(p => setLocal(p, pending[p] == null ? null : clone(pending[p])));
   saveCache(); flushPending(); render();
+  if (!cleaned) { cleaned = true; setTimeout(autoClean, 4000); }
 }
 
 // ---------------- SELECTORS ----------------
@@ -204,6 +205,7 @@ function shellHTML() {
 <div id="sheets"></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept="image/*,video/*" multiple hidden>
+<input type="file" id="thumbInput" accept="image/*,video/*" hidden>
 <input type="file" id="importInput" accept="application/json,.json" hidden>`;
 }
 
@@ -215,7 +217,7 @@ const TABS = [
   { k: 'more', label: 'Lainnya', icon: 'more', tile: '#8E8E93' }
 ];
 const MORE = [
-  { k: 'media', label: 'Media Library', icon: 'photo', tile: '#FF9500', sub: 'Foto & video di Cloudflare R2' },
+  { k: 'media', label: 'Media Library', icon: 'photo', tile: '#FF9500', sub: 'Opsional · file di Cloudflare R2' },
   { k: 'ideas', label: 'Bank Ide', icon: 'bulb', tile: '#FFCC00', sub: 'Ide, tren & referensi' },
   { k: 'templates', label: 'Template', icon: 'doc', tile: '#5856D6', sub: 'Caption & grup hashtag' },
   { k: 'reports', label: 'Laporan', icon: 'chart', tile: '#30B0C7', sub: 'Insight bulanan per klien' },
@@ -279,12 +281,17 @@ function mediaInner(m, iconFallback) {
   if (m && localUrls[m.id] && m.kind === 'image') return `<img src="${localUrls[m.id]}" alt="">`;
   return ic(m && m.kind === 'video' ? 'play' : (iconFallback || 'photo'));
 }
-function postThumb(p, cls) {
-  const m = mediaOfPost(p)[0];
+// Gambar penanda konten: screenshot kecil (Firebase) → media R2 → gradasi contoh → ikon jenis
+function postVis(p) {
   const t = TYPES[p.type || 'feed'];
-  const multi = (p.media || []).length > 1 ? ic('carousel', 'tbadge') : (p.type === 'reels' ? ic('play', 'tbadge') : '');
-  return `<span class="${cls || 'thumb'}" style="${m ? phStyle(m, cColor(p.clientId)) : ''}">${m ? mediaInner(m) + multi : ic(t.icon)}</span>`;
+  const badge = ((p.media || []).length > 1 || p.type === 'carousel') ? ic('carousel', 'tbadge') : (p.type === 'reels' ? ic('play', 'tbadge') : '');
+  if (p.thumb) return { style: '', inner: `<img src="${p.thumb}" alt="" loading="lazy">` + badge };
+  const m = mediaOfPost(p)[0];
+  if (m) return { style: phStyle(m, cColor(p.clientId)), inner: mediaInner(m) + badge };
+  if (p.ph) return { style: `background:linear-gradient(135deg,${p.ph[0]},${p.ph[1]});color:rgba(255,255,255,.9)`, inner: ic(t.icon) + badge };
+  return { style: '', inner: ic(t.icon) };
 }
+function postThumb(p, cls) { const v = postVis(p); return `<span class="${cls || 'thumb'}" style="${v.style}">${v.inner}</span>`; }
 function postRow(p, opt) {
   opt = opt || {};
   const c = clientOf(p.clientId);
@@ -430,10 +437,9 @@ VIEWS.content = () => {
   };
 };
 function kcard(p) {
-  const c = clientOf(p.clientId), m = mediaOfPost(p)[0], t = TYPES[p.type || 'feed'];
-  const multi = (p.media || []).length > 1 ? ic('carousel', 'tbadge') : (p.type === 'reels' ? ic('play', 'tbadge') : '');
+  const c = clientOf(p.clientId), t = TYPES[p.type || 'feed'], v = postVis(p);
   return `<button class="kcard" data-a="post" data-id="${p.id}">
-    <span class="media ${p.type || ''}" style="${m ? phStyle(m, cColor(p.clientId)) : ''}">${m ? mediaInner(m) + multi : ic(t.icon)}</span>
+    <span class="media ${p.type || ''}" style="${v.style}">${v.inner}</span>
     <span class="k-title">${esc(postTitle(p))}</span>
     ${p.caption ? `<span class="k-cap">${esc(p.caption)}</span>` : ''}
     <span class="k-foot"><span style="display:flex;align-items:center;gap:6px;min-width:0">${avatar(c, 'sm')}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.label)}</span></span><span class="${isLate(p) ? 'c-red b' : ''}">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : '—'}</span></span>
@@ -648,6 +654,7 @@ VIEWS.settings = () => {
         <button class="row" data-a="explainSync"><span class="tile" style="background:var(--orange)">${ic('cloud')}</span><span class="grow"><div class="ttl">Firebase · teks</div><div class="sub">${{ on: 'Tersinkron realtime', off: 'Offline, sinkron otomatis saat online', err: 'Ditolak Rules, tambahkan hadzmi_social_data', local: 'Firebase tidak termuat', demo: 'Mode pratinjau, tidak tersambung' }[syncMode]}${nPend ? ` · ${nPend} menunggu` : ''}</div></span>${ic('chevR', 'chev')}</button>
         <div class="row"><span class="tile" style="background:#F38020">${ic('photo')}</span><span class="grow"><div class="ttl">Cloudflare R2 · media</div><div class="sub">${DEMO ? 'Mode pratinjau, file hanya di memori' : `${Object.keys(S.media).length} file · ${bytesText(Object.values(S.media).reduce((a, m) => a + num(m.size), 0))} · batas 200 MB per file`}</div></span></div>
       </div>`)}
+      ${DEMO ? '' : `<div><div class="form">${fSwitch('setAutoClean', 'Hapus media R2 otomatis', !S.settings || S.settings.autoClean !== false)}</div><div class="form-foot">Media yang semua kontennya sudah Terposting lebih dari 30 hari dihapus dari R2. Gambar penanda di Firebase tetap ada.</div></div>`}
       ${group('Cadangan', `<div class="list"><button class="row action" data-a="exportJson">${ic('download')}<span class="grow">Ekspor semua data (JSON)</span></button><button class="row action" data-a="importJson">${ic('upload')}<span class="grow">Pulihkan dari file JSON</span></button></div>`, { foot: 'Cadangan berisi teks dan thumbnail. File media asli tetap di R2.' })}
       ${DEMO ? group('Pratinjau', `<div class="list"><button class="row action" data-a="resetDemo">${ic('refresh')}<span class="grow">Muat ulang data contoh</span></button></div>`) : ''}
       <div class="group-foot" style="text-align:center">Nexa Social · tanpa login. Siapa pun yang tahu alamat web ini bisa membuka datanya, jadi jangan bagikan linknya.</div>`
@@ -722,7 +729,15 @@ function openPost(id, preset) {
       fInput('pDate', 'Tanggal', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang', draft.time, { f: 'time', type: 'time' }) +
       fInput('pPillar', 'Pilar konten', draft.pillar, { f: 'pillar', ph: 'Edukasi, promo…', list: 'pillarList' }) + `<datalist id="pillarList">${pillars.map(p => `<option value="${esc(p)}">`).join('')}</datalist>`)}
     <div><div class="form-head">Status</div><div class="form"><div class="status-pick" id="pStatus">${statusPick()}</div></div></div>
-    <div><div class="form-head">Media · ${draft.type === 'carousel' ? 'maks 20 slide' : draft.type === 'reels' ? 'video vertikal 9:16' : draft.type === 'story' ? '9:16' : 'rasio 4:5 disarankan'}</div><div class="form"><div class="media-strip" id="pMedia">${mediaStrip()}</div></div></div>
+    <div><div class="form-head">Desain · ${draft.type === 'carousel' ? 'tempel slide pertama' : draft.type === 'reels' ? 'video 9:16, pakai cover-nya' : draft.type === 'story' ? '9:16' : 'rasio 4:5 disarankan'}</div><div class="form">
+      <div class="design-box"><div class="dthumb" id="pThumb">${thumbBox()}</div><div class="dside">
+        <button type="button" class="btn-tinted" data-a="pasteThumb">${ic('copy')} Tempel screenshot</button>
+        <button type="button" class="btn-tinted gray" data-a="pickThumb">${ic('photo')} Pilih foto/video</button>
+        <button type="button" class="c-red t-foot" data-a="clearThumb" id="pThumbClear" ${draft.thumb ? '' : 'hidden'}>Hapus gambar</button></div></div>
+      ${fInput('pDesign', 'Link desain', draft.design, { f: 'design', type: 'url', ph: 'Canva / Drive / CapCut', stack: true })}
+      <div class="field" id="pDesignOpen" ${/^https?:\/\//.test(draft.design || '') ? '' : 'hidden'}><a href="${esc(draft.design || '')}" target="_blank" rel="noopener" class="t-sub">${ic('link')} Buka desain</a></div>
+      </div><div class="form-foot">Gambar penanda dikecilkan otomatis (±30 KB) dan disimpan di Firebase. File asli tetap di Canva/Drive, jadi tidak makan penyimpanan. Di laptop bisa langsung tekan Ctrl+V.</div></div>
+    <details class="opt" ${draft.media.length ? 'open' : ''}><summary>${ic('chevD')} Media di R2 (opsional) · ${draft.media.length} file</summary><div class="form"><div class="media-strip" id="pMedia">${mediaStrip()}</div></div><div class="form-foot">Pakai hanya kalau file tidak ada di Canva/Drive, misalnya foto mentah dari klien. Foto dikompres otomatis ke 1080 px.</div></details>
     <div><div class="form-head" style="display:flex;justify-content:space-between"><span>Caption</span><span style="display:flex;gap:14px;text-transform:none;letter-spacing:0"><button type="button" class="c-blue" data-a="insertTpl" data-k="caption">Template</button><button type="button" class="c-blue" data-a="insertTpl" data-k="hashtag">Hashtag</button></span></div>
       <div class="form">${fArea('pCaption', 'Caption & hashtag', draft.caption, { f: 'caption', rows: 7, count: true, ph: 'Tulis caption…' })}</div></div>
     ${fSec('Catatan internal', fArea('pNotes', 'Brief, ide visual, audio, dll.', draft.notes, { f: 'notes', rows: 3 }) + fInput('pLink', 'Link post', draft.link, { f: 'link', ph: 'https://instagram.com/p/…', type: 'url' }))}
@@ -738,6 +753,14 @@ function openPost(id, preset) {
     onOpen: w => updateCaptionCount(w),
     onRight: () => savePost(),
     onClose: () => { draft = null; }
+  });
+}
+function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
+function setDraftThumb(file) {
+  if (!draft || !file) return;
+  makeThumb(file, 480, .62).then(r => {
+    if (!r.thumb) { toast('Format tidak didukung, coba screenshot', 'alert'); return; }
+    draft.thumb = r.thumb; refreshDraftParts(); toast('Gambar ditempel · ' + Math.round(r.thumb.length * .75 / 1024) + ' KB', 'check');
   });
 }
 function statusPick() { return STATUS.map(s => `<button type="button" class="pill st-${s.k} ${draft.status === s.k ? 'on' : ''}" data-a="pStatus" data-k="${s.k}">${esc(s.label)}</button>`).join(''); }
@@ -771,6 +794,7 @@ function postShareText(p, urls) {
   const lines = [`*${c.name || ''} · ${TYPES[p.type || 'feed'].label}*`, p.date ? `Jadwal tayang: ${prettyDate(p.date, true)}${p.time ? ', ' + p.time + ' WIB' : ''}` : '', ''];
   if (p.title) lines.push(`Judul: ${p.title}`, '');
   lines.push('Caption:', p.caption || '(belum ada caption)');
+  if (p.design) lines.push('', 'Desain: ' + p.design);
   if (urls && urls.length) { lines.push('', `Materi (${urls.length} file):`); urls.forEach((u, i) => lines.push(`${i + 1}. ${u}`)); }
   lines.push('', 'Mohon dicek ya. Balas *OK* kalau sudah sesuai, atau tulis bagian yang perlu direvisi. Terima kasih!');
   return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
@@ -829,6 +853,8 @@ function refreshDraftParts() {
   const m = w.querySelector('#pMedia'); if (m) m.innerHTML = mediaStrip();
   const l = w.querySelector('#pLog'); if (l) l.innerHTML = logHTML();
   const t = w.querySelector('#pType'); if (t) t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === draft.type));
+  const th = w.querySelector('#pThumb'); if (th) th.innerHTML = thumbBox();
+  const cl = w.querySelector('#pThumbClear'); if (cl) cl.hidden = !draft.thumb;
 }
 function draftSheet() { return sheets.map(r => r.wrap).reverse().find(w => w.querySelector('#pStatus')); }
 
@@ -841,11 +867,12 @@ function igPreview(p) {
   const w = openSheet({
     title: 'Pratinjau', left: 'Tutup',
     body: `<div class="igp"><div class="igp-head"><span class="ring">${avatar(c)}</span><span class="grow" style="flex:1"><b>${esc(c.handle || c.name)}</b>${p.pillar ? `<div class="t-cap muted">${esc(p.pillar)}</div>` : ''}</span>${ic('more')}</div>
-      <div class="igp-media ${tall ? 'tall' : ''}" id="igpMedia">${ms.length ? ms.map(m => `<div class="slide" style="${phStyle(m, c.color)}" data-mid="${m.id}">${mediaInner(m)}</div>`).join('') : `<div class="slide" style="background:linear-gradient(135deg,${c.color},#C7C7CC)">${ic(TYPES[p.type || 'feed'].icon)}</div>`}
+      <div class="igp-media ${tall ? 'tall' : ''}" id="igpMedia">${ms.length ? ms.map(m => `<div class="slide" style="${phStyle(m, c.color)}" data-mid="${m.id}">${mediaInner(m)}</div>`).join('') : `<div class="slide" style="${p.thumb ? 'background:#000' : p.ph ? `background:linear-gradient(135deg,${p.ph[0]},${p.ph[1]})` : `background:linear-gradient(135deg,${c.color},#C7C7CC)`}">${p.thumb ? `<img src="${p.thumb}" alt="">` : ic(TYPES[p.type || 'feed'].icon)}</div>`}
       ${ms.length > 1 ? `<span class="igp-count" id="igpCount">1/${ms.length}</span>` : ''}</div>
       <div class="igp-actions">${ic('heart')}${ic('comment')}${ic('send')}<span class="sp"></span>${ic('bookmark')}</div>
       <div class="igp-cap"><b>${esc(c.handle || c.name)}</b> ${cap || '<span class="muted">Belum ada caption</span>'}</div>
       <div class="igp-time">${p.date ? prettyDate(p.date, true) + (p.time ? ' · ' + p.time : '') : 'Belum dijadwalkan'}</div></div>
+      ${p.design ? `<div style="text-align:center"><a class="btn-tinted" href="${esc(p.design)}" target="_blank" rel="noopener">${ic('link')} Buka desain asli</a></div>` : ''}
       <div class="form-foot" style="text-align:center">${hashtags(p.caption).length} hashtag · ${(p.caption || '').length} karakter${p.type === 'story' ? ' · caption tidak tampil di Story' : ''}</div>`
   });
   const box = w.querySelector('#igpMedia');
@@ -861,7 +888,7 @@ function gridPreview(clientId) {
   openSheet({
     title: 'Grid @' + (c.handle || c.name), left: 'Tutup',
     body: `<div class="form-foot" style="padding:0">Urutan sama dengan feed Instagram: terbaru di kiri atas. Garis putus-putus = belum tayang. Cek apakah warna & komposisi grid sudah selaras.</div>
-      ${ps.length ? `<div class="ig-grid">${ps.map(p => { const m = mediaOfPost(p)[0]; const future = p.status !== 'posted'; return `<button class="cell ${future ? 'future' : ''}" data-a="post" data-id="${p.id}" style="${m ? phStyle(m, c.color) : `background:linear-gradient(135deg,${c.color},#C7C7CC)`}">${m ? mediaInner(m) : ic(TYPES[p.type || 'feed'].icon)}${(p.media || []).length > 1 ? ic('carousel', 'tbadge') : p.type === 'reels' ? ic('play', 'tbadge') : ''}${future ? `<span class="when">${p.date ? (p.date === t ? 'Hari ini' : prettyDate(p.date)) : '—'}</span>` : ''}</button>`; }).join('')}</div>` : empty('grid', 'Belum ada konten feed.')}`
+      ${ps.length ? `<div class="ig-grid">${ps.map(p => { const v = postVis(p); const future = p.status !== 'posted'; return `<button class="cell ${future ? 'future' : ''}" data-a="post" data-id="${p.id}" style="${v.style || `background:linear-gradient(135deg,${c.color},#C7C7CC)`}">${v.inner}${future ? `<span class="when">${p.date ? (p.date === t ? 'Hari ini' : prettyDate(p.date)) : '—'}</span>` : ''}</button>`; }).join('')}</div>` : empty('grid', 'Belum ada konten feed.')}`
   });
 }
 
@@ -890,7 +917,8 @@ async function handleFiles(files) {
   const tgt = uploadTarget || { clientId: UI.fClient }; uploadTarget = null;
   const list = [...files].filter(f => /^(image|video)\//.test(f.type));
   if (!list.length) { toast('Pilih foto atau video', 'alert'); return; }
-  for (const f of list) {
+  for (let f of list) {
+    f = await compressImage(f);
     const id = uid();
     const rec = { id, clientId: tgt.clientId || '', name: f.name, mime: f.type, kind: f.type.startsWith('video') ? 'video' : 'image', size: f.size, at: Date.now() };
     Object.assign(rec, await makeThumb(f));
@@ -916,17 +944,35 @@ async function handleFiles(files) {
   toast(list.length + ' file diunggah', 'check');
   render(); if (pickState) renderPicker();
 }
-function makeThumb(file) {
+// Foto dikecilkan ke sisi terpanjang 1080 px (JPEG 85%) sebelum diunggah ke R2. Video & GIF tidak diubah.
+function compressImage(file) {
+  if (!/^image\/(jpe?g|png|webp|heic|heif)$/i.test(file.type)) return Promise.resolve(file);
+  return new Promise(res => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = im.naturalWidth, h = im.naturalHeight, s = Math.min(1, 1080 / Math.max(w, h));
+      if (s === 1 && file.size < 700 * 1024) { res(file); return; }
+      const cv = document.createElement('canvas'); cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      cv.toBlob(b => res(b && b.size < file.size ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file), 'image/jpeg', .85);
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); res(file); };
+    im.src = url;
+  });
+}
+function makeThumb(file, max, q) {
+  max = max || 360; q = q || .7;
   return new Promise(res => {
     const url = URL.createObjectURL(file);
     const done = o => { clearTimeout(tm); URL.revokeObjectURL(url); res(o || {}); };
     const tm = setTimeout(() => done({}), 10000);
     const draw = (el, w, h, extra) => {
       try {
-        const s = Math.min(1, 360 / Math.max(w, h)), cv = document.createElement('canvas');
+        const s = Math.min(1, max / Math.max(w, h)), cv = document.createElement('canvas');
         cv.width = Math.max(1, Math.round(w * s)); cv.height = Math.max(1, Math.round(h * s));
         cv.getContext('2d').drawImage(el, 0, 0, cv.width, cv.height);
-        done(Object.assign({ thumb: cv.toDataURL('image/jpeg', .7), w, h }, extra || {}));
+        done(Object.assign({ thumb: cv.toDataURL('image/jpeg', q), w, h }, extra || {}));
       } catch (e) { done(Object.assign({ w, h }, extra || {})); }
     };
     if (file.type.startsWith('image')) { const im = new Image(); im.onload = () => draw(im, im.naturalWidth, im.naturalHeight); im.onerror = () => done({}); im.src = url; }
@@ -978,12 +1024,26 @@ function mediaViewer(id) {
   });
   mediaUrls([m]).then(u => { const url = u[id]; const box = w.querySelector('#mvBox'); if (url && box) box.innerHTML = m.kind === 'video' ? `<video class="viewer-img" src="${url}" controls playsinline ${m.thumb ? `poster="${m.thumb}"` : ''}></video>` : `<img class="viewer-img" src="${url}" alt="">`; }).catch(() => {});
 }
-async function deleteMedia(id) {
+async function deleteMedia(id, quiet) {
   const m = S.media[id]; if (!m) return;
   postsAll().forEach(p => { if ((p.media || []).includes(id)) dbSet('posts/' + p.id, Object.assign(clone(p), { media: p.media.filter(x => x !== id) })); });
   dbSet('media/' + id, null);
   if (m.fileId && !DEMO) { try { await fetch('/api/social/files/' + encodeURIComponent(m.fileId), { method: 'DELETE' }); } catch (e) {} }
-  toast('Media dihapus', 'trash'); render();
+  if (!quiet) { toast('Media dihapus', 'trash'); render(); }
+}
+// Hapus otomatis media R2 yang semua kontennya sudah Terposting lebih dari 30 hari
+let cleaned = false;
+function autoClean() {
+  if (DEMO || (S.settings && S.settings.autoClean === false)) return;
+  const limit = Date.now() - 30 * 86400000;
+  const postedAt = p => p.postedAt || (p.date ? Date.parse(p.date + 'T00:00:00+07:00') : Date.now());
+  let n = 0;
+  Object.values(S.media).forEach(m => {
+    if (!m.fileId) return;
+    const refs = postsAll().filter(p => (p.media || []).includes(m.id));
+    if (refs.length && refs.every(p => p.status === 'posted' && postedAt(p) < limit)) { deleteMedia(m.id, true); n++; }
+  });
+  if (n) { toast(n + ' media lama dihapus dari R2', 'trash'); render(); }
 }
 
 // ---------------- EDITOR KLIEN ----------------
@@ -1123,6 +1183,16 @@ const A = {
   pStatus: el => { const k = el.dataset.k; if (draft.status !== k) { draft.log.push({ t: Date.now(), text: `Status: ${ST[draft.status] ? ST[draft.status].label : '—'} → ${ST[k].label}` }); draft.status = k; refreshDraftParts(); } },
   addLog: () => { const w = draftSheet(); const inp = w && w.querySelector('#pLogInput'); if (!inp || !inp.value.trim()) return; draft.log.push({ t: Date.now(), text: inp.value.trim() }); inp.value = ''; refreshDraftParts(); },
   pickMedia: () => openPicker(),
+  pickThumb: () => { const fi = $('thumbInput'); fi.value = ''; fi.click(); },
+  clearThumb: () => { draft.thumb = ''; refreshDraftParts(); },
+  pasteThumb: async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) throw new Error('x');
+      const items = await navigator.clipboard.read();
+      for (const it of items) { const tp = it.types.find(t => t.startsWith('image/')); if (tp) { setDraftThumb(new File([await it.getType(tp)], 'paste.png', { type: tp })); return; } }
+      toast('Clipboard tidak berisi gambar', 'alert');
+    } catch (e) { toast('Salin gambarnya dulu, lalu tekan Ctrl+V di sini', 'copy'); }
+  },
   uploadToPost: () => startUpload(draft && draft.clientId, true),
   unpickMedia: el => { draft.media.splice(Number(el.dataset.i), 1); refreshDraftParts(); },
   pickToggle: el => { const id = el.dataset.id, i = pickState.ids.indexOf(id); if (i >= 0) pickState.ids.splice(i, 1); else pickState.ids.push(id); renderPicker(); },
@@ -1250,10 +1320,15 @@ function bind() {
   document.addEventListener('input', e => {
     const el = e.target;
     if (el.id === 'qInput') { UI.q = el.value; const pos = el.selectionStart; render(); const n = $('qInput'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) {} } return; }
-    if (el.dataset && el.dataset.f && draft) { draft[el.dataset.f] = el.value; if (el.dataset.f === 'caption') updateCaptionCount(); }
+    if (el.dataset && el.dataset.f && draft) {
+      draft[el.dataset.f] = el.value;
+      if (el.dataset.f === 'caption') updateCaptionCount();
+      if (el.dataset.f === 'design') { const box = (draftSheet() || document).querySelector('#pDesignOpen'); if (box) { box.hidden = !/^https?:\/\//.test(el.value.trim()); const a = box.querySelector('a'); if (a) a.href = el.value.trim(); } }
+    }
   });
   document.addEventListener('change', e => {
     const el = e.target;
+    if (el.id === 'setAutoClean') { dbSet('settings', Object.assign({}, S.settings, { autoClean: el.checked })); toast('Disimpan', 'check'); }
     if (el.id === 'setName') { dbSet('settings', Object.assign({}, S.settings, { name: el.value.trim() })); toast('Disimpan', 'check'); }
     if (el.dataset && el.dataset.f && draft) { draft[el.dataset.f] = el.value; if (el.dataset.f === 'clientId' && pickState) renderPicker(); }
   });
@@ -1263,6 +1338,12 @@ function bind() {
     if (e.key === 'Enter' && e.target.id === 'pLogInput') { e.preventDefault(); A.addLog(); }
   });
   $('fileInput').addEventListener('change', e => { if (e.target.files.length) handleFiles(e.target.files); });
+  $('thumbInput').addEventListener('change', e => { if (e.target.files[0]) setDraftThumb(e.target.files[0]); });
+  document.addEventListener('paste', e => {
+    if (!draft || !draftSheet()) return;
+    const f = [...(e.clipboardData ? e.clipboardData.files : [])].find(x => x.type.startsWith('image/'));
+    if (f) { e.preventDefault(); setDraftThumb(f); }
+  });
   $('importInput').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     f.text().then(t => {
@@ -1337,13 +1418,15 @@ function seedDemo() {
   P.forEach((r, i) => {
     const [cid, type, title, caption, day, time, status, pillar, nMedia, kind] = r;
     const id = 'p' + (i + 1);
-    const media = []; for (let k = 0; k < nMedia; k++) media.push(mk(cid, kind || 'image', `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24)}-${k + 1}.${kind === 'video' ? 'mp4' : 'jpg'}`, Math.max(1, 6 - day)));
+    const media = [];
+    const ph = grads[cid][i % 4];
+    const design = nMedia ? (kind === 'video' ? 'https://www.capcut.com/share/contoh-' + (i + 1) : 'https://www.canva.com/design/contoh-' + (i + 1)) : '';
     const log = [];
     if (status === 'revisi') log.push({ t: now - 26 * 3600000, text: 'Status: Draft → Menunggu Klien' }, { t: now - 5 * 3600000, text: 'Nadia: foto testimoni ke-2 diganti yang lebih terang, dan nama pelanggan disamarkan ya.' }, { t: now - 5 * 3600000 + 60000, text: 'Status: Menunggu Klien → Revisi' });
     if (status === 'klien') log.push({ t: now - (cid === 'c1' ? 3 : 0.3) * 86400000, text: 'Dikirim ke klien untuk approval' });
-    D.posts[id] = { id, clientId: cid, type, title, caption, date: addDays(t, day), time, status, pillar, media, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + i : '', log, createdAt: now - 10 * 86400000, stAt: status === 'klien' && cid === 'c1' ? now - 3 * 86400000 : now - 5 * 3600000 };
+    D.posts[id] = { id, clientId: cid, type, title, caption, date: addDays(t, day), time, status, pillar, media, ph, design, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + i : '', log, createdAt: now - 10 * 86400000, stAt: status === 'klien' && cid === 'c1' ? now - 3 * 86400000 : now - 5 * 3600000 };
   });
-  mk('c1', 'image', 'stok-foto-interior-cafe.jpg', 1); mk('c2', 'image', 'flatlay-serum-baru.jpg', 1); mk('c3', 'video', 'raw-workshop-amplas.mov', 2);
+  mk('c1', 'image', 'foto-mentah-dari-klien.jpg', 1); mk('c2', 'image', 'flatlay-serum-dari-klien.jpg', 1); mk('c1', 'image', 'stok-foto-interior-cafe.jpg', 1); mk('c2', 'image', 'flatlay-serum-baru.jpg', 1); mk('c3', 'video', 'raw-workshop-amplas.mov', 2);
   [['Trend audio "sore di kota" buat Reels suasana kafe', 'c1', 'tren', 'https://instagram.com/reels/'], ['Seri edukasi "1 menit 1 kandungan"', 'c2', 'seri', ''], ['Kolaborasi dengan florist sebelah untuk Valentine', 'c1', 'musiman', ''], ['Reels ASMR amplas kayu', 'c3', 'audio', ''], ['Carousel "salah kaprah skincare" format meme', 'c2', '', ''], ['Template story Q&A mingguan untuk semua klien', '', 'story', '']].forEach((x, i) => { const id = 'i' + i; D.ideas[id] = { id, text: x[0], clientId: x[1], tag: x[2], ref: x[3], done: false, at: now - i * 86400000 * 1.5 }; });
   [['caption', 'Promo produk', 'Ada yang baru di {nama}! 🎉\n\n[nama produk] sekarang bisa kamu dapatkan dengan harga spesial [harga] sampai {tanggal}.\n\nYuk mampir atau DM {handle} untuk order.', ''], ['caption', 'Edukasi carousel', 'Sering bingung soal [topik]? Geser untuk tahu 3 hal yang perlu kamu tahu 👉\n\nSimpan postingan ini biar nggak lupa, dan share ke temanmu yang butuh!', ''], ['caption', 'CTA komentar', 'Kamu tim yang mana? Tulis jawabanmu di kolom komentar 👇', ''], ['caption', 'Testimoni', '"[kutipan pelanggan]"\n— [nama], [kota]\n\nTerima kasih sudah percaya sama {nama} 🙏', 'c2'], ['hashtag', 'F&B Jakarta', '#kulinerjakarta #jakartafoodies #kopikekinian #cafejakarta #ngopidulu #jajanjakarta', 'c1'], ['hashtag', 'Skincare lokal', '#skincarelokal #skincareindonesia #reviewskincare #kulitsehat #skincaretips #glowup', 'c2'], ['hashtag', 'Interior', '#desaininterior #interiorrumah #rumahminimalis #homedecorindonesia #furniturkayu', 'c3']].forEach((x, i) => { const id = 't' + i; D.templates[id] = { id, kind: x[0], title: x[1], body: x[2], clientId: x[3] }; });
   const base = { c1: [8400, 31000, 52000, 2100, 640], c2: [18200, 64000, 120000, 5400, 1500], c3: [3100, 9800, 15000, 690, 210] };
