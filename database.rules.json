@@ -10,6 +10,13 @@
       ".read": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'",
       ".write": "auth != null && auth.uid === 'GANTI_DENGAN_UID_KAMU'"
     },
+    "hadzmi_social_data": {
+      ".read": true,
+      ".write": true,
+      "$col": {
+        ".validate": "$col.matches(/^(clients|posts|media|ideas|templates|reports|invoices|tasks|settings)$/)"
+      }
+    },
     "hadzmi_lekat_data": {
       ".read": true,
       ".write": true,

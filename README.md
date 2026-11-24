@@ -14,6 +14,7 @@ public/                 ← isi website yang di-deploy
 public/games/           ← Nexo Games (game properti + chat bareng teman)
 public/thaitea/         ← Kasir Thai Tea (web terpisah, Firebase project sendiri: kasir-thai-tea). Buka di /thaitea/. Notifikasi lewat worker/thaitea.js (/api/thaitea/*, KV tt_subs & tt_outbox)
 public/pesan/           ← Pesan Online Thai Tea untuk CUSTOMER (link /pesan/). Bayar QRIS, tinggal jemput. Tidak memakai Firebase langsung, semua lewat worker/pesan.js (/api/pesan/*). Pesanan muncul di kasir menu "Online"
+public/social/          ← Nexa Social: workspace social media manager (link /social/). Tanpa login, teks di Firebase (`hadzmi_social_data`), media di R2 lewat worker/social.js (/api/social/*). Tanpa build. Pratinjau data contoh: /social/?demo=1
 public/lekat/           ← Lekat: flashcard SRS ala Anki untuk belajar bahasa Inggris (link /lekat/). Offline-first, teks di Firebase (`hadzmi_lekat_data`), media di R2. Tanpa build.
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
@@ -285,6 +286,41 @@ Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama sepert
 - **Data Firebase kasir:** `thaitea/online_settings`, `thaitea/online_orders`, `thaitea/online_customers`.
 - **Variabel opsional Worker:** `TT_FIREBASE_URL`, `TT_FIREBASE_SECRET` (wajib kalau rules Firebase kasir dikunci), `TT_QRIS`.
 - **Foto menu sementara** ada di `public/pesan/img/` (dipotong dari gambar daftar menu). Foto asli diunggah lewat kasir → Online → Foto menu.
+
+---
+
+## 📱 Nexa Social: workspace Social Media Manager (`/social/`)
+
+Web terpisah untuk mengelola akun Instagram klien (desain iOS mode terang). Buka `https://<domainmu>/social/`, bisa dipasang ke Layar Utama. **Tanpa login** (seperti Lekat): data otomatis tersinkron ke semua perangkat yang membuka `/social/`. Klien juga tidak perlu login: pratinjau konten dan laporan dikirim lewat WhatsApp (teks + link media).
+
+> ⚠️ Siapa pun yang tahu alamat `/social/` bisa melihat, mengubah, atau menghapus data Nexa Social. Jangan bagikan link-nya. Data Nexa, Nexa Health, dan file pribadi Nexa (`f/`) tetap terkunci.
+
+Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyentuh Firebase/R2, perubahan hanya di browser itu).
+
+| Menu | Isi |
+|---|---|
+| **Beranda** | Jadwal hari ini, menunggu klien, perlu revisi, terlambat; daftar *Perlu tindakan* (revisi, lewat jadwal, klien belum membalas > 2 hari); 7 hari ke depan; Tugas; target paket bulan ini per klien; tagihan belum lunas. |
+| **Kalender** | Tampilan bulan (warna per klien), filter klien, daftar konten di tanggal terpilih, tambah konten langsung di tanggal itu. |
+| **Konten** | Papan alur status **Ide → Draft → Review → Menunggu Klien → Revisi → Disetujui → Terjadwal → Terposting**, atau Daftar dengan pencarian & filter. Editor: klien, jenis (Feed/Carousel/Reels/Story), jadwal, pilar, **link desain** (Canva/Drive/CapCut) + **gambar penanda** (tempel screenshot / Ctrl+V / pilih foto, dikecilkan ±30 KB), media R2 opsional, caption + penghitung 2.200 karakter & 30 hashtag, sisip template/hashtag, catatan internal, link post, riwayat revisi & komentar klien. **Pratinjau tampilan Instagram**, **Kirim ke klien** (salin / buka WhatsApp, status otomatis jadi Menunggu Klien), duplikat. |
+| **Klien** | Profil, paket bulanan (Feed/Reels/Story + harga) dengan progres, **Brand kit** (palet warna, font, tone, pilar, hashtag, do & don't), kontak WhatsApp, folder aset, **pratinjau Grid IG** (urutan feed termasuk yang belum tayang), laporan & tagihan terakhir. |
+| **Media Library** (opsional) | Untuk file yang tidak ada di Canva/Drive, misalnya foto mentah dari klien. Foto dikompres otomatis ke 1080 px, media dihapus otomatis 30 hari setelah kontennya Terposting (bisa dimatikan di Pengaturan). Semua foto/video di R2 per klien, filter foto/video, label "Baru" untuk yang belum dipakai, info ukuran/durasi, salin link, buat konten dari media, hapus dari R2. |
+| **Bank Ide** | Ide cepat (Enter), label, link referensi, "Jadikan konten". |
+| **Template** | Template caption & grup hashtag, variabel `{nama}`, `{handle}`, `{tanggal}`. |
+| **Laporan** | Input bulanan dari Instagram Insights (followers, reach, impressions, interaksi, kunjungan profil), ER otomatis, grafik followers 6 bulan, perbandingan bulan lalu, kirim ringkasan ke klien. |
+| **Keuangan** | Nilai kontrak per bulan, diterima bulan ini, belum lunas, lewat tempo; buat tagihan bulan ini untuk semua klien sekaligus; tandai lunas; kirim pengingat pembayaran. |
+| **Pengaturan** | Nama, status sinkron, jumlah media, ekspor/pulihkan JSON. |
+
+### Penyimpanan
+| Data | Tempat |
+|---|---|
+| Klien, konten (termasuk link desain & gambar penanda ±30 KB), ide, template, laporan, tagihan, tugas | Firebase RTDB node **`hadzmi_social_data`** (terbuka tanpa login, hanya koleksi yang dikenal) + cache localStorage (offline, sinkron otomatis) |
+| File asli desain | Tetap di Canva / Google Drive / CapCut (web hanya menyimpan link-nya) |
+| Foto & video opsional | **Cloudflare R2** lewat rute publik khusus `worker/social.js` (`/api/social/files`, prefix R2 `social/`, hanya foto/video, maks 200 MB/file, 300 unggahan/jam per IP, ikut batas aman 9 GB). Rute ini tidak bisa membaca file pribadi Nexa (`f/`). |
+
+### ⚠️ Setup wajib (1 langkah)
+**Firebase Rules**: tempel ulang `database.rules.json` (ada blok baru `hadzmi_social_data`) ke Firebase Console → Realtime Database → Rules (tetap ganti `GANTI_DENGAN_UID_KAMU` di blok Nexa) → **Publish**. Tanpa ini status sinkron "Ditolak" dan data hanya tersimpan di perangkat. Lalu deploy ulang worker (`npm run deploy`) supaya rute media `/api/social/*` aktif.
+
+Kode: `public/social/` (index.html, social.css, app.js, manifest.webmanifest) dan `worker/social.js`. Tidak perlu build. Tidak mengubah halaman lain.
 
 ---
 
