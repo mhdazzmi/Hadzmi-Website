@@ -14,6 +14,7 @@ public/                 ← isi website yang di-deploy
 public/games/           ← Nexo Games (game properti + chat bareng teman)
 public/thaitea/         ← Kasir Thai Tea (web terpisah, Firebase project sendiri: kasir-thai-tea). Buka di /thaitea/. Notifikasi lewat worker/thaitea.js (/api/thaitea/*, KV tt_subs & tt_outbox)
 public/pesan/           ← Pesan Online Thai Tea untuk CUSTOMER (link /pesan/). Bayar QRIS, tinggal jemput. Tidak memakai Firebase langsung, semua lewat worker/pesan.js (/api/pesan/*). Pesanan muncul di kasir menu "Online"
+public/lekat/           ← Lekat: flashcard SRS ala Anki untuk belajar bahasa Inggris (link /lekat/). Offline, data di IndexedDB browser. Tanpa build.
 worker/index.js         ← Cloudflare Worker: API /api/*, verifikasi login Firebase, cron kirim push
 worker/nexo.js          ← server realtime Nexo Games (Durable Object)
 wrangler.jsonc          ← konfigurasi Cloudflare
@@ -284,3 +285,22 @@ Tempel **seluruh** isi `public/index.html` ke postingan (mode HTML), sama sepert
 - **Data Firebase kasir:** `thaitea/online_settings`, `thaitea/online_orders`, `thaitea/online_customers`.
 - **Variabel opsional Worker:** `TT_FIREBASE_URL`, `TT_FIREBASE_SECRET` (wajib kalau rules Firebase kasir dikunci), `TT_QRIS`.
 - **Foto menu sementara** ada di `public/pesan/img/` (dipotong dari gambar daftar menu). Foto asli diunggah lewat kasir → Online → Foto menu.
+
+---
+
+## 🧠 Lekat: flashcard pengulangan berjarak (`/lekat/`)
+
+Web terpisah mirip Anki untuk belajar bahasa Inggris, desain iOS 26 (Liquid Glass, mode gelap otomatis). Buka `https://<domainmu>/lekat/`, bisa dipasang ke Layar Utama dan jalan **offline**. Semua data di IndexedDB browser (tidak memakai Firebase).
+
+| Fitur | Isi |
+|---|---|
+| **Penjadwal** | FSRS-5 (desired retention, Optimize parameter dari riwayat, evaluasi log-loss) dan SM-2 klasik (ease, easy bonus, hard interval, interval modifier). Learning/relearning steps, graduating & easy interval, fuzz factor, interval maksimum, leech. |
+| **Status kartu** | New → Learning → Review → Relearning, plus Buried (otomatis untuk sibling) dan Suspended, flag 7 warna. |
+| **Note type** | Basic, Basic+reversed, Optional reversed, Type answer, Cloze (`{{c1::…::hint}}`), Image Occlusion, English Vocab (Kata→Arti + Arti→Kata ketik), English Listening (dengar TTS → ketik). Template HTML/CSS bisa diedit: `{{Field}}`, `{{#F}}`, `{{^F}}`, `{{FrontSide}}`, `{{cloze:F}}`, `{{type:F}}`, `{{tts en_US:F}}`, `{{hint:F}}`, `{{text:F}}`. |
+| **Deck** | Sub-deck `A::B::C`, preset Deck Options yang dibagi antar deck, batas harian per deck, urutan baru/ulasan, filtered deck & Custom study. |
+| **Editor** | Format teks, cloze, gambar (paste/pilih), audio, rekam suara, pin field, cek duplikat, tombol ✨ Kamus (IPA, contoh, arti via dictionaryapi.dev + MyMemory). |
+| **Browser** | Sintaks pencarian Anki (`deck:`, `tag:`, `is:due`, `flag:1`, `rated:7:1`, `prop:ivl>=30`, `field:val`, `or`, `-`), pilih banyak, pindah deck, tag, flag, suspend, bury, set due date, reset, reposition, cari & ganti. |
+| **Statistik** | Hari ini, kalender, ulasan per hari, perkiraan beban, jumlah kartu, interval, true retention, tombol jawaban, difficulty FSRS, jam belajar. |
+| **Impor/ekspor** | CSV/TSV/TXT (termasuk ekspor teks Anki), paket `.apkg` Anki (format legacy, termasuk progres & media), cadangan `.lekat` (pindah perangkat), cadangan otomatis harian 3 terakhir. |
+
+Kode: `public/lekat/` (sched.js = algoritma, col.js = koleksi & antrean, render.js = template, review.js, editor.js, browse.js, stats.js, io.js, app.js). Tidak perlu build.
