@@ -298,7 +298,7 @@ function postRow(p, opt) {
   const late = isLate(p);
   const when = opt.timeCol ? '' : ` · ${relDay(p.date)}${p.time ? ' ' + p.time : ''}`;
   return `<button class="row" data-a="post" data-id="${p.id}">
-    ${opt.timeCol ? `<span class="time-col">${esc(p.time || '—')}<small>${TYPES[p.type || 'feed'].label}</small></span>` : ''}
+    ${opt.timeCol ? `<span class="time-col">${esc(p.time || '—')}<small>${TYPES[p.type || 'feed'].label}</small></span>` : ''}${opt.bar ? `<span class="evbar" style="background:${cColor(p.clientId)}"></span>` : ''}
     ${postThumb(p)}
     <span class="grow"><div class="ttl">${esc(postTitle(p))}</div>
       <div class="sub">${c ? '@' + esc(c.handle || c.name) : 'Tanpa klien'}${opt.timeCol ? '' : ' · ' + TYPES[p.type || 'feed'].label}${when}</div>
@@ -358,7 +358,7 @@ VIEWS.home = () => {
         ${stat(revisi.length, 'Perlu revisi', 'pencil', 'var(--purple)', 'statFilter', 'revisi')}
         ${stat(late.length, 'Terlambat', 'alert', 'var(--red)', 'statFilter', 'late')}
       </div>
-      ${group('Hari ini', todayPosts.length ? `<div class="list">${todayPosts.map(p => postRow(p, { timeCol: true })).join('')}</div>` : empty('cal', 'Tidak ada jadwal posting hari ini.', `<button class="btn-tinted" data-a="newPost" data-date="${t}">${ic('plus')} Buat konten</button>`), { action: `<button data-a="tab" data-k="calendar">Kalender</button>` })}
+      ${group('Hari ini', todayPosts.length ? `<div class="list">${todayPosts.map(p => postRow(p, { timeCol: true, bar: true })).join('')}</div>` : empty('cal', 'Tidak ada jadwal posting hari ini.', `<button class="btn-tinted" data-a="newPost" data-date="${t}">${ic('plus')} Buat konten</button>`), { action: `<button data-a="tab" data-k="calendar">Kalender</button>` })}
       ${action.length ? group('Perlu tindakan', `<div class="list">${action.slice(0, 8).map(x => postRow(x.p, { reason: x.r })).join('')}</div>`) : ''}
       ${group('7 hari ke depan', next7.length ? `<div class="list">${next7.slice(0, 8).map(p => postRow(p)).join('')}</div>` : empty('tray', 'Belum ada konten terjadwal minggu ini.'), { foot: next7.length > 8 ? `+${next7.length - 8} konten lainnya di Kalender` : '' })}
       ${group('Tugas', `<div class="list">${tasks.map(taskRow).join('')}<button class="row action plain" data-a="newTask">${ic('plus')} Tambah tugas</button></div>`, { action: doneTasks ? `<button data-a="clearTasks">Hapus ${doneTasks} selesai</button>` : '' })}
@@ -384,11 +384,12 @@ VIEWS.calendar = () => {
   const start = addDays(first, -lead), t = today();
   const byDate = {};
   postsF().forEach(p => { if (p.date && p.status !== 'ide') (byDate[p.date] = byDate[p.date] || []).push(p); });
-  let cells = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+  let cells = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d, i) => `<div class="cal-dow ${i > 4 ? 'we' : ''}">${d}</div>`).join('');
   for (let i = 0; i < weeks * 7; i++) {
     const d = addDays(start, i), ps = sortBy(byDate[d] || [], postKey);
-    cells += `<button class="cal-day ${d.slice(0, 7) !== UI.calMonth ? 'out' : ''} ${d === t ? 'today' : ''} ${d === UI.calSel ? 'sel' : ''}" data-a="calSel" data-d="${d}" aria-label="${prettyDate(d, true)}, ${ps.length} konten">
-      <span class="d">${Number(d.slice(8))}</span><span class="cal-dots">${ps.slice(0, 3).map(p => `<i style="background:${cColor(p.clientId)}">${esc((p.time || '') + ' ' + (clientOf(p.clientId) || { name: '' }).name)}</i>`).join('')}${ps.length > 3 ? `<i style="background:var(--gray)">+${ps.length - 3}</i>` : ''}</span></button>`;
+    const evs = ps.slice(0, 3).map(p => `<span class="ev" style="background:${cColor(p.clientId)};--evc:${cColor(p.clientId)}"><b><small>${esc(p.time || '')}</small>${esc((clientOf(p.clientId) || { name: '' }).name)}</b></span>`).join('');
+    cells += `<button class="cal-day ${d.slice(0, 7) !== UI.calMonth ? 'out' : ''} ${i % 7 > 4 ? 'we' : ''} ${d === t ? 'today' : ''} ${d === UI.calSel ? 'sel' : ''}" data-a="calSel" data-d="${d}" aria-label="${prettyDate(d, true)}, ${ps.length} konten">
+      <span class="d">${Number(d.slice(8))}</span><span class="cal-evs">${evs}${ps.length > 3 ? `<span class="more">+${ps.length - 3} lagi</span>` : ''}</span></button>`;
   }
   const sel = sortBy(byDate[UI.calSel] || [], postKey);
   const monthCount = postsF().filter(p => (p.date || '').slice(0, 7) === UI.calMonth && p.status !== 'ide').length;
@@ -397,9 +398,9 @@ VIEWS.calendar = () => {
     right: `<button class="nav-btn" data-a="calToday" style="font-size:17px">Hari ini</button>`,
     html: `${largeTitle('Kalender', monthCount + ' konten bulan ini', plusBtn('newPost', `data-date="${UI.calSel}"`))}
       ${clientChips()}
-      <div class="cal"><div class="cal-head"><span class="m">${monthLabel(UI.calMonth)}</span><span class="arrows"><button data-a="calNav" data-n="-1" aria-label="Bulan sebelumnya">${ic('chevL')}</button><button data-a="calNav" data-n="1" aria-label="Bulan berikutnya">${ic('chevR')}</button></span></div>
+      <div class="cal"><div class="cal-head"><span class="m">${MONL[m - 1]} <span>${y}</span></span><span class="arrows"><button data-a="calNav" data-n="-1" aria-label="Bulan sebelumnya">${ic('chevL')}</button><button data-a="calNav" data-n="1" aria-label="Bulan berikutnya">${ic('chevR')}</button></span></div>
       <div class="cal-grid">${cells}</div></div>
-      ${group(relDay(UI.calSel) === prettyDate(UI.calSel, true, true) ? prettyDate(UI.calSel, true) : relDay(UI.calSel) + ' · ' + prettyDate(UI.calSel), sel.length ? `<div class="list">${sel.map(p => postRow(p, { timeCol: true })).join('')}</div>` : empty('cal', 'Kosong. Ketuk + untuk menjadwalkan konten di tanggal ini.'), { action: `<button data-a="newPost" data-date="${UI.calSel}">Tambah</button>` })}`
+      ${group(relDay(UI.calSel) === prettyDate(UI.calSel, true, true) ? prettyDate(UI.calSel, true) : relDay(UI.calSel) + ' · ' + prettyDate(UI.calSel), sel.length ? `<div class="list">${sel.map(p => postRow(p, { timeCol: true, bar: true })).join('')}</div>` : empty('cal', 'Kosong. Ketuk + untuk menjadwalkan konten di tanggal ini.'), { action: `<button data-a="newPost" data-date="${UI.calSel}">Tambah</button>` })}`
   };
 };
 
@@ -425,7 +426,7 @@ VIEWS.content = () => {
     const groups = {};
     ps.forEach(p => { const k = p.date ? p.date.slice(0, 7) : 'none'; (groups[k] = groups[k] || []).push(p); });
     const chips = `<div class="chips"><button class="chip ${!UI.cStatus ? 'on' : ''}" data-a="cStatus" data-k="">Semua <span class="n">${postsF().length}</span></button>${lateN ? `<button class="chip ${UI.cStatus === 'late' ? 'on' : ''}" data-a="cStatus" data-k="late"><span class="cdot" style="background:var(--red)"></span>Terlambat <span class="n">${lateN}</span></button>` : ''}${STATUS.map(s => `<button class="chip ${UI.cStatus === s.k ? 'on' : ''}" data-a="cStatus" data-k="${s.k}">${esc(s.label)} <span class="n">${counts[s.k]}</span></button>`).join('')}</div>`;
-    body = `<div class="form"><div class="field">${ic('search', 'faint')}<input id="qInput" type="search" placeholder="Cari judul, caption, pilar…" value="${esc(UI.q)}" style="text-align:left" autocomplete="off"></div></div>${chips}
+    body = `<label class="searchbar">${ic('search')}<input id="qInput" type="search" placeholder="Cari judul, caption, pilar" value="${esc(UI.q)}" autocomplete="off"></label>${chips}
       ${Object.keys(groups).length ? Object.keys(groups).sort().map(k => group(k === 'none' ? 'Tanpa tanggal' : monthLabel(k), `<div class="list">${groups[k].map(p => postRow(p)).join('')}</div>`)).join('') : empty('stack', 'Tidak ada konten yang cocok.')}`;
   }
   return {
