@@ -1804,8 +1804,9 @@ function bind() {
     f.text().then(t => {
       const d = JSON.parse(t); const data = d.data || d;
       if (!data || typeof data !== 'object' || !data.clients) throw new Error('Bukan file cadangan Nexa Social');
-      iosAlert('Pulihkan data?', 'Data dari file digabung dengan data sekarang. Item dengan ID sama akan ditimpa.', [{ label: 'Batal' }, { label: 'Pulihkan', bold: true, fn: () => {
-        COLS.forEach(c => Object.entries(data[c] || {}).forEach(([k, v]) => dbSet(c + '/' + k, v)));
+      iosAlert('Pulihkan data?', 'Data dari file digabung dengan data sekarang. Untuk item dengan ID sama, hanya kolom yang ada di file yang diperbarui.', [{ label: 'Batal' }, { label: 'Pulihkan', bold: true, fn: () => {
+        // Digabung dengan data yang sudah ada: kolom di file menimpa, kolom lain tetap
+        COLS.forEach(c => Object.entries(data[c] || {}).forEach(([k, v]) => dbSet(c + '/' + k, v && typeof v === 'object' && S[c] && S[c][k] ? Object.assign({}, S[c][k], v) : v)));
         if (data.settings) dbSet('settings', data.settings);
         render(); toast('Data dipulihkan', 'check');
       } }]);
