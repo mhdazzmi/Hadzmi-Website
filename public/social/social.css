@@ -250,7 +250,7 @@ button.w:active { transform: scale(.97); }
 .avatar.md { width: 40px; height: 40px; font-size: 15px; }
 .strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .sthumb { aspect-ratio: 4 / 5; border-radius: 9px; overflow: hidden; background: var(--fill); position: relative; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.9); font-size: 18px; max-width: 100%; }
-.sthumb.empty { background: var(--fill2); }
+.sthumb.blank { background: var(--fill2); }
 .sthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sthumb .tbadge { position: absolute; right: 4px; top: 4px; font-size: 11px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
 .sc-foot { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -273,6 +273,35 @@ button.w:active { transform: scale(.97); }
 .pack i.pk-done { background: linear-gradient(90deg, var(--pc) 50%, transparent 50%); }
 .pack i.pk-wip { background: linear-gradient(transparent 40%, var(--pc) 40%, var(--pc) 60%, transparent 60%); }
 .pack i.pk-none { box-shadow: 0 0 0 1.5px var(--label3) inset; }
+
+/* ---------- Slot posting ---------- */
+.slotmx { gap: 6px; }
+.sm-row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(7, 26px); gap: 4px; align-items: center; }
+@media (min-width: 640px) { .sm-row { grid-template-columns: minmax(0, 1fr) repeat(7, 30px); } }
+.sm-l { display: flex; gap: 6px; align-items: center; font-size: 13px; min-width: 0; }
+.sm-h .sm-l { font-size: 11px; }
+.sm-d { text-align: center; font-size: 11px; font-weight: 700; color: var(--label2); display: flex; flex-direction: column; line-height: 1.1; }
+.sm-d small { font-weight: 500; font-size: 10px; }
+.sm-d.on { color: var(--red); }
+.sm-c { width: 22px; height: 22px; border-radius: 7px; justify-self: center; cursor: pointer; }
+.sm-c.none { cursor: default; }
+.sm-c.posted { background: var(--c); }
+.sm-c.done { background: linear-gradient(135deg, var(--c) 50%, color-mix(in srgb, var(--c) 30%, transparent) 50%); }
+.sm-c.wip { box-shadow: 0 0 0 2px var(--c) inset; background: color-mix(in srgb, var(--c) 18%, transparent); }
+.sm-c.free { box-shadow: 0 0 0 1.5px var(--label3) inset; background-image: radial-gradient(circle, var(--label3) 1.5px, transparent 2px); }
+.sm-c.free.missed { box-shadow: 0 0 0 1.5px var(--red) inset; background-image: radial-gradient(circle, var(--red) 1.5px, transparent 2px); }
+.sm-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--label2); align-items: center; margin-top: 4px; }
+.sm-legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; margin-right: -6px; --c: var(--green); }
+.sm-legend i.posted { background: var(--c); } .sm-legend i.done { background: linear-gradient(135deg, var(--c) 50%, transparent 50%); box-shadow: 0 0 0 1px var(--c) inset; }
+.sm-legend i.wip { box-shadow: 0 0 0 1.5px var(--c) inset; } .sm-legend i.free { box-shadow: 0 0 0 1.5px var(--label3) inset; }
+.slot-ed { flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
+.slot-l { display: flex; gap: 6px; align-items: center; font-size: 14px; flex: 1 1 100%; }
+.slot-days { display: flex; gap: 3px; flex: 1; }
+.slot-days button { width: 27px; height: 27px; border-radius: 50%; background: var(--fill2); font-size: 12px; font-weight: 600; color: var(--label2); }
+.slot-days button.on { background: var(--blue); color: #fff; }
+.slot-ed input[type="time"] { flex: 0 0 auto; width: 104px; min-width: 0; text-align: right; padding: 4px 0; }
+.slot-ed .slot-days { flex: 0 1 auto; }
+.slot-row .ttl.muted { color: var(--label2); }
 
 /* ---------- Konverter jam klien ---------- */
 .tz-hint { gap: 10px; min-height: 0; padding: 8px 16px 10px; flex-wrap: wrap; }
