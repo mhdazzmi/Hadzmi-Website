@@ -310,10 +310,17 @@ Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyent
 | **Keuangan** | Nilai kontrak per bulan, diterima bulan ini, belum lunas, lewat tempo; buat tagihan bulan ini untuk semua klien sekaligus; tandai lunas; kirim pengingat pembayaran. |
 | **Pengaturan** | Nama, status sinkron, jumlah media, ekspor/pulihkan JSON. |
 
+### Disesuaikan dengan jobdesk podcast sustainability
+- **Kategori konten** (sesuai jobdesk, dengan target per minggu yang bisa diubah di data klien): Guest Intro Carousel (maks 7), Guest Announcement (1–2), Episode Is Live post/story (1–2), Episode Summary Carousel (1–2), Guest Quote Graphic (1–2), Sustainability News (3–4). Estimasi total 14–19 konten per minggu.
+- **Hari ini**: widget *Target minggu ini* per kategori (selesai = Disetujui/Terjadwal/Terposting, plus yang sedang dikerjakan) dan *Tamu minggu ini* (intro call, rekaman, tayang).
+- **Tamu & Episode** (tab Tamu): profil tamu (foto kecil, jabatan, organisasi, akun IG untuk tag), tahap Intro call → Rekaman dijadwalkan → Sudah rekaman → Episode tayang, jadwal & link episode, kutipan, poin penting. Tombol **Buat paket konten** membuat draf Intro/Pengumuman (dan setelah rekaman: Tayang/Ringkasan/Kutipan) lengkap dengan judul, caption bahasa Inggris, tag tamu, dan tanggal yang disarankan. Setiap kutipan bisa langsung dijadikan quote graphic.
+- **Editor konten**: kategori, tamu, tag akun, sumber berita, tombol *Isi dari data tamu*, dan **checklist publish Instagram** (format, tag tamu/kolaborator, caption+hashtag+keyword, share ke Story).
+- Dengan satu klien, filter klien disembunyikan dan warna kalender mengikuti kategori. Menu Klien pindah ke Lainnya.
+
 ### Penyimpanan
 | Data | Tempat |
 |---|---|
-| Klien, konten (termasuk link desain & gambar penanda ±30 KB), ide, template, laporan, tagihan, tugas | Firebase RTDB node **`hadzmi_social_data`** (terbuka tanpa login, hanya koleksi yang dikenal) + cache localStorage (offline, sinkron otomatis) |
+| Klien, tamu & episode, konten (termasuk link desain & gambar penanda ±30 KB), ide, template, laporan, tagihan, tugas | Firebase RTDB node **`hadzmi_social_data`** (terbuka tanpa login, hanya koleksi yang dikenal) + cache localStorage (offline, sinkron otomatis) |
 | File asli desain | Tetap di Canva / Google Drive / CapCut (web hanya menyimpan link-nya) |
 | Foto & video opsional | **Cloudflare R2** lewat rute publik khusus `worker/social.js` (`/api/social/files`, prefix R2 `social/`, hanya foto/video, maks 200 MB/file, 300 unggahan/jam per IP, ikut batas aman 9 GB). Rute ini tidak bisa membaca file pribadi Nexa (`f/`). |
 
