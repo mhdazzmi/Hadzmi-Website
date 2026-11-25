@@ -977,7 +977,7 @@ function openSheet(o) {
   const wrap = document.createElement('div');
   wrap.className = 'sheet-wrap';
   wrap.innerHTML = `<div class="sheet-backdrop"></div><div class="sheet ${o.wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(o.title || '')}">
-    <div class="sheet-head"><button class="sh-l" data-sh="left">${esc(o.left || 'Batal')}</button><div class="sh-title">${esc(o.title || '')}</div>${o.right ? `<button class="sh-r" data-sh="right">${esc(o.right)}</button>` : '<span></span>'}</div>
+    <div class="sheet-head"><button class="sh-l" data-sh="left">${esc(o.left || 'Batal')}</button><div class="sh-title">${esc(o.title || '')}</div><span class="sh-rw">${o.headExtra || ''}${o.right ? `<button class="sh-r" data-sh="right">${esc(o.right)}</button>` : ''}</span></div>
     <div class="sheet-body">${o.body || ''}</div></div>`;
   $('sheets').appendChild(wrap);
   const rec = { wrap, o };
@@ -1070,6 +1070,7 @@ function openPost(id, preset) {
     ${!isNew ? `<div class="list"><button class="row danger" data-a="delPost">Hapus konten</button></div>` : ''}`;
   openSheet({
     title: isNew ? 'Konten baru' : 'Edit konten', right: isNew ? 'Tambah' : 'Simpan', wide: true, body,
+    headExtra: isNew ? '' : `<button class="sh-del" data-a="delPost" aria-label="Hapus konten">${ic('trash')}</button>`,
     onOpen: w => updateCaptionCount(w),
     onRight: () => savePost(),
     onClose: () => { draft = null; }
