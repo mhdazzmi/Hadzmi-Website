@@ -547,3 +547,5 @@ details.opt[open] summary svg.i { transform: rotate(180deg); }
 /* Layar error (pengganti layar kosong) */
 .fatal { margin: 40px auto; max-width: 480px; background: var(--card); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 10px; text-align: left; font-size: 15px; }
 .fatal code { display: block; background: var(--fill2); border-radius: 10px; padding: 10px; font-size: 12.5px; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.gno { display: inline-block; font-size: 12px; font-weight: 700; color: var(--label2); background: var(--fill2); border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; font-variant-numeric: tabular-nums; }

@@ -161,7 +161,8 @@ function renderOverview() {
   if (!c) return `<div class="pg-msg">This progress link is not valid anymore.<br>Please ask for a new link.</div>`;
   document.title = (c.name || 'Podcast') + ' · Guest Progress';
   const stageTxt = { intro: 'Intro call', jadwal: 'Recording scheduled', rekam: 'Recorded', tayang: 'Episode live' };
-  const gs = Object.values(D.guests || {}).filter(g => g.clientId === c.id).sort((a, b) => STAGE_ORDER.indexOf(b.stage) - STAGE_ORDER.indexOf(a.stage) || a.name.localeCompare(b.name));
+  const gNo = g => { const n = Number(g.order); if (n) return n; const m = /wb-guest-(\d+)/.exec(g.id || '') || /Nomor dokumen[^0-9]*(\d+)/i.exec(g.notes || ''); return m ? Number(m[1]) : 9999; };
+  const gs = Object.values(D.guests || {}).filter(g => g.clientId === c.id).sort((a, b) => gNo(a) - gNo(b) || String(a.name || '').localeCompare(String(b.name || '')));
   const totalReview = gs.reduce((x, g) => x + guestScore(g).review, 0);
   return `<div class="pg-brand"><span class="dot" style="background:${esc(c.color || '#34C759')}"></span>${esc(c.name || 'Podcast')}</div>
     <h1 class="pg-name" style="font-size:32px">Guest progress</h1>

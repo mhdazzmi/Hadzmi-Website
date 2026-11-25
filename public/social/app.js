@@ -713,6 +713,10 @@ VIEWS.client = (v) => {
 
 // ---------------- VIEW: TAMU & EPISODE ----------------
 const guestAv = (g, sz) => g.photo ? `<span class="gav" style="width:${sz}px;height:${sz}px"><img src="${g.photo}" alt=""></span>` : `<span class="avatar" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz * .36)}px;background:${(STG[g.stage] || STAGES[0]).color}">${esc(initials(g.name))}</span>`;
+// Nomor urut narasumber: kolom "No. urut", atau nomor dari data impor (wb-guest-01 / "Nomor dokumen … 01")
+function guestNo(g) { const n = num(g.order); if (n) return n; const m = /wb-guest-(\d+)/.exec(g.id || '') || /Nomor dokumen[^0-9]*(\d+)/i.exec(g.notes || ''); return m ? Number(m[1]) : 0; }
+const guestSort = xs => sortBy(xs, g => String(guestNo(g) || 9999).padStart(4, '0') + String(g.name || '').toLowerCase());
+const noLabel = g => guestNo(g) ? `<span class="gno">${pad(guestNo(g))}</span>` : '';
 function guestPosts(g) { return postsAll().filter(p => p.guestId === g.id); }
 function packState(g, k) { const ps = guestPosts(g).filter(p => p.cat === k); if (!ps.length) return 'none'; if (ps.some(p => p.status === 'posted')) return 'posted'; if (ps.some(p => DONE_ST.includes(p.status))) return 'done'; return 'wip'; }
 function packDots(g) { return `<span class="pack">${GUEST_CATS.map(k => `<i class="pk-${packState(g, k)}" style="--pc:${CAT[k].color}" title="${esc(CAT[k].short)}"></i>`).join('')}</span>`; }
@@ -722,14 +726,14 @@ function guestNext(g) {
   return ev ? `${ev[1]} ${relDay(ev[0])}${ev[1] === 'Rekaman' && g.recTime ? ' ' + esc(g.recTime) : ''}` : (g.pubDate ? 'Tayang ' + prettyDate(g.pubDate) : '');
 }
 VIEWS.guests = () => {
-  const all = sortBy(guestsAll(), g => (STAGES.findIndex(x => x.k === g.stage) + 10) + ([g.introDate, g.recDate, g.pubDate].filter(Boolean).sort().pop() || ''));
+  const all = guestSort(guestsAll());
   const xs = UI.gStage ? all.filter(g => g.stage === UI.gStage) : all;
   return {
     title: 'Tamu & Episode',
     html: `${largeTitle('Tamu & Episode', all.length + ' tamu podcast', plusBtn('newGuest'))}
       <div class="chips"><button class="chip ${!UI.gStage ? 'on' : ''}" data-a="gStage" data-k="">Semua <span class="n">${all.length}</span></button>${STAGES.map(x => `<button class="chip ${UI.gStage === x.k ? 'on' : ''}" data-a="gStage" data-k="${x.k}"><span class="cdot" style="background:${x.color}"></span>${x.label} <span class="n">${all.filter(g => g.stage === x.k).length}</span></button>`).join('')}</div>
       ${xs.length ? `<div class="stack-list">${xs.map(g => `<button class="w gcard" data-a="guest" data-id="${g.id}">
-        <div class="sc-head">${guestAv(g, 52)}<span class="grow" style="min-width:0"><span class="w-title ell" style="display:block">${esc(g.name)}</span><span class="w-sub ell" style="display:block">${esc([g.role, g.org].filter(Boolean).join(' · '))}</span>${g.handle ? `<span class="w-sub ell" style="display:block;color:var(--blue)">@${esc(g.handle)}</span>` : ''}</span><span class="pill" style="background:${(STG[g.stage] || STAGES[0]).color}22;color:${(STG[g.stage] || STAGES[0]).color}">${esc((STG[g.stage] || STAGES[0]).short)}</span></div>
+        <div class="sc-head">${guestAv(g, 52)}<span class="grow" style="min-width:0"><span class="w-title ell" style="display:block">${noLabel(g)}${esc(g.name)}</span><span class="w-sub ell" style="display:block">${esc([g.role, g.org].filter(Boolean).join(' · '))}</span>${g.handle ? `<span class="w-sub ell" style="display:block;color:var(--blue)">@${esc(g.handle)}</span>` : ''}</span><span class="pill" style="background:${(STG[g.stage] || STAGES[0]).color}22;color:${(STG[g.stage] || STAGES[0]).color}">${esc((STG[g.stage] || STAGES[0]).short)}</span></div>
         ${g.epTitle ? `<div class="g-ep">${ic('mic')}<span class="ell">${g.epNo ? 'Ep ' + esc(g.epNo) + ' · ' : ''}${esc(g.epTitle)}</span></div>` : ''}
         <div class="sc-foot">${packDots(g)}<span class="w-sub" style="margin-left:auto">${guestNext(g)}</span></div></button>`).join('')}</div>`
         : empty('mic', 'Belum ada tamu. Tambahkan tamu dari jadwal intro call, lalu buat paket kontennya sekali ketuk.', `<button class="btn-tinted" data-a="newGuest">${ic('plus')} Tambah tamu</button>`)}
@@ -804,7 +808,7 @@ function openGuest(id) {
   const w = openSheet({
     title: isNew ? 'Tamu baru' : 'Edit tamu', right: isNew ? 'Tambah' : 'Simpan', wide: true,
     body: `<div class="form"><div class="design-box"><div class="dthumb" id="gPhoto" style="border-radius:50%;width:84px;height:84px;aspect-ratio:auto">${photo ? `<img src="${photo}" alt="">` : ic('people')}</div><div class="dside"><button type="button" class="btn-tinted" id="gPhotoBtn">${ic('photo')} Pilih foto tamu</button><span class="t-foot muted">Foto kecil untuk penanda (±20 KB). File aslinya tetap di Canva/Drive.</span></div></div></div>
-      ${fSec('Profil', fInput('gName', 'Nama', g.name, { ph: 'Nama lengkap' }) + fInput('gRole', 'Jabatan', g.role, { ph: 'Founder, Head of…' }) + fInput('gOrg', 'Organisasi', g.org) + fInput('gHandle', 'Instagram', g.handle, { ph: 'tanpa @ (untuk tag)' }) + fInput('gPhotoLink', 'Folder foto', g.photoLink, { type: 'url', ph: 'Link Drive/Canva foto tamu' }) + (clients().length > 1 ? fSelect('gClient', 'Klien', g.clientId, clientOpts()) : ''))}
+      ${fSec('Profil', fInput('gOrder', 'No. urut', guestNo(g) || '', { type: 'number', mode: 'numeric', ph: '01' }) + fInput('gName', 'Nama', g.name, { ph: 'Nama lengkap' }) + fInput('gRole', 'Jabatan', g.role, { ph: 'Founder, Head of…' }) + fInput('gOrg', 'Organisasi', g.org) + fInput('gHandle', 'Instagram', g.handle, { ph: 'tanpa @ (untuk tag)' }) + fInput('gPhotoLink', 'Folder foto', g.photoLink, { type: 'url', ph: 'Link Drive/Canva foto tamu' }) + (clients().length > 1 ? fSelect('gClient', 'Klien', g.clientId, clientOpts()) : ''))}
       ${fSec('Tahap', fSelect('gStage', 'Tahap', g.stage, STAGES.map(x => [x.k, x.label])) + fInput('gIntroDate', 'Intro call', g.introDate, { type: 'date' }) + fInput('gRecDate', 'Rekaman (WIB)', g.recDate, { type: 'date' }) + fInput('gRecTime', 'Jam rekaman (WIB)', g.recTime, { type: 'time' }) + `<div class="field tz-hint"><span class="t-foot muted" style="flex:1">Klien kirim jam rekaman dalam EST?</span><button type="button" class="btn-tinted gray" data-a="tzFill" data-d="gRecDate" data-t="gRecTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button></div>`)}
       ${fSec('Episode', fInput('gEpNo', 'Nomor', g.epNo, { mode: 'numeric', ph: '12' }) + fInput('gEpTitle', 'Judul episode', g.epTitle, { stack: true }) + fInput('gPubDate', 'Tanggal tayang', g.pubDate, { type: 'date' }) + fInput('gEpLink', 'Link episode', g.epLink, { type: 'url', ph: 'Spotify / YouTube / web' }))}
       ${fSec('Bahan dari klien', fArea('gTopics', 'Topik podcast yang dibahas', g.topics, { rows: 3 }) + fArea('gIntroTr', 'Transkrip intro call', g.introTr, { rows: 4, ph: 'Tempel transkrip dari klien' }) + fInput('gYt', 'Episode YouTube', g.yt, { type: 'url', ph: 'Link episode untuk ambil transkrip' }) + fArea('gEpTr', 'Transkrip episode', g.epTr, { rows: 4, ph: 'Tempel transkrip YouTube' }), 'Dipakai untuk membuat prompt AI: intro carousel 5 slide, ringkasan episode, dan kutipan.')}
@@ -813,7 +817,7 @@ function openGuest(id) {
     onRight: wr => {
       const name = val(wr, 'gName');
       if (!name) { toast('Nama tamu wajib diisi', 'alert'); return false; }
-      const out = Object.assign(g, { name, role: val(wr, 'gRole'), org: val(wr, 'gOrg'), handle: val(wr, 'gHandle').replace(/^@/, ''), photoLink: val(wr, 'gPhotoLink'), photo,
+      const out = Object.assign(g, { order: num(val(wr, 'gOrder')) || '', name, role: val(wr, 'gRole'), org: val(wr, 'gOrg'), handle: val(wr, 'gHandle').replace(/^@/, ''), photoLink: val(wr, 'gPhotoLink'), photo,
         clientId: clients().length > 1 ? val(wr, 'gClient') : g.clientId, stage: val(wr, 'gStage'), introDate: val(wr, 'gIntroDate'), recDate: val(wr, 'gRecDate'), recTime: val(wr, 'gRecTime'),
         epNo: val(wr, 'gEpNo'), epTitle: val(wr, 'gEpTitle'), pubDate: val(wr, 'gPubDate'), epLink: val(wr, 'gEpLink'), topics: val(wr, 'gTopics'), introTr: val(wr, 'gIntroTr'), yt: val(wr, 'gYt'), epTr: val(wr, 'gEpTr'), intro: val(wr, 'gIntro'), quotes: val(wr, 'gQuotes'), takeaways: val(wr, 'gTakeaways'), notes: val(wr, 'gNotes') });
       dbSet('guests/' + g.id, out);
@@ -1066,7 +1070,7 @@ function openPost(id, preset) {
       fSelect('pCat', 'Kategori', draft.cat || '', [['', 'Umum']].concat(CATS.map(k => [k.k, k.label])), { f: 'cat' }) +
       `<div class="field" id="pCatHint" style="min-height:0;padding:0 16px 10px" ${CAT[draft.cat] ? '' : 'hidden'}><span class="t-foot muted">${CAT[draft.cat] ? esc(CAT[draft.cat].hint) : ''}</span></div>` +
       `<div class="field" id="pRot" style="min-height:0;padding:0 16px 10px" ${rotFor(clientOf(draft.clientId), draft.cat, draft.date) ? '' : 'hidden'}>${rotHTML()}</div>` +
-      fSelect('pGuest', 'Tamu', draft.guestId || '', [['', 'Tanpa tamu']].concat(sortBy(guestsAll(), g => g.name.toLowerCase()).map(g => [g.id, g.name])), { f: 'guestId' }) +
+      fSelect('pGuest', 'Tamu', draft.guestId || '', [['', 'Tanpa tamu']].concat(guestSort(guestsAll()).map(g => [g.id, (guestNo(g) ? pad(guestNo(g)) + ' · ' : '') + g.name])), { f: 'guestId' }) +
       `<div class="field" style="padding:8px 16px"><div class="seg" id="pType" style="flex:1">${Object.keys(TYPES).map(k => `<button type="button" data-a="pType" data-k="${k}" class="${draft.type === k ? 'on' : ''}">${TYPES[k].label}</button>`).join('')}</div></div>` +
       fInput('pTitle', 'Judul', draft.title, { f: 'title', ph: 'Mis. Promo menu baru', stack: true }) +
       fInput('pDate', 'Tanggal (WIB)', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang (WIB)', draft.time, { f: 'time', type: 'time' }) +
