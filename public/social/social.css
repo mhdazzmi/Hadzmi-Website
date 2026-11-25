@@ -274,6 +274,14 @@ button.w:active { transform: scale(.97); }
 .pack i.pk-wip { background: linear-gradient(transparent 40%, var(--pc) 40%, var(--pc) 60%, transparent 60%); }
 .pack i.pk-none { box-shadow: 0 0 0 1.5px var(--label3) inset; }
 
+/* ---------- Konverter jam klien ---------- */
+.tz-hint { gap: 10px; min-height: 0; padding: 8px 16px 10px; flex-wrap: wrap; }
+.tz-result { background: var(--card); border-radius: var(--r-card); padding: 18px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.tz-big { font-size: 46px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+.tz-big small { font-size: 20px; font-weight: 600; color: var(--label2); letter-spacing: 0; }
+.tz-sub { font-size: 15px; }
+.tz-sub.muted { font-size: 13px; }
+
 /* ---------- Post rows ---------- */
 .thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--fill); flex: none; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; color: var(--label3); font-size: 20px; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }

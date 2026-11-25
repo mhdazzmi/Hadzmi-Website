@@ -318,6 +318,7 @@ Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyent
 - **Alur kerja dari meeting klien**: review desain dilakukan klien langsung di folder Canva, jadi tombol *Minta review klien* menyiapkan pesan bahasa Inggris untuk chat Upwork (link Canva, jadwal tayang, caption) lalu mengubah status ke Menunggu Klien.
 - **Rotasi template Canva** untuk Announcement, Episode Live, dan Quote (diisi di Edit klien, satu template per baris). Editor dan widget *Template minggu ini* menyarankan template A → B → C bergantian tiap minggu.
 - **Prompt AI siap salin** (ChatGPT/Gemini/Grok): intro carousel 5 slide dari topik + transkrip intro call, ringkasan episode + satu kutipan sustainability dari transkrip YouTube, berita sustainability yang ditulis ulang (fokus US), dan caption + hashtag. Bahan (topik, transkrip intro call, link YouTube, transkrip episode) disimpan di data tamu.
+- **Konversi jam klien ⇄ WIB**: klien mengirim jam dalam EST. Widget *Jam klien* di Hari ini, konverter (dua arah, plus tempel pesan klien untuk membaca semua jam sekaligus), tombol *Dari jam klien* di editor konten dan editor tamu, serta keterangan jam klien di bawah jam tayang. Pergantian EST/EDT dihitung otomatis lewat `Intl` (zona diatur di Edit klien, default New York). Pesan review ke klien mencantumkan jam klien dan WIB.
 - **Sumber riset berita** (akun IG, newsletter, situs) disimpan di data klien dan tampil di menu Ide & Berita.
 - Dengan satu klien, filter klien disembunyikan dan warna kalender mengikuti kategori. Menu Klien pindah ke Lainnya.
 

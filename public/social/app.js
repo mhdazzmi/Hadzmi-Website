@@ -142,6 +142,23 @@ function dow(date) { const [y, m, d] = date.split('-').map(Number); return new D
 function prettyDate(date, withDay, shortDay) { if (!date) return 'Tanpa tanggal'; const [y, m, d] = date.split('-').map(Number); return (withDay ? (shortDay ? DAYS_S : DAYS)[dow(date)] + ', ' : '') + `${d} ${MON[m - 1]}${y !== Number(today().slice(0, 4)) ? ' ' + y : ''}`; }
 const EN_D = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], EN_M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function enDate(date) { if (!date) return ''; const [, m, d] = date.split('-').map(Number); return `${EN_D[dow(date)]}, ${EN_M[m - 1]} ${d}`; }
+// ---------------- ZONA WAKTU KLIEN ----------------
+const LOCAL_TZ = 'Asia/Jakarta';
+const TZ_OPTS = [['America/New_York', 'New York · Eastern (EST/EDT)'], ['America/Chicago', 'Chicago · Central (CST/CDT)'], ['America/Denver', 'Denver · Mountain (MST/MDT)'], ['America/Los_Angeles', 'Los Angeles · Pacific (PST/PDT)'], ['Europe/London', 'London (GMT/BST)'], ['Asia/Jakarta', 'Jakarta (WIB)']];
+const clientTz = () => ((activeClients()[0] || {}).tz) || 'America/New_York';
+function tzParts(tz, ms) {
+  const o = {};
+  new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(ms)).forEach(x => { o[x.type] = x.value; });
+  return { date: `${o.year}-${o.month}-${o.day}`, time: `${o.hour === '24' ? '00' : o.hour}:${o.minute}` };
+}
+function tzOffsetMin(tz, ms) { const p = tzParts(tz, ms); const [y, m, d] = p.date.split('-').map(Number), [hh, mm] = p.time.split(':').map(Number); return (Date.UTC(y, m - 1, d, hh, mm) - Math.floor(ms / 60000) * 60000) / 60000; }
+function wallToUtc(tz, date, time) { const [y, m, d] = date.split('-').map(Number), [hh, mm] = (time || '00:00').split(':').map(Number); const guess = Date.UTC(y, m - 1, d, hh || 0, mm || 0); let u = guess - tzOffsetMin(tz, guess) * 60000; u = guess - tzOffsetMin(tz, u) * 60000; return u; }
+function convertTz(fromTz, toTz, date, time) { return tzParts(toTz, wallToUtc(fromTz, date, time)); }
+function tzAbbr(tz, ms) { if (tz === LOCAL_TZ) return 'WIB'; try { return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(ms || Date.now())).find(x => x.type === 'timeZoneName').value; } catch (e) { return 'ET'; } }
+function tzDiffText(tz, ms) { const h = (tzOffsetMin(LOCAL_TZ, ms) - tzOffsetMin(tz, ms)) / 60; return (h >= 0 ? 'WIB lebih cepat ' : 'WIB lebih lambat ') + fmt(Math.abs(h), 1) + ' jam'; }
+const fmt12 = t => { const [h, m] = String(t || '00:00').split(':').map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? 'AM' : 'PM'}`; };
+// Waktu klien untuk jadwal WIB: { date, time, abbr }
+function toClient(date, time) { if (!date || !time) return null; const tz = clientTz(); const r = convertTz(LOCAL_TZ, tz, date, time); return Object.assign(r, { abbr: tzAbbr(tz, wallToUtc(LOCAL_TZ, date, time)) }); }
 function relDay(date) { if (!date) return 'Tanpa tanggal'; const t = today(); if (date === t) return 'Hari ini'; if (date === addDays(t, 1)) return 'Besok'; if (date === addDays(t, -1)) return 'Kemarin'; return prettyDate(date, true, true); }
 function monthLabel(month, shortM) { const [y, m] = month.split('-').map(Number); return (shortM ? MON : MONL)[m - 1] + ' ' + y; }
 function agoText(ts) { const d = Math.floor((Date.now() - ts) / 86400000); if (d <= 0) { const h = Math.floor((Date.now() - ts) / 3600000); return h <= 0 ? 'baru saja' : h + ' jam lalu'; } return d + ' hari lalu'; }
@@ -458,6 +475,7 @@ VIEWS.home = () => {
       <div class="widgets">
         ${liveW}
         ${smallW(todayPosts.length, 'posting hari ini', '', 'cal', '', 'tab', 'calendar', true)}
+        ${(() => { const tz = clientTz(), ms = Date.now(), cp = tzParts(tz, ms); return `<button class="w sm" data-a="tzOpen"><span class="w-head"><span style="color:var(--orange)">Jam klien</span>${ic('clock')}</span><span><span class="w-big mid num">${fmt12(cp.time)}</span><span class="w-lbl">${esc(tzAbbr(tz, ms))} · ${cp.date === today() ? 'hari yang sama' : cp.date < today() ? 'masih kemarin' : 'besok'}</span><span class="w-sub">WIB ${nowTime()} · ketuk untuk konversi</span></span></button>`; })()}
         <button class="w sm" data-a="tab" data-k="content"><span class="ring-wrap">${ringSvg(ringPct, 'var(--green)', 96, 11)}<span class="ring-num"><b class="num">${wDone}</b><small>dari ${wTarget}</small></span></span><span class="w-lbl" style="text-align:center">Minggu ini${wWip ? ` · ${wWip} proses` : ''}</span></button>
         ${waitW}
         ${sched}
@@ -469,7 +487,7 @@ VIEWS.home = () => {
         ${taskW}
         ${weekW}
         ${smallW(short(unpaid.reduce((x, i) => x + num(i.amount), 0)), unpaid.length + ' tagihan belum lunas', overdueInvoices().length ? `<span class="c-red">${overdueInvoices().length} lewat tempo</span>` : '', 'wallet', 'var(--green)', 'tab', 'finance')}
-        ${smallW(Object.values(S.ideas).filter(x => !x.done).length, 'ide tersimpan', '', 'bulb', 'var(--yellow)', 'tab', 'ideas')}
+
       </div>`
   };
 };
@@ -651,7 +669,7 @@ VIEWS.guest = (v) => {
     html: `<div class="client-hero">${guestAv(g, 84)}<div class="t-title2">${esc(g.name)}</div><div class="handle">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>${g.handle ? `<a href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener" class="t-sub">@${esc(g.handle)}</a>` : ''}
         <div class="seg" style="margin-top:10px;width:100%;max-width:460px">${STAGES.map(x => `<button class="${g.stage === x.k ? 'on' : ''}" data-a="setStage" data-id="${g.id}" data-k="${x.k}">${esc(x.short)}</button>`).join('')}</div></div>
       ${group('Paket konten', `<div class="list">${GUEST_CATS.map(k => { const ps = guestPosts(g).filter(p => p.cat === k); const c = CAT[k]; return ps.length ? ps.map(p => `<button class="row" data-a="post" data-id="${p.id}"><span class="tile" style="background:${c.color}">${ic(c.icon)}</span><span class="grow"><div class="ttl">${esc(c.short)}</div><div class="sub">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : 'Tanpa jadwal'} · ${TYPES[p.type || 'feed'].label}</div></span>${isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') : `<div class="row"><span class="tile" style="background:${c.color};opacity:.45">${ic(c.icon)}</span><span class="grow"><div class="ttl muted">${esc(c.short)}</div><div class="sub">Belum dibuat</div></span><button class="btn-tinted" data-a="makePack" data-id="${g.id}" data-k="${k}">${ic('plus')} Buat</button></div>`; }).join('')}</div>`, { action: (({ intro: ['intro'], jadwal: ['intro', 'announce'] }[g.stage]) || GUEST_CATS).some(k => packState(g, k) === 'none') ? `<button data-a="makePack" data-id="${g.id}" data-k="all">Buat ${g.stage === 'intro' ? 'intro' : g.stage === 'jadwal' ? 'intro & pengumuman' : 'semua'}</button>` : '', foot: 'Draf berisi judul, caption, tag tamu, dan tanggal yang disarankan dari jadwal tamu. Konten episode (Tayang, Ringkasan, Kutipan) baru disarankan setelah rekaman.' })}
-      ${group('Jadwal & episode', `<div class="list">${kv('Intro call', g.introDate ? prettyDate(g.introDate, true) : '')}${kv('Rekaman', g.recDate ? prettyDate(g.recDate, true) + (g.recTime ? ', ' + esc(g.recTime) : '') : '')}${kv('Episode', g.epTitle ? (g.epNo ? 'Ep ' + esc(g.epNo) + ' · ' : '') + esc(g.epTitle) : '')}${kv('Tayang', g.pubDate ? prettyDate(g.pubDate, true) : '')}${kv('Link episode', g.epLink ? `<a href="${esc(g.epLink)}" target="_blank" rel="noopener">${esc(g.epLink)}</a>` : '')}${kv('Folder foto tamu', g.photoLink ? `<a href="${esc(g.photoLink)}" target="_blank" rel="noopener">${esc(g.photoLink)}</a>` : '')}${!g.introDate && !g.recDate && !g.epTitle ? '<div class="empty">Belum ada jadwal.</div>' : ''}</div>`)}
+      ${group('Jadwal & episode', `<div class="list">${kv('Intro call', g.introDate ? prettyDate(g.introDate, true) : '')}${kv('Rekaman', g.recDate ? prettyDate(g.recDate, true) + (g.recTime ? ', ' + esc(g.recTime) + ' WIB' + (toClient(g.recDate, g.recTime) ? ` <span class="muted">(${fmt12(toClient(g.recDate, g.recTime).time)} ${esc(toClient(g.recDate, g.recTime).abbr)}, ${enDate(toClient(g.recDate, g.recTime).date)})</span>` : '') : '') : '')}${kv('Episode', g.epTitle ? (g.epNo ? 'Ep ' + esc(g.epNo) + ' · ' : '') + esc(g.epTitle) : '')}${kv('Tayang', g.pubDate ? prettyDate(g.pubDate, true) : '')}${kv('Link episode', g.epLink ? `<a href="${esc(g.epLink)}" target="_blank" rel="noopener">${esc(g.epLink)}</a>` : '')}${kv('Folder foto tamu', g.photoLink ? `<a href="${esc(g.photoLink)}" target="_blank" rel="noopener">${esc(g.photoLink)}</a>` : '')}${!g.introDate && !g.recDate && !g.epTitle ? '<div class="empty">Belum ada jadwal.</div>' : ''}</div>`)}
       ${group('Bahan & prompt AI', `<div class="list">
         ${g.topics ? `<div class="kv"><div class="k">Topik</div><div class="v">${esc(g.topics)}</div></div>` : ''}
         <div class="row plain"><span class="grow"><div class="t-foot muted">Transkrip intro call</div><div class="ttl" style="font-size:15px">${g.introTr ? fmt(g.introTr.split(/\s+/).length) + ' kata' : '<span class="muted">Belum ada</span>'}</div></span><button class="btn-tinted" data-a="aiGuest" data-id="${g.id}" data-k="intro">${ic('sparkle')} Prompt intro</button></div>
@@ -702,7 +720,7 @@ function openGuest(id) {
     title: isNew ? 'Tamu baru' : 'Edit tamu', right: isNew ? 'Tambah' : 'Simpan', wide: true,
     body: `<div class="form"><div class="design-box"><div class="dthumb" id="gPhoto" style="border-radius:50%;width:84px;height:84px;aspect-ratio:auto">${photo ? `<img src="${photo}" alt="">` : ic('people')}</div><div class="dside"><button type="button" class="btn-tinted" id="gPhotoBtn">${ic('photo')} Pilih foto tamu</button><span class="t-foot muted">Foto kecil untuk penanda (±20 KB). File aslinya tetap di Canva/Drive.</span></div></div></div>
       ${fSec('Profil', fInput('gName', 'Nama', g.name, { ph: 'Nama lengkap' }) + fInput('gRole', 'Jabatan', g.role, { ph: 'Founder, Head of…' }) + fInput('gOrg', 'Organisasi', g.org) + fInput('gHandle', 'Instagram', g.handle, { ph: 'tanpa @ (untuk tag)' }) + fInput('gPhotoLink', 'Folder foto', g.photoLink, { type: 'url', ph: 'Link Drive/Canva foto tamu' }) + (clients().length > 1 ? fSelect('gClient', 'Klien', g.clientId, clientOpts()) : ''))}
-      ${fSec('Tahap', fSelect('gStage', 'Tahap', g.stage, STAGES.map(x => [x.k, x.label])) + fInput('gIntroDate', 'Intro call', g.introDate, { type: 'date' }) + fInput('gRecDate', 'Rekaman', g.recDate, { type: 'date' }) + fInput('gRecTime', 'Jam rekaman', g.recTime, { type: 'time' }))}
+      ${fSec('Tahap', fSelect('gStage', 'Tahap', g.stage, STAGES.map(x => [x.k, x.label])) + fInput('gIntroDate', 'Intro call', g.introDate, { type: 'date' }) + fInput('gRecDate', 'Rekaman (WIB)', g.recDate, { type: 'date' }) + fInput('gRecTime', 'Jam rekaman (WIB)', g.recTime, { type: 'time' }) + `<div class="field tz-hint"><span class="t-foot muted" style="flex:1">Klien kirim jam rekaman dalam EST?</span><button type="button" class="btn-tinted gray" data-a="tzFill" data-d="gRecDate" data-t="gRecTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button></div>`)}
       ${fSec('Episode', fInput('gEpNo', 'Nomor', g.epNo, { mode: 'numeric', ph: '12' }) + fInput('gEpTitle', 'Judul episode', g.epTitle, { stack: true }) + fInput('gPubDate', 'Tanggal tayang', g.pubDate, { type: 'date' }) + fInput('gEpLink', 'Link episode', g.epLink, { type: 'url', ph: 'Spotify / YouTube / web' }))}
       ${fSec('Bahan dari klien', fArea('gTopics', 'Topik podcast yang dibahas', g.topics, { rows: 3 }) + fArea('gIntroTr', 'Transkrip intro call', g.introTr, { rows: 4, ph: 'Tempel transkrip dari klien' }) + fInput('gYt', 'Episode YouTube', g.yt, { type: 'url', ph: 'Link episode untuk ambil transkrip' }) + fArea('gEpTr', 'Transkrip episode', g.epTr, { rows: 4, ph: 'Tempel transkrip YouTube' }), 'Dipakai untuk membuat prompt AI: intro carousel 5 slide, ringkasan episode, dan kutipan.')}
       ${fSec('Isi konten', fArea('gIntro', 'Intro singkat (untuk carousel intro)', g.intro, { rows: 3 }) + fArea('gQuotes', 'Kutipan (satu per baris)', g.quotes, { rows: 4 }) + fArea('gTakeaways', 'Poin penting / takeaway (satu per baris)', g.takeaways, { rows: 4 }) + fArea('gNotes', 'Catatan', g.notes, { rows: 2 }))}
@@ -965,7 +983,8 @@ function openPost(id, preset) {
       fSelect('pGuest', 'Tamu', draft.guestId || '', [['', 'Tanpa tamu']].concat(sortBy(guestsAll(), g => g.name.toLowerCase()).map(g => [g.id, g.name])), { f: 'guestId' }) +
       `<div class="field" style="padding:8px 16px"><div class="seg" id="pType" style="flex:1">${Object.keys(TYPES).map(k => `<button type="button" data-a="pType" data-k="${k}" class="${draft.type === k ? 'on' : ''}">${TYPES[k].label}</button>`).join('')}</div></div>` +
       fInput('pTitle', 'Judul', draft.title, { f: 'title', ph: 'Mis. Promo menu baru', stack: true }) +
-      fInput('pDate', 'Tanggal', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang', draft.time, { f: 'time', type: 'time' }) +
+      fInput('pDate', 'Tanggal (WIB)', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang (WIB)', draft.time, { f: 'time', type: 'time' }) +
+      `<div class="field tz-hint" id="pTz">${tzHint()}</div>` +
       fInput('pTags', 'Tag akun', draft.tags, { f: 'tags', ph: '@tamu @kolaborator', stack: true }) +
       fInput('pSource', 'Sumber berita', draft.source, { f: 'source', type: 'url', ph: 'Link artikel / riset (untuk kategori berita)', stack: true }))}
     <div class="list"><button class="row action" data-a="fillFromGuest">${ic('sparkle')}<span class="grow">Isi judul & caption dari data tamu</span></button></div>
@@ -999,6 +1018,7 @@ function openPost(id, preset) {
   });
 }
 function rotHTML() { const r = draft && rotFor(clientOf(draft.clientId), draft.cat, draft.date); return r ? `<span class="t-foot">${ic('doc')} Template minggu ini: <b>${esc(r.name)}</b> (${r.i}/${r.n})${r.link ? ` · <a href="${esc(r.link)}" target="_blank" rel="noopener">Buka di Canva</a>` : ''}</span>` : ''; }
+function tzHint() { const ct = draft && toClient(draft.date, draft.time); return `<span class="t-foot muted" style="flex:1">${ct ? `Jam klien: <b style="color:var(--label)">${fmt12(ct.time)} ${esc(ct.abbr)}</b>, ${enDate(ct.date)}` : 'Isi tanggal & jam untuk melihat jam klien'}</span><button type="button" class="btn-tinted gray" data-a="tzFill" data-d="pDate" data-t="pTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button>`; }
 function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
 function setDraftThumb(file) {
   if (!draft || !file) return;
@@ -1036,7 +1056,8 @@ function savePost() {
 function postShareText(p, urls) {
   const g = guestOf(p.guestId), cat = catOf(p);
   const what = (cat ? cat.label : 'post') + (g ? ' for ' + g.name : (p.title ? ': ' + p.title : ''));
-  const when = p.date ? enDate(p.date) + (p.time ? ', ' + p.time : '') : '';
+  const ct = toClient(p.date, p.time);
+  const when = p.date ? (ct ? `${enDate(ct.date)}, ${fmt12(ct.time)} ${ct.abbr} (${p.time} WIB)` : enDate(p.date)) : '';
   const out = [`Hi! The ${what} is ready in our Canva folder, please take a look 🎨`];
   if (p.design) out.push('', 'Canva: ' + p.design);
   if (urls && urls.length) { out.push('', 'Files:'); urls.forEach((u, i) => out.push(`${i + 1}. ${u}`)); }
@@ -1094,12 +1115,13 @@ function copyText(text, fallbackEl) {
   try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fail); else fail(); } catch (e) { fail(); }
 }
 function refreshDraftParts() {
-  const w = topSheet(); if (!w || !draft) return;
+  const w = draftSheet() || topSheet(); if (!w || !draft) return;
   const s = w.querySelector('#pStatus'); if (s) s.innerHTML = statusPick();
   const m = w.querySelector('#pMedia'); if (m) m.innerHTML = mediaStrip();
   const l = w.querySelector('#pLog'); if (l) l.innerHTML = logHTML();
   const t = w.querySelector('#pType'); if (t) t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === draft.type));
   const th = w.querySelector('#pThumb'); if (th) th.innerHTML = thumbBox();
+  const tzh = w.querySelector('#pTz'); if (tzh) tzh.innerHTML = tzHint();
   const rt = w.querySelector('#pRot'); if (rt) { rt.innerHTML = rotHTML(); rt.hidden = !rotHTML(); }
   const cl = w.querySelector('#pThumbClear'); if (cl) cl.hidden = !draft.thumb;
 }
@@ -1293,6 +1315,57 @@ function autoClean() {
   if (n) { toast(n + ' media lama dihapus dari R2', 'trash'); render(); }
 }
 
+// ---------------- KONVERTER JAM KLIEN ⇄ WIB ----------------
+function openConverter(target) {
+  const tz = clientTz(), w0 = target ? topSheet() : null;
+  const st = { dir: 'in', date: today(), time: '09:00' };
+  const w = openSheet({
+    title: 'Konversi jam', left: target ? 'Batal' : 'Tutup', right: target ? 'Pakai' : '',
+    body: `<div class="seg" id="tzDir"><button class="on" data-dir="in">${esc(tzAbbr(tz))} → WIB</button><button data-dir="out">WIB → ${esc(tzAbbr(tz))}</button></div>
+      <div class="form"><div class="field"><label for="tzD" id="tzDl">Tanggal</label><input id="tzD" type="date" value="${st.date}"></div><div class="field"><label for="tzT" id="tzTl">Jam</label><input id="tzT" type="time" value="${st.time}"></div></div>
+      <div class="tz-result" id="tzRes"></div>
+      <div><div class="form-head">Tempel pesan klien</div><div class="form"><div class="field stack"><label for="tzPaste">Semua jam di pesan otomatis dikonversi (memakai tanggal di atas)</label><textarea id="tzPaste" rows="3" placeholder="Mis. Recording is Thursday at 3:30 PM EST, intro call 10am"></textarea></div><div id="tzList"></div></div></div>
+      <div class="form-foot">Zona klien: ${esc((TZ_OPTS.find(x => x[0] === tz) || [tz, tz])[1])}. Pergantian EST/EDT (daylight saving) dihitung otomatis. Ubah di Edit klien.</div>`,
+    onRight: () => {
+      if (!target || !w0) return;
+      const r = st.dir === 'in' ? convertTz(tz, LOCAL_TZ, st.date, st.time) : { date: st.date, time: st.time };
+      const dEl = w0.querySelector('#' + target.d), tEl = w0.querySelector('#' + target.t);
+      if (dEl) { dEl.value = r.date; dEl.dispatchEvent(new Event('input', { bubbles: true })); dEl.dispatchEvent(new Event('change', { bubbles: true })); }
+      if (tEl) { tEl.value = r.time; tEl.dispatchEvent(new Event('input', { bubbles: true })); tEl.dispatchEvent(new Event('change', { bubbles: true })); }
+      toast(`Diisi ${r.time} WIB`, 'clock');
+    }
+  });
+  const res = () => {
+    st.date = w.querySelector('#tzD').value || today(); st.time = w.querySelector('#tzT').value || '00:00';
+    const from = st.dir === 'in' ? tz : LOCAL_TZ, to = st.dir === 'in' ? LOCAL_TZ : tz;
+    const ms = wallToUtc(from, st.date, st.time), r = tzParts(to, ms);
+    const dd = dayDiff(st.date, r.date);
+    w.querySelector('#tzDl').textContent = 'Tanggal (' + tzAbbr(from, ms) + ')'; w.querySelector('#tzTl').textContent = 'Jam (' + tzAbbr(from, ms) + ')';
+    w.querySelector('#tzRes').innerHTML = `<div class="tz-big num">${st.dir === 'in' ? r.time : fmt12(r.time)} <small>${esc(tzAbbr(to, ms))}</small></div><div class="tz-sub">${st.dir === 'in' ? prettyDate(r.date, true) : enDate(r.date)}${dd ? ` · <b>${dd > 0 ? 'hari berikutnya' : 'hari sebelumnya'}</b>` : ''}</div><div class="tz-sub muted">${st.dir === 'in' ? fmt12(st.time) : st.time} ${esc(tzAbbr(from, ms))} · ${tzDiffText(tz, ms)}</div>`;
+    const txt = w.querySelector('#tzPaste').value, out = [];
+    const re = /\b(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?(?=\W|$)/gi; let mt;
+    while ((mt = re.exec(txt))) {
+      let h = Number(mt[1]); const mi = mt[2] ? Number(mt[2]) : 0, ap = (mt[3] || '').toLowerCase().replace(/\./g, '');
+      if (!ap && !mt[2]) continue; if (h > 23 || mi > 59) continue;
+      if (ap === 'pm' && h < 12) h += 12; if (ap === 'am' && h === 12) h = 0;
+      const t0 = `${pad(h)}:${pad(mi)}`, m2 = wallToUtc(tz, st.date, t0), r2 = tzParts(LOCAL_TZ, m2), d2 = dayDiff(st.date, r2.date);
+      out.push(`<div class="row plain"><span class="grow"><span class="b">${esc(mt[0].trim())}</span> ${esc(tzAbbr(tz, m2))}</span><span class="val num">→ <b style="color:var(--label)">${r2.time} WIB</b>${d2 ? ` <small class="c-orange">${d2 > 0 ? '+1 hari' : '−1 hari'}</small>` : ''}</span></div>`);
+    }
+    w.querySelector('#tzList').innerHTML = out.join('') || (txt.trim() ? '<div class="row plain muted t-foot">Tidak ada jam yang terbaca. Tulis seperti 3 PM, 3:30pm, atau 15:00.</div>' : '');
+  };
+  w.querySelector('#tzDir').addEventListener('click', e => {
+    const b = e.target.closest('[data-dir]'); if (!b || b.dataset.dir === st.dir) return;
+    const from = st.dir === 'in' ? tz : LOCAL_TZ, to = st.dir === 'in' ? LOCAL_TZ : tz;
+    const r = convertTz(from, to, w.querySelector('#tzD').value || today(), w.querySelector('#tzT').value || '00:00');
+    st.dir = b.dataset.dir; w.querySelector('#tzD').value = r.date; w.querySelector('#tzT').value = r.time;
+    w.querySelectorAll('#tzDir button').forEach(x => x.classList.toggle('on', x === b)); res();
+  });
+  ['tzD', 'tzT', 'tzPaste'].forEach(id => w.querySelector('#' + id).addEventListener('input', res));
+  // Dari editor: mulai dari jadwal WIB yang sudah ada, ditampilkan dalam jam klien
+  if (target && w0) { const d = (w0.querySelector('#' + target.d) || {}).value, t = (w0.querySelector('#' + target.t) || {}).value; if (d && t) { const r = convertTz(LOCAL_TZ, tz, d, t); w.querySelector('#tzD').value = r.date; w.querySelector('#tzT').value = r.time; } }
+  res();
+}
+
 // ---------------- EDITOR KLIEN ----------------
 function openClient(id) {
   const isNew = !id || !S.clients[id];
@@ -1303,7 +1376,7 @@ function openClient(id) {
   const bc = [0, 1, 2, 3].map(i => c.brand.colors[i] || '');
   const w = openSheet({
     title: isNew ? 'Klien baru' : 'Edit klien', right: isNew ? 'Tambah' : 'Simpan', wide: true,
-    body: `${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]))}
+    body: `${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]) + fSelect('cTz', 'Zona waktu', c.tz || 'America/New_York', TZ_OPTS))}
       <div><div class="form-head">Warna penanda</div><div class="form"><div class="color-pick" id="cColor">${CLIENT_COLORS.map(x => `<button type="button" data-col="${x}" class="${x === color ? 'on' : ''}" style="background:${x}" aria-label="Warna ${x}"></button>`).join('')}</div></div></div>
       ${fSec('Paket per bulan', fInput('kFeed', 'Feed/Carousel', c.pkg.feed, { type: 'number', mode: 'numeric' }) + fInput('kReels', 'Reels', c.pkg.reels, { type: 'number', mode: 'numeric' }) + fInput('kStory', 'Story', c.pkg.story, { type: 'number', mode: 'numeric' }) + fInput('kPrice', 'Harga (Rp)', c.pkg.price, { mode: 'numeric', ph: '2500000' }) + fInput('cStart', 'Mulai kontrak', c.start, { type: 'date' }))}
       ${fSec('Target konten per minggu', CATS.map(k => fInput('wk_' + k.k, k.short, weeklyTarget(c)[k.k], { type: 'number', mode: 'numeric', ph: String(k.max) })).join(''), 'Default sesuai jobdesk: Intro maks 7, Pengumuman/Tayang/Ringkasan/Kutipan 1–2, Berita 3–4.')}
@@ -1321,7 +1394,7 @@ function openClient(id) {
       if (!name) { toast('Nama brand wajib diisi', 'alert'); return false; }
       const colors = [0, 1, 2, 3].map(i => { const el = wr.querySelector('#bc' + i); return el.dataset.set === '1' ? el.value : ''; }).filter(Boolean);
       const out = Object.assign(c, {
-        name, handle: val(wr, 'cHandle').replace(/^@/, ''), niche: val(wr, 'cNiche'), status: val(wr, 'cStatus'), color,
+        name, handle: val(wr, 'cHandle').replace(/^@/, ''), niche: val(wr, 'cNiche'), status: val(wr, 'cStatus'), tz: val(wr, 'cTz'), color,
         pkg: { feed: num(val(wr, 'kFeed')), reels: num(val(wr, 'kReels')), story: num(val(wr, 'kStory')), price: num(val(wr, 'kPrice')) },
         weekly: Object.fromEntries(CATS.map(k => [k.k, num(val(wr, 'wk_' + k.k))])),
         rot: Object.fromEntries(ROT_CATS.map(k => [k, val(wr, 'rot_' + k)])), sources: val(wr, 'cSources'),
@@ -1477,6 +1550,8 @@ const A = {
     actionSheet(kind === 'hashtag' ? 'Sisipkan hashtag' : 'Sisipkan template', items);
   },
   igPreview: () => igPreview(draft),
+  tzOpen: () => openConverter(null),
+  tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
   aiPost: () => { const k = CAT[draft.cat] ? draft.cat : 'post'; openPrompt(k === 'post' ? 'live' : k, guestOf(draft.guestId), draft); },
   aiGuest: el => { const g = guestOf(el.dataset.id); if (g) openPrompt(el.dataset.k, g, null); },
   sendPost: () => { if (!draft.clientId) { toast('Pilih klien dulu', 'alert'); return; } sharePost(draft); },
@@ -1608,7 +1683,7 @@ function bind() {
       if (el.dataset.f === 'clientId' && pickState) renderPicker();
       const w = draftSheet();
       if (el.dataset.f === 'cat' && CAT[el.value]) { draft.type = CAT[el.value].type; refreshDraftParts(); }
-      if (el.dataset.f === 'date') refreshDraftParts();
+      if (el.dataset.f === 'date' || el.dataset.f === 'time') refreshDraftParts();
       if (el.dataset.f === 'cat' && w) { const h = w.querySelector('#pCatHint'); if (h) { h.hidden = !CAT[el.value]; h.querySelector('span').textContent = CAT[el.value] ? CAT[el.value].hint : ''; } }
       if (el.dataset.f === 'guestId') { const g = guestOf(el.value); if (g && g.handle && !draft.tags) { draft.tags = '@' + g.handle; const ti = w && w.querySelector('#pTags'); if (ti) ti.value = draft.tags; } }
     }
