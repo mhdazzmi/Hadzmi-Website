@@ -294,6 +294,19 @@ function aiPrompt(kind, g, p) {
   const cat = CAT[kind];
   return `${brand}\n\n${who}${g && g.epTitle ? ' Episode: "' + g.epTitle + '".' : ''}${g && g.recDate && kind === 'announce' ? ' Recording date: ' + enDate(g.recDate) + '.' : ''}${g && g.epLink && kind === 'live' ? ' Episode link: ' + g.epLink + '.' : ''}\n\nWrite an Instagram caption for our "${cat ? cat.label : 'post'}" graphic. ${capRule}`;
 }
+// ---------------- LINK PROGRESS UNTUK KLIEN ----------------
+function shareToken() { const a = new Uint8Array(9); (window.crypto || window.msCrypto).getRandomValues(a); return Array.from(a, b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); }
+function ensureGuestShare(g) { if (g.share) return g.share; const tok = shareToken(); dbSet('guests/' + g.id, Object.assign(clone(g), { share: tok })); return tok; }
+function ensureClientShare(c) {
+  guestsAll().filter(g => g.clientId === c.id || !g.clientId).forEach(ensureGuestShare);
+  if (c.share) return c.share; const tok = shareToken(); dbSet('clients/' + c.id, Object.assign(clone(c), { share: tok })); return tok;
+}
+const progressUrl = (key, tok) => `${location.origin}${location.pathname.replace(/\/[^/]*$/, '/')}progress/?${key}=${tok}${DEMO ? '&demo=1' : ''}`;
+function greetOf(c) { const n = String((c && c.greet) || '').trim(); return n ? 'Hi ' + n + '!' : 'Hi!'; }
+function progressMsg(kind, obj) {
+  if (kind === 'g') { const c = clientOf(obj.clientId) || activeClients()[0]; return `${greetOf(c)} Right now I'm working on the designs for ${obj.name}. You can see my progress here, and you can also approve each design directly through this link:\n${progressUrl('g', ensureGuestShare(obj))}`; }
+  return `${greetOf(obj)} Here's the progress for all our upcoming guests. You can open each guest to review and approve the designs directly:\n${progressUrl('c', ensureClientShare(obj))}`;
+}
 function openPrompt(kind, g, p) {
   const text = aiPrompt(kind, g, p);
   const w = openSheet({
@@ -668,7 +681,8 @@ VIEWS.client = (v) => {
     right: `<button class="nav-btn" data-a="editClient" data-id="${c.id}" style="font-size:17px">Edit</button>`,
     html: `<div class="client-hero">${avatar(c, 'lg')}<div class="t-title2">${esc(c.name)}</div><div class="handle">@${esc(c.handle || '')}${c.niche ? ' · ' + esc(c.niche) : ''}</div>
         ${c.status === 'jeda' ? '<span class="pill st-ide">Kontrak dijeda</span>' : ''}
-        <div class="btn-row"><button class="btn-tinted" data-a="newPost" data-client="${c.id}">${ic('plus')} Konten</button><button class="btn-tinted gray" data-a="gridPreview" data-id="${c.id}">${ic('grid')} Grid IG</button>${c.handle ? `<a class="btn-tinted gray" href="https://instagram.com/${encodeURIComponent(c.handle)}" target="_blank" rel="noopener">${ic('ig')} Profil</a>` : ''}</div></div>
+        <div class="btn-row"><button class="btn-tinted" data-a="newPost" data-client="${c.id}">${ic('plus')} Konten</button><button class="btn-tinted gray" data-a="gridPreview" data-id="${c.id}">${ic('grid')} Grid IG</button>${c.handle ? `<a class="btn-tinted gray" href="https://instagram.com/${encodeURIComponent(c.handle)}" target="_blank" rel="noopener">${ic('ig')} Profil</a>` : ''}</div>
+        <div class="btn-row" style="justify-content:center"><button class="btn-tinted green" data-a="copyProgress" data-k="c" data-id="${c.id}">${ic('copy')} Salin link progress semua narasumber</button><button class="btn-tinted gray" data-a="openProgress" data-k="c" data-id="${c.id}">Buka</button></div></div>
       ${group('Paket ' + monthLabel(month), `<div class="list flat">${prog('Feed & Carousel', 'feed', num(k.feed))}${prog('Reels', 'reels', num(k.reels))}${prog('Story', 'story', num(k.story))}</div>`, { foot: k.price ? `Nilai kontrak ${rp(k.price)} per bulan.` : '' })}
       ${group('Konten berikutnya', upcoming.length ? `<div class="list">${upcoming.map(p => postRow(p)).join('')}</div>` : empty('tray', 'Tidak ada konten dalam antrean.'), { action: `<button data-a="clientPosts" data-id="${c.id}">Semua</button>` })}
       ${group('Brand kit', `<div class="list">
@@ -720,6 +734,7 @@ VIEWS.guest = (v) => {
     right: `<button class="nav-btn" data-a="editGuest" data-id="${g.id}" style="font-size:17px">Edit</button>`,
     html: `<div class="client-hero">${guestAv(g, 84)}<div class="t-title2">${esc(g.name)}</div><div class="handle">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>${g.handle ? `<a href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener" class="t-sub">@${esc(g.handle)}</a>` : ''}
         <div class="seg" style="margin-top:10px;width:100%;max-width:460px">${STAGES.map(x => `<button class="${g.stage === x.k ? 'on' : ''}" data-a="setStage" data-id="${g.id}" data-k="${x.k}">${esc(x.short)}</button>`).join('')}</div></div>
+      ${group('Link progress untuk klien', `<div class="list"><div class="row plain" style="flex-wrap:wrap;gap:8px"><span class="grow t-foot muted" style="flex-basis:100%">Klien bisa melihat progress desain ${esc(g.name)} dan langsung Approve / Request changes. Hasilnya otomatis masuk ke status konten di sini.</span><button class="btn-tinted" data-a="copyProgress" data-k="g" data-id="${g.id}">${ic('copy')} Salin pesan</button><button class="btn-tinted gray" data-a="copyProgress" data-k="gl" data-id="${g.id}">${ic('link')} Salin link</button><button class="btn-tinted gray" data-a="openProgress" data-k="g" data-id="${g.id}">Buka</button></div></div>`)}
       ${group('Paket konten', `<div class="list">${GUEST_CATS.map(k => { const ps = guestPosts(g).filter(p => p.cat === k); const c = CAT[k]; return ps.length ? ps.map(p => `<button class="row" data-a="post" data-id="${p.id}"><span class="tile" style="background:${c.color}">${ic(c.icon)}</span><span class="grow"><div class="ttl">${esc(c.short)}</div><div class="sub">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : 'Tanpa jadwal'} · ${TYPES[p.type || 'feed'].label}</div></span>${isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') : `<div class="row"><span class="tile" style="background:${c.color};opacity:.45">${ic(c.icon)}</span><span class="grow"><div class="ttl muted">${esc(c.short)}</div><div class="sub">Belum dibuat</div></span><button class="btn-tinted" data-a="makePack" data-id="${g.id}" data-k="${k}">${ic('plus')} Buat</button></div>`; }).join('')}</div>`, { action: (({ intro: ['intro'], jadwal: ['intro', 'announce'] }[g.stage]) || GUEST_CATS).some(k => packState(g, k) === 'none') ? `<button data-a="makePack" data-id="${g.id}" data-k="all">Buat ${g.stage === 'intro' ? 'intro' : g.stage === 'jadwal' ? 'intro & pengumuman' : 'semua'}</button>` : '', foot: 'Draf berisi judul, caption, tag tamu, dan tanggal yang disarankan dari jadwal tamu. Konten episode (Tayang, Ringkasan, Kutipan) baru disarankan setelah rekaman.' })}
       ${group('Jadwal & episode', `<div class="list">${kv('Intro call', g.introDate ? prettyDate(g.introDate, true) : '')}${kv('Rekaman', g.recDate ? prettyDate(g.recDate, true) + (g.recTime ? ', ' + esc(g.recTime) + ' WIB' + (toClient(g.recDate, g.recTime) ? ` <span class="muted">(${fmt12(toClient(g.recDate, g.recTime).time)} ${esc(toClient(g.recDate, g.recTime).abbr)}, ${enDate(toClient(g.recDate, g.recTime).date)})</span>` : '') : '') : '')}${kv('Episode', g.epTitle ? (g.epNo ? 'Ep ' + esc(g.epNo) + ' · ' : '') + esc(g.epTitle) : '')}${kv('Tayang', g.pubDate ? prettyDate(g.pubDate, true) : '')}${kv('Link episode', g.epLink ? `<a href="${esc(g.epLink)}" target="_blank" rel="noopener">${esc(g.epLink)}</a>` : '')}${kv('Folder foto tamu', g.photoLink ? `<a href="${esc(g.photoLink)}" target="_blank" rel="noopener">${esc(g.photoLink)}</a>` : '')}${!g.introDate && !g.recDate && !g.epTitle ? '<div class="empty">Belum ada jadwal.</div>' : ''}</div>`)}
       ${group('Bahan & prompt AI', `<div class="list">
@@ -1453,7 +1468,7 @@ function openClient(id) {
       ${fSec('Jadwal posting (jam klien)', CATS.map(k => { const sl = slotsOf(c)[k.k]; return `<div class="field slot-ed" data-slot="${k.k}"><span class="slot-l"><span class="cdot" style="background:${k.color}"></span>${esc(k.label)}</span><span class="slot-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-day="${d}" class="${sl.days.includes(d) ? 'on' : ''}">${'MSSRKJS'[d]}</button>`).join('')}</span><input type="time" id="sl_${k.k}" value="${sl.time}" aria-label="Jam ${esc(k.short)}"></div>`; }).join(''), 'Hari dan jam dalam zona klien (lihat Zona waktu di atas). Target mingguan dihitung dari jumlah slot. Default sesuai sheet "Webisodes Monthly Content" dari klien.')}
       ${fSec('Rotasi template Canva', ROT_CATS.map(k => fArea('rot_' + k, CAT[k].label + ' (satu per baris: nama | link)', ((c.rot || {})[k]) || '', { rows: 3, ph: 'Template A | https://canva.com/…' })).join(''), 'Satu template per baris. Tiap minggu web menyarankan template berikutnya, lalu kembali ke awal.')}
       ${fSec('Sumber riset berita', fArea('cSources', 'Satu per baris: nama | link', c.sources, { rows: 4, ph: 'Newsletter iklim | https://…' }), 'Akun Instagram, newsletter, atau situs berita sustainability yang kamu pantau. Fokus US, tapi global boleh.')}
-      ${fSec('Kontak', fInput('cPic', 'PIC', c.pic, { ph: 'Nama & jabatan' }) + fInput('cPhone', 'WhatsApp', c.phone, { type: 'tel', ph: '0812…' }) + fInput('cDrive', 'Folder aset', c.drive, { type: 'url', ph: 'Link Google Drive' }))}
+      ${fSec('Kontak', fInput('cGreet', 'Nama sapaan', c.greet, { ph: 'Mis. Tafreed (untuk "Hi …!")' }) + fInput('cPic', 'PIC', c.pic, { ph: 'Nama & jabatan' }) + fInput('cPhone', 'WhatsApp', c.phone, { type: 'tel', ph: '0812…' }) + fInput('cDrive', 'Folder aset', c.drive, { type: 'url', ph: 'Link Google Drive' }))}
       ${fSec('Brand kit', `<div class="field" style="gap:10px;padding:10px 16px"><label style="min-width:0;flex:1">Palet warna</label>${bc.map((x, i) => `<input type="color" id="bc${i}" value="${x || '#FFFFFF'}" data-set="${x ? 1 : 0}" aria-label="Warna brand ${i + 1}">`).join('')}</div>` +
         fInput('bFonts', 'Font', c.brand.fonts, { ph: 'Judul / isi' }) + fArea('bTone', 'Tone of voice', c.brand.tone, { rows: 2, ph: 'Santai, hangat, pakai "kamu"…' }) +
         fInput('cPillars', 'Pilar konten', c.pillars, { ph: 'Edukasi, Promo, Testimoni (pisahkan koma)', stack: true }) +
@@ -1469,7 +1484,7 @@ function openClient(id) {
         pkg: { feed: num(val(wr, 'kFeed')), reels: num(val(wr, 'kReels')), story: num(val(wr, 'kStory')), price: num(val(wr, 'kPrice')) },
         slots: Object.fromEntries(CATS.map(k => { const row = wr.querySelector(`[data-slot="${k.k}"]`); return [k.k, { days: [...row.querySelectorAll('[data-day].on')].map(b => Number(b.dataset.day)), time: val(wr, 'sl_' + k.k) || '14:00' }]; })),
         rot: Object.fromEntries(ROT_CATS.map(k => [k, val(wr, 'rot_' + k)])), sources: val(wr, 'cSources'),
-        start: val(wr, 'cStart'), pic: val(wr, 'cPic'), phone: val(wr, 'cPhone'), drive: val(wr, 'cDrive'), pillars: val(wr, 'cPillars'), notes: val(wr, 'cNotes'),
+        start: val(wr, 'cStart'), greet: val(wr, 'cGreet'), pic: val(wr, 'cPic'), phone: val(wr, 'cPhone'), drive: val(wr, 'cDrive'), pillars: val(wr, 'cPillars'), notes: val(wr, 'cNotes'),
         brand: { colors, fonts: val(wr, 'bFonts'), tone: val(wr, 'bTone'), hashtags: val(wr, 'bHash'), dos: val(wr, 'bDos'), donts: val(wr, 'bDonts') }
       });
       dbSet('clients/' + c.id, out);
@@ -1626,6 +1641,16 @@ const A = {
   slotFill: () => fillSlot(true),
   slotNew: el => openPost(null, { cat: el.dataset.k, type: CAT[el.dataset.k].type, date: el.dataset.date, time: el.dataset.time, clientId: el.dataset.client }),
   tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
+  copyProgress: el => {
+    const k = el.dataset.k;
+    if (k === 'c') { const c = clientOf(el.dataset.id); if (c) copyText(progressMsg('c', c)); return; }
+    const g = guestOf(el.dataset.id); if (!g) return;
+    copyText(k === 'gl' ? progressUrl('g', ensureGuestShare(g)) : progressMsg('g', g));
+  },
+  openProgress: el => {
+    const url = el.dataset.k === 'c' ? (clientOf(el.dataset.id) ? progressUrl('c', ensureClientShare(clientOf(el.dataset.id))) : '') : (guestOf(el.dataset.id) ? progressUrl('g', ensureGuestShare(guestOf(el.dataset.id))) : '');
+    if (url) { const w = window.open(url, '_blank'); if (!w) location.href = url; }
+  },
   aiPost: () => { const k = CAT[draft.cat] ? draft.cat : 'post'; openPrompt(k === 'post' ? 'live' : k, guestOf(draft.guestId), draft); },
   aiGuest: el => { const g = guestOf(el.dataset.id); if (g) openPrompt(el.dataset.k, g, null); },
   sendPost: () => { if (!draft.clientId) { toast('Pilih klien dulu', 'alert'); return; } sharePost(draft); },
@@ -1787,6 +1812,8 @@ function bind() {
     }).catch(err => iosAlert('Gagal membaca file', err.message));
   });
   window.addEventListener('scroll', onScroll, { passive: true });
+  // Mode demo: halaman progress klien menulis ke localStorage yang sama → muat ulang data
+  window.addEventListener('storage', e => { if (DEMO && e.key === CACHE_KEY && e.newValue) { try { S = Object.assign(blank(), JSON.parse(e.newValue)); render(); } catch (x) {} } });
   // sheet: tombol kanan di picker disable awal
 }
 function boot() {
