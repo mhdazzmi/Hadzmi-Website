@@ -39,15 +39,26 @@ const STATUS = [
 const ST = Object.fromEntries(STATUS.map(s => [s.k, s]));
 // Kategori konten sesuai jobdesk (podcast sustainability). min/max = frekuensi per minggu.
 const CATS = [
-  { k: 'intro', label: 'Guest Intro Carousel', short: 'Intro Tamu', type: 'carousel', min: 0, max: 7, color: '#30B0C7', icon: 'people', hint: 'Foto, nama, jabatan, organisasi, intro singkat' },
-  { k: 'announce', label: 'Guest Announcement', short: 'Pengumuman Rekaman', type: 'feed', min: 1, max: 2, color: '#5856D6', icon: 'cal', hint: 'Tanggal rekaman dengan tamu yang sudah konfirmasi' },
-  { k: 'live', label: 'Episode Is Live', short: 'Episode Tayang', type: 'feed', min: 1, max: 2, color: '#FF2D55', icon: 'mic', hint: 'Post + Story: foto tamu, judul episode, headline' },
-  { k: 'summary', label: 'Episode Summary Carousel', short: 'Ringkasan Episode', type: 'carousel', min: 1, max: 2, color: '#FF9500', icon: 'list', hint: 'Poin diskusi, insight, takeaway' },
-  { k: 'quote', label: 'Guest Quote Graphic', short: 'Kutipan Tamu', type: 'feed', min: 1, max: 2, color: '#AF52DE', icon: 'quote', hint: 'Kutipan kuat dari wawancara + foto tamu' },
-  { k: 'news', label: 'Sustainability News', short: 'Berita Sustainability', type: 'carousel', min: 3, max: 4, color: '#34C759', icon: 'leaf', hint: 'Berita iklim, circular economy, fashion berkelanjutan' }
+  { k: 'intro', label: 'Guest Intro Call Carousel', short: 'Intro Tamu', type: 'carousel', min: 0, max: 7, color: '#30B0C7', icon: 'people', hint: 'Foto, nama, jabatan, organisasi, intro singkat (5 slide)' },
+  { k: 'announce', label: 'Webisode Release Date Post', short: 'Tanggal Rilis', type: 'feed', min: 1, max: 1, color: '#5856D6', icon: 'cal', hint: 'Template siap pakai: ganti foto, nama, tanggal' },
+  { k: 'live', label: 'Webisode is Live Post', short: 'Episode Tayang', type: 'feed', min: 1, max: 1, color: '#FF2D55', icon: 'mic', hint: 'Template siap pakai: foto tamu, judul episode, headline' },
+  { k: 'livestory', label: 'Webisode is Live Story', short: 'Story Tayang', type: 'story', min: 1, max: 1, color: '#FF6B81', icon: 'story', hint: 'Story 9:16 bersamaan dengan post episode tayang' },
+  { k: 'summary', label: 'Webisode Summary Carousel', short: 'Ringkasan Episode', type: 'carousel', min: 1, max: 1, color: '#FF9500', icon: 'list', hint: 'Poin diskusi, insight, takeaway dari transkrip' },
+  { k: 'quote', label: 'Guest Quotes Post', short: 'Kutipan Tamu', type: 'feed', min: 2, max: 2, color: '#AF52DE', icon: 'quote', hint: 'Template siap pakai: foto tamu + kutipan sustainability' },
+  { k: 'news', label: 'Trending Sustainability News / History', short: 'Berita Sustainability', type: 'carousel', min: 4, max: 4, color: '#34C759', icon: 'leaf', hint: 'Berita tren / sejarah sustainability, fokus US' }
 ];
+// Jadwal posting dari klien ("Webisodes Monthly Content"), dalam jam klien (Eastern). days: 0 = Minggu … 6 = Sabtu
+const DEFAULT_SLOTS = {
+  intro: { days: [0, 1, 2, 3, 4, 5, 6], time: '14:00' },
+  announce: { days: [1], time: '14:00' },
+  live: { days: [4], time: '08:00' },
+  livestory: { days: [4], time: '08:00' },
+  summary: { days: [0], time: '14:00' },
+  quote: { days: [2, 6], time: '14:00' },
+  news: { days: [2, 3, 5, 0], time: '17:00' }
+};
 const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
-const GUEST_CATS = ['intro', 'announce', 'live', 'summary', 'quote'];
+const GUEST_CATS = ['intro', 'announce', 'live', 'livestory', 'summary', 'quote'];
 const STAGES = [
   { k: 'intro', label: 'Intro call', short: 'Intro', color: '#30B0C7' },
   { k: 'jadwal', label: 'Rekaman dijadwalkan', short: 'Dijadwalkan', color: '#5856D6' },
@@ -236,7 +247,26 @@ const guestsAll = () => Object.values(S.guests);
 const guestOf = id => S.guests[id] || null;
 const catOf = p => CAT[p.cat] || null;
 const colorOf = p => (clients().length <= 1 && CAT[p.cat]) ? CAT[p.cat].color : cColor(p.clientId);
-function weeklyTarget(c) { const w = (c && c.weekly) || {}; return Object.fromEntries(CATS.map(k => [k.k, w[k.k] != null && w[k.k] !== '' ? num(w[k.k]) : k.max])); }
+function slotsOf(c) { const s0 = (c && c.slots) || {}; return Object.fromEntries(CATS.map(k => { const x = s0[k.k] || DEFAULT_SLOTS[k.k]; return [k.k, { days: (x.days || []).map(Number), time: x.time || '14:00' }]; })); }
+// Target mingguan = jumlah slot posting per minggu
+function weeklyTarget(c) { const sl = slotsOf(c); return Object.fromEntries(CATS.map(k => [k.k, sl[k.k].days.length])); }
+// Semua kemunculan slot (dalam WIB) antara dua tanggal WIB
+function slotOccurrences(c, k, fromW, toW) {
+  const sl = slotsOf(c)[k], tz = (c && c.tz) || 'America/New_York', out = [];
+  if (!sl.days.length) return out;
+  for (let d = addDays(fromW, -1); d <= addDays(toW, 1); d = addDays(d, 1)) {
+    if (!sl.days.includes(dow(d))) continue;
+    const w = convertTz(tz, LOCAL_TZ, d, sl.time);
+    if (w.date >= fromW && w.date <= toW) out.push({ date: w.date, time: w.time, cDate: d, cTime: sl.time });
+  }
+  return out;
+}
+const slotTaken = (c, k, o, exceptId) => postsAll().some(p => p.id !== exceptId && p.cat === k && p.clientId === c.id && p.date === o.date && p.time === o.time);
+function nextFreeSlot(c, k, fromW, exceptId) {
+  if (!c) return null;
+  const t = today(), now = nowTime(), start = fromW && fromW > t ? fromW : t;
+  return slotOccurrences(c, k, start, addDays(start, 35)).find(o => !(o.date === t && o.time <= now) && !slotTaken(c, k, o, exceptId)) || null;
+}
 function weekStats(ws, clientId) {
   const we = addDays(ws, 6);
   const ps = postsAll().filter(p => p.cat && p.date >= ws && p.date <= we && (!clientId || p.clientId === clientId));
@@ -246,7 +276,7 @@ function weekStats(ws, clientId) {
   return out;
 }
 // Rotasi template Canva: tiap minggu pakai template berikutnya (A → B → C → A …)
-const ROT_CATS = ['announce', 'live', 'quote'];
+const ROT_CATS = ['announce', 'live', 'livestory', 'quote'];
 function weekIndex(d) { const [y, m, dd] = weekStart(d).split('-').map(Number); return Math.floor(Date.UTC(y, m - 1, dd) / (7 * 86400000)); }
 function rotList(c, k) { return String(((c || {}).rot || {})[k] || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => { const [n, ...r] = x.split('|'); const link = r.join('|').trim(); return { name: n.trim() || 'Template', link: /^https?:\/\//.test(link) ? link : (/^https?:\/\//.test(n.trim()) ? n.trim() : '') }; }); }
 function rotFor(c, k, d) { const xs = rotList(c, k); if (!xs.length) return null; const i = weekIndex(d || today()) % xs.length; return Object.assign({ i: i + 1, n: xs.length }, xs[i]); }
@@ -439,9 +469,28 @@ VIEWS.home = () => {
   const ws = weekStart(t), wk = weekStats(ws);
   const wDone = CATS.reduce((x, k) => x + wk[k.k].done, 0), wTarget = CATS.reduce((x, k) => x + wk[k.k].target, 0), wWip = CATS.reduce((x, k) => x + wk[k.k].wip, 0);
   const ringPct = wTarget ? wDone / wTarget : 0;
-  const weekTargetW = `<button class="w lg" data-a="tab" data-k="content"><div class="w-head"><span style="color:var(--green)">Target minggu ini</span><span class="muted num">${wDone}/${wTarget}</span></div>
-    ${CATS.map(k => { const x = wk[k.k], pc = x.target ? Math.min(100, x.done / x.target * 100) : 0, pw = x.target ? Math.min(100 - pc, x.wip / x.target * 100) : 0; return `<span class="tgt"><span class="tgt-l"><span class="ell">${esc(k.short)}</span><span class="num muted">${x.done}/${x.target}${x.wip ? ` <small>+${x.wip} proses</small>` : ''}</span></span><span class="progress"><span style="width:${pc}%;background:${k.color};float:left"></span><span style="width:${pw}%;background:${k.color};opacity:.3;float:left;border-radius:0"></span></span></span>`; }).join('')}
-    <span class="w-sub">Selesai = Disetujui, Terjadwal, atau Terposting. Estimasi jobdesk 14–19 konten per minggu.</span></button>`;
+  // Matriks slot posting minggu ini, dalam hari klien (Senin–Minggu)
+  const mc = activeClients()[0];
+  let weekTargetW = '';
+  if (mc) {
+    const tzc = mc.tz || 'America/New_York', cToday = tzParts(tzc, Date.now()).date, cws = weekStart(cToday);
+    const cdays = Array.from({ length: 7 }, (_, i) => addDays(cws, i));
+    const sl = slotsOf(mc);
+    let filled = 0, total = 0;
+    const rows = CATS.filter(k => sl[k.k].days.length).map(k => `<span class="sm-row"><span class="sm-l"><span class="cdot" style="background:${k.color}"></span><span class="ell">${esc(k.short)}</span></span>${cdays.map(cd => {
+      if (!sl[k.k].days.includes(dow(cd))) return '<span class="sm-c none"></span>';
+      total++;
+      const w = convertTz(tzc, LOCAL_TZ, cd, sl[k.k].time);
+      const p = postsAll().find(x => x.cat === k.k && x.clientId === mc.id && x.date === w.date && x.time === w.time) || postsAll().find(x => x.cat === k.k && x.clientId === mc.id && x.date === w.date);
+      const past = w.date < t || (w.date === t && w.time <= now);
+      if (p) { const st = p.status === 'posted' ? 'posted' : DONE_ST.includes(p.status) ? 'done' : 'wip'; if (st !== 'wip') filled++; return `<span class="sm-c ${st}" data-a="post" data-id="${p.id}" style="--c:${k.color}" title="${esc(postTitle(p))}"></span>`; }
+      return `<span class="sm-c free ${past ? 'missed' : ''}" data-a="slotNew" data-k="${k.k}" data-date="${w.date}" data-time="${w.time}" data-client="${mc.id}" style="--c:${k.color}" title="Slot kosong ${prettyDate(w.date, true)} ${w.time} WIB"></span>`;
+    }).join('')}</span>`).join('');
+    weekTargetW = `<div class="w lg slotmx"><div class="w-head"><span style="color:var(--green)">Slot posting minggu ini</span><span class="muted num">${filled}/${total}</span></div>
+      <span class="sm-row sm-h"><span class="sm-l muted">Hari klien (${esc(tzAbbr(tzc))})</span>${cdays.map(cd => `<span class="sm-d ${cd === cToday ? 'on' : ''}">${'MSSRKJS'[dow(cd)]}<small>${Number(cd.slice(8))}</small></span>`).join('')}</span>
+      ${rows}
+      <span class="sm-legend"><i class="posted"></i>Terposting <i class="done"></i>Siap <i class="wip"></i>Dikerjakan <i class="free"></i>Kosong (ketuk untuk buat)</span></div>`;
+  }
   const rc = activeClients()[0];
   const rots = ROT_CATS.map(k => [k, rotFor(rc, k, t)]).filter(x => x[1]);
   const rotW = rots.length ? `<div class="w md"><div class="w-head"><span style="color:var(--indigo)">Template minggu ini</span><span class="muted">rotasi mingguan</span></div>${rots.map(([k, r]) => `<div class="wrow"><span class="wbar" style="background:${CAT[k].color}"></span><span class="grow" style="min-width:0"><span class="ell b" style="display:block;font-size:15px">${esc(CAT[k].short)}</span><span class="w-sub">${esc(r.name)} · ${r.i}/${r.n}</span></span>${r.link ? `<a class="btn-tinted gray" href="${esc(r.link)}" target="_blank" rel="noopener">Canva</a>` : ''}</div>`).join('')}</div>` : '';
@@ -517,6 +566,9 @@ VIEWS.calendar = () => {
       <span class="d">${Number(d.slice(8))}</span><span class="cal-evs">${evs}${ps.length > 3 ? `<span class="more">+${ps.length - 3} lagi</span>` : ''}</span></button>`;
   }
   const sel = sortBy(byDate[UI.calSel] || [], postKey);
+  const sc = activeClients()[0];
+  const freeSlots = sc ? sortBy(CATS.flatMap(k => slotOccurrences(sc, k.k, UI.calSel, UI.calSel).filter(o => !slotTaken(sc, k.k, o)).map(o => Object.assign(o, { k: k.k }))), o => o.time) : [];
+  const freeHTML = freeSlots.length ? `<div class="list">${freeSlots.map(o => `<button class="row slot-row" data-a="slotNew" data-k="${o.k}" data-date="${o.date}" data-time="${o.time}" data-client="${sc.id}"><span class="time-col">${o.time}<small>WIB</small></span><span class="evbar" style="background:${CAT[o.k].color};opacity:.4"></span><span class="grow"><div class="ttl muted">${esc(CAT[o.k].short)}</div><div class="sub">Slot kosong · ${fmt12(o.cTime)} ${esc(tzAbbr(sc.tz || 'America/New_York'))}</div></span><span class="btn-tinted" style="font-size:13px;padding:5px 10px">${ic('plus')} Buat</span></button>`).join('')}</div>` : '';
   const monthCount = postsF().filter(p => (p.date || '').slice(0, 7) === UI.calMonth && p.status !== 'ide').length;
   return {
     title: 'Kalender',
@@ -526,7 +578,7 @@ VIEWS.calendar = () => {
       <div class="cal"><div class="cal-head"><span class="m">${MONL[m - 1]} <span>${y}</span></span><span class="arrows"><button data-a="calNav" data-n="-1" aria-label="Bulan sebelumnya">${ic('chevL')}</button><button data-a="calNav" data-n="1" aria-label="Bulan berikutnya">${ic('chevR')}</button></span></div>
       <div class="cal-grid">${cells}</div></div>
       ${clients().length <= 1 ? `<div class="cat-legend">${CATS.map(k => `<span><i style="background:${k.color}"></i>${esc(k.short)}</span>`).join('')}</div>` : ''}
-      ${group(relDay(UI.calSel) === prettyDate(UI.calSel, true, true) ? prettyDate(UI.calSel, true) : relDay(UI.calSel) + ' · ' + prettyDate(UI.calSel), sel.length ? `<div class="list">${sel.map(p => postRow(p, { timeCol: true, bar: true })).join('')}</div>` : empty('cal', 'Kosong. Ketuk + untuk menjadwalkan konten di tanggal ini.'), { action: `<button data-a="newPost" data-date="${UI.calSel}">Tambah</button>` })}`
+      ${group(relDay(UI.calSel) === prettyDate(UI.calSel, true, true) ? prettyDate(UI.calSel, true) : relDay(UI.calSel) + ' · ' + prettyDate(UI.calSel), (sel.length ? `<div class="list">${sel.map(p => postRow(p, { timeCol: true, bar: true })).join('')}</div>` : (freeHTML ? '' : empty('cal', 'Kosong. Ketuk + untuk menjadwalkan konten di tanggal ini.'))) + freeHTML, { action: `<button data-a="newPost" data-date="${UI.calSel}">Tambah</button>` })}`
   };
 };
 
@@ -594,7 +646,7 @@ VIEWS.clients = () => {
         return `<button class="w stackcard ${c.status === 'jeda' ? 'paused' : ''}" data-a="client" data-id="${c.id}">
           <div class="sc-head">${avatar(c, 'md')}<span class="grow" style="min-width:0"><span class="w-title ell" style="display:block">${esc(c.name)}</span><span class="w-sub ell" style="display:block">@${esc(c.handle || '')}${c.niche ? ' · ' + esc(c.niche) : ''}</span></span>
             ${c.status === 'jeda' ? '<span class="pill st-ide">Jeda</span>' : `<span class="ring-wrap">${ringSvg(pct, c.color, 48, 6)}<span class="ring-num"><small class="b num" style="color:var(--label)">${Math.round(pct * 100)}%</small></span></span>`}</div>
-          <div class="strip">${strip.map(p => postThumb(p, 'sthumb')).join('')}${Array.from({ length: Math.max(0, 5 - strip.length) }, () => '<span class="sthumb empty"></span>').join('')}</div>
+          <div class="strip">${strip.map(p => postThumb(p, 'sthumb')).join('')}${Array.from({ length: Math.max(0, 5 - strip.length) }, () => '<span class="sthumb blank"></span>').join('')}</div>
           <div class="sc-foot"><span class="pill st-klien">${nW} menunggu</span><span class="pill st-revisi">${nR} revisi</span><span class="w-sub" style="margin-left:auto">${nx ? 'Berikutnya: ' + relDay(nx.date) + (nx.time ? ' ' + nx.time : '') : 'Antrean kosong'} · ${done}/${total || '—'}</span></div>
         </button>`;
       }).join('')}</div>` : empty('people', 'Belum ada klien.', `<button class="btn-tinted" data-a="newClient">${ic('plus')} Tambah klien</button>`)}`
@@ -691,6 +743,7 @@ function guestCaption(g, k, quoteIdx) {
   const ep = g.epTitle ? `"${g.epTitle}"` : 'our latest episode';
   if (k === 'intro') return `Meet our upcoming guest: ${g.name} 🌱\n\n${who ? who + '.\n' : ''}${g.intro || ''}\n\nStay tuned for a conversation on sustainability, innovation and positive impact.\n\n${tag}\n${ht}`;
   if (k === 'announce') return `📅 Recording day${g.recDate ? ': ' + enDate(g.recDate) : ''}!\n\nWe're sitting down with ${g.name}${who ? ', ' + who : ''}.\n\nWhat would you like us to ask? Drop your questions below 👇\n\n${tag}\n${ht}`;
+  if (k === 'livestory') return `New episode out now 🎙️ ${g.name}${g.epTitle ? ' · ' + g.epTitle : ''}\n\n(Story: add link sticker to the episode${g.epLink ? ': ' + g.epLink : ''})\n\n${tag}`;
   if (k === 'live') return `🎙️ NEW EPISODE IS LIVE\n\n${ep} with ${g.name}${who ? ', ' + who : ''}.\n\nListen now, link in bio.\n\n${tag}\n${ht}`;
   if (k === 'summary') return `Key takeaways from our conversation with ${g.name} 👇\n\n${takes.length ? takes.map((x, i) => `${i + 1}. ${x}`).join('\n') : '1. \n2. \n3. '}\n\nWhich one resonates with you? Full episode, link in bio.\n\n${tag}\n${ht}`;
   if (k === 'quote') { const q = quotes[quoteIdx || 0] || ''; return `"${q}"\n\n— ${g.name}${who ? ', ' + who : ''}\n\nListen to the full conversation, link in bio.\n\n${tag}\n${ht}`; }
@@ -700,9 +753,13 @@ function guestPreset(g, k, quoteIdx) {
   const t = today();
   const later = d => (d && d >= t) ? d : t;
   // Tanpa tanggal tayang, konten episode dibuat tanpa jadwal (diisi nanti saat episode sudah pasti)
-  const date = { intro: later(g.introDate || t), announce: g.recDate ? later(addDays(g.recDate, -2)) : t, live: g.pubDate || '', summary: g.pubDate ? addDays(g.pubDate, 1) : '', quote: g.pubDate ? addDays(g.pubDate, 3) : '' }[k];
+  const from = { intro: later(g.introDate || t), announce: t, live: g.pubDate || '', livestory: g.pubDate || '', summary: g.pubDate ? addDays(g.pubDate, 1) : '', quote: g.pubDate ? addDays(g.pubDate, 1) : '' }[k];
+  // Pakai slot posting klien berikutnya mulai tanggal yang disarankan (tanpa tanggal tayang = tanpa jadwal)
+  const cl = clientOf(g.clientId) || activeClients()[0];
+  const slot = from ? nextFreeSlot(cl, k, from) : null;
+  const date = slot ? slot.date : from, time = slot ? slot.time : '19:00';
   const q = String(g.quotes || '').split('\n').map(x => x.trim()).filter(Boolean)[quoteIdx || 0];
-  return { clientId: g.clientId || (activeClients()[0] || {}).id || '', cat: k, type: CAT[k].type, guestId: g.id, title: CAT[k].short + ' · ' + g.name + (k === 'quote' && q ? ': ' + q.slice(0, 40) + (q.length > 40 ? '…' : '') : ''), caption: guestCaption(g, k, quoteIdx), tags: g.handle ? '@' + g.handle : '', date, time: k === 'live' ? '18:00' : '19:00', status: 'draft', check: {} };
+  return { clientId: g.clientId || (activeClients()[0] || {}).id || '', cat: k, type: CAT[k].type, guestId: g.id, title: CAT[k].short + ' · ' + g.name + (k === 'quote' && q ? ': ' + q.slice(0, 40) + (q.length > 40 ? '…' : '') : ''), caption: guestCaption(g, k, quoteIdx), tags: g.handle ? '@' + g.handle : '', date, time, status: 'draft', check: {} };
 }
 function makePack(g, which) {
   // "Buat semua" menyesuaikan tahap tamu: konten episode baru dibuat setelah rekaman
@@ -974,6 +1031,7 @@ function openPost(id, preset) {
   const first = activeClients()[0];
   draft = isNew ? Object.assign({ id: uid(), clientId: UI.fClient || (first && first.id) || '', type: 'feed', title: '', caption: '', date: today(), time: '19:00', status: 'draft', media: [], pillar: '', notes: '', link: '', log: [], createdAt: Date.now() }, preset || {}) : clone(S.posts[id]);
   draft.media = draft.media || []; draft.log = draft.log || []; draft.check = draft.check || {};
+  if (isNew && draft.cat && !(preset && preset.date)) { const sl = nextFreeSlot(clientOf(draft.clientId), draft.cat, today()); if (sl) { draft.date = sl.date; draft.time = sl.time; } }
   const pillars = [...new Set(clients().flatMap(c => String(c.pillars || '').split(',').map(s => s.trim()).filter(Boolean)))];
   const body = `
     ${fSec('', (clients().length > 1 ? fSelect('pClient', 'Klien', draft.clientId, clientOpts('Pilih klien'), { f: 'clientId' }) : '') +
@@ -1018,7 +1076,19 @@ function openPost(id, preset) {
   });
 }
 function rotHTML() { const r = draft && rotFor(clientOf(draft.clientId), draft.cat, draft.date); return r ? `<span class="t-foot">${ic('doc')} Template minggu ini: <b>${esc(r.name)}</b> (${r.i}/${r.n})${r.link ? ` · <a href="${esc(r.link)}" target="_blank" rel="noopener">Buka di Canva</a>` : ''}</span>` : ''; }
-function tzHint() { const ct = draft && toClient(draft.date, draft.time); return `<span class="t-foot muted" style="flex:1">${ct ? `Jam klien: <b style="color:var(--label)">${fmt12(ct.time)} ${esc(ct.abbr)}</b>, ${enDate(ct.date)}` : 'Isi tanggal & jam untuk melihat jam klien'}</span><button type="button" class="btn-tinted gray" data-a="tzFill" data-d="pDate" data-t="pTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button>`; }
+function tzHint() {
+  const ct = draft && toClient(draft.date, draft.time), c = draft && clientOf(draft.clientId);
+  const onSlot = draft && CAT[draft.cat] && c && slotOccurrences(c, draft.cat, draft.date || today(), draft.date || today()).some(o => o.time === draft.time);
+  return `<span class="t-foot muted" style="flex:1">${ct ? `Jam klien: <b style="color:var(--label)">${fmt12(ct.time)} ${esc(ct.abbr)}</b>, ${enDate(ct.date)}` : 'Isi tanggal & jam untuk melihat jam klien'}${draft && CAT[draft.cat] ? (onSlot ? ' · <span class="c-green b">sesuai jadwal klien</span>' : ' · <span class="c-orange b">di luar jadwal klien</span>') : ''}</span>${draft && CAT[draft.cat] ? `<button type="button" class="btn-tinted" data-a="slotFill" style="font-size:13px;padding:6px 10px">${ic('cal')} Slot berikutnya</button>` : ''}<button type="button" class="btn-tinted gray" data-a="tzFill" data-d="pDate" data-t="pTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button>`;
+}
+function fillSlot(manual) {
+  const w = draftSheet(); if (!draft || !CAT[draft.cat]) return;
+  const sl = nextFreeSlot(clientOf(draft.clientId), draft.cat, manual && draft.date > today() ? draft.date : today(), draft.id);
+  if (!sl) { if (manual) toast('Tidak ada slot kosong 5 minggu ke depan', 'alert'); return; }
+  draft.date = sl.date; draft.time = sl.time;
+  const d = w && w.querySelector('#pDate'), t = w && w.querySelector('#pTime'); if (d) d.value = sl.date; if (t) t.value = sl.time;
+  if (manual) { refreshDraftParts(); toast(`Slot ${prettyDate(sl.date, true, true)} ${sl.time} WIB`, 'cal'); }
+}
 function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
 function setDraftThumb(file) {
   if (!draft || !file) return;
@@ -1379,7 +1449,7 @@ function openClient(id) {
     body: `${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]) + fSelect('cTz', 'Zona waktu', c.tz || 'America/New_York', TZ_OPTS))}
       <div><div class="form-head">Warna penanda</div><div class="form"><div class="color-pick" id="cColor">${CLIENT_COLORS.map(x => `<button type="button" data-col="${x}" class="${x === color ? 'on' : ''}" style="background:${x}" aria-label="Warna ${x}"></button>`).join('')}</div></div></div>
       ${fSec('Paket per bulan', fInput('kFeed', 'Feed/Carousel', c.pkg.feed, { type: 'number', mode: 'numeric' }) + fInput('kReels', 'Reels', c.pkg.reels, { type: 'number', mode: 'numeric' }) + fInput('kStory', 'Story', c.pkg.story, { type: 'number', mode: 'numeric' }) + fInput('kPrice', 'Harga (Rp)', c.pkg.price, { mode: 'numeric', ph: '2500000' }) + fInput('cStart', 'Mulai kontrak', c.start, { type: 'date' }))}
-      ${fSec('Target konten per minggu', CATS.map(k => fInput('wk_' + k.k, k.short, weeklyTarget(c)[k.k], { type: 'number', mode: 'numeric', ph: String(k.max) })).join(''), 'Default sesuai jobdesk: Intro maks 7, Pengumuman/Tayang/Ringkasan/Kutipan 1–2, Berita 3–4.')}
+      ${fSec('Jadwal posting (jam klien)', CATS.map(k => { const sl = slotsOf(c)[k.k]; return `<div class="field slot-ed" data-slot="${k.k}"><span class="slot-l"><span class="cdot" style="background:${k.color}"></span>${esc(k.label)}</span><span class="slot-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-day="${d}" class="${sl.days.includes(d) ? 'on' : ''}">${'MSSRKJS'[d]}</button>`).join('')}</span><input type="time" id="sl_${k.k}" value="${sl.time}" aria-label="Jam ${esc(k.short)}"></div>`; }).join(''), 'Hari dan jam dalam zona klien (lihat Zona waktu di atas). Target mingguan dihitung dari jumlah slot. Default sesuai sheet "Webisodes Monthly Content" dari klien.')}
       ${fSec('Rotasi template Canva', ROT_CATS.map(k => fArea('rot_' + k, CAT[k].label + ' (satu per baris: nama | link)', ((c.rot || {})[k]) || '', { rows: 3, ph: 'Template A | https://canva.com/…' })).join(''), 'Satu template per baris. Tiap minggu web menyarankan template berikutnya, lalu kembali ke awal.')}
       ${fSec('Sumber riset berita', fArea('cSources', 'Satu per baris: nama | link', c.sources, { rows: 4, ph: 'Newsletter iklim | https://…' }), 'Akun Instagram, newsletter, atau situs berita sustainability yang kamu pantau. Fokus US, tapi global boleh.')}
       ${fSec('Kontak', fInput('cPic', 'PIC', c.pic, { ph: 'Nama & jabatan' }) + fInput('cPhone', 'WhatsApp', c.phone, { type: 'tel', ph: '0812…' }) + fInput('cDrive', 'Folder aset', c.drive, { type: 'url', ph: 'Link Google Drive' }))}
@@ -1396,7 +1466,7 @@ function openClient(id) {
       const out = Object.assign(c, {
         name, handle: val(wr, 'cHandle').replace(/^@/, ''), niche: val(wr, 'cNiche'), status: val(wr, 'cStatus'), tz: val(wr, 'cTz'), color,
         pkg: { feed: num(val(wr, 'kFeed')), reels: num(val(wr, 'kReels')), story: num(val(wr, 'kStory')), price: num(val(wr, 'kPrice')) },
-        weekly: Object.fromEntries(CATS.map(k => [k.k, num(val(wr, 'wk_' + k.k))])),
+        slots: Object.fromEntries(CATS.map(k => { const row = wr.querySelector(`[data-slot="${k.k}"]`); return [k.k, { days: [...row.querySelectorAll('[data-day].on')].map(b => Number(b.dataset.day)), time: val(wr, 'sl_' + k.k) || '14:00' }]; })),
         rot: Object.fromEntries(ROT_CATS.map(k => [k, val(wr, 'rot_' + k)])), sources: val(wr, 'cSources'),
         start: val(wr, 'cStart'), pic: val(wr, 'cPic'), phone: val(wr, 'cPhone'), drive: val(wr, 'cDrive'), pillars: val(wr, 'cPillars'), notes: val(wr, 'cNotes'),
         brand: { colors, fonts: val(wr, 'bFonts'), tone: val(wr, 'bTone'), hashtags: val(wr, 'bHash'), dos: val(wr, 'bDos'), donts: val(wr, 'bDonts') }
@@ -1406,6 +1476,7 @@ function openClient(id) {
       if (isNew) push({ v: 'client', id: c.id, backLabel: 'Klien', tab: 'clients' }); else render();
     }
   });
+  w.querySelectorAll('.slot-days').forEach(el => el.addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (b) b.classList.toggle('on'); }));
   w.querySelector('#cColor').addEventListener('click', e => { const b = e.target.closest('[data-col]'); if (!b) return; color = b.dataset.col; w.querySelectorAll('#cColor button').forEach(x => x.classList.toggle('on', x === b)); });
   w.querySelectorAll('input[type="color"]').forEach(el => el.addEventListener('input', () => { el.dataset.set = '1'; }));
 }
@@ -1551,6 +1622,8 @@ const A = {
   },
   igPreview: () => igPreview(draft),
   tzOpen: () => openConverter(null),
+  slotFill: () => fillSlot(true),
+  slotNew: el => openPost(null, { cat: el.dataset.k, type: CAT[el.dataset.k].type, date: el.dataset.date, time: el.dataset.time, clientId: el.dataset.client }),
   tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
   aiPost: () => { const k = CAT[draft.cat] ? draft.cat : 'post'; openPrompt(k === 'post' ? 'live' : k, guestOf(draft.guestId), draft); },
   aiGuest: el => { const g = guestOf(el.dataset.id); if (g) openPrompt(el.dataset.k, g, null); },
@@ -1682,7 +1755,7 @@ function bind() {
       draft[el.dataset.f] = el.value;
       if (el.dataset.f === 'clientId' && pickState) renderPicker();
       const w = draftSheet();
-      if (el.dataset.f === 'cat' && CAT[el.value]) { draft.type = CAT[el.value].type; refreshDraftParts(); }
+      if (el.dataset.f === 'cat' && CAT[el.value]) { draft.type = CAT[el.value].type; if (!S.posts[draft.id]) fillSlot(); refreshDraftParts(); }
       if (el.dataset.f === 'date' || el.dataset.f === 'time') refreshDraftParts();
       if (el.dataset.f === 'cat' && w) { const h = w.querySelector('#pCatHint'); if (h) { h.hidden = !CAT[el.value]; h.querySelector('span').textContent = CAT[el.value] ? CAT[el.value].hint : ''; } }
       if (el.dataset.f === 'guestId') { const g = guestOf(el.value); if (g && g.handle && !draft.tags) { draft.tags = '@' + g.handle; const ti = w && w.querySelector('#pTags'); if (ti) ti.value = draft.tags; } }
@@ -1753,26 +1826,33 @@ function seedDemo() {
     ['g7', 'Priya Raman', 'ESG Consultant', 'Impact Bridge', 'priya.esg', 'intro', 0, '', '', '', '', '', 'Priya helps companies turn ESG commitments into everyday practice.', '', '']
   ];
   G.forEach(x => { D.guests[x[0]] = { topics: x[0] === 'g5' ? 'Textile waste, upcycling, slow fashion business models' : '', introTr: x[0] === 'g5' ? '(Contoh) Host: Thanks for joining the intro call... Lena: We collect offcuts from local factories and turn them into...' : '', yt: ['g1', 'g2'].includes(x[0]) ? 'https://www.youtube.com/' : '', epTr: x[0] === 'g2' ? '(Contoh) Transkrip episode ditempel di sini dari YouTube.' : '', id: x[0], clientId: 'c1', name: x[1], role: x[2], org: x[3], handle: x[4], stage: x[5], introDate: addDays(t, x[6]), recDate: x[7] === '' ? '' : addDays(t, x[7]), recTime: x[8], pubDate: x[9] === '' ? '' : addDays(t, x[9]), epNo: String(x[10] || ''), epTitle: x[11], intro: x[12], quotes: x[13], takeaways: x[14], at: now }; });
-  const ph = { intro: ['#BFE6EE', '#2C8FA3'], announce: ['#D9D8FF', '#5856D6'], live: ['#FFC7D3', '#E0264E'], summary: ['#FFE0B2', '#E07B00'], quote: ['#EBD3F7', '#8E44AD'], news: ['#CFEBD6', '#2E8B57'] };
-  let n = 0;
-  const post = (cat, day, time, status, guestId, extra) => {
-    const id = 'p' + (++n), g = D.guests[guestId];
-    const base = g ? (S = D, guestPreset(g, cat)) : { clientId: 'c1', cat, type: CAT[cat].type, title: '', caption: '', tags: '' };
-    D.posts[id] = Object.assign({ id, media: [], log: [], createdAt: now - 6 * 86400000, stAt: now - 8 * 3600000, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + n : '', check: status === 'posted' ? { format: true, tag: true, caption: true, story: cat === 'live' } : {}, design: 'https://www.canva.com/design/contoh-' + n, ph: ph[cat] }, base, { date: addDays(ws, day), time, status }, extra || {});
-  };
-  // Minggu ini (Senin = 0)
-  post('intro', 0, '19:00', 'posted', 'g7'); post('intro', 1, '19:00', 'posted', 'g6'); post('intro', 2, '19:00', 'jadwal', 'g5'); post('intro', 3, '19:00', 'klien', 'g4'); post('intro', 4, '19:00', 'draft', 'g3');
-  post('announce', 1, '12:00', 'posted', 'g3'); post('announce', 4, '12:00', 'review', 'g4');
-  post('live', 1, '18:00', 'posted', 'g1', { title: 'Episode 12 is live · Maya Prasetyo' });
-  post('summary', 3, '12:00', 'revisi', 'g1', { log: [{ t: now - 5 * 3600000, text: 'Klien: slide 3 terlalu padat, pecah jadi 2 slide ya.' }, { t: now - 5 * 3600000 + 60000, text: 'Status: Menunggu Klien → Revisi' }] });
-  post('quote', 5, '12:00', 'draft', 'g1');
-  [['Plastics treaty: what is at stake', 0, 'posted'], ['Why repair cafés are growing', 2, 'jadwal'], ['Circular fashion: rental vs resale', 4, 'klien'], ['Heat pumps, explained simply', 6, 'ide']].forEach(x => post('news', x[1], '09:00', x[2], null, { title: x[0], caption: x[0] + ' 🌍\n\nSwipe to learn what it means and why it matters 👉\n\nSource in the last slide.\n\n#sustainability #climateaction', source: 'https://example.org/sumber-berita' }));
-  // Minggu lalu & depan
-  post('intro', -17, '19:00', 'posted', 'g1'); post('announce', -14, '12:00', 'posted', 'g1'); post('announce', -9, '12:00', 'posted', 'g2');
-  post('intro', -6, '19:00', 'posted', 'g2'); post('live', -5, '18:00', 'posted', 'g2', { title: 'Teaser · Daniel Okafor' }); post('summary', -4, '12:00', 'posted', 'g2'); post('quote', -2, '12:00', 'posted', 'g1');
-  [['Fast fashion and textile waste', -7], ['What is a carbon budget?', -5], ['Corporate net zero: claims vs action', -3]].forEach(x => post('news', x[1], '09:00', 'posted', null, { title: x[0], caption: x[0] + ' 🌍\n\n#sustainability', source: 'https://example.org/sumber-berita' }));
-  post('live', 7 + 3, '18:00', 'draft', 'g2', { date: D.guests.g2.pubDate });
-  post('announce', 9, '12:00', 'ide', 'g5');
+  const ph = { intro: ['#BFE6EE', '#2C8FA3'], announce: ['#D9D8FF', '#5856D6'], live: ['#FFC7D3', '#E0264E'], livestory: ['#FFD9DF', '#FF6B81'], summary: ['#FFE0B2', '#E07B00'], quote: ['#EBD3F7', '#8E44AD'], news: ['#CFEBD6', '#2E8B57'] };
+  // Konten contoh mengikuti slot jadwal klien: minggu lalu, minggu ini, dan awal minggu depan
+  S = D;
+  const tz = 'America/New_York', cToday = tzParts(tz, now).date, cws = weekStart(cToday), nowT = nowTime();
+  const introG = ['g6', 'g5', 'g7', 'g4', 'g3', 'g2', 'g1'];
+  const news = ['Plastics treaty: what is at stake', 'Why repair cafés are growing', 'Circular fashion: rental vs resale', 'Heat pumps, explained simply', 'This week in climate history', 'Fast fashion and textile waste', 'What is a carbon budget?', 'Corporate net zero: claims vs action', 'The first Earth Day, 1970', 'Refill stores across the US', 'Green jobs report, simply put', 'How cities cut food waste'];
+  const futureSt = ['jadwal', 'setuju', 'klien', 'review', 'revisi', 'draft', 'jadwal', 'klien', 'draft'];
+  let n = 0, ni = 0, ii = 0, fi = 0;
+  for (let day = -7; day < 10; day++) {
+    const cd = addDays(cws, day);
+    CATS.forEach(k => {
+      const sl = DEFAULT_SLOTS[k.k]; if (!sl.days.includes(dow(cd))) return;
+      const w = convertTz(tz, LOCAL_TZ, cd, sl.time);
+      const past = w.date < t || (w.date === t && w.time <= nowT);
+      if (!past && day >= 7 && !['intro', 'announce'].includes(k.k)) return;
+      if (!past && day < 7 && k.k === 'quote' && dow(cd) === 6) return;   // sengaja dibiarkan kosong
+      if (!past && day < 7 && k.k === 'news' && dow(cd) === 0) return;
+      const thisWeekEp = day >= 0;
+      const gid = k.k === 'intro' ? introG[ii++ % introG.length] : k.k === 'announce' ? (thisWeekEp ? 'g3' : 'g2') : ['live', 'livestory', 'summary'].includes(k.k) ? (thisWeekEp ? 'g2' : 'g1') : k.k === 'quote' ? 'g1' : null;
+      const g = gid ? D.guests[gid] : null;
+      const status = past ? 'posted' : (day >= 7 ? (k.k === 'intro' ? 'draft' : 'ide') : futureSt[fi++ % futureSt.length]);
+      const base = g ? guestPreset(g, k.k) : { clientId: 'c1', cat: k.k, type: k.type, title: news[ni % news.length], caption: news[ni++ % news.length] + ' 🌍\n\nSwipe to learn what it means and why it matters 👉\n\nSource in the last slide.\n\n#sustainability #climateaction', tags: '', source: 'https://example.org/sumber-berita' };
+      const id = 'p' + (++n);
+      D.posts[id] = Object.assign({ id, media: [], log: [], createdAt: now - 9 * 86400000, stAt: now - 7 * 3600000, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + n : '', check: status === 'posted' ? { format: true, tag: true, caption: true, story: k.k === 'livestory' } : {}, design: 'https://www.canva.com/design/contoh-' + n, ph: ph[k.k] }, base, { date: w.date, time: w.time, status });
+      if (status === 'revisi') D.posts[id].log = [{ t: now - 5 * 3600000, text: 'Klien: slide 3 terlalu padat, pecah jadi 2 slide ya.' }, { t: now - 5 * 3600000 + 60000, text: 'Status: Menunggu Klien → Revisi' }];
+    });
+  }
   D.ideas.i1 = { id: 'i1', text: 'EU rules on unsold clothes: explainer carousel', clientId: 'c1', tag: 'berita', ref: 'https://example.org/riset', done: false, at: now - 86400000 };
   D.ideas.i2 = { id: 'i2', text: 'Myth vs fact: recycling symbols', clientId: 'c1', tag: 'berita', ref: '', done: false, at: now - 2 * 86400000 };
   D.ideas.i3 = { id: 'i3', text: 'Behind the mic: recording day story', clientId: 'c1', tag: 'story', ref: '', done: false, at: now - 3 * 86400000 };
