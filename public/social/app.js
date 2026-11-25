@@ -383,6 +383,19 @@ function syncPill() { return `<button class="sync-pill ${syncMode}" id="syncPill
 
 function render() {
   if (!started) return;
+  try { renderInner(); } catch (e) { showFatal(e); }
+}
+// Jangan biarkan layar kosong: tampilkan error + jalan keluar
+function showFatal(e) {
+  console.error(e);
+  const msg = esc((e && (e.message || e)) + '') + (e && e.stack ? '<br><small>' + esc(String(e.stack).split('\n').slice(0, 3).join(' · ')) + '</small>' : '');
+  const box = `<div class="fatal"><b>Ada yang error saat menampilkan halaman.</b><span>Screenshot pesan ini untuk perbaikan:</span><code>${msg}</code><button class="btn" onclick="location.reload()">Muat ulang</button><button class="btn-tinted red" onclick="try{localStorage.removeItem('${CACHE_KEY}');localStorage.removeItem('${UI_KEY}')}catch(x){};location.reload()">Hapus cache di HP ini lalu muat ulang</button><span class="t-foot muted">Menghapus cache tidak menghapus data di Firebase.</span></div>`;
+  const pg = document.getElementById('page');
+  if (pg && document.getElementById('app')) { document.getElementById('app').classList.remove('hidden'); pg.innerHTML = box; }
+  else document.body.insertAdjacentHTML('afterbegin', box);
+}
+window.addEventListener('error', ev => { const r = document.getElementById('root'); if (!r || !r.innerHTML.trim() || !document.getElementById('page') || !document.getElementById('page').innerHTML.trim()) showFatal(ev.error || ev.message); });
+function renderInner() {
   renderSide(); renderTabbar();
   const top = stack[stack.length - 1];
   const v = top ? VIEWS[top.v](top) : VIEWS[UI.tab]();
@@ -1894,5 +1907,6 @@ function seedDemo() {
   return D;
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+function safeBoot() { try { boot(); } catch (e) { showFatal(e); } }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeBoot); else safeBoot();
 })();
