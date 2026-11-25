@@ -172,7 +172,8 @@ function renderOverview() {
 function render() {
   if (!D) return;
   const keepFb = {}; Object.keys(openFb).forEach(id => { const ta = $('fb-' + id); keepFb[id] = { text: ta ? ta.value : (openFb[id].text || '') }; }); Object.assign(openFb, keepFb);
-  $('root').innerHTML = G_TOKEN ? renderGuest() : C_TOKEN ? renderOverview() : '<div class="pg-msg">Missing progress link.</div>';
+  try { $('root').innerHTML = G_TOKEN ? renderGuest() : C_TOKEN ? renderOverview() : '<div class="pg-msg">Missing progress link.</div>'; }
+  catch (e) { console.error(e); $('root').innerHTML = `<div class="pg-msg">Something went wrong while loading this page.<br><small>${esc(e && e.message)}</small><br><br><button class="pg-btn link" onclick="location.reload()">Reload</button></div>`; }
 }
 
 document.addEventListener('click', e => {
