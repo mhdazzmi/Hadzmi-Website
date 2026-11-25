@@ -315,6 +315,10 @@ Coba dulu dengan data contoh: `https://<domainmu>/social/?demo=1` (tidak menyent
 - **Hari ini**: widget *Target minggu ini* per kategori (selesai = Disetujui/Terjadwal/Terposting, plus yang sedang dikerjakan) dan *Tamu minggu ini* (intro call, rekaman, tayang).
 - **Tamu & Episode** (tab Tamu): profil tamu (foto kecil, jabatan, organisasi, akun IG untuk tag), tahap Intro call → Rekaman dijadwalkan → Sudah rekaman → Episode tayang, jadwal & link episode, kutipan, poin penting. Tombol **Buat paket konten** membuat draf Intro/Pengumuman (dan setelah rekaman: Tayang/Ringkasan/Kutipan) lengkap dengan judul, caption bahasa Inggris, tag tamu, dan tanggal yang disarankan. Setiap kutipan bisa langsung dijadikan quote graphic.
 - **Editor konten**: kategori, tamu, tag akun, sumber berita, tombol *Isi dari data tamu*, dan **checklist publish Instagram** (format, tag tamu/kolaborator, caption+hashtag+keyword, share ke Story).
+- **Alur kerja dari meeting klien**: review desain dilakukan klien langsung di folder Canva, jadi tombol *Minta review klien* menyiapkan pesan bahasa Inggris untuk chat Upwork (link Canva, jadwal tayang, caption) lalu mengubah status ke Menunggu Klien.
+- **Rotasi template Canva** untuk Announcement, Episode Live, dan Quote (diisi di Edit klien, satu template per baris). Editor dan widget *Template minggu ini* menyarankan template A → B → C bergantian tiap minggu.
+- **Prompt AI siap salin** (ChatGPT/Gemini/Grok): intro carousel 5 slide dari topik + transkrip intro call, ringkasan episode + satu kutipan sustainability dari transkrip YouTube, berita sustainability yang ditulis ulang (fokus US), dan caption + hashtag. Bahan (topik, transkrip intro call, link YouTube, transkrip episode) disimpan di data tamu.
+- **Sumber riset berita** (akun IG, newsletter, situs) disimpan di data klien dan tampil di menu Ide & Berita.
 - Dengan satu klien, filter klien disembunyikan dan warna kalender mengikuti kategori. Menu Klien pindah ke Lainnya.
 
 ### Penyimpanan
