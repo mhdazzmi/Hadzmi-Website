@@ -255,6 +255,33 @@ button.w:active { transform: scale(.97); }
 .sthumb .tbadge { position: absolute; right: 4px; top: 4px; font-size: 11px; color: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
 .sc-foot { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
+/* ---------- Target mingguan, legenda kategori, tamu ---------- */
+.tgt { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.tgt-l { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.tgt-l small { font-size: 11px; color: var(--orange); font-weight: 600; }
+.tgt .progress { height: 7px; }
+.cat-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--label2); padding: 0 4px; }
+.cat-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cat-legend i { width: 8px; height: 8px; border-radius: 50%; display: block; }
+.gav { border-radius: 50%; overflow: hidden; flex: none; display: inline-block; background: var(--fill); }
+.gav img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gcard { padding: 16px; gap: 10px; }
+.g-ep { display: flex; gap: 6px; align-items: center; font-size: 13.5px; color: var(--label2); background: var(--fill2); border-radius: 10px; padding: 7px 10px; min-width: 0; }
+.pack { display: inline-flex; gap: 4px; align-items: center; flex: none; }
+.pack i { width: 11px; height: 11px; border-radius: 50%; display: block; box-shadow: 0 0 0 1.5px var(--pc) inset; }
+.pack i.pk-posted { background: var(--pc); }
+.pack i.pk-done { background: linear-gradient(90deg, var(--pc) 50%, transparent 50%); }
+.pack i.pk-wip { background: linear-gradient(transparent 40%, var(--pc) 40%, var(--pc) 60%, transparent 60%); }
+.pack i.pk-none { box-shadow: 0 0 0 1.5px var(--label3) inset; }
+
+/* ---------- Konverter jam klien ---------- */
+.tz-hint { gap: 10px; min-height: 0; padding: 8px 16px 10px; flex-wrap: wrap; }
+.tz-result { background: var(--card); border-radius: var(--r-card); padding: 18px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.tz-big { font-size: 46px; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+.tz-big small { font-size: 20px; font-weight: 600; color: var(--label2); letter-spacing: 0; }
+.tz-sub { font-size: 15px; }
+.tz-sub.muted { font-size: 13px; }
+
 /* ---------- Post rows ---------- */
 .thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--fill); flex: none; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; color: var(--label3); font-size: 20px; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }

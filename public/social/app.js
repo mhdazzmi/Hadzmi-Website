@@ -20,11 +20,11 @@ const firebaseConfig = {
 };
 const DB_PATH = 'hadzmi_social_data';
 const DEMO = !!window.SOCIAL_DEMO || /[?&]demo\b/.test(location.search);
-const CACHE_KEY = DEMO ? 'social_demo_v1' : 'social_cache_v1';
+const CACHE_KEY = DEMO ? 'social_demo_v2' : 'social_cache_v1';
 const PENDING_KEY = 'social_pending_v1';
 const UI_KEY = 'social_ui_v1';
 const WIB = 7 * 3600 * 1000;
-const COLS = ['clients', 'posts', 'media', 'ideas', 'templates', 'reports', 'invoices', 'tasks'];
+const COLS = ['clients', 'posts', 'media', 'ideas', 'templates', 'reports', 'invoices', 'tasks', 'guests'];
 
 const STATUS = [
   { k: 'ide', label: 'Ide' },
@@ -37,6 +37,26 @@ const STATUS = [
   { k: 'posted', label: 'Terposting' }
 ];
 const ST = Object.fromEntries(STATUS.map(s => [s.k, s]));
+// Kategori konten sesuai jobdesk (podcast sustainability). min/max = frekuensi per minggu.
+const CATS = [
+  { k: 'intro', label: 'Guest Intro Carousel', short: 'Intro Tamu', type: 'carousel', min: 0, max: 7, color: '#30B0C7', icon: 'people', hint: 'Foto, nama, jabatan, organisasi, intro singkat' },
+  { k: 'announce', label: 'Guest Announcement', short: 'Pengumuman Rekaman', type: 'feed', min: 1, max: 2, color: '#5856D6', icon: 'cal', hint: 'Tanggal rekaman dengan tamu yang sudah konfirmasi' },
+  { k: 'live', label: 'Episode Is Live', short: 'Episode Tayang', type: 'feed', min: 1, max: 2, color: '#FF2D55', icon: 'mic', hint: 'Post + Story: foto tamu, judul episode, headline' },
+  { k: 'summary', label: 'Episode Summary Carousel', short: 'Ringkasan Episode', type: 'carousel', min: 1, max: 2, color: '#FF9500', icon: 'list', hint: 'Poin diskusi, insight, takeaway' },
+  { k: 'quote', label: 'Guest Quote Graphic', short: 'Kutipan Tamu', type: 'feed', min: 1, max: 2, color: '#AF52DE', icon: 'quote', hint: 'Kutipan kuat dari wawancara + foto tamu' },
+  { k: 'news', label: 'Sustainability News', short: 'Berita Sustainability', type: 'carousel', min: 3, max: 4, color: '#34C759', icon: 'leaf', hint: 'Berita iklim, circular economy, fashion berkelanjutan' }
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
+const GUEST_CATS = ['intro', 'announce', 'live', 'summary', 'quote'];
+const STAGES = [
+  { k: 'intro', label: 'Intro call', short: 'Intro', color: '#30B0C7' },
+  { k: 'jadwal', label: 'Rekaman dijadwalkan', short: 'Dijadwalkan', color: '#5856D6' },
+  { k: 'rekam', label: 'Sudah rekaman', short: 'Direkam', color: '#FF9500' },
+  { k: 'tayang', label: 'Episode tayang', short: 'Tayang', color: '#34C759' }
+];
+const STG = Object.fromEntries(STAGES.map(x => [x.k, x]));
+const DONE_ST = ['setuju', 'jadwal', 'posted'];
+const CHECKS = [['format', 'Format & ukuran sesuai'], ['tag', 'Tag tamu & kolaborator'], ['caption', 'Caption, hashtag & keyword'], ['story', 'Dibagikan ke Story']];
 const TYPES = { feed: { label: 'Feed', icon: 'photo' }, carousel: { label: 'Carousel', icon: 'carousel' }, reels: { label: 'Reels', icon: 'reels' }, story: { label: 'Story', icon: 'story' } };
 const CLIENT_COLORS = ['#FF2D55', '#FF9500', '#FFCC00', '#34C759', '#00C7BE', '#30B0C7', '#007AFF', '#5856D6', '#AF52DE', '#A2845E', '#8E8E93', '#FF3B30'];
 const CAPTION_MAX = 2200, HASHTAG_MAX = 30;
@@ -88,7 +108,10 @@ const ICONS = {
   wa: 'M20.5 11.5a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.4-4.4A8.5 8.5 0 1 1 20.5 11.5zM9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z',
   back: 'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
   refresh: 'M20 11a8 8 0 0 0-14.8-3.5M4 4v4h4M4 13a8 8 0 0 0 14.8 3.5M20 20v-4h-4',
-  tray: 'M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z'
+  tray: 'M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  quote: 'M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3',
+  leaf: 'M5 19c0-8 6-14 15-14 0 9-6 15-14 15M5 19l7-7'
 };
 const ic = (n, cls) => `<svg class="i ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${(ICONS[n] || '').charAt(0) === '<' ? ICONS[n] : `<path d="${ICONS[n] || ''}"/>`}</svg>`;
 
@@ -117,6 +140,25 @@ const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt
 const MONL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 function dow(date) { const [y, m, d] = date.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
 function prettyDate(date, withDay, shortDay) { if (!date) return 'Tanpa tanggal'; const [y, m, d] = date.split('-').map(Number); return (withDay ? (shortDay ? DAYS_S : DAYS)[dow(date)] + ', ' : '') + `${d} ${MON[m - 1]}${y !== Number(today().slice(0, 4)) ? ' ' + y : ''}`; }
+const EN_D = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], EN_M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function enDate(date) { if (!date) return ''; const [, m, d] = date.split('-').map(Number); return `${EN_D[dow(date)]}, ${EN_M[m - 1]} ${d}`; }
+// ---------------- ZONA WAKTU KLIEN ----------------
+const LOCAL_TZ = 'Asia/Jakarta';
+const TZ_OPTS = [['America/New_York', 'New York · Eastern (EST/EDT)'], ['America/Chicago', 'Chicago · Central (CST/CDT)'], ['America/Denver', 'Denver · Mountain (MST/MDT)'], ['America/Los_Angeles', 'Los Angeles · Pacific (PST/PDT)'], ['Europe/London', 'London (GMT/BST)'], ['Asia/Jakarta', 'Jakarta (WIB)']];
+const clientTz = () => ((activeClients()[0] || {}).tz) || 'America/New_York';
+function tzParts(tz, ms) {
+  const o = {};
+  new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(ms)).forEach(x => { o[x.type] = x.value; });
+  return { date: `${o.year}-${o.month}-${o.day}`, time: `${o.hour === '24' ? '00' : o.hour}:${o.minute}` };
+}
+function tzOffsetMin(tz, ms) { const p = tzParts(tz, ms); const [y, m, d] = p.date.split('-').map(Number), [hh, mm] = p.time.split(':').map(Number); return (Date.UTC(y, m - 1, d, hh, mm) - Math.floor(ms / 60000) * 60000) / 60000; }
+function wallToUtc(tz, date, time) { const [y, m, d] = date.split('-').map(Number), [hh, mm] = (time || '00:00').split(':').map(Number); const guess = Date.UTC(y, m - 1, d, hh || 0, mm || 0); let u = guess - tzOffsetMin(tz, guess) * 60000; u = guess - tzOffsetMin(tz, u) * 60000; return u; }
+function convertTz(fromTz, toTz, date, time) { return tzParts(toTz, wallToUtc(fromTz, date, time)); }
+function tzAbbr(tz, ms) { if (tz === LOCAL_TZ) return 'WIB'; try { return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(ms || Date.now())).find(x => x.type === 'timeZoneName').value; } catch (e) { return 'ET'; } }
+function tzDiffText(tz, ms) { const h = (tzOffsetMin(LOCAL_TZ, ms) - tzOffsetMin(tz, ms)) / 60; return (h >= 0 ? 'WIB lebih cepat ' : 'WIB lebih lambat ') + fmt(Math.abs(h), 1) + ' jam'; }
+const fmt12 = t => { const [h, m] = String(t || '00:00').split(':').map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? 'AM' : 'PM'}`; };
+// Waktu klien untuk jadwal WIB: { date, time, abbr }
+function toClient(date, time) { if (!date || !time) return null; const tz = clientTz(); const r = convertTz(LOCAL_TZ, tz, date, time); return Object.assign(r, { abbr: tzAbbr(tz, wallToUtc(LOCAL_TZ, date, time)) }); }
 function relDay(date) { if (!date) return 'Tanpa tanggal'; const t = today(); if (date === t) return 'Hari ini'; if (date === addDays(t, 1)) return 'Besok'; if (date === addDays(t, -1)) return 'Kemarin'; return prettyDate(date, true, true); }
 function monthLabel(month, shortM) { const [y, m] = month.split('-').map(Number); return (shortM ? MON : MONL)[m - 1] + ' ' + y; }
 function agoText(ts) { const d = Math.floor((Date.now() - ts) / 86400000); if (d <= 0) { const h = Math.floor((Date.now() - ts) / 3600000); return h <= 0 ? 'baru saja' : h + ' jam lalu'; } return d + ' hari lalu'; }
@@ -131,7 +173,7 @@ function blank() { const o = { settings: {} }; COLS.forEach(c => { o[c] = {}; })
 let S = Object.assign(blank(), readLS(CACHE_KEY, {}));
 COLS.forEach(c => { if (!S[c] || typeof S[c] !== 'object') S[c] = {}; });
 let pending = DEMO ? {} : readLS(PENDING_KEY, {});
-const UI = Object.assign({ tab: 'home', fClient: '', calMonth: today().slice(0, 7), calSel: today(), cView: 'board', cStatus: '', q: '', mKind: '', tKind: 'caption', repClient: '', finFilter: 'all' }, readLS(UI_KEY, {}));
+const UI = Object.assign({ gStage: '', cCat: '', tab: 'home', fClient: '', calMonth: today().slice(0, 7), calSel: today(), cView: 'board', cStatus: '', q: '', mKind: '', tKind: 'caption', repClient: '', finFilter: 'all' }, readLS(UI_KEY, {}));
 UI.calMonth = today().slice(0, 7); UI.calSel = today();
 let stack = [];   // halaman detail di atas tab (mis. detail klien)
 let dbRef = null, authed = false, started = false, syncMode = DEMO ? 'demo' : 'local';
@@ -139,7 +181,7 @@ const localUrls = {}; // mode demo: blob URL hasil unggah
 const uploads = {};   // id media → persen unggahan
 let saveTimer = null;
 function saveCache() { clearTimeout(saveTimer); saveTimer = setTimeout(() => writeLS(CACHE_KEY, S), 150); }
-function saveUI() { writeLS(UI_KEY, { tab: UI.tab, fClient: UI.fClient, cView: UI.cView, mKind: UI.mKind, tKind: UI.tKind, repClient: UI.repClient, finFilter: UI.finFilter }); }
+function saveUI() { writeLS(UI_KEY, { gStage: UI.gStage, tab: UI.tab, fClient: UI.fClient, cView: UI.cView, mKind: UI.mKind, tKind: UI.tKind, repClient: UI.repClient, finFilter: UI.finFilter }); }
 
 function setLocal(path, val) {
   const [col, key] = path.split('/');
@@ -183,12 +225,55 @@ const postsAll = () => Object.values(S.posts);
 const postsF = () => postsAll().filter(p => !UI.fClient || p.clientId === UI.fClient);
 const postKey = p => (p.date || '9999-99-99') + ' ' + (p.time || '99:99');
 function isLate(p) { if (!p.date || p.status === 'posted' || p.status === 'ide') return false; const t = today(); return p.date < t || (p.date === t && p.time && p.time < nowTime() && p.status !== 'jadwal'); }
-function postTitle(p) { if (p.title) return p.title; const l = String(p.caption || '').split('\n').find(x => x.trim()); return l ? l.slice(0, 60) : TYPES[p.type || 'feed'].label + ' tanpa judul'; }
+function postTitle(p) { if (p.title) return p.title; if (p.cat && CAT[p.cat]) { const g = guestOf(p.guestId); return CAT[p.cat].short + (g ? ' · ' + g.name : ''); } const l = String(p.caption || '').split('\n').find(x => x.trim()); return l ? l.slice(0, 60) : TYPES[p.type || 'feed'].label + ' tanpa judul'; }
 function monthPosts(clientId, month) { return postsAll().filter(p => p.clientId === clientId && (p.date || '').slice(0, 7) === month); }
 function pkgTotal(c) { const k = c.pkg || {}; return num(k.feed) + num(k.reels) + num(k.story); }
 function pkgDone(clientId, month, type) { return monthPosts(clientId, month).filter(p => (p.status === 'posted' || p.status === 'jadwal') && (!type || (type === 'feed' ? (p.type === 'feed' || p.type === 'carousel') : p.type === type))).length; }
 function needAction() { return postsAll().filter(p => p.status === 'revisi' || isLate(p)).length; }
 function overdueInvoices() { const t = today(); return Object.values(S.invoices).filter(i => i.status !== 'lunas' && i.due && i.due < t); }
+function weekStart(d) { return addDays(d, -((dow(d) + 6) % 7)); }
+const guestsAll = () => Object.values(S.guests);
+const guestOf = id => S.guests[id] || null;
+const catOf = p => CAT[p.cat] || null;
+const colorOf = p => (clients().length <= 1 && CAT[p.cat]) ? CAT[p.cat].color : cColor(p.clientId);
+function weeklyTarget(c) { const w = (c && c.weekly) || {}; return Object.fromEntries(CATS.map(k => [k.k, w[k.k] != null && w[k.k] !== '' ? num(w[k.k]) : k.max])); }
+function weekStats(ws, clientId) {
+  const we = addDays(ws, 6);
+  const ps = postsAll().filter(p => p.cat && p.date >= ws && p.date <= we && (!clientId || p.clientId === clientId));
+  const cs = clientId ? [clientOf(clientId)].filter(Boolean) : activeClients();
+  const target = {}; CATS.forEach(k => { target[k.k] = 0; }); cs.forEach(c => { const t = weeklyTarget(c); CATS.forEach(k => { target[k.k] += t[k.k]; }); });
+  const out = {}; CATS.forEach(k => { const mine = ps.filter(p => p.cat === k.k); out[k.k] = { done: mine.filter(p => DONE_ST.includes(p.status)).length, wip: mine.filter(p => !DONE_ST.includes(p.status) && p.status !== 'ide').length, target: target[k.k] }; });
+  return out;
+}
+// Rotasi template Canva: tiap minggu pakai template berikutnya (A → B → C → A …)
+const ROT_CATS = ['announce', 'live', 'quote'];
+function weekIndex(d) { const [y, m, dd] = weekStart(d).split('-').map(Number); return Math.floor(Date.UTC(y, m - 1, dd) / (7 * 86400000)); }
+function rotList(c, k) { return String(((c || {}).rot || {})[k] || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => { const [n, ...r] = x.split('|'); const link = r.join('|').trim(); return { name: n.trim() || 'Template', link: /^https?:\/\//.test(link) ? link : (/^https?:\/\//.test(n.trim()) ? n.trim() : '') }; }); }
+function rotFor(c, k, d) { const xs = rotList(c, k); if (!xs.length) return null; const i = weekIndex(d || today()) % xs.length; return Object.assign({ i: i + 1, n: xs.length }, xs[i]); }
+function sourceList(c) { return String((c || {}).sources || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => { const [n, ...r] = x.split('|'); const link = r.join('|').trim(); return { name: n.trim(), link: /^https?:\/\//.test(link) ? link : '' }; }); }
+function aiPrompt(kind, g, p) {
+  const c = clientOf((g && g.clientId) || (p && p.clientId)) || {};
+  const brand = `Brand: ${c.name || 'our podcast'} (Instagram @${c.handle || ''}), an independent, sustainability-focused podcast and media platform featuring entrepreneurs, environmental advocates, sustainability professionals and change-makers. Mission: make sustainability, innovation and positive impact accessible. Tone: ${((c.brand || {}).tone) || 'warm, optimistic, easy to understand'}. Language: English.`;
+  const who = g ? `Guest: ${g.name}${g.role ? ', ' + g.role : ''}${g.org ? ' at ' + g.org : ''}${g.handle ? ' (Instagram @' + g.handle + ')' : ''}.` : '';
+  const ht = hashtags((c.brand || {}).hashtags).join(' ');
+  const capRule = `Then write an Instagram caption (max 150 words) with a strong first line, a call to action, ${g && g.handle ? 'a tag to @' + g.handle + ', ' : ''}3–5 relevant keywords, and these hashtags: ${ht || '#sustainability #podcast'}.`;
+  if (kind === 'intro') return `${brand}\n\n${who}\n\nWe just had an intro call with this guest and agreed to record an episode together. Our audience doesn't know the guest yet, and the guest's audience doesn't know us, so this carousel introduces the collaboration and builds hype before we record.\n\nWrite the copy for a 5-slide Instagram carousel:\nSlide 1: the guest's photo with name, title and organization plus a short hook (the guest has authority, lead with them).\nSlide 2: what we're doing together (an upcoming podcast collaboration).\nSlide 3: who the guest is and why their work matters.\nSlide 4: the topics we plan to explore.\nSlide 5: call to action (follow both accounts, stay tuned, drop questions).\nKeep each slide under 30 words.\n\n${capRule}\n\nTopics we discussed:\n${g && g.topics ? g.topics : '[paste topics]'}\n\nIntro call transcript:\n${g && g.introTr ? g.introTr : '[paste transcript]'}`;
+  if (kind === 'summary') return `${brand}\n\n${who}${g && g.epTitle ? ' Episode: "' + g.epTitle + '".' : ''}\n\nBelow is the transcript of our latest episode. Focus on the sustainability side of the conversation and ignore unrelated small talk.\n\n1) Write the copy for an Instagram carousel summarizing the episode: a cover slide with a hook, then 5–7 slides with the key discussion points, insights and takeaways (max 30 words each), and a final slide inviting people to listen to the full episode.\n2) Pick the ONE best, most thought-provoking quote the guest said about sustainability, word for word, for a quote graphic.\n3) ${capRule}\n\nTranscript:\n${g && g.epTr ? g.epTr : '[paste the YouTube transcript]'}`;
+  if (kind === 'quote') return `${brand}\n\n${who}\n\nFrom the transcript below, pick the ONE best, most thought-provoking quote the guest said about sustainability, word for word (max 35 words). Give 2 alternatives too.\n\n${capRule}\n\nTranscript:\n${g && g.epTr ? g.epTr : '[paste the YouTube transcript]'}`;
+  if (kind === 'news') return `${brand}\n\nCreate an educational, news-style Instagram carousel about this trending sustainability story${p && p.title ? ': "' + p.title + '"' : ''}. Our focus is mainly the US, but global stories are welcome. Rewrite everything in our own words (do not copy the source).\n\nWrite: a cover slide with a clear headline, slides explaining what happened, why it matters, and what people can do, and a final slide with the source name. Use as many slides as needed, max 30 words each. Only use facts from the source below.\n\n${capRule}\n\nSource: ${p && p.source ? p.source : '[paste link or article text]'}`;
+  const cat = CAT[kind];
+  return `${brand}\n\n${who}${g && g.epTitle ? ' Episode: "' + g.epTitle + '".' : ''}${g && g.recDate && kind === 'announce' ? ' Recording date: ' + enDate(g.recDate) + '.' : ''}${g && g.epLink && kind === 'live' ? ' Episode link: ' + g.epLink + '.' : ''}\n\nWrite an Instagram caption for our "${cat ? cat.label : 'post'}" graphic. ${capRule}`;
+}
+function openPrompt(kind, g, p) {
+  const text = aiPrompt(kind, g, p);
+  const w = openSheet({
+    title: 'Prompt AI', left: 'Tutup',
+    body: `<div><div class="form"><div class="field stack"><label for="aiText">Salin lalu tempel ke ChatGPT, Gemini, atau Grok</label><textarea id="aiText" rows="14">${esc(text)}</textarea></div></div><div class="form-foot">Transkrip dan topik diambil dari data tamu. Kalau masih kosong, tempel dulu di Edit tamu atau langsung di kotak ini.</div></div>
+      <div class="btn-row" style="flex-direction:column"><button class="btn" id="aiCopy">${ic('copy')} Salin prompt</button>
+      <div class="btn-row"><a class="btn-tinted gray" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a><a class="btn-tinted gray" href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini</a><a class="btn-tinted gray" href="https://grok.com/" target="_blank" rel="noopener">Grok</a></div></div>`
+  });
+  w.querySelector('#aiCopy').addEventListener('click', () => copyText(w.querySelector('#aiText').value, w.querySelector('#aiText')));
+}
 function mediaOfPost(p) { return (p.media || []).map(id => S.media[id]).filter(Boolean); }
 
 // ---------------- SHELL ----------------
@@ -213,12 +298,13 @@ const TABS = [
   { k: 'home', label: 'Hari ini', icon: 'home', tile: '#007AFF' },
   { k: 'calendar', label: 'Kalender', icon: 'cal', tile: '#FF3B30' },
   { k: 'content', label: 'Konten', icon: 'stack', tile: '#AF52DE' },
-  { k: 'clients', label: 'Klien', icon: 'people', tile: '#34C759' },
+  { k: 'guests', label: 'Tamu', icon: 'mic', tile: '#FF2D55' },
   { k: 'more', label: 'Lainnya', icon: 'more', tile: '#8E8E93' }
 ];
 const MORE = [
+  { k: 'clients', label: 'Klien', icon: 'people', tile: '#34C759', sub: 'Akun Instagram yang kamu pegang' },
   { k: 'media', label: 'Media Library', icon: 'photo', tile: '#FF9500', sub: 'Opsional · file di Cloudflare R2' },
-  { k: 'ideas', label: 'Bank Ide', icon: 'bulb', tile: '#FFCC00', sub: 'Ide, tren & referensi' },
+  { k: 'ideas', label: 'Ide & Berita', icon: 'bulb', tile: '#FFCC00', sub: 'Ide konten & bahan berita sustainability' },
   { k: 'templates', label: 'Template', icon: 'doc', tile: '#5856D6', sub: 'Caption & grup hashtag' },
   { k: 'reports', label: 'Laporan', icon: 'chart', tile: '#30B0C7', sub: 'Insight bulanan per klien' },
   { k: 'finance', label: 'Keuangan', icon: 'wallet', tile: '#34C759', sub: 'Paket, tagihan & pembayaran' },
@@ -298,17 +384,17 @@ function postRow(p, opt) {
   const late = isLate(p);
   const when = opt.timeCol ? '' : ` · ${relDay(p.date)}${p.time ? ' ' + p.time : ''}`;
   return `<button class="row" data-a="post" data-id="${p.id}">
-    ${opt.timeCol ? `<span class="time-col">${esc(p.time || '—')}<small>${TYPES[p.type || 'feed'].label}</small></span>` : ''}${opt.bar ? `<span class="evbar" style="background:${cColor(p.clientId)}"></span>` : ''}
+    ${opt.timeCol ? `<span class="time-col">${esc(p.time || '—')}<small>${TYPES[p.type || 'feed'].label}</small></span>` : ''}${opt.bar ? `<span class="evbar" style="background:${colorOf(p)}"></span>` : ''}
     ${postThumb(p)}
     <span class="grow"><div class="ttl">${esc(postTitle(p))}</div>
-      <div class="sub">${c ? '@' + esc(c.handle || c.name) : 'Tanpa klien'}${opt.timeCol ? '' : ' · ' + TYPES[p.type || 'feed'].label}${when}</div>
+      <div class="sub">${catOf(p) ? `<span style="color:${catOf(p).color};font-weight:600">${esc(catOf(p).short)}</span>` : (c ? '@' + esc(c.handle || c.name) : 'Tanpa klien')}${opt.timeCol ? '' : ' · ' + TYPES[p.type || 'feed'].label}${when}</div>
       ${opt.reason ? `<div class="row-meta">${opt.reason}</div>` : ''}</span>
     ${late && !opt.reason ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status || 'draft')}
   </button>`;
 }
 function clientChips() {
   const cs = clients();
-  if (!cs.length) return '';
+  if (cs.length <= 1) return '';
   return `<div class="chips">${[`<button class="chip ${!UI.fClient ? 'on' : ''}" data-a="fClient" data-id="">Semua klien</button>`].concat(cs.map(c => `<button class="chip ${UI.fClient === c.id ? 'on' : ''}" data-a="fClient" data-id="${c.id}"><span class="cdot" style="background:${c.color}"></span>${esc(c.name)}</button>`)).join('')}</div>`;
 }
 const empty = (icon, text, btn) => `<div class="list"><div class="empty">${ic(icon)}<div>${text}</div>${btn || ''}</div></div>`;
@@ -342,29 +428,41 @@ VIEWS.home = () => {
   let liveW = '';
   if (live) {
     const c = clientOf(live.clientId) || {}, m = minsTo(live);
-    const checks = [['Caption', !!live.caption], ['Desain', !!(live.thumb || live.design || (live.media || []).length)], ['Approval', ['setuju', 'jadwal'].includes(live.status)]];
-    const pct = checks.filter(x => x[1]).length / 3 * 100;
+    const ck = live.check || {};
+    const checks = [['Caption', !!live.caption], ['Desain', !!(live.thumb || live.design || (live.media || []).length)], ['Tag', !!(ck.tag || (!live.guestId && !live.tags))], ['Approval', ['setuju', 'jadwal'].includes(live.status)]];
+    const pct = checks.filter(x => x[1]).length / checks.length * 100;
     liveW = `<button class="w md live" data-a="post" data-id="${live.id}" style="--lc:${c.color || '#3A3A3C'}">
       <div class="live-top"><span class="tile live-ic">${ic('ig')}</span><span class="grow" style="min-width:0"><span class="live-k">Tayang ${esc(live.time)} · ${m < 60 ? m + ' menit lagi' : Math.floor(m / 60) + ' jam ' + (m % 60) + ' menit lagi'}</span><span class="live-t">${esc(postTitle(live))} · ${esc(c.name || '')}</span></span>${postThumb(live, 'wthumb sm')}</div>
       <div class="live-checks">${checks.map(x => `<span class="${x[1] ? 'ok' : ''}">${x[0]} ${ic(x[1] ? 'check' : 'circle')}</span>`).join('')}</div>
       <div class="live-bar"><span style="width:${pct}%"></span></div></button>`;
   }
-  const ringPct = tot ? done / tot : 0;
+  const ws = weekStart(t), wk = weekStats(ws);
+  const wDone = CATS.reduce((x, k) => x + wk[k.k].done, 0), wTarget = CATS.reduce((x, k) => x + wk[k.k].target, 0), wWip = CATS.reduce((x, k) => x + wk[k.k].wip, 0);
+  const ringPct = wTarget ? wDone / wTarget : 0;
+  const weekTargetW = `<button class="w lg" data-a="tab" data-k="content"><div class="w-head"><span style="color:var(--green)">Target minggu ini</span><span class="muted num">${wDone}/${wTarget}</span></div>
+    ${CATS.map(k => { const x = wk[k.k], pc = x.target ? Math.min(100, x.done / x.target * 100) : 0, pw = x.target ? Math.min(100 - pc, x.wip / x.target * 100) : 0; return `<span class="tgt"><span class="tgt-l"><span class="ell">${esc(k.short)}</span><span class="num muted">${x.done}/${x.target}${x.wip ? ` <small>+${x.wip} proses</small>` : ''}</span></span><span class="progress"><span style="width:${pc}%;background:${k.color};float:left"></span><span style="width:${pw}%;background:${k.color};opacity:.3;float:left;border-radius:0"></span></span></span>`; }).join('')}
+    <span class="w-sub">Selesai = Disetujui, Terjadwal, atau Terposting. Estimasi jobdesk 14–19 konten per minggu.</span></button>`;
+  const rc = activeClients()[0];
+  const rots = ROT_CATS.map(k => [k, rotFor(rc, k, t)]).filter(x => x[1]);
+  const rotW = rots.length ? `<div class="w md"><div class="w-head"><span style="color:var(--indigo)">Template minggu ini</span><span class="muted">rotasi mingguan</span></div>${rots.map(([k, r]) => `<div class="wrow"><span class="wbar" style="background:${CAT[k].color}"></span><span class="grow" style="min-width:0"><span class="ell b" style="display:block;font-size:15px">${esc(CAT[k].short)}</span><span class="w-sub">${esc(r.name)} · ${r.i}/${r.n}</span></span>${r.link ? `<a class="btn-tinted gray" href="${esc(r.link)}" target="_blank" rel="noopener">Canva</a>` : ''}</div>`).join('')}</div>` : '';
+  const upG = sortBy(guestsAll().filter(g => (g.introDate >= t && g.introDate <= addDays(t, 6)) || (g.recDate >= t && g.recDate <= addDays(t, 6)) || (g.pubDate >= t && g.pubDate <= addDays(t, 6))), g => [g.introDate, g.recDate, g.pubDate].filter(d => d && d >= t).sort()[0] || '');
+  const guestW = `<div class="w md"><div class="w-head"><span style="color:var(--pink)">Tamu minggu ini</span><button class="muted" data-a="tab" data-k="guests" style="font-size:12px;text-transform:none;letter-spacing:0">Semua</button></div>
+    ${upG.length ? upG.slice(0, 4).map(g => { const ev = [[g.introDate, 'Intro call'], [g.recDate, 'Rekaman'], [g.pubDate, 'Tayang']].filter(x => x[0] && x[0] >= t && x[0] <= addDays(t, 6)).sort()[0]; return `<button class="wrow" data-a="guest" data-id="${g.id}">${guestAv(g, 34)}<span class="grow" style="min-width:0"><span class="ell b" style="display:block;font-size:15px">${esc(g.name)}</span><span class="w-sub ell" style="display:block">${esc(ev[1])} · ${relDay(ev[0])}${ev[1] === 'Rekaman' && g.recTime ? ' ' + esc(g.recTime) : ''}</span></span>${packDots(g)}</button>`; }).join('') : `<div class="w-empty">Belum ada intro call, rekaman, atau episode minggu ini.<button class="btn-tinted" data-a="newGuest">${ic('plus')} Tambah tamu</button></div>`}</div>`;
   const wait = waiting[0];
   const waitW = wait ? (() => { const c = clientOf(wait.clientId) || {}; return `<div class="w md"><div class="wsplit">${postThumb(wait, 'wthumb lg')}<div class="grow" style="min-width:0;display:flex;flex-direction:column;gap:3px">
       <span class="w-k" style="color:var(--orange)">Menunggu klien${waiting.length > 1 ? ' · ' + waiting.length : ''}</span><button class="w-title" data-a="post" data-id="${wait.id}">${esc(postTitle(wait))}</button>
       <span class="w-sub">${esc(c.name || '')} · ${wait.date ? relDay(wait.date) + (wait.time ? ' ' + wait.time : '') : 'tanpa jadwal'}${wait.stAt ? ' · ' + agoText(wait.stAt) : ''}</span>
-      <span style="margin-top:6px"><button class="btn-tinted green" data-a="followUp" data-id="${wait.id}">${ic('wa')} Follow up</button></span></div></div></div>`; })()
+      <span style="margin-top:6px"><button class="btn-tinted green" data-a="followUp" data-id="${wait.id}">${ic('send')} Follow up</button></span></div></div></div>`; })()
     : `<div class="w md"><span class="w-k" style="color:var(--green)">Approval</span><div class="w-title">Semua approval beres</div><span class="w-sub">Tidak ada konten yang menunggu balasan klien.</span></div>`;
   const sched = `<div class="w lg"><div class="w-head"><span style="color:var(--red)">Jadwal hari ini</span><span class="muted">${todayPosts.length} konten</span></div>
-    ${todayPosts.length ? todayPosts.slice(0, 6).map(p => `<button class="wrow" data-a="post" data-id="${p.id}"><span class="wbar" style="background:${cColor(p.clientId)}"></span><span class="grow" style="min-width:0"><span class="ell b" style="display:block;font-size:15px">${esc(postTitle(p))}</span><span class="w-sub num">${esc(p.time || '—')} · ${esc((clientOf(p.clientId) || {}).name || '')} · ${TYPES[p.type || 'feed'].label}</span></span>${p.status === 'posted' ? `<span style="color:var(--green);font-size:20px">${ic('checkc')}</span>` : isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') + (todayPosts.length > 6 ? `<button class="w-more" data-a="tab" data-k="calendar">+${todayPosts.length - 6} lainnya</button>` : '')
+    ${todayPosts.length ? todayPosts.slice(0, 6).map(p => `<button class="wrow" data-a="post" data-id="${p.id}"><span class="wbar" style="background:${colorOf(p)}"></span><span class="grow" style="min-width:0"><span class="ell b" style="display:block;font-size:15px">${esc(postTitle(p))}</span><span class="w-sub num">${esc(p.time || '—')} · ${esc(catOf(p) ? catOf(p).short : (clientOf(p.clientId) || {}).name || '')} · ${TYPES[p.type || 'feed'].label}</span></span>${p.status === 'posted' ? `<span style="color:var(--green);font-size:20px">${ic('checkc')}</span>` : isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') + (todayPosts.length > 6 ? `<button class="w-more" data-a="tab" data-k="calendar">+${todayPosts.length - 6} lainnya</button>` : '')
       : `<div class="w-empty">Tidak ada jadwal hari ini.<button class="btn-tinted" data-a="newPost" data-date="${t}">${ic('plus')} Buat konten</button></div>`}</div>`;
   // 7 hari ke depan
   const days = Array.from({ length: 7 }, (_, i) => addDays(t, i));
   const cnt = days.map(d => all.filter(p => p.date === d && p.status !== 'ide'));
   const mx = Math.max(1, ...cnt.map(x => x.length));
   const weekW = `<button class="w md" data-a="tab" data-k="calendar"><div class="w-head"><span style="color:var(--blue)">7 hari ke depan</span><span class="muted">${cnt.reduce((x, y) => x + y.length, 0)} konten</span></div>
-    <div class="wweek">${days.map((d, i) => `<span class="wday ${i === 0 ? 'on' : ''}"><span class="wcol">${cnt[i].map(p => `<i style="background:${cColor(p.clientId)}"></i>`).join('') || '<i class="none"></i>'}</span><span class="wn num">${cnt[i].length}</span><span class="wd">${DAYS_S[dow(d)]}</span></span>`).join('')}</div></button>`;
+    <div class="wweek">${days.map((d, i) => `<span class="wday ${i === 0 ? 'on' : ''}"><span class="wcol">${cnt[i].map(p => `<i style="background:${colorOf(p)}"></i>`).join('') || '<i class="none"></i>'}</span><span class="wn num">${cnt[i].length}</span><span class="wd">${DAYS_S[dow(d)]}</span></span>`).join('')}</div></button>`;
   const taskW = `<div class="w md"><div class="w-head"><span style="color:var(--indigo)">Tugas</span>${doneTasks ? `<button class="muted" data-a="clearTasks" style="font-size:12px;text-transform:none;letter-spacing:0">Hapus ${doneTasks} selesai</button>` : `<span class="muted">${tasks.length}</span>`}</div>
     ${tasks.slice(0, 4).map(x => { const c = clientOf(x.clientId); return `<div class="wrow"><button data-a="toggleTask" data-id="${x.id}" style="font-size:22px;color:var(--label3);display:flex" aria-label="Tandai selesai">${ic('circle')}</button><button class="grow" data-a="editTask" data-id="${x.id}" style="text-align:left;min-width:0"><span class="ell" style="display:block;font-size:15px">${esc(x.text)}</span><span class="w-sub">${[c ? esc(c.name) : '', x.due ? (x.due < t ? `<span class="c-red">${relDay(x.due)}</span>` : relDay(x.due)) : ''].filter(Boolean).join(' · ') || 'Tanpa tenggat'}</span></button></div>`; }).join('')}
     <button class="w-more" data-a="newTask">${ic('plus')} Tambah tugas</button></div>`;
@@ -377,15 +475,19 @@ VIEWS.home = () => {
       <div class="widgets">
         ${liveW}
         ${smallW(todayPosts.length, 'posting hari ini', '', 'cal', '', 'tab', 'calendar', true)}
-        <button class="w sm" data-a="tab" data-k="clients"><span class="ring-wrap">${ringSvg(ringPct, 'var(--green)', 96, 11)}<span class="ring-num"><b class="num">${done}</b><small>dari ${tot || 0}</small></span></span><span class="w-lbl" style="text-align:center">Target ${MON[Number(month.slice(5)) - 1]}</span></button>
+        ${(() => { const tz = clientTz(), ms = Date.now(), cp = tzParts(tz, ms); return `<button class="w sm" data-a="tzOpen"><span class="w-head"><span style="color:var(--orange)">Jam klien</span>${ic('clock')}</span><span><span class="w-big mid num">${fmt12(cp.time)}</span><span class="w-lbl">${esc(tzAbbr(tz, ms))} · ${cp.date === today() ? 'hari yang sama' : cp.date < today() ? 'masih kemarin' : 'besok'}</span><span class="w-sub">WIB ${nowTime()} · ketuk untuk konversi</span></span></button>`; })()}
+        <button class="w sm" data-a="tab" data-k="content"><span class="ring-wrap">${ringSvg(ringPct, 'var(--green)', 96, 11)}<span class="ring-num"><b class="num">${wDone}</b><small>dari ${wTarget}</small></span></span><span class="w-lbl" style="text-align:center">Minggu ini${wWip ? ` · ${wWip} proses` : ''}</span></button>
         ${waitW}
         ${sched}
+        ${weekTargetW}
+        ${guestW}
+        ${rotW}
         ${smallW(late.length, late.length ? 'terlambat' : 'tidak ada yang telat', late[0] ? esc(postTitle(late[0])) : '', 'alert', 'var(--red)', 'statFilter', 'late')}
         ${smallW(revisi.length, 'perlu revisi', revisi[0] ? esc(postTitle(revisi[0])) : '', 'pencil', 'var(--purple)', 'statFilter', 'revisi')}
-        ${weekW}
         ${taskW}
+        ${weekW}
         ${smallW(short(unpaid.reduce((x, i) => x + num(i.amount), 0)), unpaid.length + ' tagihan belum lunas', overdueInvoices().length ? `<span class="c-red">${overdueInvoices().length} lewat tempo</span>` : '', 'wallet', 'var(--green)', 'tab', 'finance')}
-        ${smallW(Object.values(S.ideas).filter(x => !x.done).length, 'ide tersimpan', '', 'bulb', 'var(--yellow)', 'tab', 'ideas')}
+
       </div>`
   };
 };
@@ -410,7 +512,7 @@ VIEWS.calendar = () => {
   let cells = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d, i) => `<div class="cal-dow ${i > 4 ? 'we' : ''}">${d}</div>`).join('');
   for (let i = 0; i < weeks * 7; i++) {
     const d = addDays(start, i), ps = sortBy(byDate[d] || [], postKey);
-    const evs = ps.slice(0, 3).map(p => `<span class="ev" style="background:${cColor(p.clientId)};--evc:${cColor(p.clientId)}"><b><small>${esc(p.time || '')}</small>${esc((clientOf(p.clientId) || { name: '' }).name)}</b></span>`).join('');
+    const evs = ps.slice(0, 3).map(p => `<span class="ev" style="background:${colorOf(p)};--evc:${colorOf(p)}"><b><small>${esc(p.time || '')}</small>${esc(clients().length <= 1 && catOf(p) ? catOf(p).short : (clientOf(p.clientId) || { name: '' }).name)}</b></span>`).join('');
     cells += `<button class="cal-day ${d.slice(0, 7) !== UI.calMonth ? 'out' : ''} ${i % 7 > 4 ? 'we' : ''} ${d === t ? 'today' : ''} ${d === UI.calSel ? 'sel' : ''}" data-a="calSel" data-d="${d}" aria-label="${prettyDate(d, true)}, ${ps.length} konten">
       <span class="d">${Number(d.slice(8))}</span><span class="cal-evs">${evs}${ps.length > 3 ? `<span class="more">+${ps.length - 3} lagi</span>` : ''}</span></button>`;
   }
@@ -423,6 +525,7 @@ VIEWS.calendar = () => {
       ${clientChips()}
       <div class="cal"><div class="cal-head"><span class="m">${MONL[m - 1]} <span>${y}</span></span><span class="arrows"><button data-a="calNav" data-n="-1" aria-label="Bulan sebelumnya">${ic('chevL')}</button><button data-a="calNav" data-n="1" aria-label="Bulan berikutnya">${ic('chevR')}</button></span></div>
       <div class="cal-grid">${cells}</div></div>
+      ${clients().length <= 1 ? `<div class="cat-legend">${CATS.map(k => `<span><i style="background:${k.color}"></i>${esc(k.short)}</span>`).join('')}</div>` : ''}
       ${group(relDay(UI.calSel) === prettyDate(UI.calSel, true, true) ? prettyDate(UI.calSel, true) : relDay(UI.calSel) + ' · ' + prettyDate(UI.calSel), sel.length ? `<div class="list">${sel.map(p => postRow(p, { timeCol: true, bar: true })).join('')}</div>` : empty('cal', 'Kosong. Ketuk + untuk menjadwalkan konten di tanggal ini.'), { action: `<button data-a="newPost" data-date="${UI.calSel}">Tambah</button>` })}`
   };
 };
@@ -430,6 +533,8 @@ VIEWS.calendar = () => {
 // ---------------- VIEW: KONTEN ----------------
 VIEWS.content = () => {
   let ps = postsF();
+  const catChips = `<div class="chips"><button class="chip ${!UI.cCat ? 'on' : ''}" data-a="cCat" data-k="">Semua kategori</button>${CATS.map(k => `<button class="chip ${UI.cCat === k.k ? 'on' : ''}" data-a="cCat" data-k="${k.k}"><span class="cdot" style="background:${k.color}"></span>${esc(k.short)} <span class="n">${ps.filter(p => p.cat === k.k).length}</span></button>`).join('')}</div>`;
+  if (UI.cCat) ps = ps.filter(p => p.cat === UI.cCat);
   const counts = {}; STATUS.forEach(s => { counts[s.k] = 0; }); ps.forEach(p => { counts[p.status || 'draft']++; });
   const lateN = ps.filter(isLate).length;
   let body;
@@ -456,6 +561,7 @@ VIEWS.content = () => {
     title: 'Konten',
     html: `${largeTitle('Konten', ps.length + ' konten' + (lateN ? ` · <span class="c-red">${lateN} terlambat</span>` : ''), plusBtn('newPost'))}
       ${clientChips()}
+      ${catChips}
       <div class="seg" style="max-width:280px"><button class="${UI.cView === 'board' ? 'on' : ''}" data-a="cView" data-k="board">Papan alur</button><button class="${UI.cView === 'list' ? 'on' : ''}" data-a="cView" data-k="list">Daftar</button></div>
       ${body}`
   };
@@ -466,7 +572,7 @@ function kcard(p) {
     <span class="media ${p.type || ''}" style="${v.style}">${v.inner}</span>
     <span class="k-title">${esc(postTitle(p))}</span>
     ${p.caption ? `<span class="k-cap">${esc(p.caption)}</span>` : ''}
-    <span class="k-foot"><span style="display:flex;align-items:center;gap:6px;min-width:0">${avatar(c, 'sm')}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.label)}</span></span><span class="${isLate(p) ? 'c-red b' : ''}">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : '—'}</span></span>
+    <span class="k-foot"><span style="display:flex;align-items:center;gap:6px;min-width:0">${catOf(p) ? `<span class="cdot" style="background:${catOf(p).color}"></span>` : avatar(c, 'sm')}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(catOf(p) ? catOf(p).short : t.label)}</span></span><span class="${isLate(p) ? 'c-red b' : ''}">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : '—'}</span></span>
   </button>`;
 }
 
@@ -526,6 +632,117 @@ VIEWS.client = (v) => {
   };
 };
 
+// ---------------- VIEW: TAMU & EPISODE ----------------
+const guestAv = (g, sz) => g.photo ? `<span class="gav" style="width:${sz}px;height:${sz}px"><img src="${g.photo}" alt=""></span>` : `<span class="avatar" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz * .36)}px;background:${(STG[g.stage] || STAGES[0]).color}">${esc(initials(g.name))}</span>`;
+function guestPosts(g) { return postsAll().filter(p => p.guestId === g.id); }
+function packState(g, k) { const ps = guestPosts(g).filter(p => p.cat === k); if (!ps.length) return 'none'; if (ps.some(p => p.status === 'posted')) return 'posted'; if (ps.some(p => DONE_ST.includes(p.status))) return 'done'; return 'wip'; }
+function packDots(g) { return `<span class="pack">${GUEST_CATS.map(k => `<i class="pk-${packState(g, k)}" style="--pc:${CAT[k].color}" title="${esc(CAT[k].short)}"></i>`).join('')}</span>`; }
+function guestNext(g) {
+  const t = today();
+  const ev = [[g.introDate, 'Intro call'], [g.recDate, 'Rekaman'], [g.pubDate, 'Tayang']].filter(x => x[0] && x[0] >= t).sort((a, b) => a[0] < b[0] ? -1 : 1)[0];
+  return ev ? `${ev[1]} ${relDay(ev[0])}${ev[1] === 'Rekaman' && g.recTime ? ' ' + esc(g.recTime) : ''}` : (g.pubDate ? 'Tayang ' + prettyDate(g.pubDate) : '');
+}
+VIEWS.guests = () => {
+  const all = sortBy(guestsAll(), g => (STAGES.findIndex(x => x.k === g.stage) + 10) + ([g.introDate, g.recDate, g.pubDate].filter(Boolean).sort().pop() || ''));
+  const xs = UI.gStage ? all.filter(g => g.stage === UI.gStage) : all;
+  return {
+    title: 'Tamu & Episode',
+    html: `${largeTitle('Tamu & Episode', all.length + ' tamu podcast', plusBtn('newGuest'))}
+      <div class="chips"><button class="chip ${!UI.gStage ? 'on' : ''}" data-a="gStage" data-k="">Semua <span class="n">${all.length}</span></button>${STAGES.map(x => `<button class="chip ${UI.gStage === x.k ? 'on' : ''}" data-a="gStage" data-k="${x.k}"><span class="cdot" style="background:${x.color}"></span>${x.label} <span class="n">${all.filter(g => g.stage === x.k).length}</span></button>`).join('')}</div>
+      ${xs.length ? `<div class="stack-list">${xs.map(g => `<button class="w gcard" data-a="guest" data-id="${g.id}">
+        <div class="sc-head">${guestAv(g, 52)}<span class="grow" style="min-width:0"><span class="w-title ell" style="display:block">${esc(g.name)}</span><span class="w-sub ell" style="display:block">${esc([g.role, g.org].filter(Boolean).join(' · '))}</span>${g.handle ? `<span class="w-sub ell" style="display:block;color:var(--blue)">@${esc(g.handle)}</span>` : ''}</span><span class="pill" style="background:${(STG[g.stage] || STAGES[0]).color}22;color:${(STG[g.stage] || STAGES[0]).color}">${esc((STG[g.stage] || STAGES[0]).short)}</span></div>
+        ${g.epTitle ? `<div class="g-ep">${ic('mic')}<span class="ell">${g.epNo ? 'Ep ' + esc(g.epNo) + ' · ' : ''}${esc(g.epTitle)}</span></div>` : ''}
+        <div class="sc-foot">${packDots(g)}<span class="w-sub" style="margin-left:auto">${guestNext(g)}</span></div></button>`).join('')}</div>`
+        : empty('mic', 'Belum ada tamu. Tambahkan tamu dari jadwal intro call, lalu buat paket kontennya sekali ketuk.', `<button class="btn-tinted" data-a="newGuest">${ic('plus')} Tambah tamu</button>`)}
+      <div class="group-foot">Titik di setiap kartu = paket konten tamu: Intro, Pengumuman, Episode Tayang, Ringkasan, Kutipan. Penuh = sudah tayang, setengah = disetujui/terjadwal, garis = sedang dikerjakan.</div>`
+  };
+};
+VIEWS.guest = (v) => {
+  const g = guestOf(v.id);
+  if (!g) return { title: '', html: empty('mic', 'Tamu ini sudah dihapus.') };
+  const kv = (k, val) => val ? `<div class="kv"><div class="k">${k}</div><div class="v">${val}</div></div>` : '';
+  const quotes = String(g.quotes || '').split('\n').map(x => x.trim()).filter(Boolean);
+  const takes = String(g.takeaways || '').split('\n').map(x => x.trim()).filter(Boolean);
+  return {
+    title: g.name,
+    right: `<button class="nav-btn" data-a="editGuest" data-id="${g.id}" style="font-size:17px">Edit</button>`,
+    html: `<div class="client-hero">${guestAv(g, 84)}<div class="t-title2">${esc(g.name)}</div><div class="handle">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>${g.handle ? `<a href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener" class="t-sub">@${esc(g.handle)}</a>` : ''}
+        <div class="seg" style="margin-top:10px;width:100%;max-width:460px">${STAGES.map(x => `<button class="${g.stage === x.k ? 'on' : ''}" data-a="setStage" data-id="${g.id}" data-k="${x.k}">${esc(x.short)}</button>`).join('')}</div></div>
+      ${group('Paket konten', `<div class="list">${GUEST_CATS.map(k => { const ps = guestPosts(g).filter(p => p.cat === k); const c = CAT[k]; return ps.length ? ps.map(p => `<button class="row" data-a="post" data-id="${p.id}"><span class="tile" style="background:${c.color}">${ic(c.icon)}</span><span class="grow"><div class="ttl">${esc(c.short)}</div><div class="sub">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : 'Tanpa jadwal'} · ${TYPES[p.type || 'feed'].label}</div></span>${isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') : `<div class="row"><span class="tile" style="background:${c.color};opacity:.45">${ic(c.icon)}</span><span class="grow"><div class="ttl muted">${esc(c.short)}</div><div class="sub">Belum dibuat</div></span><button class="btn-tinted" data-a="makePack" data-id="${g.id}" data-k="${k}">${ic('plus')} Buat</button></div>`; }).join('')}</div>`, { action: (({ intro: ['intro'], jadwal: ['intro', 'announce'] }[g.stage]) || GUEST_CATS).some(k => packState(g, k) === 'none') ? `<button data-a="makePack" data-id="${g.id}" data-k="all">Buat ${g.stage === 'intro' ? 'intro' : g.stage === 'jadwal' ? 'intro & pengumuman' : 'semua'}</button>` : '', foot: 'Draf berisi judul, caption, tag tamu, dan tanggal yang disarankan dari jadwal tamu. Konten episode (Tayang, Ringkasan, Kutipan) baru disarankan setelah rekaman.' })}
+      ${group('Jadwal & episode', `<div class="list">${kv('Intro call', g.introDate ? prettyDate(g.introDate, true) : '')}${kv('Rekaman', g.recDate ? prettyDate(g.recDate, true) + (g.recTime ? ', ' + esc(g.recTime) + ' WIB' + (toClient(g.recDate, g.recTime) ? ` <span class="muted">(${fmt12(toClient(g.recDate, g.recTime).time)} ${esc(toClient(g.recDate, g.recTime).abbr)}, ${enDate(toClient(g.recDate, g.recTime).date)})</span>` : '') : '') : '')}${kv('Episode', g.epTitle ? (g.epNo ? 'Ep ' + esc(g.epNo) + ' · ' : '') + esc(g.epTitle) : '')}${kv('Tayang', g.pubDate ? prettyDate(g.pubDate, true) : '')}${kv('Link episode', g.epLink ? `<a href="${esc(g.epLink)}" target="_blank" rel="noopener">${esc(g.epLink)}</a>` : '')}${kv('Folder foto tamu', g.photoLink ? `<a href="${esc(g.photoLink)}" target="_blank" rel="noopener">${esc(g.photoLink)}</a>` : '')}${!g.introDate && !g.recDate && !g.epTitle ? '<div class="empty">Belum ada jadwal.</div>' : ''}</div>`)}
+      ${group('Bahan & prompt AI', `<div class="list">
+        ${g.topics ? `<div class="kv"><div class="k">Topik</div><div class="v">${esc(g.topics)}</div></div>` : ''}
+        <div class="row plain"><span class="grow"><div class="t-foot muted">Transkrip intro call</div><div class="ttl" style="font-size:15px">${g.introTr ? fmt(g.introTr.split(/\s+/).length) + ' kata' : '<span class="muted">Belum ada</span>'}</div></span><button class="btn-tinted" data-a="aiGuest" data-id="${g.id}" data-k="intro">${ic('sparkle')} Prompt intro</button></div>
+        <div class="row plain"><span class="grow"><div class="t-foot muted">Transkrip episode</div><div class="ttl" style="font-size:15px">${g.epTr ? fmt(g.epTr.split(/\s+/).length) + ' kata' : '<span class="muted">Belum ada</span>'}${g.yt ? ` · <a href="${esc(g.yt)}" target="_blank" rel="noopener">YouTube</a>` : ''}</div></span><button class="btn-tinted" data-a="aiGuest" data-id="${g.id}" data-k="summary">${ic('sparkle')} Prompt ringkasan</button></div>
+        </div>`, { action: `<button data-a="editGuest" data-id="${g.id}">Isi bahan</button>`, foot: 'Salin prompt ke ChatGPT, Gemini, atau Grok, lalu tempel hasilnya ke Canva dan caption-nya ke editor konten.' })}
+      ${g.intro ? group('Intro singkat', `<div class="list"><div class="kv"><div class="v">${esc(g.intro)}</div></div></div>`, { action: `<button data-a="copyText" data-text="${esc(g.intro)}">Salin</button>` }) : ''}
+      ${group('Kutipan', quotes.length ? `<div class="list">${quotes.map((q, i) => `<div class="row"><span class="tile" style="background:var(--purple)">${ic('quote')}</span><span class="grow"><div class="ttl" style="white-space:normal">“${esc(q)}”</div></span><button class="btn-tinted gray" data-a="quotePost" data-id="${g.id}" data-i="${i}" aria-label="Jadikan quote graphic">${ic('plus')}</button></div>`).join('')}</div>` : empty('quote', 'Catat kutipan kuat dari wawancara di sini, lalu jadikan quote graphic.'), { action: `<button data-a="editGuest" data-id="${g.id}">Tambah</button>` })}
+      ${group('Poin penting episode', takes.length ? `<div class="list flat">${takes.map((x, i) => `<div class="row plain"><span class="num b" style="width:20px;color:var(--orange)">${i + 1}</span><span class="grow" style="white-space:normal">${esc(x)}</span></div>`).join('')}</div>` : empty('list', 'Isi poin diskusi dan takeaway untuk carousel ringkasan.'))}
+      ${g.notes ? group('Catatan', `<div class="list"><div class="kv"><div class="v">${esc(g.notes)}</div></div></div>`) : ''}`
+  };
+};
+function guestCaption(g, k, quoteIdx) {
+  const c = clientOf(g.clientId) || {};
+  const tag = g.handle ? '@' + g.handle : g.name;
+  const who = [g.role, g.org].filter(Boolean).join(' at ');
+  const ht = hashtags((c.brand || {}).hashtags).join(' ') || '#sustainability #podcast';
+  const takes = String(g.takeaways || '').split('\n').map(x => x.trim()).filter(Boolean);
+  const quotes = String(g.quotes || '').split('\n').map(x => x.trim()).filter(Boolean);
+  const ep = g.epTitle ? `"${g.epTitle}"` : 'our latest episode';
+  if (k === 'intro') return `Meet our upcoming guest: ${g.name} 🌱\n\n${who ? who + '.\n' : ''}${g.intro || ''}\n\nStay tuned for a conversation on sustainability, innovation and positive impact.\n\n${tag}\n${ht}`;
+  if (k === 'announce') return `📅 Recording day${g.recDate ? ': ' + enDate(g.recDate) : ''}!\n\nWe're sitting down with ${g.name}${who ? ', ' + who : ''}.\n\nWhat would you like us to ask? Drop your questions below 👇\n\n${tag}\n${ht}`;
+  if (k === 'live') return `🎙️ NEW EPISODE IS LIVE\n\n${ep} with ${g.name}${who ? ', ' + who : ''}.\n\nListen now, link in bio.\n\n${tag}\n${ht}`;
+  if (k === 'summary') return `Key takeaways from our conversation with ${g.name} 👇\n\n${takes.length ? takes.map((x, i) => `${i + 1}. ${x}`).join('\n') : '1. \n2. \n3. '}\n\nWhich one resonates with you? Full episode, link in bio.\n\n${tag}\n${ht}`;
+  if (k === 'quote') { const q = quotes[quoteIdx || 0] || ''; return `"${q}"\n\n— ${g.name}${who ? ', ' + who : ''}\n\nListen to the full conversation, link in bio.\n\n${tag}\n${ht}`; }
+  return '';
+}
+function guestPreset(g, k, quoteIdx) {
+  const t = today();
+  const later = d => (d && d >= t) ? d : t;
+  // Tanpa tanggal tayang, konten episode dibuat tanpa jadwal (diisi nanti saat episode sudah pasti)
+  const date = { intro: later(g.introDate || t), announce: g.recDate ? later(addDays(g.recDate, -2)) : t, live: g.pubDate || '', summary: g.pubDate ? addDays(g.pubDate, 1) : '', quote: g.pubDate ? addDays(g.pubDate, 3) : '' }[k];
+  const q = String(g.quotes || '').split('\n').map(x => x.trim()).filter(Boolean)[quoteIdx || 0];
+  return { clientId: g.clientId || (activeClients()[0] || {}).id || '', cat: k, type: CAT[k].type, guestId: g.id, title: CAT[k].short + ' · ' + g.name + (k === 'quote' && q ? ': ' + q.slice(0, 40) + (q.length > 40 ? '…' : '') : ''), caption: guestCaption(g, k, quoteIdx), tags: g.handle ? '@' + g.handle : '', date, time: k === 'live' ? '18:00' : '19:00', status: 'draft', check: {} };
+}
+function makePack(g, which) {
+  // "Buat semua" menyesuaikan tahap tamu: konten episode baru dibuat setelah rekaman
+  const allowed = { intro: ['intro'], jadwal: ['intro', 'announce'], rekam: GUEST_CATS, tayang: GUEST_CATS }[g.stage] || GUEST_CATS;
+  const ks = which === 'all' ? allowed.filter(k => packState(g, k) === 'none') : [which];
+  if (!ks.length) { toast('Paket untuk tahap ini sudah lengkap', 'check'); return; }
+  ks.forEach(k => { const id = uid(); dbSet('posts/' + id, Object.assign({ id, media: [], log: [{ t: Date.now(), text: 'Dibuat dari data tamu ' + g.name }], createdAt: Date.now(), stAt: Date.now() }, guestPreset(g, k))); });
+  toast(ks.length + ' draf konten dibuat', 'check'); render();
+}
+function openGuest(id) {
+  const isNew = !id || !S.guests[id];
+  const g = isNew ? { id: uid(), clientId: UI.fClient || (activeClients()[0] || {}).id || '', name: '', role: '', org: '', handle: '', stage: 'intro', introDate: today(), at: Date.now() } : clone(S.guests[id]);
+  let photo = g.photo || '';
+  const w = openSheet({
+    title: isNew ? 'Tamu baru' : 'Edit tamu', right: isNew ? 'Tambah' : 'Simpan', wide: true,
+    body: `<div class="form"><div class="design-box"><div class="dthumb" id="gPhoto" style="border-radius:50%;width:84px;height:84px;aspect-ratio:auto">${photo ? `<img src="${photo}" alt="">` : ic('people')}</div><div class="dside"><button type="button" class="btn-tinted" id="gPhotoBtn">${ic('photo')} Pilih foto tamu</button><span class="t-foot muted">Foto kecil untuk penanda (±20 KB). File aslinya tetap di Canva/Drive.</span></div></div></div>
+      ${fSec('Profil', fInput('gName', 'Nama', g.name, { ph: 'Nama lengkap' }) + fInput('gRole', 'Jabatan', g.role, { ph: 'Founder, Head of…' }) + fInput('gOrg', 'Organisasi', g.org) + fInput('gHandle', 'Instagram', g.handle, { ph: 'tanpa @ (untuk tag)' }) + fInput('gPhotoLink', 'Folder foto', g.photoLink, { type: 'url', ph: 'Link Drive/Canva foto tamu' }) + (clients().length > 1 ? fSelect('gClient', 'Klien', g.clientId, clientOpts()) : ''))}
+      ${fSec('Tahap', fSelect('gStage', 'Tahap', g.stage, STAGES.map(x => [x.k, x.label])) + fInput('gIntroDate', 'Intro call', g.introDate, { type: 'date' }) + fInput('gRecDate', 'Rekaman (WIB)', g.recDate, { type: 'date' }) + fInput('gRecTime', 'Jam rekaman (WIB)', g.recTime, { type: 'time' }) + `<div class="field tz-hint"><span class="t-foot muted" style="flex:1">Klien kirim jam rekaman dalam EST?</span><button type="button" class="btn-tinted gray" data-a="tzFill" data-d="gRecDate" data-t="gRecTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button></div>`)}
+      ${fSec('Episode', fInput('gEpNo', 'Nomor', g.epNo, { mode: 'numeric', ph: '12' }) + fInput('gEpTitle', 'Judul episode', g.epTitle, { stack: true }) + fInput('gPubDate', 'Tanggal tayang', g.pubDate, { type: 'date' }) + fInput('gEpLink', 'Link episode', g.epLink, { type: 'url', ph: 'Spotify / YouTube / web' }))}
+      ${fSec('Bahan dari klien', fArea('gTopics', 'Topik podcast yang dibahas', g.topics, { rows: 3 }) + fArea('gIntroTr', 'Transkrip intro call', g.introTr, { rows: 4, ph: 'Tempel transkrip dari klien' }) + fInput('gYt', 'Episode YouTube', g.yt, { type: 'url', ph: 'Link episode untuk ambil transkrip' }) + fArea('gEpTr', 'Transkrip episode', g.epTr, { rows: 4, ph: 'Tempel transkrip YouTube' }), 'Dipakai untuk membuat prompt AI: intro carousel 5 slide, ringkasan episode, dan kutipan.')}
+      ${fSec('Isi konten', fArea('gIntro', 'Intro singkat (untuk carousel intro)', g.intro, { rows: 3 }) + fArea('gQuotes', 'Kutipan (satu per baris)', g.quotes, { rows: 4 }) + fArea('gTakeaways', 'Poin penting / takeaway (satu per baris)', g.takeaways, { rows: 4 }) + fArea('gNotes', 'Catatan', g.notes, { rows: 2 }))}
+      ${!isNew ? `<div class="list"><button class="row danger" data-a="delGuest" data-id="${g.id}">Hapus tamu</button></div>` : ''}`,
+    onRight: wr => {
+      const name = val(wr, 'gName');
+      if (!name) { toast('Nama tamu wajib diisi', 'alert'); return false; }
+      const out = Object.assign(g, { name, role: val(wr, 'gRole'), org: val(wr, 'gOrg'), handle: val(wr, 'gHandle').replace(/^@/, ''), photoLink: val(wr, 'gPhotoLink'), photo,
+        clientId: clients().length > 1 ? val(wr, 'gClient') : g.clientId, stage: val(wr, 'gStage'), introDate: val(wr, 'gIntroDate'), recDate: val(wr, 'gRecDate'), recTime: val(wr, 'gRecTime'),
+        epNo: val(wr, 'gEpNo'), epTitle: val(wr, 'gEpTitle'), pubDate: val(wr, 'gPubDate'), epLink: val(wr, 'gEpLink'), topics: val(wr, 'gTopics'), introTr: val(wr, 'gIntroTr'), yt: val(wr, 'gYt'), epTr: val(wr, 'gEpTr'), intro: val(wr, 'gIntro'), quotes: val(wr, 'gQuotes'), takeaways: val(wr, 'gTakeaways'), notes: val(wr, 'gNotes') });
+      dbSet('guests/' + g.id, out);
+      toast(isNew ? 'Tamu ditambahkan' : 'Tamu disimpan', 'check');
+      if (isNew) push({ v: 'guest', id: g.id, backLabel: 'Tamu', tab: 'guests' }); else render();
+    }
+  });
+  w.querySelector('#gPhotoBtn').addEventListener('click', () => {
+    const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*';
+    fi.onchange = () => { const f = fi.files[0]; if (!f) return; makeThumb(f, 240, .7).then(r => { if (!r.thumb) { toast('Format tidak didukung', 'alert'); return; } photo = r.thumb; w.querySelector('#gPhoto').innerHTML = `<img src="${photo}" alt="">`; }); };
+    fi.click();
+  });
+}
+
 // ---------------- VIEW: LAINNYA ----------------
 VIEWS.more = () => ({
   title: 'Lainnya',
@@ -570,10 +787,11 @@ VIEWS.ideas = () => {
   let xs = sortBy(Object.values(S.ideas), x => (x.done ? '1' : '0') + (9e15 - (x.at || 0)));
   if (UI.fClient) xs = xs.filter(x => x.clientId === UI.fClient || !x.clientId);
   return {
-    title: 'Bank Ide',
-    html: `${largeTitle('Bank Ide', Object.values(S.ideas).filter(x => !x.done).length + ' ide aktif', plusBtn('newIdea'))}
+    title: 'Ide & Berita',
+    html: `${largeTitle('Ide & Berita', Object.values(S.ideas).filter(x => !x.done).length + ' ide aktif', plusBtn('newIdea'))}
       ${clientChips()}
       <div class="form"><div class="field">${ic('bulb', 'faint')}<input id="quickIdea" placeholder="Tulis ide cepat lalu Enter…" style="text-align:left" autocomplete="off"></div></div>
+      ${(() => { const src = activeClients().flatMap(c => sourceList(c)); const c0 = activeClients()[0]; return group('Sumber riset berita', src.length ? `<div class="list">${src.map(x => x.link ? `<a class="row" href="${esc(x.link)}" target="_blank" rel="noopener"><span class="tile" style="background:var(--green)">${ic('leaf')}</span><span class="grow"><div class="ttl">${esc(x.name)}</div><div class="sub">${esc(x.link.replace(/^https?:\/\//, '').slice(0, 50))}</div></span>${ic('chevR', 'chev')}</a>` : `<div class="row"><span class="tile" style="background:var(--green)">${ic('leaf')}</span><span class="grow ttl">${esc(x.name)}</span></div>`).join('')}</div>` : empty('leaf', 'Simpan akun Instagram, newsletter, atau situs berita sustainability yang kamu pantau.'), { action: c0 ? `<button data-a="editClient" data-id="${c0.id}">Edit</button>` : '', foot: 'Beri label "berita" pada ide supaya otomatis jadi konten Sustainability News. Tulis ulang dengan kata-kata sendiri dan cantumkan sumbernya.' }); })()}
       ${xs.length ? `<div class="list">${xs.map(x => { const c = clientOf(x.clientId); return `<button class="row" data-a="ideaMenu" data-id="${x.id}" style="${x.done ? 'opacity:.5' : ''}"><span class="tile" style="background:${x.done ? 'var(--gray)' : 'var(--yellow)'}">${ic(x.done ? 'check' : 'bulb')}</span><span class="grow"><div class="ttl" style="white-space:normal">${esc(x.text)}</div><div class="sub">${[c ? esc(c.name) : 'Umum', x.tag ? '#' + esc(x.tag) : '', x.ref ? 'ada referensi' : '', x.at ? agoText(x.at) : ''].filter(Boolean).join(' · ')}</div></span>${ic('chevR', 'chev')}</button>`; }).join('')}</div>` : empty('bulb', 'Simpan ide konten, tren audio, atau referensi akun lain di sini.')}`
   };
 };
@@ -755,14 +973,21 @@ function openPost(id, preset) {
   const isNew = !id || !S.posts[id];
   const first = activeClients()[0];
   draft = isNew ? Object.assign({ id: uid(), clientId: UI.fClient || (first && first.id) || '', type: 'feed', title: '', caption: '', date: today(), time: '19:00', status: 'draft', media: [], pillar: '', notes: '', link: '', log: [], createdAt: Date.now() }, preset || {}) : clone(S.posts[id]);
-  draft.media = draft.media || []; draft.log = draft.log || [];
+  draft.media = draft.media || []; draft.log = draft.log || []; draft.check = draft.check || {};
   const pillars = [...new Set(clients().flatMap(c => String(c.pillars || '').split(',').map(s => s.trim()).filter(Boolean)))];
   const body = `
-    ${fSec('', fSelect('pClient', 'Klien', draft.clientId, clientOpts('Pilih klien'), { f: 'clientId' }) +
+    ${fSec('', (clients().length > 1 ? fSelect('pClient', 'Klien', draft.clientId, clientOpts('Pilih klien'), { f: 'clientId' }) : '') +
+      fSelect('pCat', 'Kategori', draft.cat || '', [['', 'Umum']].concat(CATS.map(k => [k.k, k.label])), { f: 'cat' }) +
+      `<div class="field" id="pCatHint" style="min-height:0;padding:0 16px 10px" ${CAT[draft.cat] ? '' : 'hidden'}><span class="t-foot muted">${CAT[draft.cat] ? esc(CAT[draft.cat].hint) : ''}</span></div>` +
+      `<div class="field" id="pRot" style="min-height:0;padding:0 16px 10px" ${rotFor(clientOf(draft.clientId), draft.cat, draft.date) ? '' : 'hidden'}>${rotHTML()}</div>` +
+      fSelect('pGuest', 'Tamu', draft.guestId || '', [['', 'Tanpa tamu']].concat(sortBy(guestsAll(), g => g.name.toLowerCase()).map(g => [g.id, g.name])), { f: 'guestId' }) +
       `<div class="field" style="padding:8px 16px"><div class="seg" id="pType" style="flex:1">${Object.keys(TYPES).map(k => `<button type="button" data-a="pType" data-k="${k}" class="${draft.type === k ? 'on' : ''}">${TYPES[k].label}</button>`).join('')}</div></div>` +
       fInput('pTitle', 'Judul', draft.title, { f: 'title', ph: 'Mis. Promo menu baru', stack: true }) +
-      fInput('pDate', 'Tanggal', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang', draft.time, { f: 'time', type: 'time' }) +
-      fInput('pPillar', 'Pilar konten', draft.pillar, { f: 'pillar', ph: 'Edukasi, promo…', list: 'pillarList' }) + `<datalist id="pillarList">${pillars.map(p => `<option value="${esc(p)}">`).join('')}</datalist>`)}
+      fInput('pDate', 'Tanggal (WIB)', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang (WIB)', draft.time, { f: 'time', type: 'time' }) +
+      `<div class="field tz-hint" id="pTz">${tzHint()}</div>` +
+      fInput('pTags', 'Tag akun', draft.tags, { f: 'tags', ph: '@tamu @kolaborator', stack: true }) +
+      fInput('pSource', 'Sumber berita', draft.source, { f: 'source', type: 'url', ph: 'Link artikel / riset (untuk kategori berita)', stack: true }))}
+    <div class="list"><button class="row action" data-a="fillFromGuest">${ic('sparkle')}<span class="grow">Isi judul & caption dari data tamu</span></button></div>
     <div><div class="form-head">Status</div><div class="form"><div class="status-pick" id="pStatus">${statusPick()}</div></div></div>
     <div><div class="form-head">Desain · ${draft.type === 'carousel' ? 'tempel slide pertama' : draft.type === 'reels' ? 'video 9:16, pakai cover-nya' : draft.type === 'story' ? '9:16' : 'rasio 4:5 disarankan'}</div><div class="form">
       <div class="design-box"><div class="dthumb" id="pThumb">${thumbBox()}</div><div class="dside">
@@ -775,11 +1000,13 @@ function openPost(id, preset) {
     <details class="opt" ${draft.media.length ? 'open' : ''}><summary>${ic('chevD')} Media di R2 (opsional) · ${draft.media.length} file</summary><div class="form"><div class="media-strip" id="pMedia">${mediaStrip()}</div></div><div class="form-foot">Pakai hanya kalau file tidak ada di Canva/Drive, misalnya foto mentah dari klien. Foto dikompres otomatis ke 1080 px.</div></details>
     <div><div class="form-head" style="display:flex;justify-content:space-between"><span>Caption</span><span style="display:flex;gap:14px;text-transform:none;letter-spacing:0"><button type="button" class="c-blue" data-a="insertTpl" data-k="caption">Template</button><button type="button" class="c-blue" data-a="insertTpl" data-k="hashtag">Hashtag</button></span></div>
       <div class="form">${fArea('pCaption', 'Caption & hashtag', draft.caption, { f: 'caption', rows: 7, count: true, ph: 'Tulis caption…' })}</div></div>
+    <div><div class="form-head">Checklist publish Instagram</div><div class="form">${CHECKS.map(c => `<label class="field" style="cursor:pointer"><span style="flex:1">${c[1]}</span><input type="checkbox" data-chk="${c[0]}" ${(draft.check || {})[c[0]] ? 'checked' : ''}><span class="switch"></span></label>`).join('')}</div><div class="form-foot">Cek sebelum menandai Terposting: rasio & safe zone, tag tamu/kolaborator, keyword, dan share ke Story bila perlu.</div></div>
     ${fSec('Catatan internal', fArea('pNotes', 'Brief, ide visual, audio, dll.', draft.notes, { f: 'notes', rows: 3 }) + fInput('pLink', 'Link post', draft.link, { f: 'link', ph: 'https://instagram.com/p/…', type: 'url' }))}
     <div><div class="form-head">Revisi & komentar klien</div><div class="form"><div class="log" id="pLog">${logHTML()}</div><div class="log-add"><input id="pLogInput" placeholder="Catat masukan klien…" autocomplete="off"><button type="button" data-a="addLog">Tambah</button></div></div></div>
     <div class="list">
       <button class="row action" data-a="igPreview">${ic('ig')}<span class="grow">Pratinjau tampilan Instagram</span></button>
-      <button class="row action" data-a="sendPost">${ic('send')}<span class="grow">Kirim ke klien untuk approval</span></button>
+      <button class="row action" data-a="aiPost">${ic('sparkle')}<span class="grow">Buat prompt AI untuk konten ini</span></button>
+      <button class="row action" data-a="sendPost">${ic('send')}<span class="grow">Minta review klien (Canva + Upwork)</span></button>
       ${!isNew ? `<button class="row action" data-a="dupPost">${ic('copy')}<span class="grow">Duplikat konten</span></button>` : ''}
     </div>
     ${!isNew ? `<div class="list"><button class="row danger" data-a="delPost">Hapus konten</button></div>` : ''}`;
@@ -790,6 +1017,8 @@ function openPost(id, preset) {
     onClose: () => { draft = null; }
   });
 }
+function rotHTML() { const r = draft && rotFor(clientOf(draft.clientId), draft.cat, draft.date); return r ? `<span class="t-foot">${ic('doc')} Template minggu ini: <b>${esc(r.name)}</b> (${r.i}/${r.n})${r.link ? ` · <a href="${esc(r.link)}" target="_blank" rel="noopener">Buka di Canva</a>` : ''}</span>` : ''; }
+function tzHint() { const ct = draft && toClient(draft.date, draft.time); return `<span class="t-foot muted" style="flex:1">${ct ? `Jam klien: <b style="color:var(--label)">${fmt12(ct.time)} ${esc(ct.abbr)}</b>, ${enDate(ct.date)}` : 'Isi tanggal & jam untuk melihat jam klien'}</span><button type="button" class="btn-tinted gray" data-a="tzFill" data-d="pDate" data-t="pTime" style="font-size:13px;padding:6px 10px">${ic('clock')} Dari jam klien</button>`; }
 function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
 function setDraftThumb(file) {
   if (!draft || !file) return;
@@ -825,14 +1054,17 @@ function savePost() {
   render();
 }
 function postShareText(p, urls) {
-  const c = clientOf(p.clientId) || {};
-  const lines = [`*${c.name || ''} · ${TYPES[p.type || 'feed'].label}*`, p.date ? `Jadwal tayang: ${prettyDate(p.date, true)}${p.time ? ', ' + p.time + ' WIB' : ''}` : '', ''];
-  if (p.title) lines.push(`Judul: ${p.title}`, '');
-  lines.push('Caption:', p.caption || '(belum ada caption)');
-  if (p.design) lines.push('', 'Desain: ' + p.design);
-  if (urls && urls.length) { lines.push('', `Materi (${urls.length} file):`); urls.forEach((u, i) => lines.push(`${i + 1}. ${u}`)); }
-  lines.push('', 'Mohon dicek ya. Balas *OK* kalau sudah sesuai, atau tulis bagian yang perlu direvisi. Terima kasih!');
-  return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
+  const g = guestOf(p.guestId), cat = catOf(p);
+  const what = (cat ? cat.label : 'post') + (g ? ' for ' + g.name : (p.title ? ': ' + p.title : ''));
+  const ct = toClient(p.date, p.time);
+  const when = p.date ? (ct ? `${enDate(ct.date)}, ${fmt12(ct.time)} ${ct.abbr} (${p.time} WIB)` : enDate(p.date)) : '';
+  const out = [`Hi! The ${what} is ready in our Canva folder, please take a look 🎨`];
+  if (p.design) out.push('', 'Canva: ' + p.design);
+  if (urls && urls.length) { out.push('', 'Files:'); urls.forEach((u, i) => out.push(`${i + 1}. ${u}`)); }
+  if (when) out.push('', 'Planned to go live: ' + when);
+  if (p.caption) out.push('', 'Caption:', p.caption);
+  out.push('', "Let me know if anything needs to change, otherwise I'll schedule it 🙌");
+  return out.join('\n');
 }
 function waLink(phone, text) {
   let p = String(phone || '').replace(/\D/g, '');
@@ -841,7 +1073,7 @@ function waLink(phone, text) {
 }
 async function sharePost(p) {
   const c = clientOf(p.clientId) || {};
-  const wrap = shareSheet('Kirim ke klien', postShareText(p, null), c.phone, 'Status otomatis menjadi Menunggu Klien setelah kamu menyalin atau membuka WhatsApp.', () => {
+  const wrap = shareSheet('Minta review klien', postShareText(p, null), c.phone, 'Klien mengecek desainnya langsung di folder Canva. Salin pesan ini ke chat Upwork. Status otomatis menjadi Menunggu Klien setelah kamu menyalin.', () => {
     if (S.posts[p.id] && ['draft', 'review', 'revisi', 'ide'].includes(S.posts[p.id].status)) {
       const np = Object.assign(clone(S.posts[p.id]), { status: 'klien', stAt: Date.now() });
       np.log = (np.log || []).concat({ t: Date.now(), text: 'Dikirim ke klien untuk approval' });
@@ -883,12 +1115,14 @@ function copyText(text, fallbackEl) {
   try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fail); else fail(); } catch (e) { fail(); }
 }
 function refreshDraftParts() {
-  const w = topSheet(); if (!w || !draft) return;
+  const w = draftSheet() || topSheet(); if (!w || !draft) return;
   const s = w.querySelector('#pStatus'); if (s) s.innerHTML = statusPick();
   const m = w.querySelector('#pMedia'); if (m) m.innerHTML = mediaStrip();
   const l = w.querySelector('#pLog'); if (l) l.innerHTML = logHTML();
   const t = w.querySelector('#pType'); if (t) t.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === draft.type));
   const th = w.querySelector('#pThumb'); if (th) th.innerHTML = thumbBox();
+  const tzh = w.querySelector('#pTz'); if (tzh) tzh.innerHTML = tzHint();
+  const rt = w.querySelector('#pRot'); if (rt) { rt.innerHTML = rotHTML(); rt.hidden = !rotHTML(); }
   const cl = w.querySelector('#pThumbClear'); if (cl) cl.hidden = !draft.thumb;
 }
 function draftSheet() { return sheets.map(r => r.wrap).reverse().find(w => w.querySelector('#pStatus')); }
@@ -1081,6 +1315,57 @@ function autoClean() {
   if (n) { toast(n + ' media lama dihapus dari R2', 'trash'); render(); }
 }
 
+// ---------------- KONVERTER JAM KLIEN ⇄ WIB ----------------
+function openConverter(target) {
+  const tz = clientTz(), w0 = target ? topSheet() : null;
+  const st = { dir: 'in', date: today(), time: '09:00' };
+  const w = openSheet({
+    title: 'Konversi jam', left: target ? 'Batal' : 'Tutup', right: target ? 'Pakai' : '',
+    body: `<div class="seg" id="tzDir"><button class="on" data-dir="in">${esc(tzAbbr(tz))} → WIB</button><button data-dir="out">WIB → ${esc(tzAbbr(tz))}</button></div>
+      <div class="form"><div class="field"><label for="tzD" id="tzDl">Tanggal</label><input id="tzD" type="date" value="${st.date}"></div><div class="field"><label for="tzT" id="tzTl">Jam</label><input id="tzT" type="time" value="${st.time}"></div></div>
+      <div class="tz-result" id="tzRes"></div>
+      <div><div class="form-head">Tempel pesan klien</div><div class="form"><div class="field stack"><label for="tzPaste">Semua jam di pesan otomatis dikonversi (memakai tanggal di atas)</label><textarea id="tzPaste" rows="3" placeholder="Mis. Recording is Thursday at 3:30 PM EST, intro call 10am"></textarea></div><div id="tzList"></div></div></div>
+      <div class="form-foot">Zona klien: ${esc((TZ_OPTS.find(x => x[0] === tz) || [tz, tz])[1])}. Pergantian EST/EDT (daylight saving) dihitung otomatis. Ubah di Edit klien.</div>`,
+    onRight: () => {
+      if (!target || !w0) return;
+      const r = st.dir === 'in' ? convertTz(tz, LOCAL_TZ, st.date, st.time) : { date: st.date, time: st.time };
+      const dEl = w0.querySelector('#' + target.d), tEl = w0.querySelector('#' + target.t);
+      if (dEl) { dEl.value = r.date; dEl.dispatchEvent(new Event('input', { bubbles: true })); dEl.dispatchEvent(new Event('change', { bubbles: true })); }
+      if (tEl) { tEl.value = r.time; tEl.dispatchEvent(new Event('input', { bubbles: true })); tEl.dispatchEvent(new Event('change', { bubbles: true })); }
+      toast(`Diisi ${r.time} WIB`, 'clock');
+    }
+  });
+  const res = () => {
+    st.date = w.querySelector('#tzD').value || today(); st.time = w.querySelector('#tzT').value || '00:00';
+    const from = st.dir === 'in' ? tz : LOCAL_TZ, to = st.dir === 'in' ? LOCAL_TZ : tz;
+    const ms = wallToUtc(from, st.date, st.time), r = tzParts(to, ms);
+    const dd = dayDiff(st.date, r.date);
+    w.querySelector('#tzDl').textContent = 'Tanggal (' + tzAbbr(from, ms) + ')'; w.querySelector('#tzTl').textContent = 'Jam (' + tzAbbr(from, ms) + ')';
+    w.querySelector('#tzRes').innerHTML = `<div class="tz-big num">${st.dir === 'in' ? r.time : fmt12(r.time)} <small>${esc(tzAbbr(to, ms))}</small></div><div class="tz-sub">${st.dir === 'in' ? prettyDate(r.date, true) : enDate(r.date)}${dd ? ` · <b>${dd > 0 ? 'hari berikutnya' : 'hari sebelumnya'}</b>` : ''}</div><div class="tz-sub muted">${st.dir === 'in' ? fmt12(st.time) : st.time} ${esc(tzAbbr(from, ms))} · ${tzDiffText(tz, ms)}</div>`;
+    const txt = w.querySelector('#tzPaste').value, out = [];
+    const re = /\b(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?(?=\W|$)/gi; let mt;
+    while ((mt = re.exec(txt))) {
+      let h = Number(mt[1]); const mi = mt[2] ? Number(mt[2]) : 0, ap = (mt[3] || '').toLowerCase().replace(/\./g, '');
+      if (!ap && !mt[2]) continue; if (h > 23 || mi > 59) continue;
+      if (ap === 'pm' && h < 12) h += 12; if (ap === 'am' && h === 12) h = 0;
+      const t0 = `${pad(h)}:${pad(mi)}`, m2 = wallToUtc(tz, st.date, t0), r2 = tzParts(LOCAL_TZ, m2), d2 = dayDiff(st.date, r2.date);
+      out.push(`<div class="row plain"><span class="grow"><span class="b">${esc(mt[0].trim())}</span> ${esc(tzAbbr(tz, m2))}</span><span class="val num">→ <b style="color:var(--label)">${r2.time} WIB</b>${d2 ? ` <small class="c-orange">${d2 > 0 ? '+1 hari' : '−1 hari'}</small>` : ''}</span></div>`);
+    }
+    w.querySelector('#tzList').innerHTML = out.join('') || (txt.trim() ? '<div class="row plain muted t-foot">Tidak ada jam yang terbaca. Tulis seperti 3 PM, 3:30pm, atau 15:00.</div>' : '');
+  };
+  w.querySelector('#tzDir').addEventListener('click', e => {
+    const b = e.target.closest('[data-dir]'); if (!b || b.dataset.dir === st.dir) return;
+    const from = st.dir === 'in' ? tz : LOCAL_TZ, to = st.dir === 'in' ? LOCAL_TZ : tz;
+    const r = convertTz(from, to, w.querySelector('#tzD').value || today(), w.querySelector('#tzT').value || '00:00');
+    st.dir = b.dataset.dir; w.querySelector('#tzD').value = r.date; w.querySelector('#tzT').value = r.time;
+    w.querySelectorAll('#tzDir button').forEach(x => x.classList.toggle('on', x === b)); res();
+  });
+  ['tzD', 'tzT', 'tzPaste'].forEach(id => w.querySelector('#' + id).addEventListener('input', res));
+  // Dari editor: mulai dari jadwal WIB yang sudah ada, ditampilkan dalam jam klien
+  if (target && w0) { const d = (w0.querySelector('#' + target.d) || {}).value, t = (w0.querySelector('#' + target.t) || {}).value; if (d && t) { const r = convertTz(LOCAL_TZ, tz, d, t); w.querySelector('#tzD').value = r.date; w.querySelector('#tzT').value = r.time; } }
+  res();
+}
+
 // ---------------- EDITOR KLIEN ----------------
 function openClient(id) {
   const isNew = !id || !S.clients[id];
@@ -1091,9 +1376,12 @@ function openClient(id) {
   const bc = [0, 1, 2, 3].map(i => c.brand.colors[i] || '');
   const w = openSheet({
     title: isNew ? 'Klien baru' : 'Edit klien', right: isNew ? 'Tambah' : 'Simpan', wide: true,
-    body: `${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]))}
+    body: `${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]) + fSelect('cTz', 'Zona waktu', c.tz || 'America/New_York', TZ_OPTS))}
       <div><div class="form-head">Warna penanda</div><div class="form"><div class="color-pick" id="cColor">${CLIENT_COLORS.map(x => `<button type="button" data-col="${x}" class="${x === color ? 'on' : ''}" style="background:${x}" aria-label="Warna ${x}"></button>`).join('')}</div></div></div>
       ${fSec('Paket per bulan', fInput('kFeed', 'Feed/Carousel', c.pkg.feed, { type: 'number', mode: 'numeric' }) + fInput('kReels', 'Reels', c.pkg.reels, { type: 'number', mode: 'numeric' }) + fInput('kStory', 'Story', c.pkg.story, { type: 'number', mode: 'numeric' }) + fInput('kPrice', 'Harga (Rp)', c.pkg.price, { mode: 'numeric', ph: '2500000' }) + fInput('cStart', 'Mulai kontrak', c.start, { type: 'date' }))}
+      ${fSec('Target konten per minggu', CATS.map(k => fInput('wk_' + k.k, k.short, weeklyTarget(c)[k.k], { type: 'number', mode: 'numeric', ph: String(k.max) })).join(''), 'Default sesuai jobdesk: Intro maks 7, Pengumuman/Tayang/Ringkasan/Kutipan 1–2, Berita 3–4.')}
+      ${fSec('Rotasi template Canva', ROT_CATS.map(k => fArea('rot_' + k, CAT[k].label + ' (satu per baris: nama | link)', ((c.rot || {})[k]) || '', { rows: 3, ph: 'Template A | https://canva.com/…' })).join(''), 'Satu template per baris. Tiap minggu web menyarankan template berikutnya, lalu kembali ke awal.')}
+      ${fSec('Sumber riset berita', fArea('cSources', 'Satu per baris: nama | link', c.sources, { rows: 4, ph: 'Newsletter iklim | https://…' }), 'Akun Instagram, newsletter, atau situs berita sustainability yang kamu pantau. Fokus US, tapi global boleh.')}
       ${fSec('Kontak', fInput('cPic', 'PIC', c.pic, { ph: 'Nama & jabatan' }) + fInput('cPhone', 'WhatsApp', c.phone, { type: 'tel', ph: '0812…' }) + fInput('cDrive', 'Folder aset', c.drive, { type: 'url', ph: 'Link Google Drive' }))}
       ${fSec('Brand kit', `<div class="field" style="gap:10px;padding:10px 16px"><label style="min-width:0;flex:1">Palet warna</label>${bc.map((x, i) => `<input type="color" id="bc${i}" value="${x || '#FFFFFF'}" data-set="${x ? 1 : 0}" aria-label="Warna brand ${i + 1}">`).join('')}</div>` +
         fInput('bFonts', 'Font', c.brand.fonts, { ph: 'Judul / isi' }) + fArea('bTone', 'Tone of voice', c.brand.tone, { rows: 2, ph: 'Santai, hangat, pakai "kamu"…' }) +
@@ -1106,8 +1394,10 @@ function openClient(id) {
       if (!name) { toast('Nama brand wajib diisi', 'alert'); return false; }
       const colors = [0, 1, 2, 3].map(i => { const el = wr.querySelector('#bc' + i); return el.dataset.set === '1' ? el.value : ''; }).filter(Boolean);
       const out = Object.assign(c, {
-        name, handle: val(wr, 'cHandle').replace(/^@/, ''), niche: val(wr, 'cNiche'), status: val(wr, 'cStatus'), color,
+        name, handle: val(wr, 'cHandle').replace(/^@/, ''), niche: val(wr, 'cNiche'), status: val(wr, 'cStatus'), tz: val(wr, 'cTz'), color,
         pkg: { feed: num(val(wr, 'kFeed')), reels: num(val(wr, 'kReels')), story: num(val(wr, 'kStory')), price: num(val(wr, 'kPrice')) },
+        weekly: Object.fromEntries(CATS.map(k => [k.k, num(val(wr, 'wk_' + k.k))])),
+        rot: Object.fromEntries(ROT_CATS.map(k => [k, val(wr, 'rot_' + k)])), sources: val(wr, 'cSources'),
         start: val(wr, 'cStart'), pic: val(wr, 'cPic'), phone: val(wr, 'cPhone'), drive: val(wr, 'cDrive'), pillars: val(wr, 'cPillars'), notes: val(wr, 'cNotes'),
         brand: { colors, fonts: val(wr, 'bFonts'), tone: val(wr, 'bTone'), hashtags: val(wr, 'bHash'), dos: val(wr, 'bDos'), donts: val(wr, 'bDonts') }
       });
@@ -1213,6 +1503,23 @@ const A = {
   cView: el => { UI.cView = el.dataset.k; saveUI(); render(); },
   cStatus: el => { UI.cStatus = el.dataset.k; render(); },
   post: el => openPost(el.dataset.id),
+  guest: el => { if (sheets.length) [...sheets].forEach(r => closeSheet(r)); const cur = stack[stack.length - 1]; if (cur && cur.v === 'guest' && cur.id === el.dataset.id) return; stack = (cur && cur.v === 'guest') ? stack.slice(0, -1) : stack; push({ v: 'guest', id: el.dataset.id, backLabel: stack.length ? 'Kembali' : (ALL_PAGES[UI.tab] ? ALL_PAGES[UI.tab].label : 'Kembali'), tab: 'guests' }); },
+  newGuest: () => openGuest(),
+  editGuest: el => openGuest(el.dataset.id),
+  gStage: el => { UI.gStage = el.dataset.k; saveUI(); render(); },
+  setStage: el => { const g = guestOf(el.dataset.id); if (!g) return; dbSet('guests/' + g.id, Object.assign(clone(g), { stage: el.dataset.k })); render(); },
+  makePack: el => { const g = guestOf(el.dataset.id); if (g) makePack(g, el.dataset.k); },
+  quotePost: el => { const g = guestOf(el.dataset.id); if (!g) return; openPost(null, guestPreset(g, 'quote', Number(el.dataset.i))); },
+  delGuest: el => { const id = el.dataset.id, n = postsAll().filter(p => p.guestId === id).length; iosAlert('Hapus tamu?', n ? `${n} konten tetap ada, hanya tidak lagi terhubung ke tamu ini.` : 'Tindakan ini tidak bisa dibatalkan.', [{ label: 'Batal' }, { label: 'Hapus', red: true, bold: true, fn: () => { postsAll().filter(p => p.guestId === id).forEach(p => dbSet('posts/' + p.id, Object.assign(clone(p), { guestId: '' }))); dbSet('guests/' + id, null); closeSheet(); stack = []; go('guests'); toast('Tamu dihapus', 'trash'); } }]); },
+  cCat: el => { UI.cCat = el.dataset.k; render(); },
+  fillFromGuest: () => {
+    const g = guestOf(draft.guestId);
+    if (!g) { toast('Pilih tamu dulu', 'alert'); return; }
+    const k = CAT[draft.cat] && GUEST_CATS.includes(draft.cat) ? draft.cat : 'intro';
+    const pre = guestPreset(g, k);
+    const apply = () => { const w = draftSheet(); Object.assign(draft, { cat: k, type: pre.type, title: pre.title, caption: pre.caption, tags: draft.tags || pre.tags }); [['pTitle', 'title'], ['pCaption', 'caption'], ['pTags', 'tags'], ['pCat', 'cat']].forEach(([id, f]) => { const el = w && w.querySelector('#' + id); if (el) el.value = draft[f] || ''; }); refreshDraftParts(); updateCaptionCount(w); toast('Diisi dari data ' + g.name, 'sparkle'); };
+    if (draft.caption && draft.caption.trim()) iosAlert('Ganti caption?', 'Caption yang sudah ditulis akan diganti dengan template dari data tamu.', [{ label: 'Batal' }, { label: 'Ganti', bold: true, fn: apply }]); else apply();
+  },
   followUp: el => { const p = S.posts[el.dataset.id]; if (p) sharePost(p); },
   newPost: el => { if (!clients().length) { iosAlert('Belum ada klien', 'Tambahkan klien dulu sebelum membuat konten.', [{ label: 'Nanti' }, { label: 'Tambah klien', bold: true, fn: () => openClient() }]); return; } const pre = {}; if (el.dataset.date) pre.date = el.dataset.date; if (el.dataset.client) pre.clientId = el.dataset.client; openPost(null, pre); },
   pType: el => { draft.type = el.dataset.k; refreshDraftParts(); },
@@ -1243,6 +1550,10 @@ const A = {
     actionSheet(kind === 'hashtag' ? 'Sisipkan hashtag' : 'Sisipkan template', items);
   },
   igPreview: () => igPreview(draft),
+  tzOpen: () => openConverter(null),
+  tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
+  aiPost: () => { const k = CAT[draft.cat] ? draft.cat : 'post'; openPrompt(k === 'post' ? 'live' : k, guestOf(draft.guestId), draft); },
+  aiGuest: el => { const g = guestOf(el.dataset.id); if (g) openPrompt(el.dataset.k, g, null); },
   sendPost: () => { if (!draft.clientId) { toast('Pilih klien dulu', 'alert'); return; } sharePost(draft); },
   dupPost: () => { const src = clone(draft); closeSheet(); setTimeout(() => openPost(null, Object.assign(src, { id: uid(), status: 'draft', log: [], link: '', postedAt: null, title: (src.title || '') + ' (salinan)' })), 340); },
   delPost: () => confirmDel('konten ini', () => { const id = draft.id; closeSheet(); dbSet('posts/' + id, null); toast('Konten dihapus', 'trash'); render(); }),
@@ -1280,7 +1591,7 @@ const A = {
   ideaMenu: el => {
     const x = S.ideas[el.dataset.id]; if (!x) return;
     const items = [
-      { label: 'Jadikan konten', bold: true, fn: () => { openPost(null, { clientId: x.clientId || UI.fClient || '', title: x.text.slice(0, 60), notes: x.text + (x.ref ? '\nReferensi: ' + x.ref : ''), status: 'draft' }); dbSet('ideas/' + x.id, Object.assign(clone(x), { done: true })); render(); } },
+      { label: 'Jadikan konten', bold: true, fn: () => { const isNews = /berita|news/i.test(x.tag || ''); openPost(null, Object.assign({ clientId: x.clientId || UI.fClient || '', title: x.text.slice(0, 60), notes: x.text + (x.ref ? '\nReferensi: ' + x.ref : ''), status: 'draft' }, isNews ? { cat: 'news', type: 'carousel', source: x.ref || '' } : {})); dbSet('ideas/' + x.id, Object.assign(clone(x), { done: true })); render(); } },
       { label: 'Edit', fn: () => openIdea(x.id) },
       { label: x.done ? 'Tandai belum dipakai' : 'Tandai sudah dipakai', fn: () => { dbSet('ideas/' + x.id, Object.assign(clone(x), { done: !x.done })); render(); } },
       { label: 'Hapus', red: true, fn: () => { dbSet('ideas/' + x.id, null); render(); } }
@@ -1366,7 +1677,16 @@ function bind() {
     const el = e.target;
     if (el.id === 'setAutoClean') { dbSet('settings', Object.assign({}, S.settings, { autoClean: el.checked })); toast('Disimpan', 'check'); }
     if (el.id === 'setName') { dbSet('settings', Object.assign({}, S.settings, { name: el.value.trim() })); toast('Disimpan', 'check'); }
-    if (el.dataset && el.dataset.f && draft) { draft[el.dataset.f] = el.value; if (el.dataset.f === 'clientId' && pickState) renderPicker(); }
+    if (el.dataset && el.dataset.chk && draft) { draft.check = Object.assign({}, draft.check, { [el.dataset.chk]: el.checked }); return; }
+    if (el.dataset && el.dataset.f && draft) {
+      draft[el.dataset.f] = el.value;
+      if (el.dataset.f === 'clientId' && pickState) renderPicker();
+      const w = draftSheet();
+      if (el.dataset.f === 'cat' && CAT[el.value]) { draft.type = CAT[el.value].type; refreshDraftParts(); }
+      if (el.dataset.f === 'date' || el.dataset.f === 'time') refreshDraftParts();
+      if (el.dataset.f === 'cat' && w) { const h = w.querySelector('#pCatHint'); if (h) { h.hidden = !CAT[el.value]; h.querySelector('span').textContent = CAT[el.value] ? CAT[el.value].hint : ''; } }
+      if (el.dataset.f === 'guestId') { const g = guestOf(el.value); if (g && g.handle && !draft.tags) { draft.tags = '@' + g.handle; const ti = w && w.querySelector('#pTags'); if (ti) ti.value = draft.tags; } }
+    }
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && sheets.length) { closeSheet(); return; }
@@ -1409,67 +1729,59 @@ function boot() {
 
 // ---------------- DATA CONTOH (mode pratinjau) ----------------
 function seedDemo() {
-  const D = blank(), t = today(), m = t.slice(0, 7), now = Date.now();
+  const D = blank(), t = today(), m = t.slice(0, 7), now = Date.now(), ws = weekStart(t);
   D.settings = { name: 'Hadzmi' };
-  const cl = [
-    { id: 'c1', name: 'Kopi Senja', handle: 'kopisenja.id', niche: 'Coffee shop', color: '#A2845E', pkg: { feed: 12, reels: 4, story: 20, price: 2500000 }, pic: 'Raka (owner)', phone: '0812 3456 7801', start: addMonths(m, -5) + '-03', pillars: 'Menu, Behind the bar, Promo, Komunitas', drive: 'https://drive.google.com/', notes: 'Approval lewat Raka, biasanya balas malam hari.',
-      brand: { colors: ['#3B2A20', '#C8A27C', '#F3E9DC', '#7A8B6F'], fonts: 'Playfair Display (judul) · Inter (isi)', tone: 'Hangat dan santai, seperti ngobrol sore. Pakai "kamu".', hashtags: '#kopisenja #kopijakarta #ngopisore #coffeetime', dos: 'Foto natural light jam 3 sore. Sebut menu musiman.', donts: 'Jangan pakai emoji berlebihan. Hindari foto gelap.' } },
-    { id: 'c2', name: 'Glowé Skin', handle: 'glowe.skin', niche: 'Skincare lokal', color: '#FF2D55', pkg: { feed: 16, reels: 8, story: 30, price: 4000000 }, pic: 'Nadia (brand manager)', phone: '0813 9876 5402', start: addMonths(m, -3) + '-10', pillars: 'Edukasi, Produk, Testimoni, Promo',
-      brand: { colors: ['#FFE4EC', '#FF2D55', '#2B2B2B'], fonts: 'DM Serif Display · DM Sans', tone: 'Ramah, edukatif, tidak menggurui.', hashtags: '#gloweskin #skincarelokal #glowingskin #skincareroutine', dos: 'Selalu cantumkan kandungan aktif. Before-after dengan izin.', donts: 'Jangan klaim medis ("menyembuhkan").' } },
-    { id: 'c3', name: 'Rumah Kayu Studio', handle: 'rumahkayu.studio', niche: 'Interior & furnitur', color: '#30B0C7', pkg: { feed: 8, reels: 4, story: 12, price: 2000000 }, pic: 'Bu Sari', phone: '0857 1122 3304', start: addMonths(m, -1) + '-01', pillars: 'Portofolio, Tips ruang, Proses produksi',
-      brand: { colors: ['#E9E3D5', '#6B4F3A', '#30B0C7'], fonts: 'Cormorant · Manrope', tone: 'Tenang, elegan, detail.', hashtags: '#rumahkayu #interiorminimalis #furniturjati', dos: 'Tampilkan tekstur kayu dari dekat.', donts: 'Hindari watermark besar.' } }
+  D.clients.c1 = { id: 'c1', name: 'Sustain Talks', handle: 'sustaintalks.pod', niche: 'Podcast sustainability', color: '#2E8B57', status: 'aktif', start: addMonths(m, -1) + '-04',
+    pkg: { feed: 0, reels: 0, story: 0, price: 6000000 }, weekly: { intro: 7, announce: 2, live: 2, summary: 2, quote: 2, news: 4 },
+    pic: 'Host & produser (review di Canva, chat di Upwork)', phone: '',
+    rot: { announce: 'Template A | https://www.canva.com/\nTemplate B | https://www.canva.com/\nTemplate C | https://www.canva.com/', live: 'Template A | https://www.canva.com/\nTemplate B | https://www.canva.com/\nTemplate C | https://www.canva.com/', quote: 'Template A | https://www.canva.com/\nTemplate B | https://www.canva.com/\nTemplate C | https://www.canva.com/' },
+    sources: 'Google News: sustainability (US) | https://news.google.com/search?q=sustainability&hl=en-US&gl=US\nGoogle News: climate innovation | https://news.google.com/search?q=climate%20innovation&hl=en-US&gl=US\nGoogle News: circular economy | https://news.google.com/search?q=circular%20economy&hl=en-US&gl=US', drive: 'https://www.canva.com/', pillars: 'Guest, Episode, News',
+    notes: 'Akses admin Instagram langsung (bukan Business Suite) dan anggota tim Canva workspace. Setelah desain jadi, kabari klien lewat Upwork untuk dicek di folder Canva. Konten yang butuh approval wajib disetujui sebelum publish. Hati-hati memakai akses akun.',
+    brand: { colors: ['#1F3D2B', '#2E8B57', '#E8F1E4', '#F2B544'], fonts: 'Brand template di Canva workspace', tone: 'Warm, optimistic and easy to understand', hashtags: '#sustainability #podcast #changemakers #circulareconomy #climateaction', dos: 'Pakai template brand di Canva. Tag tamu & organisasinya. Foto tamu wajib ada di Intro, Tayang, dan Kutipan.', donts: 'Jangan publish sebelum approval. Hindari klaim tanpa sumber di konten berita.' } };
+  const G = [
+    ['g1', 'Maya Prasetyo', 'Founder', 'Loop Circular Studio', 'maya.loops', 'tayang', -20, -12, '10:00', -1, 12, 'Designing Out Waste',
+      'Maya builds circular product systems for small brands and helps them design waste out from day one.',
+      'Waste is a design flaw, not an inevitability.\nThe most sustainable product is the one you can repair.',
+      'Start circular design at the sketch stage\nRepairability builds customer loyalty\nSmall brands can lead with take-back programs'],
+    ['g2', 'Daniel Okafor', 'Head of Sustainability', 'Northwind Logistics', 'dan.okafor', 'rekam', -14, -3, '14:00', 4, 13, 'Greener Supply Chains',
+      'Daniel leads decarbonisation across a regional logistics network.',
+      'You cannot manage what you do not measure.', 'Measure scope 3 first\nElectric fleets need charging partners\nSuppliers respond to clear targets'],
+    ['g3', 'Sofia Lindqvist', 'Climate Tech Investor', 'Fjord Ventures', 'sofia.invests', 'jadwal', -9, 2, '16:00', '', '', '', 'Sofia backs early-stage climate tech founders across the Nordics.', '', ''],
+    ['g4', 'Arif Hidayat', 'Co-founder', 'Rimba Regenerative Farm', 'arif.rimba', 'jadwal', -5, 6, '09:30', '', '', '', 'Arif restores degraded land with regenerative agriculture.', '', ''],
+    ['g5', 'Lena Ortiz', 'Sustainable Fashion Designer', 'Thread Again', 'lena.threads', 'intro', 1, '', '', '', '', '', 'Lena turns textile waste into modern, timeless collections.', '', ''],
+    ['g6', 'Kenji Watanabe', 'Circular Economy Researcher', 'Urban Futures Lab', 'kenji.circular', 'intro', 3, '', '', '', '', '', 'Kenji studies how cities can keep materials in use for longer.', '', ''],
+    ['g7', 'Priya Raman', 'ESG Consultant', 'Impact Bridge', 'priya.esg', 'intro', 0, '', '', '', '', '', 'Priya helps companies turn ESG commitments into everyday practice.', '', '']
   ];
-  cl.forEach(c => { c.status = 'aktif'; D.clients[c.id] = c; });
-  const grads = { c1: [['#C8A27C', '#3B2A20'], ['#F3E9DC', '#A2845E'], ['#7A8B6F', '#3B2A20'], ['#E8C9A0', '#8B5E3C']], c2: [['#FFE4EC', '#FF8FAB'], ['#FFB5C8', '#FF2D55'], ['#FFF0F3', '#E0A3B5'], ['#F7D6E0', '#B5838D']], c3: [['#E9E3D5', '#6B4F3A'], ['#D4C7B0', '#8C6E54'], ['#BFD8DC', '#30B0C7'], ['#F2EDE4', '#A38B6D']] };
-  let mi = 0;
-  const mk = (cid, kind, name, ago) => { const id = 'm' + (++mi); const g = grads[cid][mi % 4]; D.media[id] = { id, clientId: cid, name, mime: kind === 'video' ? 'video/mp4' : 'image/jpeg', kind, size: kind === 'video' ? 18e6 + mi * 7e5 : 2.1e6 + mi * 9e4, w: kind === 'video' ? 1080 : 1080, h: kind === 'video' ? 1920 : 1350, dur: kind === 'video' ? 14 + mi % 20 : undefined, ph: g, at: now - (ago || mi) * 86400000 / 2 }; return id; };
-  const P = [
-    ['c1', 'feed', 'Menu baru: Es Kopi Pandan', 'Sore-sore enaknya yang seger 🌿\nEs Kopi Pandan sudah bisa kamu pesan mulai hari ini.\n\n#kopisenja #ngopisore #kopijakarta', 0, '19:00', 'jadwal', 'Menu', 1],
-    ['c2', 'reels', 'Urutan skincare pagi', 'Urutan skincare pagi yang benar, biar hasilnya maksimal ✨\n\n1. Cleanser\n2. Toner\n3. Serum Niacinamide 5%\n4. Moisturizer\n5. Sunscreen SPF 50\n\n#gloweskin #skincareroutine', 0, '12:00', 'klien', 'Edukasi', 1, 'video'],
-    ['c3', 'carousel', 'Before-after ruang kerja 3x3 m', 'Ruang kerja 3x3 meter yang dulu sempit, sekarang lega dan hangat.\nGeser untuk lihat prosesnya →\n\n#rumahkayu #interiorminimalis', 0, '16:00', 'setuju', 'Portofolio', 4],
-    ['c1', 'story', 'Polling: kopi susu vs kopi hitam', '', 0, '10:00', 'posted', 'Komunitas', 1],
-    ['c2', 'feed', 'Kenalan sama Niacinamide', 'Niacinamide itu apa sih? Ini 3 manfaat utamanya buat kulit kamu 👇\n\n#gloweskin #skincarelokal', -1, '19:00', 'setuju', 'Edukasi', 1],
-    ['c1', 'carousel', 'Behind the bar: cara seduh V60', 'Pernah penasaran gimana barista kita seduh V60? Geser ya ☕\n\n#kopisenja #coffeetime', 1, '15:30', 'review', 'Behind the bar', 5],
-    ['c2', 'carousel', 'Testimoni pelanggan November', 'Kata mereka setelah 4 minggu pakai Glowé Brightening Serum 💗', 1, '19:00', 'revisi', 'Testimoni', 3],
-    ['c3', 'reels', 'Proses finishing meja jati', 'Dari papan kasar sampai jadi meja makan keluarga. Ini proses finishing-nya.', 2, '18:00', 'draft', 'Proses produksi', 1, 'video'],
-    ['c1', 'reels', 'POV: barista bikin latte art', 'POV kamu jadi barista 5 menit sebelum buka 😆', 3, '17:00', 'klien', 'Behind the bar', 1, 'video'],
-    ['c2', 'feed', 'Promo 12.12', 'Diskon 25% semua serum, hanya 12 Desember!\n\n#gloweskin #promo1212', 4, '12:00', 'draft', 'Promo', 1],
-    ['c3', 'feed', 'Tips memilih kayu untuk dapur', '3 jenis kayu yang tahan lembap untuk kabinet dapur.', 5, '19:30', 'ide', 'Tips ruang', 0],
-    ['c1', 'feed', 'Kopi Senja ulang tahun ke-3', 'Tiga tahun nemenin sore kamu 🧡', 6, '19:00', 'draft', 'Komunitas', 1],
-    ['c2', 'reels', 'Cara pakai sunscreen yang benar', 'Dua jari itu cukup? Yuk bahas takaran sunscreen.', 7, '19:00', 'review', 'Edukasi', 1, 'video'],
-    ['c3', 'carousel', 'Portofolio: rumah Bu Ana, Bintaro', 'Ruang keluarga dengan panel kayu jati Belanda.', 9, '16:00', 'draft', 'Portofolio', 3],
-    ['c1', 'feed', 'Promo gajian', 'Gajian tiba! Beli 2 gratis 1 kopi susu.', 11, '12:00', 'ide', 'Promo', 0],
-    ['c2', 'feed', 'Produk baru: Glowé Barrier Cream', '', 13, '19:00', 'ide', 'Produk', 0],
-    ['c1', 'feed', 'Biji kopi baru dari Gayo', 'Single origin Gayo sudah datang. Rasanya fruity dan manis.', -2, '19:00', 'posted', 'Menu', 1],
-    ['c2', 'reels', 'Mitos vs fakta jerawat', 'Pasta gigi bisa hilangkan jerawat? Mitos!', -3, '19:00', 'posted', 'Edukasi', 1, 'video'],
-    ['c3', 'feed', 'Detail sambungan kayu', 'Sambungan purus tanpa paku, kuat sampai puluhan tahun.', -4, '18:00', 'posted', 'Proses produksi', 1],
-    ['c1', 'carousel', '5 menu favorit pelanggan', 'Ini 5 menu yang paling sering dipesan bulan ini.', -5, '19:00', 'posted', 'Menu', 5],
-    ['c2', 'feed', 'Kandungan aktif yang tidak boleh dicampur', '', -6, '19:00', 'posted', 'Edukasi', 1],
-    ['c1', 'reels', 'Sore di Kopi Senja', '', -8, '17:00', 'posted', 'Komunitas', 1, 'video'],
-    ['c2', 'carousel', 'Routine kulit berminyak', '', -9, '12:00', 'posted', 'Edukasi', 4],
-    ['c3', 'reels', 'Timelapse pemasangan kitchen set', '', -10, '18:00', 'posted', 'Portofolio', 1, 'video'],
-    ['c1', 'feed', 'Live music Jumat malam', '', -12, '19:00', 'posted', 'Komunitas', 1],
-    ['c2', 'feed', 'Giveaway 10K followers', '', -14, '19:00', 'posted', 'Promo', 1]
-  ];
-  P.forEach((r, i) => {
-    const [cid, type, title, caption, day, time, status, pillar, nMedia, kind] = r;
-    const id = 'p' + (i + 1);
-    const media = [];
-    const ph = grads[cid][i % 4];
-    const design = nMedia ? (kind === 'video' ? 'https://www.capcut.com/share/contoh-' + (i + 1) : 'https://www.canva.com/design/contoh-' + (i + 1)) : '';
-    const log = [];
-    if (status === 'revisi') log.push({ t: now - 26 * 3600000, text: 'Status: Draft → Menunggu Klien' }, { t: now - 5 * 3600000, text: 'Nadia: foto testimoni ke-2 diganti yang lebih terang, dan nama pelanggan disamarkan ya.' }, { t: now - 5 * 3600000 + 60000, text: 'Status: Menunggu Klien → Revisi' });
-    if (status === 'klien') log.push({ t: now - (cid === 'c1' ? 3 : 0.3) * 86400000, text: 'Dikirim ke klien untuk approval' });
-    D.posts[id] = { id, clientId: cid, type, title, caption, date: addDays(t, day), time, status, pillar, media, ph, design, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + i : '', log, createdAt: now - 10 * 86400000, stAt: status === 'klien' && cid === 'c1' ? now - 3 * 86400000 : now - 5 * 3600000 };
-  });
-  mk('c1', 'image', 'foto-mentah-dari-klien.jpg', 1); mk('c2', 'image', 'flatlay-serum-dari-klien.jpg', 1); mk('c1', 'image', 'stok-foto-interior-cafe.jpg', 1); mk('c2', 'image', 'flatlay-serum-baru.jpg', 1); mk('c3', 'video', 'raw-workshop-amplas.mov', 2);
-  [['Trend audio "sore di kota" buat Reels suasana kafe', 'c1', 'tren', 'https://instagram.com/reels/'], ['Seri edukasi "1 menit 1 kandungan"', 'c2', 'seri', ''], ['Kolaborasi dengan florist sebelah untuk Valentine', 'c1', 'musiman', ''], ['Reels ASMR amplas kayu', 'c3', 'audio', ''], ['Carousel "salah kaprah skincare" format meme', 'c2', '', ''], ['Template story Q&A mingguan untuk semua klien', '', 'story', '']].forEach((x, i) => { const id = 'i' + i; D.ideas[id] = { id, text: x[0], clientId: x[1], tag: x[2], ref: x[3], done: false, at: now - i * 86400000 * 1.5 }; });
-  [['caption', 'Promo produk', 'Ada yang baru di {nama}! 🎉\n\n[nama produk] sekarang bisa kamu dapatkan dengan harga spesial [harga] sampai {tanggal}.\n\nYuk mampir atau DM {handle} untuk order.', ''], ['caption', 'Edukasi carousel', 'Sering bingung soal [topik]? Geser untuk tahu 3 hal yang perlu kamu tahu 👉\n\nSimpan postingan ini biar nggak lupa, dan share ke temanmu yang butuh!', ''], ['caption', 'CTA komentar', 'Kamu tim yang mana? Tulis jawabanmu di kolom komentar 👇', ''], ['caption', 'Testimoni', '"[kutipan pelanggan]"\n— [nama], [kota]\n\nTerima kasih sudah percaya sama {nama} 🙏', 'c2'], ['hashtag', 'F&B Jakarta', '#kulinerjakarta #jakartafoodies #kopikekinian #cafejakarta #ngopidulu #jajanjakarta', 'c1'], ['hashtag', 'Skincare lokal', '#skincarelokal #skincareindonesia #reviewskincare #kulitsehat #skincaretips #glowup', 'c2'], ['hashtag', 'Interior', '#desaininterior #interiorrumah #rumahminimalis #homedecorindonesia #furniturkayu', 'c3']].forEach((x, i) => { const id = 't' + i; D.templates[id] = { id, kind: x[0], title: x[1], body: x[2], clientId: x[3] }; });
-  const base = { c1: [8400, 31000, 52000, 2100, 640], c2: [18200, 64000, 120000, 5400, 1500], c3: [3100, 9800, 15000, 690, 210] };
-  Object.keys(base).forEach(cid => { for (let k = 5; k >= 1; k--) { const mm = addMonths(m, -k); const f = 1 + (5 - k) * .07 + (cid === 'c2' ? (5 - k) * .03 : 0); const b = base[cid]; const id = 'r' + cid + k; D.reports[id] = { id, clientId: cid, month: mm, followers: Math.round(b[0] * f), reach: Math.round(b[1] * (f + (k % 2 ? .05 : -.03))), impressions: Math.round(b[2] * f), engagement: Math.round(b[3] * (f + (k === 2 ? .2 : 0))), visits: Math.round(b[4] * f), top: k === 1 ? (cid === 'c1' ? 'Reels "Sore di Kopi Senja", 18 rb views' : cid === 'c2' ? 'Reels "Mitos vs fakta jerawat", 64 rb views' : 'Timelapse kitchen set, 9 rb views') : '', notes: k === 1 ? 'Reels edukasi & suasana paling kuat. Bulan depan tambah 1 Reels per minggu.' : '' }; } });
-  const inv = [['c1', m, 2500000, 'lunas', addDays(t, -10), addDays(t, -12)], ['c2', m, 4000000, 'belum', addDays(t, 3), ''], ['c3', m, 2000000, 'belum', addDays(t, -2), ''], ['c1', addMonths(m, -1), 2500000, 'lunas', addDays(t, -38), addDays(t, -40)], ['c2', addMonths(m, -1), 4000000, 'lunas', addDays(t, -35), addDays(t, -36)]];
-  inv.forEach((x, i) => { const id = 'v' + i; D.invoices[id] = { id, clientId: x[0], period: x[1], no: `INV/${x[1].replace('-', '')}/${pad(i % 3 + 1)}`, amount: x[2], status: x[3], due: x[4], paidAt: x[5], note: '' }; });
-  [['Minta foto produk Barrier Cream ke Nadia', 'c2', 0], ['Rekap insight bulanan semua klien', '', 3], ['Riset 5 akun kompetitor interior', 'c3', 5], ['Kirim invoice Rumah Kayu (sudah lewat tempo)', 'c3', -1]].forEach((x, i) => { const id = 'k' + i; D.tasks[id] = { id, text: x[0], clientId: x[1], due: addDays(t, x[2]), done: false, at: now }; });
+  G.forEach(x => { D.guests[x[0]] = { topics: x[0] === 'g5' ? 'Textile waste, upcycling, slow fashion business models' : '', introTr: x[0] === 'g5' ? '(Contoh) Host: Thanks for joining the intro call... Lena: We collect offcuts from local factories and turn them into...' : '', yt: ['g1', 'g2'].includes(x[0]) ? 'https://www.youtube.com/' : '', epTr: x[0] === 'g2' ? '(Contoh) Transkrip episode ditempel di sini dari YouTube.' : '', id: x[0], clientId: 'c1', name: x[1], role: x[2], org: x[3], handle: x[4], stage: x[5], introDate: addDays(t, x[6]), recDate: x[7] === '' ? '' : addDays(t, x[7]), recTime: x[8], pubDate: x[9] === '' ? '' : addDays(t, x[9]), epNo: String(x[10] || ''), epTitle: x[11], intro: x[12], quotes: x[13], takeaways: x[14], at: now }; });
+  const ph = { intro: ['#BFE6EE', '#2C8FA3'], announce: ['#D9D8FF', '#5856D6'], live: ['#FFC7D3', '#E0264E'], summary: ['#FFE0B2', '#E07B00'], quote: ['#EBD3F7', '#8E44AD'], news: ['#CFEBD6', '#2E8B57'] };
+  let n = 0;
+  const post = (cat, day, time, status, guestId, extra) => {
+    const id = 'p' + (++n), g = D.guests[guestId];
+    const base = g ? (S = D, guestPreset(g, cat)) : { clientId: 'c1', cat, type: CAT[cat].type, title: '', caption: '', tags: '' };
+    D.posts[id] = Object.assign({ id, media: [], log: [], createdAt: now - 6 * 86400000, stAt: now - 8 * 3600000, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + n : '', check: status === 'posted' ? { format: true, tag: true, caption: true, story: cat === 'live' } : {}, design: 'https://www.canva.com/design/contoh-' + n, ph: ph[cat] }, base, { date: addDays(ws, day), time, status }, extra || {});
+  };
+  // Minggu ini (Senin = 0)
+  post('intro', 0, '19:00', 'posted', 'g7'); post('intro', 1, '19:00', 'posted', 'g6'); post('intro', 2, '19:00', 'jadwal', 'g5'); post('intro', 3, '19:00', 'klien', 'g4'); post('intro', 4, '19:00', 'draft', 'g3');
+  post('announce', 1, '12:00', 'posted', 'g3'); post('announce', 4, '12:00', 'review', 'g4');
+  post('live', 1, '18:00', 'posted', 'g1', { title: 'Episode 12 is live · Maya Prasetyo' });
+  post('summary', 3, '12:00', 'revisi', 'g1', { log: [{ t: now - 5 * 3600000, text: 'Klien: slide 3 terlalu padat, pecah jadi 2 slide ya.' }, { t: now - 5 * 3600000 + 60000, text: 'Status: Menunggu Klien → Revisi' }] });
+  post('quote', 5, '12:00', 'draft', 'g1');
+  [['Plastics treaty: what is at stake', 0, 'posted'], ['Why repair cafés are growing', 2, 'jadwal'], ['Circular fashion: rental vs resale', 4, 'klien'], ['Heat pumps, explained simply', 6, 'ide']].forEach(x => post('news', x[1], '09:00', x[2], null, { title: x[0], caption: x[0] + ' 🌍\n\nSwipe to learn what it means and why it matters 👉\n\nSource in the last slide.\n\n#sustainability #climateaction', source: 'https://example.org/sumber-berita' }));
+  // Minggu lalu & depan
+  post('intro', -17, '19:00', 'posted', 'g1'); post('announce', -14, '12:00', 'posted', 'g1'); post('announce', -9, '12:00', 'posted', 'g2');
+  post('intro', -6, '19:00', 'posted', 'g2'); post('live', -5, '18:00', 'posted', 'g2', { title: 'Teaser · Daniel Okafor' }); post('summary', -4, '12:00', 'posted', 'g2'); post('quote', -2, '12:00', 'posted', 'g1');
+  [['Fast fashion and textile waste', -7], ['What is a carbon budget?', -5], ['Corporate net zero: claims vs action', -3]].forEach(x => post('news', x[1], '09:00', 'posted', null, { title: x[0], caption: x[0] + ' 🌍\n\n#sustainability', source: 'https://example.org/sumber-berita' }));
+  post('live', 7 + 3, '18:00', 'draft', 'g2', { date: D.guests.g2.pubDate });
+  post('announce', 9, '12:00', 'ide', 'g5');
+  D.ideas.i1 = { id: 'i1', text: 'EU rules on unsold clothes: explainer carousel', clientId: 'c1', tag: 'berita', ref: 'https://example.org/riset', done: false, at: now - 86400000 };
+  D.ideas.i2 = { id: 'i2', text: 'Myth vs fact: recycling symbols', clientId: 'c1', tag: 'berita', ref: '', done: false, at: now - 2 * 86400000 };
+  D.ideas.i3 = { id: 'i3', text: 'Behind the mic: recording day story', clientId: 'c1', tag: 'story', ref: '', done: false, at: now - 3 * 86400000 };
+  D.ideas.i4 = { id: 'i4', text: 'Monthly recap: all guests in one carousel', clientId: 'c1', tag: 'recap', ref: '', done: false, at: now - 4 * 86400000 };
+  [['caption', 'News carousel', '{judul} 🌍\n\nSwipe to learn what it means and why it matters 👉\n\nSource in the last slide.'], ['caption', 'Episode is live', '🎙️ NEW EPISODE IS LIVE\n\n[judul episode] with [nama tamu].\n\nListen now, link in bio.'], ['hashtag', 'Sustainability umum', '#sustainability #climateaction #circulareconomy #sustainableliving #greenbusiness #changemakers'], ['hashtag', 'Fashion berkelanjutan', '#sustainablefashion #slowfashion #circularfashion #textilewaste']].forEach((x, i) => { const id = 't' + i; D.templates[id] = { id, kind: x[0], title: x[1], body: x[2], clientId: '' }; });
+  for (let k = 3; k >= 1; k--) { const mm = addMonths(m, -k), f = 1 + (3 - k) * .09, id = 'r' + k; D.reports[id] = { id, clientId: 'c1', month: mm, followers: Math.round(2400 * f), reach: Math.round(9800 * f), impressions: Math.round(16500 * f), engagement: Math.round(820 * f), visits: Math.round(310 * f), top: k === 1 ? 'Episode is live · Maya Prasetyo' : '', notes: k === 1 ? 'Quote graphic dan intro tamu paling banyak disimpan. Pertahankan foto tamu besar di slide pertama.' : '' }; }
+  D.invoices.v0 = { id: 'v0', clientId: 'c1', period: addMonths(m, -1), no: 'INV/' + addMonths(m, -1).replace('-', '') + '/01', amount: 6000000, status: 'lunas', due: addDays(t, -25), paidAt: addDays(t, -27), note: '' };
+  D.invoices.v1 = { id: 'v1', clientId: 'c1', period: m, no: 'INV/' + m.replace('-', '') + '/01', amount: 6000000, status: 'belum', due: addDays(t, 5), paidAt: '', note: '' };
+  [['Minta foto resolusi tinggi Lena Ortiz', 0], ['Riset 4 berita sustainability minggu depan', 2], ['Konfirmasi jam rekaman Sofia ke klien', 1], ['Kumpulkan kutipan dari episode Daniel', 4]].forEach((x, i) => { const id = 'k' + i; D.tasks[id] = { id, text: x[0], clientId: 'c1', due: addDays(t, x[1]), done: false, at: now }; });
   return D;
 }
 
