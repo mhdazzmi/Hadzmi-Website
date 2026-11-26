@@ -335,6 +335,7 @@ function shellHTML() {
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept="image/*,video/*" multiple hidden>
 <input type="file" id="thumbInput" accept="image/*,video/*" hidden>
+<input type="file" id="photoInput" accept="image/*" hidden>
 <input type="file" id="importInput" accept="application/json,.json" hidden>`;
 }
 
@@ -769,7 +770,7 @@ VIEWS.guest = (v) => {
   return {
     title: g.name,
     right: `<button class="nav-btn" data-a="editGuest" data-id="${g.id}" style="font-size:17px">Edit</button>`,
-    html: `<div class="client-hero">${guestAv(g, 84)}<div class="t-title2">${esc(g.name)}</div><div class="handle">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>${g.handle ? `<a href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener" class="t-sub">@${esc(g.handle)}</a>` : ''}
+    html: `<div class="client-hero"><button class="photo-edit" data-a="guestPhoto" data-id="${g.id}" aria-label="Ubah foto narasumber">${guestAv(g, 84)}<span class="pe-badge">${ic('photo')}</span></button><button class="t-foot c-blue" data-a="guestPhoto" data-id="${g.id}">${g.photo ? 'Ubah foto' : 'Tambah foto'}</button><div class="t-title2">${esc(g.name)}</div><div class="handle">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>${g.handle ? `<a href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener" class="t-sub">@${esc(g.handle)}</a>` : ''}
         <div class="seg" style="margin-top:10px;width:100%;max-width:460px">${STAGES.map(x => `<button class="${g.stage === x.k ? 'on' : ''}" data-a="setStage" data-id="${g.id}" data-k="${x.k}">${esc(x.short)}</button>`).join('')}</div></div>
       ${group('Link progress untuk klien', `<div class="list"><div class="row plain" style="flex-wrap:wrap;gap:8px"><span class="grow t-foot muted" style="flex-basis:100%">Klien bisa melihat progress desain ${esc(g.name)} dan langsung Approve / Request changes. Hasilnya otomatis masuk ke status konten di sini.</span><button class="btn-tinted" data-a="copyProgress" data-k="g" data-id="${g.id}">${ic('copy')} Salin pesan</button><button class="btn-tinted gray" data-a="copyProgress" data-k="gl" data-id="${g.id}">${ic('link')} Salin link</button><button class="btn-tinted gray" data-a="openProgress" data-k="g" data-id="${g.id}">Buka</button></div></div>`)}
       ${group('Paket konten', `<div class="list">${GUEST_CATS.map(k => { const ps = guestPosts(g).filter(p => p.cat === k); const c = CAT[k]; return ps.length ? ps.map(p => `<button class="row" data-a="post" data-id="${p.id}"><span class="tile" style="background:${c.color}">${ic(c.icon)}</span><span class="grow"><div class="ttl">${esc(c.short)}</div><div class="sub">${p.date ? relDay(p.date) + (p.time ? ' ' + p.time : '') : 'Tanpa jadwal'} · ${TYPES[p.type || 'feed'].label}</div></span>${isLate(p) ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status)}</button>`).join('') : `<div class="row"><span class="tile" style="background:${c.color};opacity:.45">${ic(c.icon)}</span><span class="grow"><div class="ttl muted">${esc(c.short)}</div><div class="sub">Belum dibuat</div></span><button class="btn-tinted" data-a="makePack" data-id="${g.id}" data-k="${k}">${ic('plus')} Buat</button></div>`; }).join('')}</div>`, { action: (({ intro: ['intro'], jadwal: ['intro', 'announce'] }[g.stage]) || GUEST_CATS).some(k => packState(g, k) === 'none') ? `<button data-a="makePack" data-id="${g.id}" data-k="all">Buat ${g.stage === 'intro' ? 'intro' : g.stage === 'jadwal' ? 'intro & pengumuman' : 'semua'}</button>` : '', foot: 'Draf berisi judul, caption, tag tamu, dan tanggal yang disarankan dari jadwal tamu. Konten episode (Tayang, Ringkasan, Kutipan) baru disarankan setelah rekaman.' })}
@@ -846,9 +847,7 @@ function openGuest(id) {
     }
   });
   w.querySelector('#gPhotoBtn').addEventListener('click', () => {
-    const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*';
-    fi.onchange = () => { const f = fi.files[0]; if (!f) return; makeThumb(f, 240, .7).then(r => { if (!r.thumb) { toast('Format tidak didukung', 'alert'); return; } photo = r.thumb; w.querySelector('#gPhoto').innerHTML = `<img src="${photo}" alt="">`; }); };
-    fi.click();
+    pickImage().then(f => f && openCropper(f, { round: true, outW: 320, title: 'Crop foto narasumber' })).then(url => { if (!url) return; photo = url; w.querySelector('#gPhoto').innerHTML = `<img src="${photo}" alt="">`; });
   });
 }
 
@@ -1152,9 +1151,86 @@ function fillSlot(manual) {
 function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
 function setDraftThumb(file) {
   if (!draft || !file) return;
-  makeThumb(file, 480, .62).then(r => {
-    if (!r.thumb) { toast('Format tidak didukung, coba screenshot', 'alert'); return; }
-    draft.thumb = r.thumb; refreshDraftParts(); toast('Gambar ditempel · ' + Math.round(r.thumb.length * .75 / 1024) + ' KB', 'check');
+  const put = url => { if (!draft) return; draft.thumb = url; refreshDraftParts(); toast('Gambar disimpan · ' + Math.round(url.length * .75 / 1024) + ' KB', 'check'); };
+  if (/^image\//.test(file.type)) {
+    const start = draft.type === 'story' || draft.type === 'reels' ? '9:16' : draft.type === 'carousel' || draft.type === 'feed' ? '4:5' : '4:5';
+    openCropper(file, { ratios: ['4:5', '1:1', '9:16', '1.91:1'], ratio: start, outW: 480, title: 'Crop desain' }).then(url => { if (url) put(url); });
+    return;
+  }
+  makeThumb(file, 480, .62).then(r => { if (!r.thumb) { toast('Format tidak didukung, coba screenshot', 'alert'); return; } put(r.thumb); });
+}
+// Pilih foto lewat input permanen di halaman (andal di iPhone)
+function pickImage() {
+  return new Promise(res => {
+    const fi = $('photoInput'); fi.value = '';
+    fi.onchange = () => { const f = fi.files && fi.files[0]; fi.onchange = null; res(f || null); };
+    fi.click();
+  });
+}
+// Layar crop: geser untuk posisi, cubit/slider untuk zoom, pilih rasio. Hasil: data URL JPEG kecil.
+function openCropper(file, o) {
+  o = Object.assign({ ratios: ['1:1'], ratio: '1:1', round: false, outW: 320, title: 'Crop foto' }, o || {});
+  const rv = r => { const [a, b] = r.split(':').map(Number); return a / b; };
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file), img = new Image();
+    let done = false;
+    const finish = v => { if (done) return; done = true; URL.revokeObjectURL(url); resolve(v); };
+    img.onerror = () => { toast('Foto tidak bisa dibuka. Coba format JPG/PNG.', 'alert'); finish(null); };
+    img.onload = () => {
+      let ratio = o.ratio, zoom = 1, x = 0, y = 0, k = 1, bw = 0, bh = 0;
+      const w = openSheet({
+        title: o.title, right: 'Pakai',
+        body: `<div class="crop-wrap"><div class="crop-box ${o.round ? 'round' : ''}" id="cropBox"><img id="cropImg" src="${url}" alt="" draggable="false"></div></div>
+          ${o.ratios.length > 1 ? `<div class="seg" id="cropRatio">${o.ratios.map(r => `<button type="button" data-r="${r}" class="${r === ratio ? 'on' : ''}">${r === '1.91:1' ? 'Lebar' : r}</button>`).join('')}</div>` : ''}
+          <div class="form"><div class="field crop-zoom">${ic('photo', 'faint')}<input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom"><span style="font-size:20px" class="faint">${ic('photo')}</span></div></div>
+          <div class="form-foot" style="text-align:center">Geser foto untuk mengatur posisi. Cubit atau pakai slider untuk zoom.</div>`,
+        onRight: () => {
+          const outW = o.outW, outH = Math.round(outW / rv(ratio)), cv = document.createElement('canvas');
+          cv.width = outW; cv.height = outH;
+          const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, outW, outH);
+          ctx.drawImage(img, -x / k, -y / k, bw / k, bh / k, 0, 0, outW, outH);
+          finish(cv.toDataURL('image/jpeg', .78));
+        },
+        onClose: () => finish(null)
+      });
+      const box = w.querySelector('#cropBox'), im = w.querySelector('#cropImg'), zr = w.querySelector('#cropZoom');
+      const clamp = () => { const iw = img.naturalWidth * k, ih = img.naturalHeight * k; x = Math.min(0, Math.max(bw - iw, x)); y = Math.min(0, Math.max(bh - ih, y)); };
+      const paint = () => { clamp(); im.style.width = img.naturalWidth * k + 'px'; im.style.height = img.naturalHeight * k + 'px'; im.style.transform = `translate(${x}px,${y}px)`; };
+      const layout = keepCenter => {
+        // Lebar kotak menyesuaikan supaya rasio selalu tepat dan tingginya muat di layar
+        const avail = Math.max(160, box.parentNode.clientWidth - 28), maxH = Math.max(220, window.innerHeight * .58);
+        box.style.width = Math.round(Math.min(avail, 360, maxH * rv(ratio))) + 'px';
+        box.style.aspectRatio = String(rv(ratio));
+        const cx = bw ? (bw / 2 - x) / k : img.naturalWidth / 2, cy = bh ? (bh / 2 - y) / k : img.naturalHeight / 2;
+        bw = box.clientWidth; bh = box.clientHeight;
+        const base = Math.max(bw / img.naturalWidth, bh / img.naturalHeight);
+        k = base * zoom;
+        x = bw / 2 - cx * k; y = bh / 2 - cy * k; if (!keepCenter) { x = (bw - img.naturalWidth * k) / 2; y = (bh - img.naturalHeight * k) / 2; }
+        paint();
+      };
+      const setZoom = (z, px, py) => {
+        z = Math.min(4, Math.max(1, z));
+        const base = Math.max(bw / img.naturalWidth, bh / img.naturalHeight), nk = base * z;
+        px = px == null ? bw / 2 : px; py = py == null ? bh / 2 : py;
+        x = px - (px - x) * nk / k; y = py - (py - y) * nk / k; k = nk; zoom = z; zr.value = z; paint();
+      };
+      requestAnimationFrame(() => requestAnimationFrame(() => layout(false)));
+      zr.addEventListener('input', () => setZoom(Number(zr.value)));
+      const pts = new Map(); let last = null, pinch = null;
+      box.addEventListener('pointerdown', e => { box.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); last = { x: e.clientX, y: e.clientY }; if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoom }; } });
+      box.addEventListener('pointermove', e => {
+        if (!pts.has(e.pointerId)) return;
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pts.size === 2 && pinch) { const [a, b] = [...pts.values()], r = box.getBoundingClientRect(); setZoom(pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top); return; }
+        if (last) { x += e.clientX - last.x; y += e.clientY - last.y; last = { x: e.clientX, y: e.clientY }; paint(); }
+      });
+      const up = e => { pts.delete(e.pointerId); pinch = null; last = pts.size ? [...pts.values()][0] : null; };
+      box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+      box.addEventListener('wheel', e => { e.preventDefault(); const r = box.getBoundingClientRect(); setZoom(zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+      const rs = w.querySelector('#cropRatio');
+      if (rs) rs.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; ratio = b.dataset.r; rs.querySelectorAll('button').forEach(z => z.classList.toggle('on', z === b)); requestAnimationFrame(() => layout(true)); });
+    };
+    img.src = url;
   });
 }
 function statusPick() { return STATUS.map(s => `<button type="button" class="pill st-${s.k} ${draft.status === s.k ? 'on' : ''}" data-a="pStatus" data-k="${s.k}">${esc(s.label)}</button>`).join(''); }
@@ -1538,9 +1614,7 @@ function openClient(id) {
     }
   });
   w.querySelector('#cPhotoBtn').addEventListener('click', () => {
-    const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*';
-    fi.onchange = () => { const f = fi.files[0]; if (!f) return; makeThumb(f, 240, .72).then(r => { if (!r.thumb) { toast('Format tidak didukung', 'alert'); return; } cPhoto = r.thumb; w.querySelector('#cPhoto').innerHTML = `<img src="${cPhoto}" alt="">`; w.querySelector('#cPhotoDel').hidden = false; }); };
-    fi.click();
+    pickImage().then(f => f && openCropper(f, { round: true, outW: 320, title: 'Crop foto profil' })).then(url => { if (!url) return; cPhoto = url; w.querySelector('#cPhoto').innerHTML = `<img src="${cPhoto}" alt="">`; w.querySelector('#cPhotoDel').hidden = false; });
   });
   w.querySelector('#cPhotoDel').addEventListener('click', () => { cPhoto = ''; w.querySelector('#cPhoto').innerHTML = ic('people'); w.querySelector('#cPhotoDel').hidden = true; });
   w.querySelectorAll('.slot-days').forEach(el => el.addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (b) b.classList.toggle('on'); }));
@@ -1643,6 +1717,7 @@ const A = {
   post: el => openPost(el.dataset.id),
   guest: el => { if (sheets.length) [...sheets].forEach(r => closeSheet(r)); const cur = stack[stack.length - 1]; if (cur && cur.v === 'guest' && cur.id === el.dataset.id) return; stack = (cur && cur.v === 'guest') ? stack.slice(0, -1) : stack; push({ v: 'guest', id: el.dataset.id, backLabel: stack.length ? 'Kembali' : (ALL_PAGES[UI.tab] ? ALL_PAGES[UI.tab].label : 'Kembali'), tab: 'guests' }); },
   newGuest: () => openGuest(),
+  guestPhoto: el => { const id = el.dataset.id; pickImage().then(f => f && openCropper(f, { round: true, outW: 320, title: 'Crop foto narasumber' })).then(url => { const g = guestOf(id); if (!url || !g) return; dbSet('guests/' + id, Object.assign(clone(g), { photo: url })); render(); toast('Foto narasumber disimpan', 'check'); }); },
   editGuest: el => openGuest(el.dataset.id),
   gStage: el => { UI.gStage = el.dataset.k; saveUI(); render(); },
   setStage: el => { const g = guestOf(el.dataset.id); if (!g) return; dbSet('guests/' + g.id, Object.assign(clone(g), { stage: el.dataset.k })); render(); },
