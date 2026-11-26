@@ -573,3 +573,15 @@ details.opt[open] summary svg.i { transform: rotate(180deg); }
 .logo-pick button.on svg { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5.5px var(--blue); }
 .logo-pick button.on span { color: var(--blue); font-weight: 600; }
 .logo-pick button:active svg { transform: scale(.94); }
+
+/* Crop foto */
+.crop-wrap { background: #111; border-radius: 16px; padding: 14px; display: flex; justify-content: center; }
+.crop-box { position: relative; width: min(100%, 360px); overflow: hidden; touch-action: none; cursor: grab; background: #000; border-radius: 6px; user-select: none; -webkit-user-select: none; max-width: 100%; }
+.crop-box:active { cursor: grabbing; }
+.crop-box img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; pointer-events: none; -webkit-user-drag: none; }
+.crop-box::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.55); background-image: linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px); background-size: 33.333% 33.333%; background-position: -1px -1px; }
+.crop-box.round::after { border-radius: 50%; background-image: none; box-shadow: 0 0 0 999px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.8); }
+.crop-zoom { gap: 12px; }
+.crop-zoom input[type="range"] { flex: 1; accent-color: var(--blue); }
+.photo-edit { position: relative; border-radius: 50%; }
+.photo-edit .pe-badge { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 0 0 3px var(--card); }
