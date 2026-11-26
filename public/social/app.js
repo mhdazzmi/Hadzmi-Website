@@ -369,7 +369,7 @@ function renderSide() {
   $('side').innerHTML = `<div class="side-head"><div class="app-logo">${ic('ig')}</div><div><div class="b">Nexa Social</div><div class="t-cap muted">Social Media Manager</div></div></div>
     ${TABS.filter(t => t.k !== 'more').map(btn).join('')}
     <div class="side-sec">Alat</div>${morePages().map(btn).join('')}
-    <div class="side-sec">Klien</div>${clients().map(c => `<button data-a="client" data-id="${c.id}"><span class="avatar sm" style="background:${c.color}">${esc(initials(c.name))}</span>${esc(c.name)}</button>`).join('') || '<div class="t-foot muted" style="padding:4px 10px">Belum ada klien</div>'}
+    <div class="side-sec">Klien</div>${clients().map(c => `<button data-a="client" data-id="${c.id}">${avatar(c, 'sm')}${esc(c.name)}</button>`).join('') || '<div class="t-foot muted" style="padding:4px 10px">Belum ada klien</div>'}
     <a class="t-foot" href="../" style="padding:18px 10px 0">${ic('chevL')} Kembali ke Nexa</a>`;
 }
 function renderTabbar() {
@@ -415,7 +415,7 @@ function push(v) { stack.push(v); render(); window.scrollTo(0, 0); }
 function onScroll() { $('nav').classList.toggle('scrolled', window.scrollY > 24); }
 
 // ---------------- KOMPONEN ----------------
-const avatar = (c, cls) => `<span class="avatar ${cls || ''}" style="background:${c ? c.color : '#8E8E93'}">${esc(initials(c ? c.name : '?'))}</span>`;
+const avatar = (c, cls) => c && c.photo ? `<span class="avatar has-photo ${cls || ''}"><img src="${c.photo}" alt=""></span>` : `<span class="avatar ${cls || ''}" style="background:${c ? c.color : '#8E8E93'}">${esc(initials(c ? c.name : '?'))}</span>`;
 const pillSt = k => `<span class="pill st-${k}">${esc(ST[k] ? ST[k].label : k)}</span>`;
 function phStyle(m, fallbackColor) {
   if (m && m.thumb) return '';
@@ -1481,11 +1481,12 @@ function openClient(id) {
   const used = clients().map(c => c.color);
   const c = isNew ? { id: uid(), name: '', handle: '', niche: '', color: CLIENT_COLORS.find(x => !used.includes(x)) || CLIENT_COLORS[0], pkg: { feed: 12, reels: 4, story: 20, price: '' }, brand: { colors: [] }, status: 'aktif', start: today() } : clone(S.clients[id]);
   c.pkg = c.pkg || {}; c.brand = c.brand || {}; c.brand.colors = c.brand.colors || [];
-  let color = c.color;
+  let color = c.color, cPhoto = c.photo || '';
   const bc = [0, 1, 2, 3].map(i => c.brand.colors[i] || '');
   const w = openSheet({
     title: isNew ? 'Klien baru' : 'Edit klien', right: isNew ? 'Tambah' : 'Simpan', wide: true,
-    body: `${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]) + fSelect('cTz', 'Zona waktu', c.tz || 'America/New_York', TZ_OPTS))}
+    body: `<div class="form"><div class="design-box"><div class="dthumb" id="cPhoto" style="border-radius:50%;width:84px;height:84px;aspect-ratio:auto">${c.photo ? `<img src="${c.photo}" alt="">` : ic('people')}</div><div class="dside"><button type="button" class="btn-tinted" id="cPhotoBtn">${ic('photo')} Pilih foto profil</button><button type="button" class="c-red t-foot" id="cPhotoDel" ${c.photo ? '' : 'hidden'}>Hapus foto</button><span class="t-foot muted">Tampil di web ini dan di link progress klien. Dikecilkan otomatis (±20 KB).</span></div></div></div>
+      ${fSec('Akun', fInput('cName', 'Nama brand', c.name, { ph: 'Kopi Senja' }) + fInput('cHandle', 'Username IG', c.handle, { ph: 'tanpa @' }) + fInput('cNiche', 'Niche', c.niche, { ph: 'F&B, skincare…' }) + fSelect('cStatus', 'Status', c.status, [['aktif', 'Aktif'], ['jeda', 'Dijeda']]) + fSelect('cTz', 'Zona waktu', c.tz || 'America/New_York', TZ_OPTS))}
       <div><div class="form-head">Warna penanda</div><div class="form"><div class="color-pick" id="cColor">${CLIENT_COLORS.map(x => `<button type="button" data-col="${x}" class="${x === color ? 'on' : ''}" style="background:${x}" aria-label="Warna ${x}"></button>`).join('')}</div></div></div>
       ${fSec('Paket per bulan', fInput('kFeed', 'Feed/Carousel', c.pkg.feed, { type: 'number', mode: 'numeric' }) + fInput('kReels', 'Reels', c.pkg.reels, { type: 'number', mode: 'numeric' }) + fInput('kStory', 'Story', c.pkg.story, { type: 'number', mode: 'numeric' }) + fInput('kPrice', 'Harga (Rp)', c.pkg.price, { mode: 'numeric', ph: '2500000' }) + fInput('cStart', 'Mulai kontrak', c.start, { type: 'date' }))}
       ${fSec('Jadwal posting (jam klien)', CATS.map(k => { const sl = slotsOf(c)[k.k]; return `<div class="field slot-ed" data-slot="${k.k}"><span class="slot-l"><span class="cdot" style="background:${k.color}"></span>${esc(k.label)}</span><span class="slot-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-day="${d}" class="${sl.days.includes(d) ? 'on' : ''}">${'MSSRKJS'[d]}</button>`).join('')}</span><input type="time" id="sl_${k.k}" value="${sl.time}" aria-label="Jam ${esc(k.short)}"></div>`; }).join(''), 'Hari dan jam dalam zona klien (lihat Zona waktu di atas). Target mingguan dihitung dari jumlah slot. Default sesuai sheet "Webisodes Monthly Content" dari klien.')}
@@ -1502,7 +1503,7 @@ function openClient(id) {
       const name = val(wr, 'cName');
       if (!name) { toast('Nama brand wajib diisi', 'alert'); return false; }
       const colors = [0, 1, 2, 3].map(i => { const el = wr.querySelector('#bc' + i); return el.dataset.set === '1' ? el.value : ''; }).filter(Boolean);
-      const out = Object.assign(c, {
+      const out = Object.assign(c, { photo: cPhoto,
         name, handle: val(wr, 'cHandle').replace(/^@/, ''), niche: val(wr, 'cNiche'), status: val(wr, 'cStatus'), tz: val(wr, 'cTz'), color,
         pkg: { feed: num(val(wr, 'kFeed')), reels: num(val(wr, 'kReels')), story: num(val(wr, 'kStory')), price: num(val(wr, 'kPrice')) },
         slots: Object.fromEntries(CATS.map(k => { const row = wr.querySelector(`[data-slot="${k.k}"]`); return [k.k, { days: [...row.querySelectorAll('[data-day].on')].map(b => Number(b.dataset.day)), time: val(wr, 'sl_' + k.k) || '14:00' }]; })),
@@ -1515,6 +1516,12 @@ function openClient(id) {
       if (isNew) push({ v: 'client', id: c.id, backLabel: 'Klien', tab: 'clients' }); else render();
     }
   });
+  w.querySelector('#cPhotoBtn').addEventListener('click', () => {
+    const fi = document.createElement('input'); fi.type = 'file'; fi.accept = 'image/*';
+    fi.onchange = () => { const f = fi.files[0]; if (!f) return; makeThumb(f, 240, .72).then(r => { if (!r.thumb) { toast('Format tidak didukung', 'alert'); return; } cPhoto = r.thumb; w.querySelector('#cPhoto').innerHTML = `<img src="${cPhoto}" alt="">`; w.querySelector('#cPhotoDel').hidden = false; }); };
+    fi.click();
+  });
+  w.querySelector('#cPhotoDel').addEventListener('click', () => { cPhoto = ''; w.querySelector('#cPhoto').innerHTML = ic('people'); w.querySelector('#cPhotoDel').hidden = true; });
   w.querySelectorAll('.slot-days').forEach(el => el.addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (b) b.classList.toggle('on'); }));
   w.querySelector('#cColor').addEventListener('click', e => { const b = e.target.closest('[data-col]'); if (!b) return; color = b.dataset.col; w.querySelectorAll('#cColor button').forEach(x => x.classList.toggle('on', x === b)); });
   w.querySelectorAll('input[type="color"]').forEach(el => el.addEventListener('input', () => { el.dataset.set = '1'; }));

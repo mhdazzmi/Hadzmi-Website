@@ -558,3 +558,6 @@ details.opt[open] summary svg.i { transform: rotate(180deg); }
 /* Kartu papan lebih ringkas */
 .kcard .media, .kcard .media.story, .kcard .media.reels { aspect-ratio: auto; height: 132px; }
 .col { flex-basis: min(70vw, 240px); }
+
+.avatar.has-photo { background: var(--fill); overflow: hidden; }
+.avatar.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
