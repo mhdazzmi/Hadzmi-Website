@@ -29,7 +29,7 @@ const CATS = {
   livestory: { label: 'Webisode is Live Story', color: '#FF6B81' },
   summary: { label: 'Webisode Summary Carousel', color: '#FF9500' },
   quote: { label: 'Guest Quotes Post', color: '#AF52DE' },
-  news: { label: 'Trending Sustainability News', color: '#34C759' }
+  news: { label: 'Trending Sustainability News / History', color: '#34C759' }
 };
 const GUEST_CATS = ['intro', 'announce', 'live', 'livestory', 'summary', 'quote'];
 const EPISODE_CATS = ['live', 'livestory', 'summary', 'quote'];
@@ -176,11 +176,19 @@ function renderOverview() {
   const stageTxt = { intro: 'Intro call', jadwal: 'Recording scheduled', rekam: 'Recorded', tayang: 'Episode live' };
   const gNo = g => { const n = Number(g.order); if (n) return n; const m = /wb-guest-(\d+)/.exec(g.id || '') || /Nomor dokumen[^0-9]*(\d+)/i.exec(g.notes || ''); return m ? Number(m[1]) : 9999; };
   const gs = Object.values(D.guests || {}).filter(g => g.clientId === c.id).sort((a, b) => gNo(a) - gNo(b) || String(a.name || '').localeCompare(String(b.name || '')));
-  const totalReview = gs.reduce((x, g) => x + guestScore(g).review, 0);
+  // Postingan News tidak terkait narasumber: tampilkan 7 hari terakhir s/d 21 hari ke depan (WIB)
+  const tdy = tzParts(LOCAL_TZ, Date.now()).date;
+  const addD = (d, n) => { const [y, m, dd] = d.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1, dd + n)); return t.toISOString().slice(0, 10); };
+  const news = Object.values(D.posts || {}).filter(p => p.cat === 'news' && p.clientId === c.id && p.date && p.date >= addD(tdy, -7) && p.date <= addD(tdy, 21))
+    .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+  const newsReview = news.filter(p => p.status === 'klien').length;
+  const totalReview = gs.reduce((x, g) => x + guestScore(g).review, 0) + newsReview;
   return `<header class="pg-client">${c.photo ? `<span class="pg-cphoto"><img src="${c.photo}" alt=""></span>` : `<span class="pg-cphoto" style="background:${esc(c.color || '#34C759')}">${esc(initials(c.name))}</span>`}<span><span class="pg-brand" style="margin:0">${esc(c.name || 'Podcast')}</span><h1 class="pg-name" style="font-size:30px">Guest progress</h1></span></header>
     ${totalReview ? `<div class="pg-alert">${ic('alert')}<span>${totalReview} design${totalReview > 1 ? 's' : ''} ready for your review</span></div>` : ''}
     ${gs.length ? gs.map(g => { const sc = guestScore(g); const inner = `${photo(g)}<span class="g"><span class="n">${esc(g.name)}</span><span class="s">${esc(designSummary(g))} · ${sc.done} of ${sc.total} ready</span><span class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></span></span>${sc.review ? `<span class="badge-r">${sc.review} to review</span>` : ic('chevR')}`; const href = `?c=${encodeURIComponent(C_TOKEN)}&id=${encodeURIComponent(g.id)}${DEMO ? '&demo=1' : ''}`; return `<a class="pg-guest" href="${href}">${inner}</a>`; }).join('') : '<div class="pg-msg">No guests yet.</div>'}
-    <div class="pg-foot">Tap a guest to see each design and approve it.</div>`;
+    <div class="pg-foot">Tap a guest to see each design and approve it.</div>
+    <div class="pg-sec" style="margin-top:10px"><h2>${esc(CATS.news.label)}</h2><span>${news.length ? news.filter(p => DONE.includes(p.status)).length + ' of ' + news.length + ' ready' : ''}</span></div>
+    ${news.length ? news.map(p => postCard(p, c)).join('') : '<div class="pg-card"><span class="pg-empty">No news posts scheduled for the next few weeks yet.</span></div>'}`;
 }
 function render() {
   if (!D) return;
