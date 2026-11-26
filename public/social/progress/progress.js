@@ -19,7 +19,7 @@ const DB_PATH = 'hadzmi_social_data';
 const q = new URLSearchParams(location.search);
 const DEMO = q.has('demo');
 const DEMO_KEY = 'social_demo_v2';
-const G_TOKEN = q.get('g') || '', C_TOKEN = q.get('c') || '';
+const G_TOKEN = q.get('g') || '', C_TOKEN = q.get('c') || '', G_ID = q.get('id') || '';
 const LOCAL_TZ = 'Asia/Jakarta';
 
 const CATS = {
@@ -134,7 +134,10 @@ function missingCard(k, g) {
   return `<article class="pg-card"><div class="pg-top"><div class="pg-thumb" style="background:var(--fill2);color:var(--label3)">${ic('photo')}</div><div class="pg-info"><span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span><span class="chip waiting">${waitEp ? 'After the recording' : 'Not started yet'}</span></div></div></article>`;
 }
 function renderGuest() {
-  const g = Object.values(D.guests || {}).find(x => x.share && x.share === G_TOKEN);
+  // Lewat link narasumber (?g=) atau dari link ringkasan (?c=token klien&id=narasumber)
+  const viaClient = !G_TOKEN && C_TOKEN && Object.values(D.clients || {}).find(x => x.share && x.share === C_TOKEN);
+  const g = G_TOKEN ? Object.values(D.guests || {}).find(x => x.share && x.share === G_TOKEN)
+    : (viaClient ? Object.values(D.guests || {}).find(x => x.id === G_ID && (x.clientId === viaClient.id || !x.clientId)) : null);
   if (!g) return `<div class="pg-msg">This progress link is not valid anymore.<br>Please ask for a new link.</div>`;
   const c = (D.clients || {})[g.clientId] || Object.values(D.clients || {})[0] || {};
   const tz = c.tz || 'America/New_York';
@@ -147,7 +150,7 @@ function renderGuest() {
   const review = ps.filter(p => p.status === 'klien');
   const cards = GUEST_CATS.map(k => { const mine = ps.filter(p => p.cat === k); return mine.length ? mine.map(p => postCard(p, c)).join('') : missingCard(k, g); }).join('');
   const last = Math.max(g.at || 0, ...ps.map(p => p.updatedAt || p.stAt || 0));
-  return `<div class="pg-brand">${brandMark(c)}${esc(c.name || 'Podcast')} · Guest progress</div>
+  return `${viaClient ? `<a class="pg-back" href="?c=${encodeURIComponent(C_TOKEN)}${DEMO ? '&demo=1' : ''}">‹ All guests</a>` : ''}<div class="pg-brand">${brandMark(c)}${esc(c.name || 'Podcast')} · Guest progress</div>
     <section class="pg-hero">${photo(g)}<div class="pg-name">${esc(g.name)}</div>${g.role || g.org ? `<div class="pg-role">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>` : ''}${g.handle ? `<a class="pg-handle" href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener">@${esc(g.handle)}</a>` : ''}
       ${g.epTitle ? `<div class="pg-role" style="margin-top:6px">🎙️ ${g.epNo ? 'Episode ' + esc(g.epNo) + ' · ' : ''}${esc(g.epTitle)}</div>` : ''}
       <div class="pg-steps"><span class="bar" style="width:${barW}%"></span>${step(0, 'Intro call', g.introDate)}${step(1, 'Recording', g.recDate, g.recTime)}${step(2, 'Episode live', g.pubDate)}</div></section>
@@ -167,13 +170,13 @@ function renderOverview() {
   const totalReview = gs.reduce((x, g) => x + guestScore(g).review, 0);
   return `<header class="pg-client">${c.photo ? `<span class="pg-cphoto"><img src="${c.photo}" alt=""></span>` : `<span class="pg-cphoto" style="background:${esc(c.color || '#34C759')}">${esc(initials(c.name))}</span>`}<span><span class="pg-brand" style="margin:0">${esc(c.name || 'Podcast')}</span><h1 class="pg-name" style="font-size:30px">Guest progress</h1></span></header>
     ${totalReview ? `<div class="pg-alert">${ic('alert')}<span>${totalReview} design${totalReview > 1 ? 's' : ''} ready for your review</span></div>` : ''}
-    ${gs.length ? gs.map(g => { const sc = guestScore(g); const inner = `${photo(g)}<span class="g"><span class="n">${esc(g.name)}</span><span class="s">${esc(stageTxt[g.stage] || '')} · ${sc.done} of ${sc.total} ready</span><span class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></span></span>${sc.review ? `<span class="badge-r">${sc.review} to review</span>` : ic('chevR')}`; return g.share ? `<a class="pg-guest" href="?g=${encodeURIComponent(g.share)}${DEMO ? '&demo=1' : ''}">${inner}</a>` : `<div class="pg-guest">${inner}</div>`; }).join('') : '<div class="pg-msg">No guests yet.</div>'}
+    ${gs.length ? gs.map(g => { const sc = guestScore(g); const inner = `${photo(g)}<span class="g"><span class="n">${esc(g.name)}</span><span class="s">${esc(stageTxt[g.stage] || '')} · ${sc.done} of ${sc.total} ready</span><span class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></span></span>${sc.review ? `<span class="badge-r">${sc.review} to review</span>` : ic('chevR')}`; const href = `?c=${encodeURIComponent(C_TOKEN)}&id=${encodeURIComponent(g.id)}${DEMO ? '&demo=1' : ''}`; return `<a class="pg-guest" href="${href}">${inner}</a>`; }).join('') : '<div class="pg-msg">No guests yet.</div>'}
     <div class="pg-foot">Tap a guest to see each design and approve it.</div>`;
 }
 function render() {
   if (!D) return;
   const keepFb = {}; Object.keys(openFb).forEach(id => { const ta = $('fb-' + id); keepFb[id] = { text: ta ? ta.value : (openFb[id].text || '') }; }); Object.assign(openFb, keepFb);
-  try { $('root').innerHTML = G_TOKEN ? renderGuest() : C_TOKEN ? renderOverview() : '<div class="pg-msg">Missing progress link.</div>'; }
+  try { $('root').innerHTML = (G_TOKEN || (C_TOKEN && G_ID)) ? renderGuest() : C_TOKEN ? renderOverview() : '<div class="pg-msg">Missing progress link.</div>'; }
   catch (e) { console.error(e); $('root').innerHTML = `<div class="pg-msg">Something went wrong while loading this page.<br><small>${esc(e && e.message)}</small><br><br><button class="pg-btn link" onclick="location.reload()">Reload</button></div>`; }
 }
 

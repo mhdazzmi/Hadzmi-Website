@@ -73,3 +73,7 @@ body { background: var(--bg); }
 .pg-bphoto img, .pg-cphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pg-client { display: flex; gap: 14px; align-items: center; }
 .pg-cphoto { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 22px; box-shadow: 0 0 0 .5px var(--sep); }
+
+.pg-back { color: var(--blue); font-size: 17px; text-decoration: none; margin-bottom: -6px; }
+.pg-guest { cursor: pointer; }
+.pg-guest:active { transform: scale(.98); }
