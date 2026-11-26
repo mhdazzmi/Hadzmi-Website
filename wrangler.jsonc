@@ -4,6 +4,12 @@
   "name": "hadzmi-website-utama",
   "main": "worker/index.js",
   "compatibility_date": "2025-06-01",
+  // Domain sendiri (dibeli di Rumahweb, DNS di Cloudflare). Alamat workers.dev tetap aktif.
+  "routes": [
+    { "pattern": "hadzmi.my.id", "custom_domain": true },
+    { "pattern": "www.hadzmi.my.id", "custom_domain": true }
+  ],
+  "workers_dev": true,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
