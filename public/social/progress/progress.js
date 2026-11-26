@@ -89,7 +89,7 @@ function decide(id, approve, note) {
   const log = (p.log || []).concat(approve
     ? [{ t: now, text: 'Disetujui klien lewat link progress' + (note ? ': ' + note : '') }]
     : [{ t: now, text: 'Klien minta revisi lewat link progress: ' + note }]);
-  const patch = approve ? { status: 'setuju', stAt: now, updatedAt: now, log, clientNote: note || '' } : { status: 'revisi', stAt: now, updatedAt: now, log, clientNote: note };
+  const patch = approve ? { status: 'jadwal', stAt: now, updatedAt: now, log, clientNote: note || '' } : { status: 'revisi', stAt: now, updatedAt: now, log, clientNote: note };
   return writePost(id, patch).then(() => { delete openFb[id]; toast(approve ? 'Approved. Thank you!' : 'Feedback sent. Thank you!'); }).catch(() => toast('Could not save. Please check your connection and try again.'));
 }
 

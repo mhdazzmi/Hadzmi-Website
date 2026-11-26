@@ -27,25 +27,24 @@ const WIB = 7 * 3600 * 1000;
 const COLS = ['clients', 'posts', 'media', 'ideas', 'templates', 'reports', 'invoices', 'tasks', 'guests'];
 
 const STATUS = [
-  { k: 'ide', label: 'Ide' },
   { k: 'draft', label: 'Draft' },
-  { k: 'review', label: 'Review' },
   { k: 'klien', label: 'Menunggu Klien' },
   { k: 'revisi', label: 'Revisi' },
-  { k: 'setuju', label: 'Disetujui' },
   { k: 'jadwal', label: 'Terjadwal' },
   { k: 'posted', label: 'Terposting' }
 ];
-const ST = Object.fromEntries(STATUS.map(s => [s.k, s]));
+// Status lama dipetakan ke 5 status baru (data lama otomatis diperbarui saat dibuka)
+const LEGACY_ST = { ide: 'draft', review: 'draft', setuju: 'jadwal' };
+const ST = Object.fromEntries(STATUS.concat([{ k: 'ide', label: 'Draft' }, { k: 'review', label: 'Draft' }, { k: 'setuju', label: 'Terjadwal' }]).map(s => [s.k, s]));
 // Kategori konten sesuai jobdesk (podcast sustainability). min/max = frekuensi per minggu.
 const CATS = [
-  { k: 'intro', label: 'Guest Intro Call Carousel', short: 'Intro Tamu', type: 'carousel', min: 0, max: 7, color: '#30B0C7', icon: 'people', hint: 'Foto, nama, jabatan, organisasi, intro singkat (5 slide)' },
-  { k: 'announce', label: 'Webisode Release Date Post', short: 'Tanggal Rilis', type: 'feed', min: 1, max: 1, color: '#5856D6', icon: 'cal', hint: 'Template siap pakai: ganti foto, nama, tanggal' },
-  { k: 'live', label: 'Webisode is Live Post', short: 'Episode Tayang', type: 'feed', min: 1, max: 1, color: '#FF2D55', icon: 'mic', hint: 'Template siap pakai: foto tamu, judul episode, headline' },
-  { k: 'livestory', label: 'Webisode is Live Story', short: 'Story Tayang', type: 'story', min: 1, max: 1, color: '#FF6B81', icon: 'story', hint: 'Story 9:16 bersamaan dengan post episode tayang' },
-  { k: 'summary', label: 'Webisode Summary Carousel', short: 'Ringkasan Episode', type: 'carousel', min: 1, max: 1, color: '#FF9500', icon: 'list', hint: 'Poin diskusi, insight, takeaway dari transkrip' },
-  { k: 'quote', label: 'Guest Quotes Post', short: 'Kutipan Tamu', type: 'feed', min: 2, max: 2, color: '#AF52DE', icon: 'quote', hint: 'Template siap pakai: foto tamu + kutipan sustainability' },
-  { k: 'news', label: 'Trending Sustainability News / History', short: 'Berita Sustainability', type: 'carousel', min: 4, max: 4, color: '#34C759', icon: 'leaf', hint: 'Berita tren / sejarah sustainability, fokus US' }
+  { k: 'intro', label: 'Guest Intro Call Carousel', short: 'Intro', type: 'carousel', min: 0, max: 7, color: '#30B0C7', icon: 'people', hint: 'Foto, nama, jabatan, organisasi, intro singkat (5 slide)' },
+  { k: 'announce', label: 'Webisode Release Date Post', short: 'Release Date', type: 'feed', min: 1, max: 1, color: '#5856D6', icon: 'cal', hint: 'Template siap pakai: ganti foto, nama, tanggal' },
+  { k: 'live', label: 'Webisode is Live Post', short: 'Live Post', type: 'feed', min: 1, max: 1, color: '#FF2D55', icon: 'mic', hint: 'Template siap pakai: foto tamu, judul episode, headline' },
+  { k: 'livestory', label: 'Webisode is Live Story', short: 'Live Story', type: 'story', min: 1, max: 1, color: '#FF6B81', icon: 'story', hint: 'Story 9:16 bersamaan dengan post episode tayang' },
+  { k: 'summary', label: 'Webisode Summary Carousel', short: 'Summary', type: 'carousel', min: 1, max: 1, color: '#FF9500', icon: 'list', hint: 'Poin diskusi, insight, takeaway dari transkrip' },
+  { k: 'quote', label: 'Guest Quotes Post', short: 'Quote', type: 'feed', min: 2, max: 2, color: '#AF52DE', icon: 'quote', hint: 'Template siap pakai: foto tamu + kutipan sustainability' },
+  { k: 'news', label: 'Trending Sustainability News / History', short: 'News', type: 'carousel', min: 4, max: 4, color: '#34C759', icon: 'leaf', hint: 'Berita tren / sejarah sustainability, fokus US' }
 ];
 // Jadwal posting dari klien ("Webisodes Monthly Content"), dalam jam klien (Eastern). days: 0 = Minggu … 6 = Sabtu
 const DEFAULT_SLOTS = {
@@ -218,11 +217,13 @@ function pushPath(path) {
   });
 }
 function flushPending() { Object.keys(pending).forEach(pushPath); }
+function migrateStatuses() { Object.values(S.posts || {}).forEach(p => { const n = LEGACY_ST[p.status]; if (n) dbSet('posts/' + p.id, Object.assign(clone(p), { status: n })); }); }
 function applyRemote(v) {
   v = v || {};
   COLS.forEach(c => { S[c] = v[c] && typeof v[c] === 'object' ? v[c] : {}; });
   S.settings = v.settings && typeof v.settings === 'object' ? v.settings : (S.settings || {});
   Object.keys(pending).forEach(p => setLocal(p, pending[p] == null ? null : clone(pending[p])));
+  migrateStatuses();
   saveCache(); flushPending(); render();
   if (!cleaned) { cleaned = true; setTimeout(autoClean, 4000); }
 }
@@ -353,6 +354,9 @@ const MORE = [
   { k: 'finance', label: 'Keuangan', icon: 'wallet', tile: '#34C759', sub: 'Paket, tagihan & pembayaran' },
   { k: 'settings', label: 'Pengaturan', icon: 'gear', tile: '#8E8E93', sub: 'Sinkron, cadangan, keamanan' }
 ];
+const SIMPLE = () => !S.settings || S.settings.simple !== false;
+const ADV_PAGES = ['media', 'templates', 'reports', 'finance'];
+const morePages = () => MORE.filter(m => !SIMPLE() || !ADV_PAGES.includes(m.k));
 const ALL_PAGES = Object.fromEntries([...TABS, ...MORE].map(t => [t.k, t]));
 
 function badgeFor(k) {
@@ -364,7 +368,7 @@ function renderSide() {
   const btn = t => { const b = badgeFor(t.k); return `<button class="${UI.tab === t.k && !stack.length ? 'on' : ''}" data-a="tab" data-k="${t.k}"><span class="tile" style="background:${t.tile}">${ic(t.icon)}</span>${t.label}${b ? `<span class="badge">${b}</span>` : ''}</button>`; };
   $('side').innerHTML = `<div class="side-head"><div class="app-logo">${ic('ig')}</div><div><div class="b">Nexa Social</div><div class="t-cap muted">Social Media Manager</div></div></div>
     ${TABS.filter(t => t.k !== 'more').map(btn).join('')}
-    <div class="side-sec">Alat</div>${MORE.map(btn).join('')}
+    <div class="side-sec">Alat</div>${morePages().map(btn).join('')}
     <div class="side-sec">Klien</div>${clients().map(c => `<button data-a="client" data-id="${c.id}"><span class="avatar sm" style="background:${c.color}">${esc(initials(c.name))}</span>${esc(c.name)}</button>`).join('') || '<div class="t-foot muted" style="padding:4px 10px">Belum ada klien</div>'}
     <a class="t-foot" href="../" style="padding:18px 10px 0">${ic('chevL')} Kembali ke Nexa</a>`;
 }
@@ -443,7 +447,7 @@ function postRow(p, opt) {
     ${opt.timeCol ? `<span class="time-col">${esc(p.time || '—')}<small>${TYPES[p.type || 'feed'].label}</small></span>` : ''}${opt.bar ? `<span class="evbar" style="background:${colorOf(p)}"></span>` : ''}
     ${postThumb(p)}
     <span class="grow"><div class="ttl">${esc(postTitle(p))}</div>
-      <div class="sub">${catOf(p) ? `<span style="color:${catOf(p).color};font-weight:600">${esc(catOf(p).short)}</span>` : (c ? '@' + esc(c.handle || c.name) : 'Tanpa klien')}${opt.timeCol ? '' : ' · ' + TYPES[p.type || 'feed'].label}${when}</div>
+      <div class="sub">${catOf(p) ? `<span class="cdot-in" style="background:${catOf(p).color}"></span>${esc(catOf(p).short)}` : (c ? '@' + esc(c.handle || c.name) : 'Tanpa klien')}${opt.timeCol ? '' : ' · ' + TYPES[p.type || 'feed'].label}${when}</div>
       ${opt.reason ? `<div class="row-meta">${opt.reason}</div>` : ''}</span>
     ${late && !opt.reason ? '<span class="pill warn">Terlambat</span>' : pillSt(p.status || 'draft')}
   </button>`;
@@ -551,17 +555,13 @@ VIEWS.home = () => {
         ${liveW}
         ${smallW(todayPosts.length, 'posting hari ini', '', 'cal', '', 'tab', 'calendar', true)}
         ${(() => { const tz = clientTz(), ms = Date.now(), cp = tzParts(tz, ms); return `<button class="w sm" data-a="tzOpen"><span class="w-head"><span style="color:var(--orange)">Jam klien</span>${ic('clock')}</span><span><span class="w-big mid num">${fmt12(cp.time)}</span><span class="w-lbl">${esc(tzAbbr(tz, ms))} · ${cp.date === today() ? 'hari yang sama' : cp.date < today() ? 'masih kemarin' : 'besok'}</span><span class="w-sub">WIB ${nowTime()} · ketuk untuk konversi</span></span></button>`; })()}
-        <button class="w sm" data-a="tab" data-k="content"><span class="ring-wrap">${ringSvg(ringPct, 'var(--green)', 96, 11)}<span class="ring-num"><b class="num">${wDone}</b><small>dari ${wTarget}</small></span></span><span class="w-lbl" style="text-align:center">Minggu ini${wWip ? ` · ${wWip} proses` : ''}</span></button>
-        ${waitW}
+        ${SIMPLE() ? '' : `<button class="w sm" data-a="tab" data-k="content"><span class="ring-wrap">${ringSvg(ringPct, 'var(--green)', 96, 11)}<span class="ring-num"><b class="num">${wDone}</b><small>dari ${wTarget}</small></span></span><span class="w-lbl" style="text-align:center">Minggu ini${wWip ? ` · ${wWip} proses` : ''}</span></button>`}
+        ${SIMPLE() && !waiting.length ? '' : waitW}
         ${sched}
         ${weekTargetW}
-        ${guestW}
-        ${rotW}
-        ${smallW(late.length, late.length ? 'terlambat' : 'tidak ada yang telat', late[0] ? esc(postTitle(late[0])) : '', 'alert', 'var(--red)', 'statFilter', 'late')}
-        ${smallW(revisi.length, 'perlu revisi', revisi[0] ? esc(postTitle(revisi[0])) : '', 'pencil', 'var(--purple)', 'statFilter', 'revisi')}
-        ${taskW}
-        ${weekW}
-        ${smallW(short(unpaid.reduce((x, i) => x + num(i.amount), 0)), unpaid.length + ' tagihan belum lunas', overdueInvoices().length ? `<span class="c-red">${overdueInvoices().length} lewat tempo</span>` : '', 'wallet', 'var(--green)', 'tab', 'finance')}
+        ${SIMPLE() && !late.length ? '' : smallW(late.length, late.length ? 'terlambat' : 'tidak ada yang telat', late[0] ? esc(postTitle(late[0])) : '', 'alert', 'var(--red)', 'statFilter', 'late')}
+        ${SIMPLE() && !revisi.length ? '' : smallW(revisi.length, 'perlu revisi', revisi[0] ? esc(postTitle(revisi[0])) : '', 'pencil', 'var(--orange)', 'statFilter', 'revisi')}
+        ${SIMPLE() ? '' : guestW + rotW + taskW + weekW + smallW(short(unpaid.reduce((x, i) => x + num(i.amount), 0)), unpaid.length + ' tagihan belum lunas', overdueInvoices().length ? `<span class="c-red">${overdueInvoices().length} lewat tempo</span>` : '', 'wallet', 'var(--green)', 'tab', 'finance')}
 
       </div>`
   };
@@ -694,9 +694,9 @@ VIEWS.client = (v) => {
     right: `<button class="nav-btn" data-a="editClient" data-id="${c.id}" style="font-size:17px">Edit</button>`,
     html: `<div class="client-hero">${avatar(c, 'lg')}<div class="t-title2">${esc(c.name)}</div><div class="handle">@${esc(c.handle || '')}${c.niche ? ' · ' + esc(c.niche) : ''}</div>
         ${c.status === 'jeda' ? '<span class="pill st-ide">Kontrak dijeda</span>' : ''}
-        <div class="btn-row"><button class="btn-tinted" data-a="newPost" data-client="${c.id}">${ic('plus')} Konten</button><button class="btn-tinted gray" data-a="gridPreview" data-id="${c.id}">${ic('grid')} Grid IG</button>${c.handle ? `<a class="btn-tinted gray" href="https://instagram.com/${encodeURIComponent(c.handle)}" target="_blank" rel="noopener">${ic('ig')} Profil</a>` : ''}</div>
+        <div class="btn-row"><button class="btn-tinted" data-a="newPost" data-client="${c.id}">${ic('plus')} Konten</button>${SIMPLE() ? '' : `<button class="btn-tinted gray" data-a="gridPreview" data-id="${c.id}">${ic('grid')} Grid IG</button>`}${c.handle ? `<a class="btn-tinted gray" href="https://instagram.com/${encodeURIComponent(c.handle)}" target="_blank" rel="noopener">${ic('ig')} Profil</a>` : ''}</div>
         <div class="btn-row" style="justify-content:center"><button class="btn-tinted green" data-a="copyProgress" data-k="c" data-id="${c.id}">${ic('copy')} Salin link progress semua narasumber</button><button class="btn-tinted gray" data-a="openProgress" data-k="c" data-id="${c.id}">Buka</button></div></div>
-      ${group('Paket ' + monthLabel(month), `<div class="list flat">${prog('Feed & Carousel', 'feed', num(k.feed))}${prog('Reels', 'reels', num(k.reels))}${prog('Story', 'story', num(k.story))}</div>`, { foot: k.price ? `Nilai kontrak ${rp(k.price)} per bulan.` : '' })}
+      ${SIMPLE() ? '' : group('Paket ' + monthLabel(month), `<div class="list flat">${prog('Feed & Carousel', 'feed', num(k.feed))}${prog('Reels', 'reels', num(k.reels))}${prog('Story', 'story', num(k.story))}</div>`, { foot: k.price ? `Nilai kontrak ${rp(k.price)} per bulan.` : '' })}
       ${group('Konten berikutnya', upcoming.length ? `<div class="list">${upcoming.map(p => postRow(p)).join('')}</div>` : empty('tray', 'Tidak ada konten dalam antrean.'), { action: `<button data-a="clientPosts" data-id="${c.id}">Semua</button>` })}
       ${group('Brand kit', `<div class="list">
         ${colors.length ? `<div class="kv"><div class="k">Palet warna</div><div class="palette" style="margin-top:6px">${colors.map(x => `<div class="swatch"><span style="background:${esc(x)}"></span>${esc(x.toUpperCase())}</div>`).join('')}</div></div>` : ''}
@@ -706,8 +706,8 @@ VIEWS.client = (v) => {
         ${!colors.length && !b.fonts && !b.tone && !b.hashtags && !b.dos && !b.donts ? `<div class="empty">Brand kit belum diisi.<button class="btn-tinted" data-a="editClient" data-id="${c.id}">Isi brand kit</button></div>` : ''}
         </div>`, { action: b.hashtags ? `<button data-a="copyText" data-text="${esc(hashtags(b.hashtags).join(' '))}">Salin hashtag</button>` : '' })}
       ${group('Kontak', `<div class="list">${kv('PIC', esc(c.pic))}${c.phone ? `<div class="row plain"><span class="grow"><div class="t-foot muted">WhatsApp</div><div class="ttl num" style="user-select:all">${esc(c.phone)}</div></span><button class="btn-tinted gray" data-a="copyText" data-text="${esc(c.phone)}">${ic('copy')}</button><a class="btn-tinted green" href="${waLink(c.phone, '')}" target="_blank" rel="noopener">${ic('wa')} Chat</a></div>` : ''}${kv('Folder aset', c.drive ? `<a href="${esc(c.drive)}" target="_blank" rel="noopener">${esc(c.drive)}</a>` : '')}${kv('Mulai kontrak', c.start ? prettyDate(c.start) : '')}${kv('Catatan', esc(c.notes))}${!c.pic && !c.phone && !c.drive && !c.notes ? '<div class="empty">Belum ada info kontak.</div>' : ''}</div>`)}
-      ${group('Laporan terakhir', lastRep ? `<div class="list"><button class="row" data-a="openReports" data-id="${c.id}"><span class="tile" style="background:var(--teal)">${ic('chart')}</span><span class="grow"><div class="ttl">${monthLabel(lastRep.month)}</div><div class="sub">${short(lastRep.followers)} followers · ER ${fmt(erOf(lastRep), 2)}%</div></span>${ic('chevR', 'chev')}</button></div>` : empty('chart', 'Belum ada laporan.', `<button class="btn-tinted" data-a="newReport" data-client="${c.id}">Isi laporan</button>`))}
-      ${group('Tagihan', invs.length ? `<div class="list">${invs.map(invoiceRow).join('')}</div>` : empty('wallet', 'Belum ada tagihan.', `<button class="btn-tinted" data-a="newInvoice" data-client="${c.id}">Buat tagihan</button>`))}`
+      ${SIMPLE() ? '' : group('Laporan terakhir', lastRep ? `<div class="list"><button class="row" data-a="openReports" data-id="${c.id}"><span class="tile" style="background:var(--teal)">${ic('chart')}</span><span class="grow"><div class="ttl">${monthLabel(lastRep.month)}</div><div class="sub">${short(lastRep.followers)} followers · ER ${fmt(erOf(lastRep), 2)}%</div></span>${ic('chevR', 'chev')}</button></div>` : empty('chart', 'Belum ada laporan.', `<button class="btn-tinted" data-a="newReport" data-client="${c.id}">Isi laporan</button>`))}
+      ${SIMPLE() ? '' : group('Tagihan', invs.length ? `<div class="list">${invs.map(invoiceRow).join('')}</div>` : empty('wallet', 'Belum ada tagihan.', `<button class="btn-tinted" data-a="newInvoice" data-client="${c.id}">Buat tagihan</button>`))}`
   };
 };
 
@@ -836,7 +836,7 @@ function openGuest(id) {
 VIEWS.more = () => ({
   title: 'Lainnya',
   html: `${largeTitle('Lainnya')}
-    <div class="list">${MORE.map(m => { const b = badgeFor(m.k); return `<button class="row" data-a="tab" data-k="${m.k}"><span class="tile" style="background:${m.tile}">${ic(m.icon)}</span><span class="grow"><div class="ttl">${m.label}</div><div class="sub">${m.sub}</div></span>${b ? `<span class="badge">${b}</span>` : ''}${ic('chevR', 'chev')}</button>`; }).join('')}</div>
+    <div class="list">${morePages().map(m => { const b = badgeFor(m.k); return `<button class="row" data-a="tab" data-k="${m.k}"><span class="tile" style="background:${m.tile}">${ic(m.icon)}</span><span class="grow"><div class="ttl">${m.label}</div><div class="sub">${m.sub}</div></span>${b ? `<span class="badge">${b}</span>` : ''}${ic('chevR', 'chev')}</button>`; }).join('')}</div>
     <div class="list"><a class="row" href="../"><span class="tile" style="background:#1C1C1E">${ic('back')}</span><span class="grow"><div class="ttl">Kembali ke Nexa</div></span>${ic('chevR', 'chev')}</a></div>`
 });
 
@@ -996,6 +996,7 @@ VIEWS.settings = () => {
         <button class="row" data-a="explainSync"><span class="tile" style="background:var(--orange)">${ic('cloud')}</span><span class="grow"><div class="ttl">Firebase · teks</div><div class="sub">${{ on: 'Tersinkron realtime', off: 'Offline, sinkron otomatis saat online', err: 'Ditolak Rules, tambahkan hadzmi_social_data', local: 'Firebase tidak termuat', demo: 'Mode pratinjau, tidak tersambung' }[syncMode]}${nPend ? ` · ${nPend} menunggu` : ''}</div></span>${ic('chevR', 'chev')}</button>
         <div class="row"><span class="tile" style="background:#F38020">${ic('photo')}</span><span class="grow"><div class="ttl">Cloudflare R2 · media</div><div class="sub">${DEMO ? 'Mode pratinjau, file hanya di memori' : `${Object.keys(S.media).length} file · ${bytesText(Object.values(S.media).reduce((a, m) => a + num(m.size), 0))} · batas 200 MB per file`}</div></span></div>
       </div>`)}
+      <div><div class="form">${fSwitch('setSimple', 'Mode sederhana', SIMPLE())}</div><div class="form-foot">Menyembunyikan menu yang jarang dipakai (Media Library, Template, Laporan, Keuangan, Grid IG) dan widget tambahan di Hari ini. Matikan untuk melihat semua fitur.</div></div>
       ${DEMO ? '' : `<div><div class="form">${fSwitch('setAutoClean', 'Hapus media R2 otomatis', !S.settings || S.settings.autoClean !== false)}</div><div class="form-foot">Media yang semua kontennya sudah Terposting lebih dari 30 hari dihapus dari R2. Gambar penanda di Firebase tetap ada.</div></div>`}
       ${group('Cadangan', `<div class="list"><button class="row action" data-a="exportJson">${ic('download')}<span class="grow">Ekspor semua data (JSON)</span></button><button class="row action" data-a="importJson">${ic('upload')}<span class="grow">Pulihkan dari file JSON</span></button></div>`, { foot: 'Cadangan berisi teks dan thumbnail. File media asli tetap di R2.' })}
       ${DEMO ? group('Pratinjau', `<div class="list"><button class="row action" data-a="resetDemo">${ic('refresh')}<span class="grow">Muat ulang data contoh</span></button></div>`) : ''}
@@ -1071,35 +1072,40 @@ function openPost(id, preset) {
       `<div class="field" id="pCatHint" style="min-height:0;padding:0 16px 10px" ${CAT[draft.cat] ? '' : 'hidden'}><span class="t-foot muted">${CAT[draft.cat] ? esc(CAT[draft.cat].hint) : ''}</span></div>` +
       `<div class="field" id="pRot" style="min-height:0;padding:0 16px 10px" ${rotFor(clientOf(draft.clientId), draft.cat, draft.date) ? '' : 'hidden'}>${rotHTML()}</div>` +
       fSelect('pGuest', 'Tamu', draft.guestId || '', [['', 'Tanpa tamu']].concat(guestSort(guestsAll()).map(g => [g.id, (guestNo(g) ? pad(guestNo(g)) + ' · ' : '') + g.name])), { f: 'guestId' }) +
-      `<div class="field" style="padding:8px 16px"><div class="seg" id="pType" style="flex:1">${Object.keys(TYPES).map(k => `<button type="button" data-a="pType" data-k="${k}" class="${draft.type === k ? 'on' : ''}">${TYPES[k].label}</button>`).join('')}</div></div>` +
-      fInput('pTitle', 'Judul', draft.title, { f: 'title', ph: 'Mis. Promo menu baru', stack: true }) +
       fInput('pDate', 'Tanggal (WIB)', draft.date, { f: 'date', type: 'date' }) + fInput('pTime', 'Jam tayang (WIB)', draft.time, { f: 'time', type: 'time' }) +
-      `<div class="field tz-hint" id="pTz">${tzHint()}</div>` +
-      fInput('pTags', 'Tag akun', draft.tags, { f: 'tags', ph: '@tamu @kolaborator', stack: true }) +
-      fInput('pSource', 'Sumber berita', draft.source, { f: 'source', type: 'url', ph: 'Link artikel / riset (untuk kategori berita)', stack: true }))}
-    <div class="list"><button class="row action" data-a="fillFromGuest">${ic('sparkle')}<span class="grow">Isi judul & caption dari data tamu</span></button></div>
+      `<div class="field tz-hint" id="pTz">${tzHint()}</div>`)}
     <div><div class="form-head">Status</div><div class="form"><div class="status-pick" id="pStatus">${statusPick()}</div></div></div>
-    <div><div class="form-head">Desain · ${draft.type === 'carousel' ? 'tempel slide pertama' : draft.type === 'reels' ? 'video 9:16, pakai cover-nya' : draft.type === 'story' ? '9:16' : 'rasio 4:5 disarankan'}</div><div class="form">
+    <div><div class="form-head">Desain</div><div class="form">
       <div class="design-box"><div class="dthumb" id="pThumb">${thumbBox()}</div><div class="dside">
         <button type="button" class="btn-tinted" data-a="pasteThumb">${ic('copy')} Tempel screenshot</button>
         <button type="button" class="btn-tinted gray" data-a="pickThumb">${ic('photo')} Pilih foto/video</button>
         <button type="button" class="c-red t-foot" data-a="clearThumb" id="pThumbClear" ${draft.thumb ? '' : 'hidden'}>Hapus gambar</button></div></div>
-      ${fInput('pDesign', 'Link desain', draft.design, { f: 'design', type: 'url', ph: 'Canva / Drive / CapCut', stack: true })}
+      ${fInput('pDesign', 'Link Canva', draft.design, { f: 'design', type: 'url', ph: 'Tempel link desain', stack: true })}
       <div class="field" id="pDesignOpen" ${/^https?:\/\//.test(draft.design || '') ? '' : 'hidden'}><a href="${esc(draft.design || '')}" target="_blank" rel="noopener" class="t-sub">${ic('link')} Buka desain</a></div>
-      </div><div class="form-foot">Gambar penanda dikecilkan otomatis (±30 KB) dan disimpan di Firebase. File asli tetap di Canva/Drive, jadi tidak makan penyimpanan. Di laptop bisa langsung tekan Ctrl+V.</div></div>
-    <details class="opt" ${draft.media.length ? 'open' : ''}><summary>${ic('chevD')} Media di R2 (opsional) · ${draft.media.length} file</summary><div class="form"><div class="media-strip" id="pMedia">${mediaStrip()}</div></div><div class="form-foot">Pakai hanya kalau file tidak ada di Canva/Drive, misalnya foto mentah dari klien. Foto dikompres otomatis ke 1080 px.</div></details>
-    <div><div class="form-head" style="display:flex;justify-content:space-between"><span>Caption</span><span style="display:flex;gap:14px;text-transform:none;letter-spacing:0"><button type="button" class="c-blue" data-a="insertTpl" data-k="caption">Template</button><button type="button" class="c-blue" data-a="insertTpl" data-k="hashtag">Hashtag</button></span></div>
+      </div></div>
+    <div><div class="form-head" style="display:flex;justify-content:space-between"><span>Caption</span><span style="display:flex;gap:14px;text-transform:none;letter-spacing:0"><button type="button" class="c-blue" data-a="fillFromGuest">Isi dari tamu</button><button type="button" class="c-blue" data-a="insertTpl" data-k="hashtag">Hashtag</button></span></div>
       <div class="form">${fArea('pCaption', 'Caption & hashtag', draft.caption, { f: 'caption', rows: 7, count: true, ph: 'Tulis caption…' })}</div></div>
-    <div><div class="form-head">Checklist publish Instagram</div><div class="form">${CHECKS.map(c => `<label class="field" style="cursor:pointer"><span style="flex:1">${c[1]}</span><input type="checkbox" data-chk="${c[0]}" ${(draft.check || {})[c[0]] ? 'checked' : ''}><span class="switch"></span></label>`).join('')}</div><div class="form-foot">Cek sebelum menandai Terposting: rasio & safe zone, tag tamu/kolaborator, keyword, dan share ke Story bila perlu.</div></div>
-    ${fSec('Catatan internal', fArea('pNotes', 'Brief, ide visual, audio, dll.', draft.notes, { f: 'notes', rows: 3 }) + fInput('pLink', 'Link post', draft.link, { f: 'link', ph: 'https://instagram.com/p/…', type: 'url' }))}
-    <div><div class="form-head">Revisi & komentar klien</div><div class="form"><div class="log" id="pLog">${logHTML()}</div><div class="log-add"><input id="pLogInput" placeholder="Catat masukan klien…" autocomplete="off"><button type="button" data-a="addLog">Tambah</button></div></div></div>
     <div class="list">
-      <button class="row action" data-a="igPreview">${ic('ig')}<span class="grow">Pratinjau tampilan Instagram</span></button>
-      <button class="row action" data-a="aiPost">${ic('sparkle')}<span class="grow">Buat prompt AI untuk konten ini</span></button>
-      <button class="row action" data-a="sendPost">${ic('send')}<span class="grow">Minta review klien (Canva + Upwork)</span></button>
-      ${!isNew ? `<button class="row action" data-a="dupPost">${ic('copy')}<span class="grow">Duplikat konten</span></button>` : ''}
+      <button class="row action" data-a="sendPost">${ic('send')}<span class="grow">Minta review klien</span></button>
+      <button class="row action" data-a="aiPost">${ic('sparkle')}<span class="grow">Prompt AI untuk caption</span></button>
     </div>
-    ${!isNew ? `<div class="list"><button class="row danger" data-a="delPost">Hapus konten</button></div>` : ''}`;
+    <details class="opt more-det"><summary>${ic('chevD')} Detail lainnya</summary>
+      ${fSec('', `<div class="field" style="padding:8px 16px"><div class="seg" id="pType" style="flex:1">${Object.keys(TYPES).map(k => `<button type="button" data-a="pType" data-k="${k}" class="${draft.type === k ? 'on' : ''}">${TYPES[k].label}</button>`).join('')}</div></div>` +
+        fInput('pTitle', 'Judul', draft.title, { f: 'title', ph: 'Otomatis dari kategori & tamu', stack: true }) +
+        fInput('pTags', 'Tag akun', draft.tags, { f: 'tags', ph: '@tamu @kolaborator', stack: true }) +
+        fInput('pSource', 'Sumber berita', draft.source, { f: 'source', type: 'url', ph: 'Link artikel / riset', stack: true }) +
+        fInput('pLink', 'Link post IG', draft.link, { f: 'link', ph: 'https://instagram.com/p/…', type: 'url', stack: true }))}
+      <div><div class="form-head">Checklist publish</div><div class="form">${CHECKS.map(c => `<label class="field" style="cursor:pointer"><span style="flex:1">${c[1]}</span><input type="checkbox" data-chk="${c[0]}" ${(draft.check || {})[c[0]] ? 'checked' : ''}><span class="switch"></span></label>`).join('')}</div></div>
+      ${fSec('Catatan', fArea('pNotes', 'Brief, ide visual, audio, dll.', draft.notes, { f: 'notes', rows: 3 }))}
+      <div><div class="form-head">Revisi & komentar klien</div><div class="form"><div class="log" id="pLog">${logHTML()}</div><div class="log-add"><input id="pLogInput" placeholder="Catat masukan klien…" autocomplete="off"><button type="button" data-a="addLog">Tambah</button></div></div></div>
+      <div><div class="form-head">Media di R2 (opsional) · ${draft.media.length} file</div><div class="form"><div class="media-strip" id="pMedia">${mediaStrip()}</div></div></div>
+      <div class="list">
+        <button class="row action" data-a="igPreview">${ic('ig')}<span class="grow">Pratinjau tampilan Instagram</span></button>
+        <button class="row action" data-a="insertTpl" data-k="caption">${ic('doc')}<span class="grow">Sisipkan template caption</span></button>
+        ${!isNew ? `<button class="row action" data-a="dupPost">${ic('copy')}<span class="grow">Duplikat konten</span></button>` : ''}
+      </div>
+      ${!isNew ? `<div class="list"><button class="row danger" data-a="delPost">Hapus konten</button></div>` : ''}
+    </details>`;
   openSheet({
     title: isNew ? 'Konten baru' : 'Edit konten', right: isNew ? 'Tambah' : 'Simpan', wide: true, body,
     headExtra: isNew ? '' : `<button class="sh-del" data-a="delPost" aria-label="Hapus konten">${ic('trash')}</button>`,
@@ -1769,6 +1775,7 @@ function startApp() {
   $('app').classList.remove('hidden');
   if (started) return;
   started = true;
+  migrateStatuses();
   render();
 }
 
@@ -1791,6 +1798,7 @@ function bind() {
   });
   document.addEventListener('change', e => {
     const el = e.target;
+    if (el.id === 'setSimple') { dbSet('settings', Object.assign({}, S.settings, { simple: el.checked })); if (el.checked && ADV_PAGES.includes(UI.tab)) UI.tab = 'more'; render(); toast(el.checked ? 'Mode sederhana aktif' : 'Semua fitur ditampilkan', 'check'); return; }
     if (el.id === 'setAutoClean') { dbSet('settings', Object.assign({}, S.settings, { autoClean: el.checked })); toast('Disimpan', 'check'); }
     if (el.id === 'setName') { dbSet('settings', Object.assign({}, S.settings, { name: el.value.trim() })); toast('Disimpan', 'check'); }
     if (el.dataset && el.dataset.chk && draft) { draft.check = Object.assign({}, draft.check, { [el.dataset.chk]: el.checked }); return; }
@@ -1878,7 +1886,7 @@ function seedDemo() {
   const tz = 'America/New_York', cToday = tzParts(tz, now).date, cws = weekStart(cToday), nowT = nowTime();
   const introG = ['g6', 'g5', 'g7', 'g4', 'g3', 'g2', 'g1'];
   const news = ['Plastics treaty: what is at stake', 'Why repair cafés are growing', 'Circular fashion: rental vs resale', 'Heat pumps, explained simply', 'This week in climate history', 'Fast fashion and textile waste', 'What is a carbon budget?', 'Corporate net zero: claims vs action', 'The first Earth Day, 1970', 'Refill stores across the US', 'Green jobs report, simply put', 'How cities cut food waste'];
-  const futureSt = ['jadwal', 'setuju', 'klien', 'review', 'revisi', 'draft', 'jadwal', 'klien', 'draft'];
+  const futureSt = ['jadwal', 'klien', 'draft', 'revisi', 'jadwal', 'klien', 'draft', 'draft', 'jadwal'];
   let n = 0, ni = 0, ii = 0, fi = 0;
   for (let day = -7; day < 10; day++) {
     const cd = addDays(cws, day);
@@ -1892,7 +1900,7 @@ function seedDemo() {
       const thisWeekEp = day >= 0;
       const gid = k.k === 'intro' ? introG[ii++ % introG.length] : k.k === 'announce' ? (thisWeekEp ? 'g3' : 'g2') : ['live', 'livestory', 'summary'].includes(k.k) ? (thisWeekEp ? 'g2' : 'g1') : k.k === 'quote' ? 'g1' : null;
       const g = gid ? D.guests[gid] : null;
-      const status = past ? 'posted' : (day >= 7 ? (k.k === 'intro' ? 'draft' : 'ide') : futureSt[fi++ % futureSt.length]);
+      const status = past ? 'posted' : (day >= 7 ? 'draft' : futureSt[fi++ % futureSt.length]);
       const base = g ? guestPreset(g, k.k) : { clientId: 'c1', cat: k.k, type: k.type, title: news[ni % news.length], caption: news[ni++ % news.length] + ' 🌍\n\nSwipe to learn what it means and why it matters 👉\n\nSource in the last slide.\n\n#sustainability #climateaction', tags: '', source: 'https://example.org/sumber-berita' };
       const id = 'p' + (++n);
       D.posts[id] = Object.assign({ id, media: [], log: [], createdAt: now - 9 * 86400000, stAt: now - 7 * 3600000, notes: '', link: status === 'posted' ? 'https://instagram.com/p/contoh' + n : '', check: status === 'posted' ? { format: true, tag: true, caption: true, story: k.k === 'livestory' } : {}, design: 'https://www.canva.com/design/contoh-' + n, ph: ph[k.k] }, base, { date: w.date, time: w.time, status });
