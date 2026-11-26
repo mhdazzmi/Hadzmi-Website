@@ -94,6 +94,7 @@ function decide(id, approve, note) {
 }
 
 // ---------- render ----------
+const brandMark = c => c.photo ? `<span class="pg-bphoto"><img src="${c.photo}" alt=""></span>` : `<span class="dot" style="background:${esc(c.color || '#34C759')}"></span>`;
 const photo = (g, cls) => `<div class="pg-photo ${cls || ''}" style="${g.photo ? '' : 'background:' + ({ intro: '#30B0C7', jadwal: '#5856D6', rekam: '#FF9500', tayang: '#34C759' }[g.stage] || '#30B0C7')}">${g.photo ? `<img src="${g.photo}" alt="">` : esc(initials(g.name))}</div>`;
 function thumb(p) {
   const st = p.type === 'story' ? 'story' : '';
@@ -146,7 +147,7 @@ function renderGuest() {
   const review = ps.filter(p => p.status === 'klien');
   const cards = GUEST_CATS.map(k => { const mine = ps.filter(p => p.cat === k); return mine.length ? mine.map(p => postCard(p, c)).join('') : missingCard(k, g); }).join('');
   const last = Math.max(g.at || 0, ...ps.map(p => p.updatedAt || p.stAt || 0));
-  return `<div class="pg-brand"><span class="dot" style="background:${esc(c.color || '#34C759')}"></span>${esc(c.name || 'Podcast')} · Guest progress</div>
+  return `<div class="pg-brand">${brandMark(c)}${esc(c.name || 'Podcast')} · Guest progress</div>
     <section class="pg-hero">${photo(g)}<div class="pg-name">${esc(g.name)}</div>${g.role || g.org ? `<div class="pg-role">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>` : ''}${g.handle ? `<a class="pg-handle" href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener">@${esc(g.handle)}</a>` : ''}
       ${g.epTitle ? `<div class="pg-role" style="margin-top:6px">🎙️ ${g.epNo ? 'Episode ' + esc(g.epNo) + ' · ' : ''}${esc(g.epTitle)}</div>` : ''}
       <div class="pg-steps"><span class="bar" style="width:${barW}%"></span>${step(0, 'Intro call', g.introDate)}${step(1, 'Recording', g.recDate, g.recTime)}${step(2, 'Episode live', g.pubDate)}</div></section>
@@ -164,8 +165,7 @@ function renderOverview() {
   const gNo = g => { const n = Number(g.order); if (n) return n; const m = /wb-guest-(\d+)/.exec(g.id || '') || /Nomor dokumen[^0-9]*(\d+)/i.exec(g.notes || ''); return m ? Number(m[1]) : 9999; };
   const gs = Object.values(D.guests || {}).filter(g => g.clientId === c.id).sort((a, b) => gNo(a) - gNo(b) || String(a.name || '').localeCompare(String(b.name || '')));
   const totalReview = gs.reduce((x, g) => x + guestScore(g).review, 0);
-  return `<div class="pg-brand"><span class="dot" style="background:${esc(c.color || '#34C759')}"></span>${esc(c.name || 'Podcast')}</div>
-    <h1 class="pg-name" style="font-size:32px">Guest progress</h1>
+  return `<header class="pg-client">${c.photo ? `<span class="pg-cphoto"><img src="${c.photo}" alt=""></span>` : `<span class="pg-cphoto" style="background:${esc(c.color || '#34C759')}">${esc(initials(c.name))}</span>`}<span><span class="pg-brand" style="margin:0">${esc(c.name || 'Podcast')}</span><h1 class="pg-name" style="font-size:30px">Guest progress</h1></span></header>
     ${totalReview ? `<div class="pg-alert">${ic('alert')}<span>${totalReview} design${totalReview > 1 ? 's' : ''} ready for your review</span></div>` : ''}
     ${gs.length ? gs.map(g => { const sc = guestScore(g); const inner = `${photo(g)}<span class="g"><span class="n">${esc(g.name)}</span><span class="s">${esc(stageTxt[g.stage] || '')} · ${sc.done} of ${sc.total} ready</span><span class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></span></span>${sc.review ? `<span class="badge-r">${sc.review} to review</span>` : ic('chevR')}`; return g.share ? `<a class="pg-guest" href="?g=${encodeURIComponent(g.share)}${DEMO ? '&demo=1' : ''}">${inner}</a>` : `<div class="pg-guest">${inner}</div>`; }).join('') : '<div class="pg-msg">No guests yet.</div>'}
     <div class="pg-foot">Tap a guest to see each design and approve it.</div>`;
