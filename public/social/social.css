@@ -162,14 +162,10 @@ button.row:active, a.row:active { background: var(--fill2); }
 
 /* ---------- Pills / status ---------- */
 .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
-.st-ide { background: rgba(142,142,147,.16); color: #636366; }
-.st-draft { background: rgba(88,86,214,.13); color: var(--indigo); }
-.st-review { background: rgba(175,82,222,.13); color: #8944AB; }
-.st-klien { background: rgba(255,149,0,.15); color: #C93400; }
-.st-revisi { background: rgba(255,59,48,.13); color: #D70015; }
-.st-setuju { background: rgba(48,176,199,.15); color: #0071A4; }
-.st-jadwal { background: rgba(0,122,255,.13); color: #0040DD; }
-.st-posted { background: rgba(52,199,89,.15); color: #248A3D; }
+.st-draft, .st-ide, .st-review { background: var(--fill); color: var(--label2); }
+.st-klien, .st-revisi { background: rgba(255,149,0,.15); color: #B34700; }
+.st-jadwal, .st-setuju { background: rgba(52,199,89,.12); color: #248A3D; }
+.st-posted { background: #34C759; color: #fff; }
 .pill.warn { background: rgba(255,59,48,.13); color: #D70015; }
 .avatar { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; flex: none; letter-spacing: 0; }
 .avatar.lg { width: 76px; height: 76px; font-size: 30px; }
@@ -549,3 +545,16 @@ details.opt[open] summary svg.i { transform: rotate(180deg); }
 .fatal code { display: block; background: var(--fill2); border-radius: 10px; padding: 10px; font-size: 12.5px; overflow-wrap: anywhere; white-space: pre-wrap; }
 
 .gno { display: inline-block; font-size: 12px; font-weight: 700; color: var(--label2); background: var(--fill2); border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; font-variant-numeric: tabular-nums; }
+
+/* Titik kategori kecil di baris konten */
+.cdot-in { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+/* Judul widget seragam abu (gaya widget iOS) */
+.w-head > span:first-child { color: var(--label2) !important; }
+.w.live .w-head > span:first-child { color: rgba(255,255,255,.7) !important; }
+.more-det { display: flex; flex-direction: column; gap: 22px; }
+.more-det[open] > summary { margin-bottom: 4px; }
+.more-det > summary { font-size: 15px; color: var(--blue); text-transform: none; letter-spacing: 0; font-weight: 600; padding: 4px 16px; }
+
+/* Kartu papan lebih ringkas */
+.kcard .media, .kcard .media.story, .kcard .media.reels { aspect-ratio: auto; height: 132px; }
+.col { flex-basis: min(70vw, 240px); }
