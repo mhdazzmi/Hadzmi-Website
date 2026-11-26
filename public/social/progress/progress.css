@@ -77,3 +77,13 @@ body { background: var(--bg); }
 .pg-back { color: var(--blue); font-size: 17px; text-decoration: none; margin-bottom: -6px; }
 .pg-guest { cursor: pointer; }
 .pg-guest:active { transform: scale(.98); }
+
+/* 4 tahap progress desain */
+.pg-steps.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pg-steps.four::before, .pg-steps.four .bar { left: 12.5%; }
+.pg-steps.four::before { right: 12.5%; }
+.pg-step i { font-weight: 700; font-size: 12px; }
+.pg-step.now i { background: var(--green); box-shadow: none; color: #fff; }
+.pg-step.done i { background: var(--green); color: #fff; }
+.pg-step.pass i { background: var(--green); color: #fff; box-shadow: none; }
+.pg-step b { font-size: 12px; text-align: center; line-height: 1.2; }
