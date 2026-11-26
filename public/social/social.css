@@ -561,3 +561,15 @@ details.opt[open] summary svg.i { transform: rotate(180deg); }
 
 .avatar.has-photo { background: var(--fill); overflow: hidden; }
 .avatar.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Logo app */
+.app-logo-svg { width: 38px; height: 38px; flex: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.12)); }
+.app-logo-svg svg { display: block; width: 100%; height: 100%; }
+.logo-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 8px; padding: 16px 12px; }
+@media (min-width: 640px) { .logo-pick { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.logo-pick button { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; color: var(--label2); min-width: 0; }
+.logo-pick button span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logo-pick button svg { border-radius: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.12); transition: transform .15s; }
+.logo-pick button.on svg { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5.5px var(--blue); }
+.logo-pick button.on span { color: var(--blue); font-weight: 600; }
+.logo-pick button:active svg { transform: scale(.94); }

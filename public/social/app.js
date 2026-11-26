@@ -364,9 +364,28 @@ function badgeFor(k) {
   if (k === 'finance') return overdueInvoices().length;
   return 0;
 }
+// ---------------- LOGO APP ----------------
+const curLogo = () => (S.settings && S.settings.logo) || (window.NS_DEFAULT_LOGO || 'bubble');
+const logoHTML = size => window.nsLogoSVG ? window.nsLogoSVG(curLogo(), size) : '';
+let iconKey = '';
+// Ikon tab browser & Layar Utama mengikuti logo terpilih (PNG dari SVG lewat canvas)
+function applyIcons() {
+  if (!window.nsLogoSVG || iconKey === curLogo()) return;
+  iconKey = curLogo();
+  const svg = window.nsLogoSVG(iconKey, 180).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/<rect width="100" height="100" rx="22.5"/, '<rect width="100" height="100" rx="0"');
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 180; cv.getContext('2d').drawImage(img, 0, 0, 180, 180);
+      const url = cv.toDataURL('image/png');
+      ['apple-touch-icon', 'icon'].forEach(rel => { let l = document.querySelector(`link[rel="${rel}"]`); if (!l) { l = document.createElement('link'); l.rel = rel; document.head.appendChild(l); } l.href = url; });
+    } catch (e) {}
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
 function renderSide() {
   const btn = t => { const b = badgeFor(t.k); return `<button class="${UI.tab === t.k && !stack.length ? 'on' : ''}" data-a="tab" data-k="${t.k}"><span class="tile" style="background:${t.tile}">${ic(t.icon)}</span>${t.label}${b ? `<span class="badge">${b}</span>` : ''}</button>`; };
-  $('side').innerHTML = `<div class="side-head"><div class="app-logo">${ic('ig')}</div><div><div class="b">Nexa Social</div><div class="t-cap muted">Social Media Manager</div></div></div>
+  $('side').innerHTML = `<div class="side-head"><div class="app-logo-svg">${logoHTML(38)}</div><div><div class="b">Nexa Social</div><div class="t-cap muted">Social Media Manager</div></div></div>
     ${TABS.filter(t => t.k !== 'more').map(btn).join('')}
     <div class="side-sec">Alat</div>${morePages().map(btn).join('')}
     <div class="side-sec">Klien</div>${clients().map(c => `<button data-a="client" data-id="${c.id}">${avatar(c, 'sm')}${esc(c.name)}</button>`).join('') || '<div class="t-foot muted" style="padding:4px 10px">Belum ada klien</div>'}
@@ -400,6 +419,7 @@ function showFatal(e) {
 }
 window.addEventListener('error', ev => { const r = document.getElementById('root'); if (!r || !r.innerHTML.trim() || !document.getElementById('page') || !document.getElementById('page').innerHTML.trim()) showFatal(ev.error || ev.message); });
 function renderInner() {
+  applyIcons();
   renderSide(); renderTabbar();
   const top = stack[stack.length - 1];
   const v = top ? VIEWS[top.v](top) : VIEWS[UI.tab]();
@@ -991,6 +1011,7 @@ VIEWS.settings = () => {
   return {
     title: 'Pengaturan',
     html: `${largeTitle('Pengaturan')}
+      ${group('Logo aplikasi', `<div class="list"><div class="logo-pick">${(window.NS_LOGOS || []).map(L => `<button class="${curLogo() === L.k ? 'on' : ''}" data-a="setLogo" data-k="${L.k}" aria-label="Logo ${esc(L.n)}">${window.nsLogoSVG(L.k, 56)}<span>${esc(L.n)}</span></button>`).join('')}</div></div>`, { foot: 'Logo tampil di sidebar dan tab browser. Untuk ikon Layar Utama: pilih logo, lalu hapus ikon lama dan Tambah ke Layar Utama lagi dari Safari.' })}
       <div><div class="form-head">Profil</div><div class="form"><div class="field"><label for="setName">Nama panggilan</label><input id="setName" value="${esc((S.settings && S.settings.name) || '')}" placeholder="Hadzmi"></div></div><div class="form-foot">Dipakai di sapaan Beranda.</div></div>
       ${group('Penyimpanan', `<div class="list">
         <button class="row" data-a="explainSync"><span class="tile" style="background:var(--orange)">${ic('cloud')}</span><span class="grow"><div class="ttl">Firebase · teks</div><div class="sub">${{ on: 'Tersinkron realtime', off: 'Offline, sinkron otomatis saat online', err: 'Ditolak Rules, tambahkan hadzmi_social_data', local: 'Firebase tidak termuat', demo: 'Mode pratinjau, tidak tersambung' }[syncMode]}${nPend ? ` · ${nPend} menunggu` : ''}</div></span>${ic('chevR', 'chev')}</button>
@@ -1668,6 +1689,7 @@ const A = {
   },
   igPreview: () => igPreview(draft),
   tzOpen: () => openConverter(null),
+  setLogo: el => { dbSet('settings', Object.assign({}, S.settings, { logo: el.dataset.k })); render(); toast('Logo diganti', 'check'); },
   slotFill: () => fillSlot(true),
   slotNew: el => openPost(null, { cat: el.dataset.k, type: CAT[el.dataset.k].type, date: el.dataset.date, time: el.dataset.time, clientId: el.dataset.client }),
   tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
