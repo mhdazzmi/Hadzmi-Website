@@ -1198,9 +1198,11 @@ function openCropper(file, o) {
       const paint = () => { clamp(); im.style.width = img.naturalWidth * k + 'px'; im.style.height = img.naturalHeight * k + 'px'; im.style.transform = `translate(${x}px,${y}px)`; };
       const layout = keepCenter => {
         // Lebar kotak menyesuaikan supaya rasio selalu tepat dan tingginya muat di layar
-        const avail = Math.max(160, box.parentNode.clientWidth - 28), maxH = Math.max(220, window.innerHeight * .58);
-        box.style.width = Math.round(Math.min(avail, 360, maxH * rv(ratio))) + 'px';
-        box.style.aspectRatio = String(rv(ratio));
+        // Ukuran kotak dalam piksel (Safari iOS tidak menghitung tinggi dari aspect-ratio untuk kotak berisi gambar absolut)
+        const pw = (box.parentNode && box.parentNode.clientWidth) || (w.querySelector('.sheet-body') || {}).clientWidth || window.innerWidth;
+        const avail = Math.max(160, pw - 28), maxH = Math.max(220, (window.innerHeight || 700) * .55);
+        const cwid = Math.round(Math.min(avail, 360, maxH * rv(ratio)));
+        box.style.width = cwid + 'px'; box.style.height = Math.round(cwid / rv(ratio)) + 'px';
         const cx = bw ? (bw / 2 - x) / k : img.naturalWidth / 2, cy = bh ? (bh / 2 - y) / k : img.naturalHeight / 2;
         bw = box.clientWidth; bh = box.clientHeight;
         const base = Math.max(bw / img.naturalWidth, bh / img.naturalHeight);
@@ -1215,6 +1217,9 @@ function openCropper(file, o) {
         x = px - (px - x) * nk / k; y = py - (py - y) * nk / k; k = nk; zoom = z; zr.value = z; paint();
       };
       requestAnimationFrame(() => requestAnimationFrame(() => layout(false)));
+      setTimeout(() => layout(true), 450);   // ulang setelah animasi sheet selesai
+      const onRs = () => { if (document.body.contains(box)) layout(true); else window.removeEventListener('resize', onRs); };
+      window.addEventListener('resize', onRs);
       zr.addEventListener('input', () => setZoom(Number(zr.value)));
       const pts = new Map(); let last = null, pinch = null;
       box.addEventListener('pointerdown', e => { box.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); last = { x: e.clientX, y: e.clientY }; if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoom }; } });
