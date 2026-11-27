@@ -161,7 +161,12 @@ function renderGuest() {
   const ps = guestPosts(g).sort((a, b) => GUEST_CATS.indexOf(a.cat) - GUEST_CATS.indexOf(b.cat) || ((a.date || '9') + (a.time || '')).localeCompare((b.date || '9') + (b.time || '')));
   const sc = guestScore(g);
   const review = ps.filter(p => p.status === 'klien');
-  const cards = guestCats(g).map(k => { const mine = ps.filter(p => p.cat === k); return mine.length ? mine.map(p => postCard(p, c)).join('') : missingCard(k, g); }).join('');
+  // Dikelompokkan per status: yang perlu direview klien selalu paling atas
+  const GROUPS = [['Needs your review', ['klien'], 'g-review'], ['In progress', ['revisi', 'edit', 'review', 'draft', 'ide'], 'g-work'], ['Done', ['setuju', 'jadwal', 'posted'], 'g-done']];
+  const missing = guestCats(g).filter(k => !ps.some(p => p.cat === k));
+  const grp = (h, n, cls, body) => `<div class="pg-group ${cls}"><b>${h}</b><span>${n}</span></div>${body}`;
+  const cards = GROUPS.map(([h, sts, cls]) => { const mine = ps.filter(p => sts.includes(p.status)); return mine.length ? grp(h, mine.length, cls, mine.map(p => postCard(p, c)).join('')) : ''; }).join('')
+    + (missing.length ? grp('Not started', missing.length, 'g-none', missing.map(k => missingCard(k, g)).join('')) : '');
   const last = Math.max(g.at || 0, ...ps.map(p => p.updatedAt || p.stAt || 0));
   return `${viaClient ? `<a class="pg-back" href="?c=${encodeURIComponent(C_TOKEN)}${DEMO ? '&demo=1' : ''}">‹ All guests</a>` : ''}<div class="pg-brand">${brandMark(c)}${esc(c.name || 'Podcast')} · Guest progress</div>
     <section class="pg-hero">${photo(g)}<div class="pg-name">${esc(g.name)}</div>${g.role || g.org ? `<div class="pg-role">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>` : ''}${g.handle ? `<a class="pg-handle" href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener">@${esc(g.handle)}</a>` : ''}
