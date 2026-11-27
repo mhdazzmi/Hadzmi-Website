@@ -49,7 +49,7 @@ const CATS = [
 ];
 // Jadwal posting dari klien ("Webisodes Monthly Content"), dalam jam klien (Eastern). days: 0 = Minggu … 6 = Sabtu
 const DEFAULT_SLOTS = {
-  intro: { days: [0, 1, 2, 3, 4, 5, 6], time: '14:00' },
+  intro: { days: [0, 1, 2, 3, 4, 5, 6], time: '16:00' },
   announce: { days: [1], time: '14:00' },
   live: { days: [4], time: '08:00' },
   livestory: { days: [4], time: '08:00' },
@@ -220,7 +220,11 @@ function pushPath(path) {
   });
 }
 function flushPending() { Object.keys(pending).forEach(pushPath); }
-function migrateStatuses() { Object.values(S.posts || {}).forEach(p => { const n = LEGACY_ST[p.status]; if (n) dbSet('posts/' + p.id, Object.assign(clone(p), { status: n })); }); }
+function migrateStatuses() {
+  Object.values(S.posts || {}).forEach(p => { const n = LEGACY_ST[p.status]; if (n) dbSet('posts/' + p.id, Object.assign(clone(p), { status: n })); });
+  // Sekali jalan: jam Guest Intro Call Carousel dulu tersimpan 2 PM, yang benar 4 PM (kalender klien)
+  Object.values(S.clients || {}).forEach(c => { const s = c.slots && c.slots.intro; if (c.introFix16 || !s || s.time !== '14:00') return; const n = clone(c); n.slots.intro.time = '16:00'; n.introFix16 = true; dbSet('clients/' + c.id, n); });
+}
 function applyRemote(v) {
   v = v || {};
   COLS.forEach(c => { S[c] = v[c] && typeof v[c] === 'object' ? v[c] : {}; });
