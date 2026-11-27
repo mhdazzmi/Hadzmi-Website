@@ -130,7 +130,6 @@ function postCard(p, c) {
   ].filter(Boolean).join('');
   return `<article class="pg-card tone-${cls} ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
     <div class="pc-head"><span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span><span class="chip ${cls}">${chipIcon}${esc(label)}</span></div>
-    ${p.thumb ? (p.design ? `<a class="pc-prev ${p.type === 'story' ? 'story' : ''}" href="${esc(p.design)}" target="_blank" rel="noopener"><img src="${p.thumb}" alt="Design preview" loading="lazy"></a>` : `<div class="pc-prev ${p.type === 'story' ? 'story' : ''}"><img src="${p.thumb}" alt="Design preview" loading="lazy"></div>`) : ''}
     ${title ? `<div class="pg-title">${esc(title)}</div>` : ''}
     <div class="pg-when">${when ? (p.status === 'posted' ? 'Posted ' : 'Goes live ') + esc(when) : 'Date to be confirmed'}</div>
     ${acts ? `<div class="pc-acts">${acts}</div>` : ''}
