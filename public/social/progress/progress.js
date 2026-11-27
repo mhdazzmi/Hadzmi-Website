@@ -113,14 +113,10 @@ function designSummary(g) {
   return parts.length ? parts.map(x => `<b class="${x[2]}">${x[0]} ${x[1]}</b>`).join(' · ') : '<span class="sum-planned">Not started yet</span>';
 }
 function guestScore(g) { const ps = guestPosts(g); const cats = guestCats(g); const doneCats = cats.filter(k => ps.some(p => p.cat === k && DONE.includes(p.status))).length; return { done: doneCats, total: cats.length, review: ps.filter(p => p.status === 'klien').length }; }
-const livePrev = {};  // preview terbaru dari Canva (sementara, per kunjungan)
-const isCanva = u => /^https?:\/\/([\w-]+\.)*canva\.(com|link)\//i.test(String(u || ''));
 function prevRow(p) {
-  const src = livePrev[p.id] || p.thumb, canva = isCanva(p.design);
-  if (!src && !canva) return '';
-  const img = src ? `<img src="${src}" alt="Design preview" loading="lazy">` : ic('photo');
-  const box = p.design ? `<a class="pc-prev ${p.type === 'story' ? 'story' : ''} ${src ? '' : 'empty'}" href="${esc(p.design)}" target="_blank" rel="noopener">${img}</a>` : `<div class="pc-prev ${p.type === 'story' ? 'story' : ''}">${img}</div>`;
-  return `<div class="pc-prevrow">${box}${canva ? `<button class="pc-act" data-act="pv" data-id="${esc(p.id)}">${ic('refresh')} ${src ? 'Refresh preview' : 'Load preview'}</button>` : ''}</div>`;
+  if (!p.thumb) return '';
+  const img = `<img src="${p.thumb}" alt="Design preview" loading="lazy">`, st = p.type === 'story' ? 'story' : '';
+  return `<div class="pc-prevrow">${p.design ? `<a class="pc-prev ${st}" href="${esc(p.design)}" target="_blank" rel="noopener">${img}</a>` : `<div class="pc-prev ${st}">${img}</div>`}</div>`;
 }
 const openCap = {};   // caption yang sedang dibuka
 function postCard(p, c) {
@@ -223,14 +219,6 @@ document.addEventListener('click', e => {
   if (act === 'change') { openFb[id] = { text: '' }; render(); const ta = $('fb-' + id); if (ta) ta.focus(); }
   if (act === 'cancel') { delete openFb[id]; render(); }
   if (act === 'cap') { openCap[id] = !openCap[id]; render(); }
-  if (act === 'pv') {
-    const p = (D.posts || {})[id] || Object.values(D.posts || {}).find(x => x.id === id); if (!p || !isCanva(p.design)) return;
-    if (DEMO) { toast('Preview refresh works on the live link'); return; }
-    b.disabled = true; b.lastChild.textContent = ' Refreshing…';
-    fetch('/api/social/canva-preview?url=' + encodeURIComponent(p.design)).then(r => r.ok ? r.blob() : r.json().then(d => { throw new Error(d.error || 'HTTP ' + r.status); }))
-      .then(bl => { if (livePrev[id]) URL.revokeObjectURL(livePrev[id]); livePrev[id] = URL.createObjectURL(bl); render(); toast('Preview updated'); })
-      .catch(() => { b.disabled = false; b.lastChild.textContent = ' Refresh preview'; toast('Could not load the preview. Please open it in Canva.'); });
-  }
   if (act === 'send') { const ta = $('fb-' + id); const v = ta ? ta.value.trim() : ''; if (!v) { toast('Please write what should change'); return; } b.disabled = true; decide(id, false, v); }
 });
 
