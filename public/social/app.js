@@ -28,6 +28,7 @@ const COLS = ['clients', 'posts', 'media', 'ideas', 'templates', 'reports', 'inv
 
 const STATUS = [
   { k: 'draft', label: 'Draft' },
+  { k: 'edit', label: 'Sedang Diedit' },
   { k: 'klien', label: 'Menunggu Klien' },
   { k: 'revisi', label: 'Revisi' },
   { k: 'jadwal', label: 'Terjadwal' },
@@ -1100,13 +1101,12 @@ function openPost(id, preset) {
       `<div class="field tz-hint" id="pTz">${tzHint()}</div>`)}
     <div><div class="form-head">Status</div><div class="form"><div class="status-pick" id="pStatus">${statusPick()}</div></div></div>
     <div><div class="form-head">Desain</div><div class="form">
+      ${fInput('pDesign', 'Link Canva', draft.design, { f: 'design', type: 'url', ph: 'Tempel link desain Canva', stack: true })}
       <div class="design-box"><div class="dthumb" id="pThumb">${thumbBox()}</div><div class="dside">
-        <button type="button" class="btn-tinted" data-a="pasteThumb">${ic('copy')} Tempel screenshot</button>
-        <button type="button" class="btn-tinted gray" data-a="pickThumb">${ic('photo')} Pilih foto/video</button>
-        <button type="button" class="c-red t-foot" data-a="clearThumb" id="pThumbClear" ${draft.thumb ? '' : 'hidden'}>Hapus gambar</button></div></div>
-      ${fInput('pDesign', 'Link Canva', draft.design, { f: 'design', type: 'url', ph: 'Tempel link desain', stack: true })}
+        <span class="t-foot muted" id="pPrevMsg">${draft.thumb ? 'Preview dari link Canva.' : 'Preview muncul otomatis setelah link Canva ditempel.'}</span>
+        <button type="button" class="btn-tinted gray" data-a="canvaPreview">${ic('refresh')} Ambil ulang preview</button></div></div>
       <div class="field" id="pDesignOpen" ${/^https?:\/\//.test(draft.design || '') ? '' : 'hidden'}><a href="${esc(draft.design || '')}" target="_blank" rel="noopener" class="t-sub">${ic('link')} Buka desain</a></div>
-      </div></div>
+      </div><div class="form-foot">Pakai link Canva yang bisa dilihat siapa saja (Share → Anyone with the link · Can view) supaya preview bisa diambil.</div></div>
     <div><div class="form-head" style="display:flex;justify-content:space-between"><span>Caption</span><span style="display:flex;gap:14px;text-transform:none;letter-spacing:0"><button type="button" class="c-blue" data-a="fillFromGuest">Isi dari tamu</button><button type="button" class="c-blue" data-a="insertTpl" data-k="hashtag">Hashtag</button></span></div>
       <div class="form">${fArea('pCaption', 'Caption & hashtag', draft.caption, { f: 'caption', rows: 7, count: true, ph: 'Tulis caption…' })}</div></div>
     <div class="list">
@@ -1122,7 +1122,6 @@ function openPost(id, preset) {
       <div><div class="form-head">Checklist publish</div><div class="form">${CHECKS.map(c => `<label class="field" style="cursor:pointer"><span style="flex:1">${c[1]}</span><input type="checkbox" data-chk="${c[0]}" ${(draft.check || {})[c[0]] ? 'checked' : ''}><span class="switch"></span></label>`).join('')}</div></div>
       ${fSec('Catatan', fArea('pNotes', 'Brief, ide visual, audio, dll.', draft.notes, { f: 'notes', rows: 3 }))}
       <div><div class="form-head">Revisi & komentar klien</div><div class="form"><div class="log" id="pLog">${logHTML()}</div><div class="log-add"><input id="pLogInput" placeholder="Catat masukan klien…" autocomplete="off"><button type="button" data-a="addLog">Tambah</button></div></div></div>
-      <div><div class="form-head">Media di R2 (opsional) · ${draft.media.length} file</div><div class="form"><div class="media-strip" id="pMedia">${mediaStrip()}</div></div></div>
       <div class="list">
         <button class="row action" data-a="igPreview">${ic('ig')}<span class="grow">Pratinjau tampilan Instagram</span></button>
         <button class="row action" data-a="insertTpl" data-k="caption">${ic('doc')}<span class="grow">Sisipkan template caption</span></button>
@@ -1151,6 +1150,20 @@ function fillSlot(manual) {
   draft.date = sl.date; draft.time = sl.time;
   const d = w && w.querySelector('#pDate'), t = w && w.querySelector('#pTime'); if (d) d.value = sl.date; if (t) t.value = sl.time;
   if (manual) { refreshDraftParts(); toast(`Slot ${prettyDate(sl.date, true, true)} ${sl.time} WIB`, 'cal'); }
+}
+// Preview desain otomatis dari link Canva (diambil server lewat /api/social/canva-preview)
+let previewSeq = 0;
+function fetchCanvaPreview(manual) {
+  if (!draft) return;
+  const link = String(draft.design || '').trim(), w = draftSheet(), msg = w && w.querySelector('#pPrevMsg');
+  const say = t => { if (msg) msg.textContent = t; };
+  if (!/^https?:\/\/([\w-]+\.)*canva\.(com|link)\//i.test(link)) { if (manual) toast('Tempel link Canva dulu', 'alert'); say(link ? 'Preview otomatis hanya untuk link Canva.' : 'Preview muncul otomatis setelah link Canva ditempel.'); return; }
+  if (DEMO) { say('Di mode pratinjau, preview Canva tidak diambil.'); return; }
+  const my = ++previewSeq, id = draft.id; say('Mengambil preview…');
+  fetch('/api/social/canva-preview?url=' + encodeURIComponent(link)).then(r => r.ok ? r.blob() : r.json().then(d => { throw new Error(d.error || 'HTTP ' + r.status); }))
+    .then(b => makeThumb(new File([b], 'canva.jpg', { type: b.type || 'image/jpeg' }), 480, .72))
+    .then(r => { if (my !== previewSeq || !draft || draft.id !== id) return; if (!r.thumb) throw new Error('Gambar tidak bisa dibaca'); draft.thumb = r.thumb; refreshDraftParts(); say('Preview dari link Canva.'); })
+    .catch(e => { if (my === previewSeq) say('Preview belum bisa diambil: ' + (e.message || e)); });
 }
 function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
 function setDraftThumb(file) {
@@ -1289,7 +1302,7 @@ function waLink(phone, text) {
 async function sharePost(p) {
   const c = clientOf(p.clientId) || {};
   const wrap = shareSheet('Minta review klien', postShareText(p, null), c.phone, 'Klien mengecek desainnya langsung di folder Canva. Salin pesan ini ke chat Upwork. Status otomatis menjadi Menunggu Klien setelah kamu menyalin.', () => {
-    if (S.posts[p.id] && ['draft', 'review', 'revisi', 'ide'].includes(S.posts[p.id].status)) {
+    if (S.posts[p.id] && ['draft', 'edit', 'review', 'revisi', 'ide'].includes(S.posts[p.id].status)) {
       const np = Object.assign(clone(S.posts[p.id]), { status: 'klien', stAt: Date.now() });
       np.log = (np.log || []).concat({ t: Date.now(), text: 'Dikirim ke klien untuk approval' });
       dbSet('posts/' + p.id, np);
@@ -1775,6 +1788,7 @@ const A = {
   tzOpen: () => openConverter(null),
   setLogo: el => { dbSet('settings', Object.assign({}, S.settings, { logo: el.dataset.k })); render(); toast('Logo diganti', 'check'); },
   slotFill: () => fillSlot(true),
+  canvaPreview: () => fetchCanvaPreview(true),
   slotNew: el => openPost(null, { cat: el.dataset.k, type: CAT[el.dataset.k].type, date: el.dataset.date, time: el.dataset.time, clientId: el.dataset.client }),
   tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
   copyProgress: el => {
@@ -1922,6 +1936,7 @@ function bind() {
       const w = draftSheet();
       if (el.dataset.f === 'cat' && CAT[el.value]) { draft.type = CAT[el.value].type; if (!S.posts[draft.id]) fillSlot(); refreshDraftParts(); }
       if (el.dataset.f === 'date' || el.dataset.f === 'time') refreshDraftParts();
+      if (el.dataset.f === 'design') fetchCanvaPreview(false);
       if (el.dataset.f === 'cat' && w) { const h = w.querySelector('#pCatHint'); if (h) { h.hidden = !CAT[el.value]; h.querySelector('span').textContent = CAT[el.value] ? CAT[el.value].hint : ''; } }
       if (el.dataset.f === 'guestId') { const g = guestOf(el.value); if (g && g.handle && !draft.tags) { draft.tags = '@' + g.handle; const ti = w && w.querySelector('#pTags'); if (ti) ti.value = draft.tags; } }
     }
