@@ -121,7 +121,7 @@ function postCard(p, c) {
   const isReview = p.status === 'klien';
   const fb = openFb[p.id];
   const isEdit = cls === 'designing';
-  return `<article class="pg-card ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
+  return `<article class="pg-card tone-${cls} ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
     <div class="pg-top"><div class="pg-info">
       <span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span>
       ${p.cat === 'quote' && String(p.title || '').includes(': ') ? `<span class="pg-title">“${esc(String(p.title).split(': ').slice(1).join(': ').replace(/…$/, '…'))}”</span>` : (p.cat === 'news' && p.title ? `<span class="pg-title">${esc(p.title)}</span>` : '')}
