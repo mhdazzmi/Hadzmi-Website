@@ -122,7 +122,7 @@ function postCard(p, c) {
   const fb = openFb[p.id];
   const isEdit = cls === 'designing';
   return `<article class="pg-card ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
-    <div class="pg-top">${thumb(p)}<div class="pg-info">
+    <div class="pg-top"><div class="pg-info">
       <span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span>
       ${p.cat === 'quote' && String(p.title || '').includes(': ') ? `<span class="pg-title">“${esc(String(p.title).split(': ').slice(1).join(': ').replace(/…$/, '…'))}”</span>` : (p.cat === 'news' && p.title ? `<span class="pg-title">${esc(p.title)}</span>` : '')}
       <span class="chip ${cls}">${cls === 'posted' ? ic('check') : ''}${cls === 'designing' ? ic('pencil') : ''}${cls === 'revise' ? ic('alert') : ''}${esc(label)}</span>
@@ -141,7 +141,7 @@ function postCard(p, c) {
 function missingCard(k, g) {
   const cat = CATS[k];
   const waitEp = EPISODE_CATS.includes(k) && STAGE_ORDER.indexOf(g.stage) < 2;
-  return `<article class="pg-card"><div class="pg-top"><div class="pg-thumb" style="background:var(--fill2);color:var(--label3)">${ic('photo')}</div><div class="pg-info"><span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span><span class="chip waiting">${waitEp ? 'After the recording' : 'Not started yet'}</span></div></div></article>`;
+  return `<article class="pg-card untouched"><div class="pg-top"><div class="pg-info"><span class="pg-cat">${esc(cat.label)}</span><span class="chip waiting">${waitEp ? 'After the recording' : 'Not started yet'}</span></div></div></article>`;
 }
 function renderGuest() {
   // Lewat link narasumber (?g=) atau dari link ringkasan (?c=token klien&id=narasumber)
