@@ -87,3 +87,22 @@ body { background: var(--bg); }
 .pg-step.done i { background: var(--green); color: #fff; }
 .pg-step.pass i { background: var(--green); color: #fff; box-shadow: none; }
 .pg-step b { font-size: 12px; text-align: center; line-height: 1.2; }
+
+/* Status "Designing now": lebih hidup */
+.chip.planned { background: var(--fill); color: var(--label2); }
+.chip.designing { background: linear-gradient(90deg, rgba(88,86,214,.16), rgba(175,82,222,.16), rgba(88,86,214,.16)); background-size: 200% 100%; color: #4B3FC4; animation: shimmer 2.4s linear infinite; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; flex: none; position: relative; margin-right: 2px; }
+.live-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; animation: ping 1.6s cubic-bezier(0,0,.2,1) infinite; }
+@keyframes ping { 0% { transform: scale(.5); opacity: .8; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.pg-card.designing { position: relative; box-shadow: 0 8px 24px rgba(88,86,214,.14); }
+.pg-card.designing::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px; background: linear-gradient(120deg, #5856D6, #AF52DE, #FF2D55, #5856D6); background-size: 300% 300%; animation: borderflow 4s ease infinite; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+@keyframes borderflow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+.pg-working { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; text-decoration: none; color: #fff; background: linear-gradient(120deg, #5856D6, #AF52DE); box-shadow: 0 8px 22px rgba(88,86,214,.3); font-size: 14.5px; line-height: 1.35; }
+.pg-working b { font-size: 15.5px; }
+.pg-working .live-dot { width: 10px; height: 10px; color: #fff; margin: 0 4px; }
+.pg-step.pulse i { animation: stepPulse 1.6s ease-in-out infinite; }
+@keyframes stepPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(52,199,89,.45); } 50% { box-shadow: 0 0 0 8px rgba(52,199,89,0); } }
+.tag-busy { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: #4B3FC4; background: rgba(88,86,214,.12); padding: 2px 8px; border-radius: 999px; vertical-align: 2px; margin-left: 4px; }
+.tag-busy .live-dot { width: 6px; height: 6px; }
+@media (prefers-reduced-motion: reduce) { .chip.designing, .live-dot::after, .pg-card.designing::before, .pg-step.pulse i { animation: none !important; } }
