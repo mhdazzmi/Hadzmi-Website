@@ -108,10 +108,9 @@ function guestPosts(g) { return Object.values(D.posts || {}).filter(p => p.guest
 const DSTEPS = [['Designing', ['draft', 'edit', 'ide', 'review', 'revisi']], ['Ready for review', ['klien']], ['Approved', ['jadwal', 'setuju']], ['Posted', ['posted']]];
 function designCounts(g) { const ps = guestPosts(g); return DSTEPS.map(st => ps.filter(p => st[1].includes(p.status)).length); }
 function designSummary(g) {
-  const n = designCounts(g), parts = [], ps = guestPosts(g);
-  const nDesigning = ps.filter(p => ['edit', 'review', 'revisi'].includes(p.status)).length, nPlanned = n[0] - nDesigning;
-  if (n[1]) parts.push(n[1] + ' to review'); if (nDesigning) parts.push(nDesigning + ' designing'); if (nPlanned > 0) parts.push(nPlanned + ' planned'); if (n[2]) parts.push(n[2] + ' approved'); if (n[3]) parts.push(n[3] + ' posted');
-  return parts.length ? parts.join(' · ') : 'Not started yet';
+  const ps = guestPosts(g), cnt = sts => ps.filter(p => sts.includes(p.status)).length;
+  const parts = [[cnt(['klien']), 'to review', 'sum-review'], [cnt(['edit', 'review', 'revisi']), 'in design', 'sum-design'], [cnt(['draft', 'ide']), 'planned', 'sum-planned'], [cnt(['jadwal', 'setuju']), 'approved', 'sum-approved'], [cnt(['posted']), 'posted', 'sum-posted']].filter(x => x[0]);
+  return parts.length ? parts.map(x => `<b class="${x[2]}">${x[0]} ${x[1]}</b>`).join(' · ') : '<span class="sum-planned">Not started yet</span>';
 }
 function guestScore(g) { const ps = guestPosts(g); const cats = guestCats(g); const doneCats = cats.filter(k => ps.some(p => p.cat === k && DONE.includes(p.status))).length; return { done: doneCats, total: cats.length, review: ps.filter(p => p.status === 'klien').length }; }
 function postCard(p, c) {
@@ -122,7 +121,7 @@ function postCard(p, c) {
   const isReview = p.status === 'klien';
   const fb = openFb[p.id];
   const isEdit = cls === 'designing';
-  return `<article class="pg-card ${isReview ? 'review' : ''} ${isEdit ? 'designing' : ''}" id="post-${esc(p.id)}">
+  return `<article class="pg-card ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
     <div class="pg-top">${thumb(p)}<div class="pg-info">
       <span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span>
       ${p.cat === 'quote' && String(p.title || '').includes(': ') ? `<span class="pg-title">“${esc(String(p.title).split(': ').slice(1).join(': ').replace(/…$/, '…'))}”</span>` : (p.cat === 'news' && p.title ? `<span class="pg-title">${esc(p.title)}</span>` : '')}
@@ -156,7 +155,7 @@ function renderGuest() {
   const dc = designCounts(g);
   const reached = dc.reduce((m, n, i) => n ? i : m, -1);   // tahap terjauh yang sudah dicapai salah satu desain
   const working = guestPosts(g).some(p => ['edit', 'review', 'revisi'].includes(p.status));
-  const step = i => `<div class="pg-step ${dc[i] ? (i === reached ? 'now' : 'done') : (i < reached ? 'pass' : '')} ${i === 0 && working ? 'pulse' : ''}"><i>${dc[i] ? dc[i] : (i < reached ? ic('check') : '')}</i><b>${DSTEPS[i][0]}</b><span>${dc[i] ? dc[i] + (dc[i] > 1 ? ' designs' : ' design') : '&nbsp;'}</span></div>`;
+  const step = i => `<div class="pg-step ${dc[i] ? (i === reached ? 'now' : 'done') : (i < reached ? 'pass' : '')}"><i>${dc[i] ? dc[i] : (i < reached ? ic('check') : '')}</i><b>${DSTEPS[i][0]}</b><span>${dc[i] ? dc[i] + (dc[i] > 1 ? ' designs' : ' design') : '&nbsp;'}</span></div>`;
   const barW = reached <= 0 ? 0 : reached * 25;   // titik ada di 12.5%, 37.5%, 62.5%, 87.5%
   const ps = guestPosts(g).sort((a, b) => GUEST_CATS.indexOf(a.cat) - GUEST_CATS.indexOf(b.cat) || ((a.date || '9') + (a.time || '')).localeCompare((b.date || '9') + (b.time || '')));
   const sc = guestScore(g);
@@ -167,7 +166,6 @@ function renderGuest() {
     <section class="pg-hero">${photo(g)}<div class="pg-name">${esc(g.name)}</div>${g.role || g.org ? `<div class="pg-role">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>` : ''}${g.handle ? `<a class="pg-handle" href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener">@${esc(g.handle)}</a>` : ''}
       ${g.epTitle ? `<div class="pg-role" style="margin-top:6px">🎙️ ${g.epNo ? 'Episode ' + esc(g.epNo) + ' · ' : ''}${esc(g.epTitle)}</div>` : ''}
       <div class="pg-steps four"><span class="bar" style="width:${barW}%"></span>${step(0)}${step(1)}${step(2)}${step(3)}</div></section>
-    ${(() => { const ed = ps.filter(p => ['edit', 'review'].includes(p.status)); return ed.length ? `<a class="pg-working" href="#post-${esc(ed[0].id)}"><i class="live-dot"></i><span><b>Designing now</b><br>${ed.map(p => esc((CATS[p.cat] || {}).label || 'Post')).join(' · ')}</span></a>` : ''; })()}
     ${review.length ? `<a class="pg-alert" href="#post-${esc(review[0].id)}">${ic('alert')}<span>${review.length} design${review.length > 1 ? 's' : ''} ready for your review</span></a>` : (sc.done === sc.total ? `<div class="pg-alert ok">${ic('check')}<span>All content for this guest is done</span></div>` : '')}
     <div class="pg-sec"><h2>Content</h2><span>${sc.done} of ${sc.total} ready</span></div>
     <div class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></div>
@@ -190,7 +188,7 @@ function renderOverview() {
   const totalReview = gs.reduce((x, g) => x + guestScore(g).review, 0) + newsReview;
   return `<header class="pg-client">${c.photo ? `<span class="pg-cphoto"><img src="${c.photo}" alt=""></span>` : `<span class="pg-cphoto" style="background:${esc(c.color || '#34C759')}">${esc(initials(c.name))}</span>`}<span><span class="pg-brand" style="margin:0">${esc(c.name || 'Podcast')}</span><h1 class="pg-name" style="font-size:30px">Guest progress</h1></span></header>
     ${totalReview ? `<div class="pg-alert">${ic('alert')}<span>${totalReview} design${totalReview > 1 ? 's' : ''} ready for your review</span></div>` : ''}
-    ${gs.length ? gs.map(g => { const sc = guestScore(g); const busy = guestPosts(g).some(p => ['edit', 'review'].includes(p.status)); const inner = `${photo(g)}<span class="g"><span class="n">${esc(g.name)}${busy ? ' <span class="tag-busy"><i class="live-dot"></i>Designing</span>' : ''}</span><span class="s">${esc(designSummary(g))} · ${sc.done} of ${sc.total} ready</span><span class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></span></span>${sc.review ? `<span class="badge-r">${sc.review} to review</span>` : ic('chevR')}`; const href = `?c=${encodeURIComponent(C_TOKEN)}&id=${encodeURIComponent(g.id)}${DEMO ? '&demo=1' : ''}`; return `<a class="pg-guest" href="${href}">${inner}</a>`; }).join('') : '<div class="pg-msg">No guests yet.</div>'}
+    ${gs.length ? gs.map(g => { const sc = guestScore(g); const inner = `${photo(g)}<span class="g"><span class="n">${esc(g.name)}</span><span class="s">${designSummary(g)} · ${sc.done} of ${sc.total} ready</span><span class="pg-prog"><span style="width:${sc.done / sc.total * 100}%;background:var(--green)"></span></span></span>${sc.review ? `<span class="badge-r">${sc.review} to review</span>` : ic('chevR')}`; const href = `?c=${encodeURIComponent(C_TOKEN)}&id=${encodeURIComponent(g.id)}${DEMO ? '&demo=1' : ''}`; return `<a class="pg-guest" href="${href}">${inner}</a>`; }).join('') : '<div class="pg-msg">No guests yet.</div>'}
     <div class="pg-foot">Tap a guest to see each design and approve it.</div>
     <div class="pg-sec" style="margin-top:10px"><h2>${esc(CATS.news.label)}</h2><span>${news.length ? news.filter(p => DONE.includes(p.status)).length + ' of ' + news.length + ' ready' : ''}</span></div>
     ${news.length ? news.map(p => postCard(p, c)).join('') : '<div class="pg-card"><span class="pg-empty">No news posts scheduled for the next few weeks yet.</span></div>'}`;
