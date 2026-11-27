@@ -146,3 +146,11 @@ body { background: var(--bg); }
 .pg-card .pg-actions { margin-top: 4px; }
 .pg-card.untouched { padding: 11px 16px; }
 .pg-card.untouched .pg-cat { font-size: 11.5px; }
+
+/* Kelompok per status (halaman narasumber) */
+.pg-group { display: flex; align-items: center; gap: 7px; padding: 10px 6px 0; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--label2); }
+.pg-group::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--label3); }
+.pg-group span { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pg-group.g-review { color: #C93400; } .pg-group.g-review::before { background: #FF9500; }
+.pg-group.g-work::before { background: #5856D6; }
+.pg-group.g-done::before { background: #34C759; }
