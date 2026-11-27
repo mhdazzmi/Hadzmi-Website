@@ -32,6 +32,7 @@ const CATS = {
   news: { label: 'Trending Sustainability News / History', color: '#34C759' }
 };
 const GUEST_CATS = ['intro', 'announce', 'live', 'livestory', 'summary', 'quote'];
+const guestCats = g => GUEST_CATS.filter(k => !(k === 'intro' && g && g.noIntro));
 const EPISODE_CATS = ['live', 'livestory', 'summary', 'quote'];
 const STAGE_ORDER = ['intro', 'jadwal', 'rekam', 'tayang'];
 const STATUS = {
@@ -111,7 +112,7 @@ function designSummary(g) {
   if (n[1]) parts.push(n[1] + ' to review'); if (n[0]) parts.push(n[0] + ' in design'); if (n[2]) parts.push(n[2] + ' approved'); if (n[3]) parts.push(n[3] + ' posted');
   return parts.length ? parts.join(' · ') : 'Not started yet';
 }
-function guestScore(g) { const ps = guestPosts(g); const doneCats = GUEST_CATS.filter(k => ps.some(p => p.cat === k && DONE.includes(p.status))).length; return { done: doneCats, total: GUEST_CATS.length, review: ps.filter(p => p.status === 'klien').length }; }
+function guestScore(g) { const ps = guestPosts(g); const cats = guestCats(g); const doneCats = cats.filter(k => ps.some(p => p.cat === k && DONE.includes(p.status))).length; return { done: doneCats, total: cats.length, review: ps.filter(p => p.status === 'klien').length }; }
 function postCard(p, c) {
   const tz = c.tz || 'America/New_York';
   const [cls, label] = STATUS[p.status] || STATUS.draft;
@@ -157,7 +158,7 @@ function renderGuest() {
   const ps = guestPosts(g).sort((a, b) => GUEST_CATS.indexOf(a.cat) - GUEST_CATS.indexOf(b.cat) || ((a.date || '9') + (a.time || '')).localeCompare((b.date || '9') + (b.time || '')));
   const sc = guestScore(g);
   const review = ps.filter(p => p.status === 'klien');
-  const cards = GUEST_CATS.map(k => { const mine = ps.filter(p => p.cat === k); return mine.length ? mine.map(p => postCard(p, c)).join('') : missingCard(k, g); }).join('');
+  const cards = guestCats(g).map(k => { const mine = ps.filter(p => p.cat === k); return mine.length ? mine.map(p => postCard(p, c)).join('') : missingCard(k, g); }).join('');
   const last = Math.max(g.at || 0, ...ps.map(p => p.updatedAt || p.stAt || 0));
   return `${viaClient ? `<a class="pg-back" href="?c=${encodeURIComponent(C_TOKEN)}${DEMO ? '&demo=1' : ''}">‹ All guests</a>` : ''}<div class="pg-brand">${brandMark(c)}${esc(c.name || 'Podcast')} · Guest progress</div>
     <section class="pg-hero">${photo(g)}<div class="pg-name">${esc(g.name)}</div>${g.role || g.org ? `<div class="pg-role">${esc([g.role, g.org].filter(Boolean).join(' · '))}</div>` : ''}${g.handle ? `<a class="pg-handle" href="https://instagram.com/${encodeURIComponent(g.handle)}" target="_blank" rel="noopener">@${esc(g.handle)}</a>` : ''}
