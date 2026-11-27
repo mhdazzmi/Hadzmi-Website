@@ -16,6 +16,30 @@ export async function handleSocial(request, env, url) {
   const method = request.method.toUpperCase();
   if (!env.FILES) return json({ error: 'R2 belum diaktifkan' }, 503);
 
+  // Preview desain dari link Canva publik: ambil og:image halaman Canva lalu kirim gambarnya (hanya domain Canva)
+  if (path === '/api/social/canva-preview' && method === 'GET') {
+    const okHost = h => /(^|\.)canva\.(com|link)$/i.test(h);
+    let u; try { u = new URL(url.searchParams.get('url') || ''); } catch (e) { return json({ error: 'Link tidak valid' }, 400); }
+    if (!/^https?:$/.test(u.protocol) || !okHost(u.hostname)) return json({ error: 'Hanya link Canva' }, 400);
+    const ip = request.headers.get('CF-Connecting-IP') || 'x';
+    const rlKey = `sm_pv:${ip}:${Math.floor(Date.now() / 3600000)}`;
+    const n = Number(await env.HUB_KV.get(rlKey)) || 0;
+    if (n >= 200) return json({ error: 'Terlalu banyak permintaan, coba lagi nanti' }, 429);
+    await env.HUB_KV.put(rlKey, String(n + 1), { expirationTtl: 7200 });
+    const page = await fetch(u.toString(), { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NexaSocialPreview/1.0; +link-preview)', 'Accept': 'text/html' } });
+    if (!okHost(new URL(page.url).hostname)) return json({ error: 'Hanya link Canva' }, 400);
+    if (!page.ok) return json({ error: 'Link Canva tidak bisa dibuka (' + page.status + '). Pastikan bisa dilihat siapa saja.' }, 502);
+    const html = (await page.text()).slice(0, 600000);
+    const m = html.match(/<meta[^>]+(?:property|name)=["']og:image(?::secure_url)?["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']og:image["']/i);
+    if (!m) return json({ error: 'Preview tidak ditemukan. Pastikan link Canva bisa dilihat siapa saja.' }, 404);
+    let img; try { img = new URL(m[1].replace(/&amp;/g, '&'), page.url); } catch (e) { return json({ error: 'Preview tidak valid' }, 502); }
+    if (!/^https:$/.test(img.protocol) || !/canva/i.test(img.hostname)) return json({ error: 'Preview tidak valid' }, 502);
+    const ir = await fetch(img.toString());
+    const type = (ir.headers.get('Content-Type') || '').split(';')[0];
+    if (!ir.ok || !/^image\//.test(type)) return json({ error: 'Gagal mengambil gambar preview' }, 502);
+    return new Response(ir.body, { headers: { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+  }
+
   if (path === '/api/social/files' && method === 'POST') {
     const type = (request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
     if (!TYPE_RE.test(type)) return json({ error: 'Hanya foto atau video' }, 415);
