@@ -113,6 +113,7 @@ function designSummary(g) {
   return parts.length ? parts.map(x => `<b class="${x[2]}">${x[0]} ${x[1]}</b>`).join(' · ') : '<span class="sum-planned">Not started yet</span>';
 }
 function guestScore(g) { const ps = guestPosts(g); const cats = guestCats(g); const doneCats = cats.filter(k => ps.some(p => p.cat === k && DONE.includes(p.status))).length; return { done: doneCats, total: cats.length, review: ps.filter(p => p.status === 'klien').length }; }
+const openCap = {};   // caption yang sedang dibuka
 function postCard(p, c) {
   const tz = c.tz || 'America/New_York';
   const [cls, label] = STATUS[p.status] || STATUS.draft;
@@ -120,20 +121,20 @@ function postCard(p, c) {
   const when = clientWhen(p.date, p.time, tz);
   const isReview = p.status === 'klien';
   const fb = openFb[p.id];
-  const isEdit = cls === 'designing';
+  const title = p.cat === 'quote' && String(p.title || '').includes(': ') ? '“' + String(p.title).split(': ').slice(1).join(': ') + '”' : (p.cat === 'news' && p.title ? p.title : '');
+  const chipIcon = cls === 'posted' ? ic('check') : cls === 'designing' ? ic('pencil') : cls === 'revise' ? ic('alert') : '';
+  const acts = [
+    p.design ? `<a class="pc-act" href="${esc(p.design)}" target="_blank" rel="noopener">${ic('link')} Canva</a>` : '',
+    p.status === 'posted' && p.link ? `<a class="pc-act" href="${esc(p.link)}" target="_blank" rel="noopener">${ic('ig')} Instagram</a>` : '',
+    p.caption ? `<button class="pc-act ${openCap[p.id] ? 'on' : ''}" data-act="cap" data-id="${esc(p.id)}">Caption ${openCap[p.id] ? '▴' : '▾'}</button>` : ''
+  ].filter(Boolean).join('');
   return `<article class="pg-card tone-${cls} ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
-    <div class="pg-top"><div class="pg-info">
-      <span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span>
-      ${p.cat === 'quote' && String(p.title || '').includes(': ') ? `<span class="pg-title">“${esc(String(p.title).split(': ').slice(1).join(': ').replace(/…$/, '…'))}”</span>` : (p.cat === 'news' && p.title ? `<span class="pg-title">${esc(p.title)}</span>` : '')}
-      <span class="chip ${cls}">${cls === 'posted' ? ic('check') : ''}${cls === 'designing' ? ic('pencil') : ''}${cls === 'revise' ? ic('alert') : ''}${esc(label)}</span>
-      ${when ? `<span class="pg-when">${p.status === 'posted' ? 'Posted ' : 'Goes live '}${esc(when)}</span>` : '<span class="pg-when">Date to be confirmed</span>'}
-    </div></div>
-    ${p.caption ? `<details class="pg-cap"><summary>Read caption</summary><p>${esc(p.caption)}</p></details>` : ''}
+    <div class="pc-head"><span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span><span class="chip ${cls}">${chipIcon}${esc(label)}</span></div>
+    ${title ? `<div class="pg-title">${esc(title)}</div>` : ''}
+    <div class="pg-when">${when ? (p.status === 'posted' ? 'Posted ' : 'Goes live ') + esc(when) : 'Date to be confirmed'}</div>
+    ${acts ? `<div class="pc-acts">${acts}</div>` : ''}
+    ${openCap[p.id] && p.caption ? `<p class="pc-caption">${esc(p.caption)}</p>` : ''}
     ${p.status === 'revisi' && p.clientNote ? `<div class="pg-note">Your feedback: <b>${esc(p.clientNote)}</b><br>I'm working on it now.</div>` : ''}
-    <div class="pg-actions">
-      ${p.design ? `<a class="pg-btn link" href="${esc(p.design)}" target="_blank" rel="noopener">${ic('link')} Open in Canva</a>` : ''}
-      ${p.status === 'posted' && p.link ? `<a class="pg-btn link" href="${esc(p.link)}" target="_blank" rel="noopener">${ic('ig')} View on Instagram</a>` : ''}
-    </div>
     ${isReview ? (fb ? `<div class="pg-fb"><textarea id="fb-${esc(p.id)}" placeholder="What should I change?">${esc(fb.text || '')}</textarea><div class="pg-actions"><button class="pg-btn" data-act="cancel" data-id="${esc(p.id)}">Cancel</button><button class="pg-btn change" data-act="send" data-id="${esc(p.id)}">Send feedback</button></div></div>`
       : `<div class="pg-actions"><button class="pg-btn approve" data-act="approve" data-id="${esc(p.id)}">${ic('check')} Approve</button><button class="pg-btn change" data-act="change" data-id="${esc(p.id)}">${ic('pencil')} Request changes</button></div>`) : ''}
   </article>`;
@@ -141,7 +142,7 @@ function postCard(p, c) {
 function missingCard(k, g) {
   const cat = CATS[k];
   const waitEp = EPISODE_CATS.includes(k) && STAGE_ORDER.indexOf(g.stage) < 2;
-  return `<article class="pg-card untouched"><div class="pg-top"><div class="pg-info"><span class="pg-cat">${esc(cat.label)}</span><span class="chip waiting">${waitEp ? 'After the recording' : 'Not started yet'}</span></div></div></article>`;
+  return `<article class="pg-card untouched"><div class="pc-head"><span class="pg-cat">${esc(cat.label)}</span><span class="chip waiting">${waitEp ? 'After recording' : 'Not started'}</span></div></article>`;
 }
 function renderGuest() {
   // Lewat link narasumber (?g=) atau dari link ringkasan (?c=token klien&id=narasumber)
@@ -206,6 +207,7 @@ document.addEventListener('click', e => {
   if (act === 'approve') { b.disabled = true; decide(id, true, ''); }
   if (act === 'change') { openFb[id] = { text: '' }; render(); const ta = $('fb-' + id); if (ta) ta.focus(); }
   if (act === 'cancel') { delete openFb[id]; render(); }
+  if (act === 'cap') { openCap[id] = !openCap[id]; render(); }
   if (act === 'send') { const ta = $('fb-' + id); const v = ta ? ta.value.trim() : ''; if (!v) { toast('Please write what should change'); return; } b.disabled = true; decide(id, false, v); }
 });
 
