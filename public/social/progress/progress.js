@@ -36,7 +36,7 @@ const guestCats = g => GUEST_CATS.filter(k => !(k === 'intro' && g && g.noIntro)
 const EPISODE_CATS = ['live', 'livestory', 'summary', 'quote'];
 const STAGE_ORDER = ['intro', 'jadwal', 'rekam', 'tayang'];
 const STATUS = {
-  ide: ['planned', 'Planned'], draft: ['planned', 'Planned'], edit: ['designing', 'Designing now'], review: ['designing', 'Designing now'],
+  ide: ['planned', 'Planned'], draft: ['planned', 'Planned'], edit: ['designing', 'In design'], review: ['designing', 'In design'],
   klien: ['review', 'Ready for your review'], revisi: ['revise', 'Revising your feedback'],
   setuju: ['approved', 'Approved'], jadwal: ['scheduled', 'Scheduled'], posted: ['posted', 'Posted']
 };
@@ -125,7 +125,7 @@ function postCard(p, c) {
     <div class="pg-top">${thumb(p)}<div class="pg-info">
       <span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span>
       ${p.cat === 'quote' && String(p.title || '').includes(': ') ? `<span class="pg-title">“${esc(String(p.title).split(': ').slice(1).join(': ').replace(/…$/, '…'))}”</span>` : (p.cat === 'news' && p.title ? `<span class="pg-title">${esc(p.title)}</span>` : '')}
-      <span class="chip ${cls}">${cls === 'posted' ? ic('check') : ''}${cls === 'designing' || cls === 'revise' ? '<i class="live-dot"></i>' : ''}${cls === 'designing' ? '✏️ ' : ''}${esc(label)}</span>
+      <span class="chip ${cls}">${cls === 'posted' ? ic('check') : ''}${cls === 'designing' ? ic('pencil') : ''}${cls === 'revise' ? ic('alert') : ''}${esc(label)}</span>
       ${when ? `<span class="pg-when">${p.status === 'posted' ? 'Posted ' : 'Goes live '}${esc(when)}</span>` : '<span class="pg-when">Date to be confirmed</span>'}
     </div></div>
     ${p.caption ? `<details class="pg-cap"><summary>Read caption</summary><p>${esc(p.caption)}</p></details>` : ''}

@@ -112,3 +112,7 @@ body { background: var(--bg); }
 .sum-review { color: #C93400; } .sum-design { color: #5856D6; } .sum-planned { color: var(--label2); } .sum-approved { color: #0E8A6A; } .sum-posted { color: #248A3D; }
 /* Chip "Designing now" sedikit lebih menonjol */
 .chip.designing { font-size: 13px; padding: 5px 12px; box-shadow: 0 0 0 1px rgba(88,86,214,.25) inset; }
+
+/* Chip In design: tenang, tanpa animasi */
+.chip.designing { animation: none; background: rgba(88,86,214,.13); color: #4B3FC4; }
+.chip svg.i { font-size: 13px; }
