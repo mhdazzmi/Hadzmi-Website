@@ -1161,7 +1161,7 @@ function fetchCanvaPreview(manual) {
   if (DEMO) { say('Di mode pratinjau, preview Canva tidak diambil.'); return; }
   const my = ++previewSeq, id = draft.id; say('Mengambil preview…');
   fetch('/api/social/canva-preview?url=' + encodeURIComponent(link)).then(r => r.ok ? r.blob() : r.json().then(d => { throw new Error(d.error || 'HTTP ' + r.status); }))
-    .then(b => makeThumb(new File([b], 'canva.jpg', { type: b.type || 'image/jpeg' }), 640, .75))
+    .then(b => makeThumb(new File([b], 'canva.jpg', { type: b.type || 'image/jpeg' }), 900, .8))
     .then(r => { if (my !== previewSeq || !draft || draft.id !== id) return; if (!r.thumb) throw new Error('Gambar tidak bisa dibaca'); draft.thumb = r.thumb; refreshDraftParts(); say('Preview dari link Canva.'); })
     .catch(e => { if (my === previewSeq) say('Preview belum bisa diambil: ' + (e.message || e)); });
 }
