@@ -51,7 +51,7 @@ const IC = {
   link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
   ig: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".7" fill="currentColor"/>',
   pencil: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/>', photo: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 15.5-4.8-4.8L7 20"/>',
-  chevR: '<path d="m9 18 6-6-6-6"/>', refresh: '<path d="M20 11a8 8 0 0 0-14.8-3.5M4 4v4h4M4 13a8 8 0 0 0 14.8 3.5M20 20v-4h-4"/>'
+  chevR: '<path d="m9 18 6-6-6-6"/>'
 };
 const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
 const initials = s => String(s || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
@@ -113,11 +113,6 @@ function designSummary(g) {
   return parts.length ? parts.map(x => `<b class="${x[2]}">${x[0]} ${x[1]}</b>`).join(' · ') : '<span class="sum-planned">Not started yet</span>';
 }
 function guestScore(g) { const ps = guestPosts(g); const cats = guestCats(g); const doneCats = cats.filter(k => ps.some(p => p.cat === k && DONE.includes(p.status))).length; return { done: doneCats, total: cats.length, review: ps.filter(p => p.status === 'klien').length }; }
-function prevRow(p) {
-  if (!p.thumb) return '';
-  const img = `<img src="${p.thumb}" alt="Design preview" loading="lazy">`, st = p.type === 'story' ? 'story' : '';
-  return `<div class="pc-prevrow">${p.design ? `<a class="pc-prev ${st}" href="${esc(p.design)}" target="_blank" rel="noopener">${img}</a>` : `<div class="pc-prev ${st}">${img}</div>`}</div>`;
-}
 const openCap = {};   // caption yang sedang dibuka
 function postCard(p, c) {
   const tz = c.tz || 'America/New_York';
@@ -135,7 +130,6 @@ function postCard(p, c) {
   ].filter(Boolean).join('');
   return `<article class="pg-card tone-${cls} ${isReview ? 'review' : ''}" id="post-${esc(p.id)}">
     <div class="pc-head"><span class="pg-cat" style="color:${cat.color}">${esc(cat.label)}</span><span class="chip ${cls}">${chipIcon}${esc(label)}</span></div>
-    ${prevRow(p)}
     ${title ? `<div class="pg-title">${esc(title)}</div>` : ''}
     <div class="pg-when">${when ? (p.status === 'posted' ? 'Posted ' : 'Goes live ') + esc(when) : 'Date to be confirmed'}</div>
     ${acts ? `<div class="pc-acts">${acts}</div>` : ''}

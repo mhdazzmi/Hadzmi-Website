@@ -1102,11 +1102,9 @@ function openPost(id, preset) {
     <div><div class="form-head">Status</div><div class="form"><div class="status-pick" id="pStatus">${statusPick()}</div></div></div>
     <div><div class="form-head">Desain</div><div class="form">
       ${fInput('pDesign', 'Link Canva', draft.design, { f: 'design', type: 'url', ph: 'Tempel link desain Canva', stack: true })}
-      <div class="design-box"><div class="dthumb" id="pThumb">${thumbBox()}</div><div class="dside">
-        <span class="t-foot muted" id="pPrevMsg">${draft.thumb ? 'Preview dari link Canva.' : 'Preview muncul otomatis setelah link Canva ditempel.'}</span>
-        <button type="button" class="btn-tinted gray" data-a="canvaPreview">${ic('refresh')} Ambil ulang preview</button></div></div>
+
       <div class="field" id="pDesignOpen" ${/^https?:\/\//.test(draft.design || '') ? '' : 'hidden'}><a href="${esc(draft.design || '')}" target="_blank" rel="noopener" class="t-sub">${ic('link')} Buka desain</a></div>
-      </div><div class="form-foot">Link Canva harus bisa dilihat siapa saja (Share → Anyone with the link · Can view) supaya preview bisa diambil.</div></div>
+      </div></div>
     <div><div class="form-head" style="display:flex;justify-content:space-between"><span>Caption</span><span style="display:flex;gap:14px;text-transform:none;letter-spacing:0"><button type="button" class="c-blue" data-a="fillFromGuest">Isi dari tamu</button><button type="button" class="c-blue" data-a="insertTpl" data-k="hashtag">Hashtag</button></span></div>
       <div class="form">${fArea('pCaption', 'Caption & hashtag', draft.caption, { f: 'caption', rows: 7, count: true, ph: 'Tulis caption…' })}</div></div>
     <div class="list">
@@ -1150,20 +1148,6 @@ function fillSlot(manual) {
   draft.date = sl.date; draft.time = sl.time;
   const d = w && w.querySelector('#pDate'), t = w && w.querySelector('#pTime'); if (d) d.value = sl.date; if (t) t.value = sl.time;
   if (manual) { refreshDraftParts(); toast(`Slot ${prettyDate(sl.date, true, true)} ${sl.time} WIB`, 'cal'); }
-}
-// Preview desain otomatis dari link Canva (diambil server lewat /api/social/canva-preview)
-let previewSeq = 0;
-function fetchCanvaPreview(manual) {
-  if (!draft) return;
-  const link = String(draft.design || '').trim(), w = draftSheet(), msg = w && w.querySelector('#pPrevMsg');
-  const say = t => { if (msg) msg.textContent = t; };
-  if (!/^https?:\/\/([\w-]+\.)*canva\.(com|link)\//i.test(link)) { if (manual) toast('Tempel link Canva dulu', 'alert'); say(link ? 'Preview otomatis hanya untuk link Canva.' : 'Preview muncul otomatis setelah link Canva ditempel.'); return; }
-  if (DEMO) { say('Di mode pratinjau, preview Canva tidak diambil.'); return; }
-  const my = ++previewSeq, id = draft.id; say('Mengambil preview…');
-  fetch('/api/social/canva-preview?url=' + encodeURIComponent(link)).then(r => r.ok ? r.blob() : r.json().then(d => { throw new Error(d.error || 'HTTP ' + r.status); }))
-    .then(b => makeThumb(new File([b], 'canva.jpg', { type: b.type || 'image/jpeg' }), 900, .8))
-    .then(r => { if (my !== previewSeq || !draft || draft.id !== id) return; if (!r.thumb) throw new Error('Gambar tidak bisa dibaca'); draft.thumb = r.thumb; refreshDraftParts(); say('Preview dari link Canva.'); })
-    .catch(e => { if (my === previewSeq) say('Preview belum bisa diambil: ' + (e.message || e)); });
 }
 function thumbBox() { return draft.thumb ? `<img src="${draft.thumb}" alt="Gambar penanda">` : ic(TYPES[draft.type || 'feed'].icon); }
 function setDraftThumb(file) {
@@ -1788,7 +1772,6 @@ const A = {
   tzOpen: () => openConverter(null),
   setLogo: el => { dbSet('settings', Object.assign({}, S.settings, { logo: el.dataset.k })); render(); toast('Logo diganti', 'check'); },
   slotFill: () => fillSlot(true),
-  canvaPreview: () => fetchCanvaPreview(true),
   slotNew: el => openPost(null, { cat: el.dataset.k, type: CAT[el.dataset.k].type, date: el.dataset.date, time: el.dataset.time, clientId: el.dataset.client }),
   tzFill: el => openConverter({ d: el.dataset.d, t: el.dataset.t }),
   copyProgress: el => {
@@ -1936,7 +1919,6 @@ function bind() {
       const w = draftSheet();
       if (el.dataset.f === 'cat' && CAT[el.value]) { draft.type = CAT[el.value].type; if (!S.posts[draft.id]) fillSlot(); refreshDraftParts(); }
       if (el.dataset.f === 'date' || el.dataset.f === 'time') refreshDraftParts();
-      if (el.dataset.f === 'design') fetchCanvaPreview(false);
       if (el.dataset.f === 'cat' && w) { const h = w.querySelector('#pCatHint'); if (h) { h.hidden = !CAT[el.value]; h.querySelector('span').textContent = CAT[el.value] ? CAT[el.value].hint : ''; } }
       if (el.dataset.f === 'guestId') { const g = guestOf(el.value); if (g && g.handle && !draft.tags) { draft.tags = '@' + g.handle; const ti = w && w.querySelector('#pTags'); if (ti) ti.value = draft.tags; } }
     }
