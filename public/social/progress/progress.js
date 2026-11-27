@@ -36,7 +36,7 @@ const guestCats = g => GUEST_CATS.filter(k => !(k === 'intro' && g && g.noIntro)
 const EPISODE_CATS = ['live', 'livestory', 'summary', 'quote'];
 const STAGE_ORDER = ['intro', 'jadwal', 'rekam', 'tayang'];
 const STATUS = {
-  ide: ['design', 'In design'], draft: ['design', 'In design'], review: ['design', 'In design'],
+  ide: ['design', 'In design'], draft: ['design', 'In design'], edit: ['design', 'In design'], review: ['design', 'In design'],
   klien: ['review', 'Ready for your review'], revisi: ['revise', 'Revising your feedback'],
   setuju: ['approved', 'Approved'], jadwal: ['scheduled', 'Scheduled'], posted: ['posted', 'Posted']
 };
@@ -105,7 +105,7 @@ function thumb(p) {
 }
 function guestPosts(g) { return Object.values(D.posts || {}).filter(p => p.guestId === g.id && GUEST_CATS.includes(p.cat)); }
 // Progress desain: Designing → Ready for review → Approved → Posted (dari status konten)
-const DSTEPS = [['Designing', ['draft', 'ide', 'review', 'revisi']], ['Ready for review', ['klien']], ['Approved', ['jadwal', 'setuju']], ['Posted', ['posted']]];
+const DSTEPS = [['Designing', ['draft', 'edit', 'ide', 'review', 'revisi']], ['Ready for review', ['klien']], ['Approved', ['jadwal', 'setuju']], ['Posted', ['posted']]];
 function designCounts(g) { const ps = guestPosts(g); return DSTEPS.map(st => ps.filter(p => st[1].includes(p.status)).length); }
 function designSummary(g) {
   const n = designCounts(g), parts = [];

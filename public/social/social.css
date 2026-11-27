@@ -585,3 +585,5 @@ details.opt[open] summary svg.i { transform: rotate(180deg); }
 .crop-zoom input[type="range"] { flex: 1; accent-color: var(--blue); }
 .photo-edit { position: relative; border-radius: 50%; }
 .photo-edit .pe-badge { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 0 0 3px var(--card); }
+
+.st-edit { background: rgba(0,122,255,.12); color: #0057D9; }
