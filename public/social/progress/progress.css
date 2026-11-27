@@ -154,3 +154,8 @@ body { background: var(--bg); }
 .pg-group.g-review { color: #C93400; } .pg-group.g-review::before { background: #FF9500; }
 .pg-group.g-work::before { background: #5856D6; }
 .pg-group.g-done::before { background: #34C759; }
+
+/* Preview desain dari link Canva */
+.pc-prev { display: block; margin: 4px 0 2px; border-radius: 12px; overflow: hidden; background: var(--fill); box-shadow: 0 0 0 .5px rgba(0,0,0,.08); }
+.pc-prev img { display: block; width: 100%; max-height: 420px; object-fit: contain; background: #fff; }
+.pc-prev.story img { max-height: 480px; }
